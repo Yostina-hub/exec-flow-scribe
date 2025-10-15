@@ -128,6 +128,8 @@ const Auth = () => {
         ))}
       </div>
 
+      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent" />
+
       <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Hero Section */}
@@ -139,12 +141,12 @@ const Auth = () => {
 
             <h1 className="text-6xl font-bold leading-tight font-['Space_Grotesk'] drop-shadow-lg">
               <span className="text-white">Transform Your</span>
-              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-emerald-300 bg-clip-text text-transparent animate-shimmer drop-shadow-2xl">
+              <span className="block text-white drop-shadow-2xl">
                 Executive Meetings
               </span>
             </h1>
 
-            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md font-medium">
+            <p className="text-xl text-white leading-relaxed drop-shadow-md font-semibold">
               AI-powered transcription, real-time insights, and intelligent automation for the modern executive office.
             </p>
 
