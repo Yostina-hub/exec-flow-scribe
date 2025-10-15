@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -9,8 +9,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileText, Download, Copy } from 'lucide-react';
+import { Loader2, FileText, Download, Copy, Brain, BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 
 interface GenerateMinutesDialogProps {
@@ -26,7 +27,33 @@ export const GenerateMinutesDialog = ({
 }: GenerateMinutesDialogProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [minutes, setMinutes] = useState<string>('');
+  const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (open) {
+      fetchAIProvider();
+    }
+  }, [open]);
+
+  const fetchAIProvider = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('ai_provider_preferences')
+        .select('provider')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data) {
+        setAiProvider(data.provider as 'lovable_ai' | 'notebooklm');
+      }
+    } catch (error) {
+      console.error('Error fetching AI provider:', error);
+    }
+  };
 
   const handleGenerate = async () => {
     setIsGenerating(true);
@@ -88,8 +115,21 @@ export const GenerateMinutesDialog = ({
             <FileText className="h-5 w-5" />
             AI-Generated Meeting Minutes
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="flex items-center gap-2">
             Comprehensive summary of your meeting with key decisions and action items
+            <Badge variant="outline" className="ml-2 gap-1">
+              {aiProvider === 'lovable_ai' ? (
+                <>
+                  <Brain className="h-3 w-3" />
+                  Lovable AI
+                </>
+              ) : (
+                <>
+                  <BookOpen className="h-3 w-3" />
+                  NotebookLM
+                </>
+              )}
+            </Badge>
           </DialogDescription>
         </DialogHeader>
 

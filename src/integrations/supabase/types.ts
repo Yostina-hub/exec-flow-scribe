@@ -114,6 +114,33 @@ export type Database = {
           },
         ]
       }
+      ai_provider_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          notebooklm_api_key: string | null
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notebooklm_api_key?: string | null
+          provider?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notebooklm_api_key?: string | null
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       decisions: {
         Row: {
           context: string | null

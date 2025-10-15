@@ -19,15 +19,35 @@ serve(async (req) => {
       throw new Error("Meeting ID is required");
     }
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
-
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Get authorization header to identify user
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header");
+    }
+
+    // Verify JWT and get user
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace("Bearer ", "")
+    );
+
+    if (authError || !user) {
+      throw new Error("Invalid authorization");
+    }
+
+    // Get user's AI provider preference
+    const { data: preference } = await supabase
+      .from("ai_provider_preferences")
+      .select("*")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const provider = preference?.provider || "lovable_ai";
+    console.log(`Using AI provider: ${provider}`);
 
     // Fetch meeting details
     const { data: meeting, error: meetingError } = await supabase
@@ -74,7 +94,7 @@ serve(async (req) => {
       ?.map((d: any) => `- ${d.decision_text}`)
       .join("\n") || "";
 
-    // Generate minutes using Lovable AI
+    // Generate minutes using selected AI provider
     const prompt = `You are an executive assistant tasked with generating professional meeting minutes.
 
 Meeting Title: ${meeting.title}
@@ -102,36 +122,77 @@ Please generate:
 
 Format the output as a professional meeting minutes document.`;
 
-    const aiResponse = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
+    let minutes = "";
+
+    if (provider === "notebooklm") {
+      // Use NotebookLM
+      const notebookLMKey = preference?.notebooklm_api_key || Deno.env.get("NOTEBOOKLM_API_KEY");
+      if (!notebookLMKey) {
+        throw new Error("NotebookLM API key not configured");
       }
-    );
 
-    if (!aiResponse.ok) {
-      const error = await aiResponse.text();
-      console.error("AI generation error:", error);
-      throw new Error("Failed to generate minutes");
+      const notebookResponse = await fetch(
+        "https://notebooklm.google.com/api/v1/generate",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${notebookLMKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            prompt: prompt,
+            model: "notebooklm-default",
+            max_tokens: 2000,
+          }),
+        }
+      );
+
+      if (!notebookResponse.ok) {
+        const error = await notebookResponse.text();
+        console.error("NotebookLM generation error:", error);
+        throw new Error("Failed to generate minutes with NotebookLM");
+      }
+
+      const notebookData = await notebookResponse.json();
+      minutes = notebookData.text || notebookData.content || "";
+    } else {
+      // Use Lovable AI (default)
+      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+      if (!LOVABLE_API_KEY) {
+        throw new Error("LOVABLE_API_KEY not configured");
+      }
+
+      const aiResponse = await fetch(
+        "https://ai.gateway.lovable.dev/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              {
+                role: "user",
+                content: prompt,
+              },
+            ],
+            temperature: 0.7,
+            max_tokens: 2000,
+          }),
+        }
+      );
+
+      if (!aiResponse.ok) {
+        const error = await aiResponse.text();
+        console.error("AI generation error:", error);
+        throw new Error("Failed to generate minutes with Lovable AI");
+      }
+
+      const aiData = await aiResponse.json();
+      minutes = aiData.choices[0]?.message?.content || "";
     }
-
-    const aiData = await aiResponse.json();
-    const minutes = aiData.choices[0]?.message?.content || "";
 
     // Update meeting with generated minutes
     const { error: updateError } = await supabase

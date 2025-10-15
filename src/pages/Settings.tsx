@@ -8,8 +8,9 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Calendar, Mic, Shield, User } from "lucide-react";
+import { Bell, Calendar, Mic, Shield, User, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { AIProviderSettings } from "@/components/AIProviderSettings";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -33,11 +34,12 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
             <TabsTrigger value="recording">Recording</TabsTrigger>
+            <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -363,6 +365,11 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* AI Provider Tab */}
+          <TabsContent value="ai-provider" className="space-y-6">
+            <AIProviderSettings />
           </TabsContent>
 
           {/* Security Tab */}
