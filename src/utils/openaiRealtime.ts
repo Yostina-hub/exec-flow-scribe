@@ -187,6 +187,10 @@ export class OpenAIRealtimeClient {
             console.log('User transcript:', event.transcript);
             this.onTranscript(event.transcript, 'User');
           }
+        } else if (event.type === 'conversation.item.input_audio_transcription.failed') {
+          const msg = event?.error?.message || 'Transcription rate limited, retrying soon.';
+          console.warn('User transcription failed:', msg);
+          this.onError(msg);
         } else if (event.type === 'response.audio_transcript.delta') {
           if (event.delta) {
             this.onTranscript(event.delta, 'Assistant');
@@ -203,7 +207,7 @@ export class OpenAIRealtimeClient {
 
       // Connect to OpenAI's Realtime API
       const baseUrl = "https://api.openai.com/v1/realtime";
-      const model = "gpt-4o-realtime-preview-2024-12-17";
+      const model = "gpt-4o-realtime-preview-2024-10-01";
       
       console.log('Connecting to OpenAI Realtime API...');
       const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
