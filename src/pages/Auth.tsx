@@ -104,12 +104,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-950 via-purple-900/40 to-slate-950">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-950">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-violet-500/30 to-purple-500/20 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-cyan-500/25 to-blue-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
-        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-fuchsia-500/20 to-pink-500/15 rounded-full blur-3xl animate-pulse delay-2000" />
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-500/25 to-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-cyan-500/15 to-sky-500/15 rounded-full blur-3xl animate-pulse delay-2000" />
       </div>
 
       {/* Floating Particles */}
@@ -132,14 +132,14 @@ const Auth = () => {
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Hero Section */}
           <div className="text-white space-y-8 animate-fade-in hidden lg:block">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 backdrop-blur-sm border border-violet-500/30 shadow-lg shadow-violet-500/10">
-              <Sparkles className="h-4 w-4 text-violet-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10">
+              <Sparkles className="h-4 w-4 text-cyan-400 animate-pulse" />
               <span className="text-sm font-medium">Next-Gen Meeting Platform</span>
             </div>
 
             <h1 className="text-6xl font-bold leading-tight font-['Space_Grotesk']">
               Transform Your
-              <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent animate-shimmer">
+              <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-shimmer">
                 Executive Meetings
               </span>
             </h1>
@@ -156,9 +156,9 @@ const Auth = () => {
               ].map((feature, i) => (
                 <div 
                   key={i} 
-                  className="p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/10 transition-all duration-300 hover:scale-105 cursor-pointer group"
+                  className="p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 hover:scale-105 cursor-pointer group"
                 >
-                  <feature.icon className="h-6 w-6 text-violet-400 group-hover:text-fuchsia-400 transition-colors mb-2" />
+                  <feature.icon className="h-6 w-6 text-cyan-400 group-hover:text-emerald-400 transition-colors mb-2" />
                   <h3 className="font-semibold text-sm mb-1 text-white">{feature.label}</h3>
                   <p className="text-xs text-gray-200">{feature.desc}</p>
                 </div>
@@ -168,17 +168,17 @@ const Auth = () => {
 
           {/* Auth Card */}
           <div className="animate-scale-in">
-            <Card className="border-violet-500/20 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl shadow-2xl shadow-violet-500/20">
+            <Card className="border-blue-500/20 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl shadow-2xl shadow-blue-500/20">
               <CardHeader className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/50 animate-glow">
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
                     <Sparkles className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-white via-violet-200 to-fuchsia-200 bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-white via-cyan-200 to-emerald-200 bg-clip-text text-transparent">
                       MeetingHub
                     </h1>
-                    <p className="text-sm text-violet-300">Executive Suite</p>
+                    <p className="text-sm text-cyan-300">Executive Suite</p>
                   </div>
                 </div>
                 <CardDescription className="text-white/90 font-medium">
@@ -188,8 +188,8 @@ const Auth = () => {
               <CardContent>
                 <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10">
-                    <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500/20 data-[state=active]:to-fuchsia-500/20 data-[state=active]:border-violet-500/30">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-500/20 data-[state=active]:to-fuchsia-500/20 data-[state=active]:border-violet-500/30">Sign Up</TabsTrigger>
+                    <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:border-blue-500/30">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:border-blue-500/30">Sign Up</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="signin" className="animate-fade-in">
@@ -203,7 +203,7 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
@@ -214,12 +214,12 @@ const Auth = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 hover:from-violet-600 hover:via-fuchsia-600 hover:to-cyan-600 text-white font-semibold shadow-lg hover:shadow-violet-500/50 transition-all duration-300 hover:scale-105"
+                        className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -239,7 +239,7 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
@@ -250,7 +250,7 @@ const Auth = () => {
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
@@ -262,7 +262,7 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
@@ -273,12 +273,12 @@ const Auth = () => {
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-violet-500/50 focus:ring-violet-500/20"
+                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-gradient-to-r from-violet-500 via-fuchsia-500 to-cyan-500 hover:from-violet-600 hover:via-fuchsia-600 hover:to-cyan-600 text-white font-semibold shadow-lg hover:shadow-violet-500/50 transition-all duration-300 hover:scale-105"
+                        className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
