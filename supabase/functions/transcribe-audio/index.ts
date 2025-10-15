@@ -19,9 +19,9 @@ serve(async (req) => {
       throw new Error("Audio data and meeting ID are required");
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      throw new Error("OPENAI_API_KEY not configured. Please add it in Settings.");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
     // Create Supabase client
@@ -68,13 +68,13 @@ serve(async (req) => {
     formData.append("file", audioBlob, "audio.webm");
     formData.append("model", "whisper-1");
 
-    // Call OpenAI Whisper for transcription
+    // Call Lovable AI for transcription
     const response = await fetch(
-      "https://api.openai.com/v1/audio/transcriptions",
+      "https://ai.gateway.lovable.dev/v1/audio/transcriptions",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
         },
         body: formData,
       }
