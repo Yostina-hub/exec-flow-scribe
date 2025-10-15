@@ -132,19 +132,19 @@ const Auth = () => {
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Hero Section */}
           <div className="text-white space-y-8 animate-fade-in hidden lg:block">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-cyan-500/10 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10">
-              <Sparkles className="h-4 w-4 text-cyan-400 animate-pulse" />
-              <span className="text-sm font-medium">Next-Gen Meeting Platform</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-md border border-blue-400/40 shadow-lg shadow-blue-500/20">
+              <Sparkles className="h-4 w-4 text-cyan-300 animate-pulse" />
+              <span className="text-sm font-semibold text-white">Next-Gen Meeting Platform</span>
             </div>
 
-            <h1 className="text-6xl font-bold leading-tight font-['Space_Grotesk']">
-              Transform Your
-              <span className="block bg-gradient-to-r from-blue-400 via-cyan-400 to-emerald-400 bg-clip-text text-transparent animate-shimmer">
+            <h1 className="text-6xl font-bold leading-tight font-['Space_Grotesk'] drop-shadow-lg">
+              <span className="text-white">Transform Your</span>
+              <span className="block bg-gradient-to-r from-cyan-300 via-blue-300 to-emerald-300 bg-clip-text text-transparent animate-shimmer drop-shadow-2xl">
                 Executive Meetings
               </span>
             </h1>
 
-            <p className="text-xl text-white leading-relaxed">
+            <p className="text-xl text-white/95 leading-relaxed drop-shadow-md font-medium">
               AI-powered transcription, real-time insights, and intelligent automation for the modern executive office.
             </p>
 
@@ -156,11 +156,11 @@ const Auth = () => {
               ].map((feature, i) => (
                 <div 
                   key={i} 
-                  className="p-4 rounded-xl bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-sm border border-white/10 hover:border-cyan-500/30 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300 hover:scale-105 cursor-pointer group"
+                  className="p-5 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/20 hover:border-cyan-400/50 hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-300 hover:scale-105 cursor-pointer group"
                 >
-                  <feature.icon className="h-6 w-6 text-cyan-400 group-hover:text-emerald-400 transition-colors mb-2" />
-                  <h3 className="font-semibold text-sm mb-1 text-white">{feature.label}</h3>
-                  <p className="text-xs text-gray-200">{feature.desc}</p>
+                  <feature.icon className="h-7 w-7 text-cyan-300 group-hover:text-emerald-300 transition-colors mb-3 drop-shadow-lg" />
+                  <h3 className="font-bold text-base mb-1.5 text-white drop-shadow-md">{feature.label}</h3>
+                  <p className="text-sm text-white/90 font-medium">{feature.desc}</p>
                 </div>
               ))}
             </div>
