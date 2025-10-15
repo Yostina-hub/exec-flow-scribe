@@ -62,7 +62,7 @@ serve(async (req) => {
       content,
       timestamp: timestamp || new Date().toISOString(),
     };
-    if (speaker) insertPayload.speaker = speaker;
+    if (speaker) insertPayload.speaker_name = speaker;
 
     const { error } = await supabase.from("transcriptions").insert(insertPayload);
     if (error) {
