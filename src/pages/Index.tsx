@@ -2,6 +2,7 @@ import { Layout } from "@/components/Layout";
 import { StatCard } from "@/components/StatCard";
 import { MeetingCard } from "@/components/MeetingCard";
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
+import { DashboardChart } from "@/components/DashboardChart";
 import { Calendar, CheckSquare, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -124,6 +125,9 @@ const Index = () => {
               <h2 className="text-2xl font-semibold">Recent Actions</h2>
               <Button variant="ghost" size="sm">View All</Button>
             </div>
+            
+            <DashboardChart />
+            
             <Card>
               <CardHeader>
                 <CardTitle>Action Items</CardTitle>

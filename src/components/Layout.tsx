@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu } from "lucide-react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { QuickSearch } from "@/components/QuickSearch";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +14,7 @@ const navigation = [
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Meetings", href: "/meetings", icon: Calendar },
   { name: "Actions", href: "/actions", icon: CheckSquare },
+  { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
@@ -49,6 +51,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </nav>
           </div>
           <div className="flex items-center gap-4">
+            <QuickSearch />
             <Button variant="ghost" size="icon" className="md:hidden">
               <Menu className="h-5 w-5" />
             </Button>
