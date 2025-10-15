@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react";
 
 export const TranscriptionSettings = () => {
-  const [provider, setProvider] = useState<"lovable_ai" | "openai">("lovable_ai");
+  const [provider, setProvider] = useState<"lovable_ai" | "openai" | "browser">("lovable_ai");
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +35,7 @@ export const TranscriptionSettings = () => {
       }
 
       if (data) {
-        setProvider(data.provider as "lovable_ai" | "openai");
+        setProvider(data.provider as "lovable_ai" | "openai" | "browser");
         setOpenaiApiKey(data.openai_api_key || "");
       }
     } catch (error) {
@@ -120,7 +120,7 @@ export const TranscriptionSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <RadioGroup value={provider} onValueChange={(v) => setProvider(v as "lovable_ai" | "openai")}>
+        <RadioGroup value={provider} onValueChange={(v) => setProvider(v as "lovable_ai" | "openai" | "browser")}>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="lovable_ai" id="lovable_ai" />
             <Label htmlFor="lovable_ai" className="cursor-pointer">
@@ -128,6 +128,17 @@ export const TranscriptionSettings = () => {
                 <p className="font-medium">Lovable AI</p>
                 <p className="text-sm text-muted-foreground">
                   Powered by Whisper (Recommended)
+                </p>
+              </div>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
+            <RadioGroupItem value="browser" id="browser" />
+            <Label htmlFor="browser" className="cursor-pointer">
+              <div>
+                <p className="font-medium">Browser-based Whisper</p>
+                <p className="text-sm text-muted-foreground">
+                  No API needed - runs locally in your browser
                 </p>
               </div>
             </Label>

@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { transcribeAudioBrowser } from '@/utils/browserWhisper';
 
 // Normalize meeting IDs deterministically so client/server match without localStorage
 const stringToUUID = (input: string) => {
@@ -63,29 +64,64 @@ export const useAudioRecorder = (meetingId: string) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
           
-          // Convert to base64 and send to edge function
-          const reader = new FileReader();
-          reader.onloadend = async () => {
-            const base64Audio = (reader.result as string).split(',')[1];
-            
-            try {
-              const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-                body: { audioBase64: base64Audio, meetingId: normalizedMeetingId }
-              });
+          // Check transcription provider preference
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
 
-              if (error) throw error;
+          const { data: preferences } = await supabase
+            .from('transcription_preferences')
+            .select('provider')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          const provider = preferences?.provider || 'lovable_ai';
+
+          try {
+            if (provider === 'browser') {
+              // Use browser-based Whisper
+              const text = await transcribeAudioBrowser(event.data);
+              console.log('Browser transcription:', text);
               
-              console.log('Transcription:', data);
-} catch (err: any) {
-  console.error('Transcription error:', err);
-  toast({
-    title: 'Transcription failed',
-    description: 'Please ensure OpenAI is selected in Settings and your API key has credits. ' + (err?.message || ''),
-    variant: 'destructive',
-  });
-}
-          };
-          reader.readAsDataURL(event.data);
+              // Save to database
+              await supabase.from('transcriptions').insert({
+                meeting_id: normalizedMeetingId,
+                content: text,
+                speaker: 'Unknown',
+                timestamp: new Date().toISOString()
+              });
+            } else {
+              // Use server-side transcription (OpenAI or Lovable AI)
+              const reader = new FileReader();
+              reader.onloadend = async () => {
+                const base64Audio = (reader.result as string).split(',')[1];
+                
+                try {
+                  const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+                    body: { audioBase64: base64Audio, meetingId: normalizedMeetingId }
+                  });
+
+                  if (error) throw error;
+                  
+                  console.log('Transcription:', data);
+                } catch (err: any) {
+                  console.error('Transcription error:', err);
+                  toast({
+                    title: 'Transcription failed',
+                    description: 'Please ensure your transcription provider is configured correctly. ' + (err?.message || ''),
+                    variant: 'destructive',
+                  });
+                }
+              };
+              reader.readAsDataURL(event.data);
+            }
+          } catch (err: any) {
+            console.error('Transcription error:', err);
+            toast({
+              title: 'Transcription failed',
+              description: err?.message || 'An error occurred during transcription',
+              variant: 'destructive',
+            });
+          }
         }
       };
 
