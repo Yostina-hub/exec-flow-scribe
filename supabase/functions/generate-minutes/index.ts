@@ -124,37 +124,47 @@ Format the output as a professional meeting minutes document.`;
 
     let minutes = "";
 
-    if (provider === "notebooklm") {
-      // Use NotebookLM
-      const notebookLMKey = preference?.notebooklm_api_key || Deno.env.get("NOTEBOOKLM_API_KEY");
-      if (!notebookLMKey) {
-        throw new Error("NotebookLM API key not configured");
+    if (provider === "gemini") {
+      // Use custom Gemini API key
+      const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
+      if (!geminiKey) {
+        throw new Error("Gemini API key not configured");
       }
 
-      const notebookResponse = await fetch(
-        "https://notebooklm.google.com/api/v1/generate",
+      const geminiResponse = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-latest:generateContent",
         {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${notebookLMKey}`,
             "Content-Type": "application/json",
+            "x-goog-api-key": geminiKey,
           },
           body: JSON.stringify({
-            prompt: prompt,
-            model: "notebooklm-default",
-            max_tokens: 2000,
+            contents: [
+              {
+                parts: [
+                  {
+                    text: prompt,
+                  },
+                ],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 2000,
+            },
           }),
         }
       );
 
-      if (!notebookResponse.ok) {
-        const error = await notebookResponse.text();
-        console.error("NotebookLM generation error:", error);
-        throw new Error("Failed to generate minutes with NotebookLM");
+      if (!geminiResponse.ok) {
+        const error = await geminiResponse.text();
+        console.error("Gemini generation error:", error);
+        throw new Error("Failed to generate minutes with Gemini");
       }
 
-      const notebookData = await notebookResponse.json();
-      minutes = notebookData.text || notebookData.content || "";
+      const geminiData = await geminiResponse.json();
+      minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
     } else {
       // Use Lovable AI (default)
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

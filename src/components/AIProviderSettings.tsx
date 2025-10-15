@@ -6,11 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Brain, BookOpen } from "lucide-react";
+import { Loader2, Brain, Sparkles } from "lucide-react";
 
 export const AIProviderSettings = () => {
-  const [provider, setProvider] = useState<"lovable_ai" | "notebooklm">("lovable_ai");
-  const [notebookLMKey, setNotebookLMKey] = useState("");
+  const [provider, setProvider] = useState<"lovable_ai" | "gemini">("lovable_ai");
+  const [geminiKey, setGeminiKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -33,8 +33,8 @@ export const AIProviderSettings = () => {
       if (error) throw error;
 
       if (data) {
-        setProvider(data.provider as "lovable_ai" | "notebooklm");
-        setNotebookLMKey(data.notebooklm_api_key || "");
+        setProvider(data.provider as "lovable_ai" | "gemini");
+        setGeminiKey(data.gemini_api_key || "");
       }
     } catch (error) {
       console.error("Error fetching preferences:", error);
@@ -62,7 +62,7 @@ export const AIProviderSettings = () => {
           .from("ai_provider_preferences")
           .update({
             provider,
-            notebooklm_api_key: provider === "notebooklm" ? notebookLMKey : null,
+            gemini_api_key: provider === "gemini" ? geminiKey : null,
           })
           .eq("user_id", user.id);
 
@@ -74,7 +74,7 @@ export const AIProviderSettings = () => {
           .insert({
             user_id: user.id,
             provider,
-            notebooklm_api_key: provider === "notebooklm" ? notebookLMKey : null,
+            gemini_api_key: provider === "gemini" ? geminiKey : null,
           });
 
         if (error) throw error;
@@ -115,7 +115,7 @@ export const AIProviderSettings = () => {
         </p>
       </div>
 
-      <RadioGroup value={provider} onValueChange={(value) => setProvider(value as "lovable_ai" | "notebooklm")}>
+      <RadioGroup value={provider} onValueChange={(value) => setProvider(value as "lovable_ai" | "gemini")}>
         <div className="space-y-4">
           <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
             <RadioGroupItem value="lovable_ai" id="lovable_ai" className="mt-1" />
@@ -125,36 +125,35 @@ export const AIProviderSettings = () => {
                 <span className="font-semibold">Lovable AI (Default)</span>
               </Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Powered by Google Gemini. Fast, reliable, and no additional API key required.
+                Powered by Google Gemini 2.5 Flash. Fast, reliable, and no additional API key required.
                 Automatically included with your Lovable Cloud subscription.
               </p>
             </div>
           </div>
 
           <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
-            <RadioGroupItem value="notebooklm" id="notebooklm" className="mt-1" />
+            <RadioGroupItem value="gemini" id="gemini" className="mt-1" />
             <div className="flex-1">
-              <Label htmlFor="notebooklm" className="flex items-center gap-2 cursor-pointer">
-                <BookOpen className="h-5 w-5 text-primary" />
-                <span className="font-semibold">NotebookLM</span>
+              <Label htmlFor="gemini" className="flex items-center gap-2 cursor-pointer">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <span className="font-semibold">Google Gemini (Custom)</span>
               </Label>
               <p className="text-sm text-muted-foreground mt-1">
-                Google's experimental AI for working with documents and notes.
-                Requires your own NotebookLM API key.
+                Use your own Google Gemini API key for more control and access to different Gemini models.
               </p>
               
-              {provider === "notebooklm" && (
+              {provider === "gemini" && (
                 <div className="mt-4 space-y-2">
-                  <Label htmlFor="notebooklm_key">NotebookLM API Key</Label>
+                  <Label htmlFor="gemini_key">Google Gemini API Key</Label>
                   <Input
-                    id="notebooklm_key"
+                    id="gemini_key"
                     type="password"
-                    placeholder="Enter your NotebookLM API key"
-                    value={notebookLMKey}
-                    onChange={(e) => setNotebookLMKey(e.target.value)}
+                    placeholder="Enter your Gemini API key"
+                    value={geminiKey}
+                    onChange={(e) => setGeminiKey(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Your API key is encrypted and stored securely.
+                    Get your API key from <a href="https://makersuite.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Google AI Studio</a>
                   </p>
                 </div>
               )}
@@ -164,7 +163,7 @@ export const AIProviderSettings = () => {
       </RadioGroup>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving || (provider === "notebooklm" && !notebookLMKey)}>
+        <Button onClick={handleSave} disabled={saving || (provider === "gemini" && !geminiKey)}>
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Preferences
         </Button>
