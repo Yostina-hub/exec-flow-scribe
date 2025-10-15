@@ -1,43 +1,15 @@
 import { Layout } from "@/components/Layout";
-import { StatCard } from "@/components/StatCard";
-import { MeetingCard } from "@/components/MeetingCard";
-import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
-import { DashboardChart } from "@/components/DashboardChart";
-import { Calendar, CheckSquare, Clock, TrendingUp } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SmartDashboardCard } from "@/components/SmartDashboardCard";
+import { QuickActionFAB } from "@/components/QuickActionFAB";
+import { InlineMeetingCard } from "@/components/InlineMeetingCard";
+import { 
+  Calendar, Play, FileText, TrendingUp, Clock, 
+  Users, Zap, Target, CheckSquare 
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-
-const stats = [
-  {
-    title: "Upcoming Meetings",
-    value: "8",
-    icon: Calendar,
-    trend: { value: "2 this week", positive: true },
-    iconColor: "bg-primary/10 text-primary",
-  },
-  {
-    title: "Active Actions",
-    value: "24",
-    icon: CheckSquare,
-    trend: { value: "6 overdue", positive: false },
-    iconColor: "bg-secondary/10 text-secondary",
-  },
-  {
-    title: "Hours This Week",
-    value: "12.5",
-    icon: Clock,
-    trend: { value: "+2.5 hrs", positive: true },
-    iconColor: "bg-warning/10 text-warning",
-  },
-  {
-    title: "Completion Rate",
-    value: "87%",
-    icon: TrendingUp,
-    trend: { value: "+5%", positive: true },
-    iconColor: "bg-success/10 text-success",
-  },
-];
 
 const upcomingMeetings = [
   {
@@ -62,107 +34,177 @@ const upcomingMeetings = [
     status: "upcoming" as const,
     agendaItems: 8,
   },
-  {
-    id: "4e39fea0-ba90-7de4-cg0h-67e9249e9dec",
-    title: "Product Roadmap Discussion",
-    date: "Dec 20",
-    time: "3:00 PM",
-    duration: "60 min",
-    location: "Virtual",
-    attendees: 6,
-    status: "upcoming" as const,
-    agendaItems: 4,
-  },
 ];
 
 const recentActions = [
-  { task: "Review Q4 financial projections", assignee: "CFO", deadline: "Dec 18", priority: "high" },
-  { task: "Finalize hiring plan for 2025", assignee: "CHRO", deadline: "Dec 20", priority: "medium" },
-  { task: "Approve marketing budget", assignee: "CMO", deadline: "Dec 22", priority: "high" },
-  { task: "Schedule investor presentations", assignee: "CoS", deadline: "Dec 25", priority: "low" },
+  { task: "Review Q4 financial projections", assignee: "CFO", deadline: "Today", priority: "high", progress: 75 },
+  { task: "Finalize hiring plan for 2025", assignee: "CHRO", deadline: "Tomorrow", priority: "medium", progress: 45 },
+  { task: "Approve marketing budget", assignee: "CMO", deadline: "Dec 22", priority: "high", progress: 90 },
 ];
 
-const priorityVariant = {
-  high: "destructive" as const,
-  medium: "warning" as const,
-  low: "secondary" as const,
-};
+export default function Index() {
+  const navigate = useNavigate();
 
-const Index = () => {
   return (
     <Layout>
-      <div className="space-y-8 animate-fade-in">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Executive Dashboard</h1>
-          <p className="text-muted-foreground mt-2">
-            Overview of your meeting schedule and action items
-          </p>
+      <div className="space-y-6 pb-20">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-background p-8 animate-fade-in">
+          <div className="relative z-10">
+            <h1 className="text-4xl font-bold mb-2">Welcome Back! 👋</h1>
+            <p className="text-lg text-muted-foreground">
+              You have 2 meetings today and 3 pending actions
+            </p>
+          </div>
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stats.map((stat) => (
-            <StatCard key={stat.title} {...stat} />
-          ))}
+        {/* Smart Quick Action Cards */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <SmartDashboardCard
+            title="Today's Meetings"
+            description="2 meetings scheduled"
+            icon={Calendar}
+            gradient="from-blue-500/10 to-blue-500/5"
+            stats={[
+              { label: "Next meeting", value: "2:00 PM" },
+              { label: "Total duration", value: "3.5h" },
+            ]}
+            actions={[
+              { 
+                label: "Start Now", 
+                onClick: () => navigate('/meetings/1b09fe77-8677-4ac1-9d7e-34b6016b6ab9'),
+                icon: Play,
+              },
+              { 
+                label: "View All", 
+                onClick: () => navigate('/meetings'),
+                variant: 'outline',
+                icon: Calendar,
+              },
+            ]}
+          />
+
+          <SmartDashboardCard
+            title="Action Items"
+            description="3 items due this week"
+            icon={Target}
+            gradient="from-green-500/10 to-green-500/5"
+            stats={[
+              { label: "Completed", value: "87%", trend: 'up' },
+              { label: "Overdue", value: "0" },
+            ]}
+            actions={[
+              { 
+                label: "Quick Add", 
+                onClick: () => navigate('/actions'),
+                icon: Zap,
+              },
+              { 
+                label: "View Tasks", 
+                onClick: () => navigate('/actions'),
+                variant: 'outline',
+                icon: CheckSquare,
+              },
+            ]}
+          />
+
+          <SmartDashboardCard
+            title="Meeting Insights"
+            description="This week's analytics"
+            icon={TrendingUp}
+            gradient="from-purple-500/10 to-purple-500/5"
+            stats={[
+              { label: "Hours spent", value: "12.5", trend: 'up' },
+              { label: "Efficiency", value: "+15%" },
+            ]}
+            actions={[
+              { 
+                label: "View Report", 
+                onClick: () => navigate('/analytics'),
+                icon: FileText,
+              },
+              { 
+                label: "Details", 
+                onClick: () => navigate('/reports'),
+                variant: 'outline',
+              },
+            ]}
+          />
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Upcoming Meetings */}
-          <div className="lg:col-span-2 space-y-4">
+        {/* Today's Meetings */}
+        <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Upcoming Meetings</h2>
-            <CreateMeetingDialog />
+            <div>
+              <h2 className="text-2xl font-bold">Today's Meetings</h2>
+              <p className="text-sm text-muted-foreground">Quick access to your scheduled meetings</p>
+            </div>
           </div>
-            <div className="grid gap-4">
-              {upcomingMeetings.map((meeting) => (
-                <MeetingCard key={meeting.title} {...meeting} />
-              ))}
+          
+          <div className="grid gap-3">
+            {upcomingMeetings.map((meeting) => (
+              <InlineMeetingCard key={meeting.id} {...meeting} />
+            ))}
+          </div>
+        </div>
+
+        {/* Active Actions */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold">Active Actions</h2>
+              <p className="text-sm text-muted-foreground">Track your high-priority tasks</p>
             </div>
           </div>
 
-          {/* Recent Actions */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">Recent Actions</h2>
-              <Button variant="ghost" size="sm">View All</Button>
-            </div>
-            
-            <DashboardChart />
-            
-            <Card>
-              <CardHeader>
-                <CardTitle>Action Items</CardTitle>
-                <CardDescription>Track follow-ups from recent meetings</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActions.map((action, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0"
-                    >
-                      <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none">{action.task}</p>
-                        <p className="text-xs text-muted-foreground">
-                          Assigned to {action.assignee}
-                        </p>
-                        <p className="text-xs text-muted-foreground">Due: {action.deadline}</p>
+          <div className="grid gap-3">
+            {recentActions.map((action, index) => (
+              <Card 
+                key={index} 
+                className="group hover:shadow-lg transition-all duration-200 cursor-pointer hover:scale-[1.01]"
+                onClick={() => navigate('/actions')}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={action.priority === 'high' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {action.priority}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {action.deadline}
+                        </span>
                       </div>
-                      <Badge variant={priorityVariant[action.priority]} className="shrink-0">
-                        {action.priority}
-                      </Badge>
+                      
+                      <p className="font-medium">{action.task}</p>
+                      
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Users className="h-3 w-3" />
+                          <span>{action.assignee}</span>
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Progress value={action.progress} className="h-1.5" />
+                            <span className="text-xs text-muted-foreground">{action.progress}%</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </div>
+
+      <QuickActionFAB />
     </Layout>
   );
-};
-
-export default Index;
+}

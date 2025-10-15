@@ -140,16 +140,30 @@ export default function MinutesEditor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Save current version first if there are changes
+      if (minutes.trim()) {
+        await handleSaveMinutes();
+      }
+
       // Get latest version
-      const { data: latestVersion } = await supabase
+      const { data: latestVersion, error: fetchError } = await supabase
         .from('minutes_versions')
         .select('id')
         .eq('meeting_id', meetingId)
         .order('version_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
-      if (!latestVersion) throw new Error('No version to ratify');
+      if (fetchError) throw fetchError;
+
+      if (!latestVersion) {
+        toast({
+          title: 'No minutes to ratify',
+          description: 'Please save minutes before ratifying',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       // Mark as ratified
       const { error } = await supabase
@@ -164,14 +178,14 @@ export default function MinutesEditor() {
       if (error) throw error;
 
       toast({
-        title: 'Ratified',
+        title: 'Success',
         description: 'Minutes have been ratified and locked',
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error ratifying minutes:', error);
       toast({
         title: 'Error',
-        description: 'Failed to ratify minutes',
+        description: error.message || 'Failed to ratify minutes',
         variant: 'destructive',
       });
     }
