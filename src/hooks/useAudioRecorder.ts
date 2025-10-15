@@ -82,13 +82,16 @@ export const useAudioRecorder = (meetingId: string) => {
               const text = await transcribeAudioBrowser(event.data);
               console.log('Browser transcription:', text);
               
-              // Save to database
-              await supabase.from('transcriptions').insert({
-                meeting_id: normalizedMeetingId,
-                content: text,
-                speaker: 'Unknown',
-                timestamp: new Date().toISOString()
+              // Save via secure backend (bypasses RLS issues)
+              const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
+                body: {
+                  meetingId: normalizedMeetingId,
+                  content: text,
+                  timestamp: new Date().toISOString(),
+                  speaker: 'Unknown'
+                }
               });
+              if (saveErr) throw saveErr;
             } else {
               // Use server-side transcription (OpenAI or Lovable AI)
               const reader = new FileReader();
@@ -144,7 +147,7 @@ export const useAudioRecorder = (meetingId: string) => {
         variant: 'destructive',
       });
     }
-  }, [meetingId, toast]);
+  }, [normalizedMeetingId, toast]);
 
   const stopRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording) {
