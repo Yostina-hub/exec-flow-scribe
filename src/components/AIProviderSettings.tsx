@@ -122,11 +122,11 @@ export const AIProviderSettings = () => {
             <div className="flex-1">
               <Label htmlFor="lovable_ai" className="flex items-center gap-2 cursor-pointer">
                 <Brain className="h-5 w-5 text-primary" />
-                <span className="font-semibold">Lovable AI (Default)</span>
+                <span className="font-semibold">Lemat (Default)</span>
               </Label>
               <p className="text-sm text-muted-foreground mt-1">
                 Powered by Google Gemini 2.5 Flash. Fast, reliable, and no additional API key required.
-                Automatically included with your Lovable Cloud subscription.
+                Automatically included with your subscription.
               </p>
             </div>
           </div>

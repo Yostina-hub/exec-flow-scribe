@@ -125,7 +125,7 @@ export const TranscriptionSettings = () => {
             <RadioGroupItem value="lovable_ai" id="lovable_ai" />
             <Label htmlFor="lovable_ai" className="cursor-pointer">
               <div>
-                <p className="font-medium">Lovable AI</p>
+                <p className="font-medium">Lemat</p>
                 <p className="text-sm text-muted-foreground">
                   Powered by Whisper (Recommended)
                 </p>
