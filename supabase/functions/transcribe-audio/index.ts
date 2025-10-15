@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 
@@ -27,7 +28,19 @@ serve(async (req) => {
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      global: {
+        headers: { Authorization: req.headers.get("Authorization") || "" },
+      },
+    });
+
+    // Get authed user (to read preferences)
+    const authHeader = req.headers.get("Authorization");
+    const jwt = authHeader?.replace("Bearer ", "");
+    const { data: userData, error: userErr } = await supabase.auth.getUser(jwt || "");
+    if (userErr || !userData?.user) {
+      console.log("No user context for transcription; proceeding without preferences");
+    }
 
     // Process audio in chunks to prevent memory issues
     function processBase64Chunks(base64String: string, chunkSize = 32768) {
@@ -62,39 +75,67 @@ serve(async (req) => {
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audioBase64);
     
+    // Determine provider from preferences
+    let provider: "openai" | "lovable" = "lovable";
+    let openaiApiKey: string | null = null;
+    if (userData?.user?.id) {
+      const { data: prefs, error: prefsErr } = await supabase
+        .from("transcription_preferences")
+        .select("provider, openai_api_key")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      if (!prefsErr && prefs) {
+        if (prefs.provider === "openai" && prefs.openai_api_key) {
+          provider = "openai";
+          openaiApiKey = prefs.openai_api_key;
+        }
+      }
+    }
+    
     // Create FormData for file upload
     const formData = new FormData();
     const audioBlob = new Blob([binaryAudio], { type: "audio/webm" });
     formData.append("file", audioBlob, "audio.webm");
-    formData.append("model", "whisper-1");
 
-    // Call Lovable AI for transcription
-    const response = await fetch(
-      "https://ai.gateway.lovable.dev/v1/audio/transcriptions",
-      {
+    let transcriptText = "";
+
+    if (provider === "openai" && openaiApiKey) {
+      formData.append("model", "whisper-1");
+      const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        },
+        headers: { Authorization: `Bearer ${openaiApiKey}` },
         body: formData,
+      });
+      if (!response.ok) {
+        const t = await response.text();
+        console.error("OpenAI transcription error:", t);
+        throw new Error("Failed to transcribe audio with OpenAI");
       }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      console.error("Transcription error:", error);
-      throw new Error("Failed to transcribe audio");
+      const transcriptionData = await response.json();
+      transcriptText = transcriptionData.text;
+    } else {
+      // Fallback to Lovable AI gateway (may not support audio on all workspaces)
+      formData.append("model", "whisper-1");
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+        body: formData,
+      });
+      if (!response.ok) {
+        const error = await response.text();
+        console.error("Transcription error:", error);
+        throw new Error("Failed to transcribe audio");
+      }
+      const transcriptionData = await response.json();
+      transcriptText = transcriptionData.text;
     }
-
-    const transcriptionData = await response.json();
-    const transcriptText = transcriptionData.text;
 
     // Save transcription to database
     const { error: dbError } = await supabase.from("transcriptions").insert({
       meeting_id: meetingId,
       content: transcriptText,
       timestamp: new Date().toISOString(),
-      confidence_score: transcriptionData.confidence || 0.95,
+      confidence_score: 0.95,
     });
 
     if (dbError) {

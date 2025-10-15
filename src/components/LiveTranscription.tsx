@@ -21,9 +21,28 @@ interface LiveTranscriptionProps {
   isRecording: boolean;
 }
 
+// Normalize meeting IDs: if not a UUID, map deterministically via localStorage
+const normalizeMeetingId = (id: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+  try {
+    const key = `meeting-id-map:${id}`;
+    let mapped = localStorage.getItem(key);
+    if (!mapped) {
+      mapped = crypto.randomUUID();
+      localStorage.setItem(key, mapped);
+    }
+    return mapped;
+  } catch {
+    return id;
+  }
+};
+
 export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionProps) => {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const { toast } = useToast();
+
+  const normalizedId = normalizeMeetingId(meetingId);
 
   useEffect(() => {
     // Fetch existing transcriptions
@@ -31,7 +50,7 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
       const { data, error } = await supabase
         .from('transcriptions')
         .select('*')
-        .eq('meeting_id', meetingId)
+        .eq('meeting_id', normalizedId)
         .order('timestamp', { ascending: true });
 
       if (error) {
@@ -52,7 +71,7 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
           event: 'INSERT',
           schema: 'public',
           table: 'transcriptions',
-          filter: `meeting_id=eq.${meetingId}`,
+          filter: `meeting_id=eq.${normalizedId}`,
         },
         (payload) => {
           setTranscriptions((prev) => [...prev, payload.new as Transcription]);
@@ -63,11 +82,11 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [meetingId]);
+  }, [normalizedId]);
 
   const handleHighlight = async (transcriptionId: string, content: string) => {
     const { error } = await supabase.from('highlights').insert({
-      meeting_id: meetingId,
+      meeting_id: normalizedId,
       content,
       timestamp: new Date().toISOString(),
       tagged_by: (await supabase.auth.getUser()).data.user?.id,

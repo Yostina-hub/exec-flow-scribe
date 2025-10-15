@@ -2,12 +2,30 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+// Normalize meeting IDs: map non-UUIDs to stable UUIDs via localStorage
+const normalizeMeetingId = (id: string) => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(id)) return id;
+  try {
+    const key = `meeting-id-map:${id}`;
+    let mapped = localStorage.getItem(key);
+    if (!mapped) {
+      mapped = crypto.randomUUID();
+      localStorage.setItem(key, mapped);
+    }
+    return mapped;
+  } catch {
+    return id;
+  }
+};
+
 export const useAudioRecorder = (meetingId: string) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const { toast } = useToast();
+  const normalizedMeetingId = normalizeMeetingId(meetingId);
 
   const startRecording = useCallback(async () => {
     try {
@@ -40,7 +58,7 @@ export const useAudioRecorder = (meetingId: string) => {
             
             try {
               const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-                body: { audioBase64: base64Audio, meetingId }
+                body: { audioBase64: base64Audio, meetingId: normalizedMeetingId }
               });
 
               if (error) throw error;
