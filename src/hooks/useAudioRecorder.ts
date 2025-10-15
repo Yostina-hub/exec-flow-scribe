@@ -84,11 +84,11 @@ export const useAudioRecorder = (meetingId: string) => {
 
           try {
             if (provider === 'browser' || provider === 'lovable_ai') {
-              // Combine recent chunks so WebAudio can decode a valid WebM segment
-              const recentChunks = chunksRef.current.slice(-maxChunks);
-              const combined = new Blob(recentChunks, { type: 'audio/webm;codecs=opus' });
+              // Use only the latest chunk to ensure a valid WebM container
+              const latest = chunksRef.current[chunksRef.current.length - 1];
+              if (!latest || latest.size < 8192) return; // skip tiny/partial segments
 
-              const text = await transcribeAudioBrowser(combined);
+              const text = await transcribeAudioBrowser(latest);
               console.log('Browser transcription:', text);
               
               if (text && text.trim()) {
@@ -129,12 +129,8 @@ export const useAudioRecorder = (meetingId: string) => {
               reader.readAsDataURL(event.data);
             }
           } catch (err: any) {
-            console.error('Transcription error:', err);
-            toast({
-              title: 'Transcription failed',
-              description: err?.message || 'An error occurred during transcription',
-              variant: 'destructive',
-            });
+            console.warn('Browser transcription skipped/error:', err);
+            // Avoid spamming toasts for transient browser decode issues
           }
         }
       };
