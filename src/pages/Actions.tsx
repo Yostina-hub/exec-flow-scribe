@@ -1,11 +1,12 @@
 import { Layout } from "@/components/Layout";
+import { CreateActionDialog } from "@/components/CreateActionDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Search, Plus, Filter } from "lucide-react";
+import { Search, Filter } from "lucide-react";
 import { useState } from "react";
 
 interface ActionItem {
@@ -184,10 +185,7 @@ const Actions = () => {
               <Filter className="h-4 w-4" />
               Filter
             </Button>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Action
-            </Button>
+            <CreateActionDialog />
           </div>
         </div>
 

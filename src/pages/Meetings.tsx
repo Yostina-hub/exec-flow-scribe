@@ -1,9 +1,10 @@
 import { Layout } from "@/components/Layout";
 import { MeetingCard } from "@/components/MeetingCard";
+import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Search, Calendar as CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
 const allMeetings = [
@@ -108,10 +109,7 @@ const Meetings = () => {
               <CalendarIcon className="h-4 w-4" />
               Sync Calendar
             </Button>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Schedule Meeting
-            </Button>
+            <CreateMeetingDialog />
           </div>
         </div>
 

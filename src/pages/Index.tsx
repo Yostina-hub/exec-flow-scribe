@@ -1,6 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { StatCard } from "@/components/StatCard";
 import { MeetingCard } from "@/components/MeetingCard";
+import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
 import { Calendar, CheckSquare, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -106,10 +107,10 @@ const Index = () => {
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Upcoming Meetings */}
           <div className="lg:col-span-2 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-semibold">Upcoming Meetings</h2>
-              <Button>Schedule Meeting</Button>
-            </div>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-semibold">Upcoming Meetings</h2>
+            <CreateMeetingDialog />
+          </div>
             <div className="grid gap-4">
               {upcomingMeetings.map((meeting) => (
                 <MeetingCard key={meeting.title} {...meeting} />
