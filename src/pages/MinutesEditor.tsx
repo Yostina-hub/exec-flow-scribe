@@ -7,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, FileDown } from 'lucide-react';
 import { WaveformViewer } from '@/components/minutes/WaveformViewer';
 import { ConfidenceHeatmap } from '@/components/minutes/ConfidenceHeatmap';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
+import { PDFGenerationDialog } from '@/components/pdf/PDFGenerationDialog';
 
 interface TranscriptSegment {
   id: string;
@@ -37,6 +38,8 @@ export default function MinutesEditor() {
   const [meetingTitle, setMeetingTitle] = useState('');
   const [sensitiveSections, setSensitiveSections] = useState<any[]>([]);
   const [isSubmittingForSignOff, setIsSubmittingForSignOff] = useState(false);
+  const [showPDFDialog, setShowPDFDialog] = useState(false);
+  const [latestMinutesVersionId, setLatestMinutesVersionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (meetingId) {
@@ -97,7 +100,7 @@ export default function MinutesEditor() {
       // Fetch latest minutes version
       const { data: minutesData } = await supabase
         .from('minutes_versions')
-        .select('content')
+        .select('id, content')
         .eq('meeting_id', meetingId)
         .order('version_number', { ascending: false })
         .limit(1)
@@ -105,6 +108,7 @@ export default function MinutesEditor() {
 
       if (minutesData) {
         setMinutes(minutesData.content);
+        setLatestMinutesVersionId(minutesData.id);
       }
 
       // Fetch sensitive sections
@@ -368,6 +372,14 @@ export default function MinutesEditor() {
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Saving...' : 'Save (Ctrl+S)'}
             </Button>
+            <Button 
+              onClick={() => setShowPDFDialog(true)} 
+              disabled={!latestMinutesVersionId}
+              variant="outline"
+            >
+              <FileDown className="w-4 h-4 mr-2" />
+              Generate PDF
+            </Button>
             <Button onClick={handleSubmitForSignOff} disabled={isSubmittingForSignOff} variant="default">
               <CheckCircle className="w-4 h-4 mr-2" />
               {isSubmittingForSignOff ? 'Submitting...' : 'Submit for Sign-Off'}
@@ -496,6 +508,14 @@ export default function MinutesEditor() {
           />
         </div>
       </div>
+
+      {/* PDF Generation Dialog */}
+      <PDFGenerationDialog
+        open={showPDFDialog}
+        onOpenChange={setShowPDFDialog}
+        meetingId={meetingId!}
+        minutesVersionId={latestMinutesVersionId!}
+      />
     </Layout>
   );
 }

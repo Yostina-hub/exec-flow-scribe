@@ -8,11 +8,13 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Calendar, Mic, Shield, User, Brain } from "lucide-react";
+import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
+import { BrandKitManager } from "@/components/pdf/BrandKitManager";
+import { DistributionManager } from "@/components/pdf/DistributionManager";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -44,6 +46,8 @@ const Settings = () => {
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
             <TabsTrigger value="smtp">Email (SMTP)</TabsTrigger>
+            <TabsTrigger value="branding">Branding</TabsTrigger>
+            <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -384,6 +388,16 @@ const Settings = () => {
           {/* SMTP Tab */}
           <TabsContent value="smtp" className="space-y-6">
             <SMTPSettings />
+          </TabsContent>
+
+          {/* Branding Tab */}
+          <TabsContent value="branding" className="space-y-6">
+            <BrandKitManager />
+          </TabsContent>
+
+          {/* Distribution Tab */}
+          <TabsContent value="distribution" className="space-y-6">
+            <DistributionManager />
           </TabsContent>
 
           {/* Security Tab */}
