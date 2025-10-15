@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Clock, Star } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
+import { useOpenAIRealtime } from '@/hooks/useOpenAIRealtime';
 
 interface Transcription {
   id: string;
@@ -50,13 +51,43 @@ const normalizeMeetingId = (id: string) => {
   return uuidRegex.test(id) ? id : stringToUUID(id);
 };
 
+// Speaker colors for realtime mode
+const SPEAKER_COLORS: Record<string, string> = {
+  'User': 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+  'Assistant': 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  'Speaker': 'bg-gray-500/10 text-gray-700 dark:text-gray-300 border-gray-500/20',
+};
+
 export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionProps) => {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
+  const [useRealtime, setUseRealtime] = useState(false);
   const { toast } = useToast();
 
   const normalizedId = normalizeMeetingId(meetingId);
+  
+  // Use OpenAI Realtime if enabled
+  const { isConnected, transcripts: realtimeTranscripts } = useOpenAIRealtime(
+    normalizedId,
+    useRealtime && isRecording
+  );
 
   useEffect(() => {
+    // Check if realtime mode is enabled
+    const checkRealtimeMode = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('transcription_preferences')
+        .select('provider')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      setUseRealtime(data?.provider === 'openai_realtime');
+    };
+
+    checkRealtimeMode();
+
     // Fetch existing transcriptions
     const fetchTranscriptions = async () => {
       const { data, error } = await supabase
@@ -152,25 +183,59 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Live Transcription</CardTitle>
-            <CardDescription>Real-time meeting transcript with speaker detection</CardDescription>
+            <CardDescription>
+              {useRealtime && isConnected ? 'Advanced real-time transcription with speaker detection' : 'Real-time meeting transcript with speaker detection'}
+            </CardDescription>
           </div>
-          {isRecording && (
-            <Badge variant="destructive" className="gap-2">
-              <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-              Recording
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {useRealtime && isConnected && (
+              <Badge variant="secondary" className="gap-2">
+                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
+                AI Mode
+              </Badge>
+            )}
+            {isRecording && (
+              <Badge variant="destructive" className="gap-2">
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                Recording
+              </Badge>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[500px] pr-4">
           <div className="space-y-4">
+            {useRealtime && realtimeTranscripts.length > 0 && (
+              <>
+                {realtimeTranscripts.map((rt) => (
+                  <div key={rt.id} className="animate-fade-in">
+                    <div className="p-4 rounded-lg bg-muted/50 border-l-4" style={{ borderLeftColor: rt.speaker === 'User' ? '#3b82f6' : '#a855f7' }}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${SPEAKER_COLORS[rt.speaker] || SPEAKER_COLORS['Speaker']}`}
+                        >
+                          {rt.speaker}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">Live</span>
+                      </div>
+                      <p className="text-sm leading-relaxed">{rt.text}</p>
+                    </div>
+                  </div>
+                ))}
+                {transcriptions.length > 0 && <Separator className="my-4" />}
+              </>
+            )}
             {transcriptions.map((transcript, index) => (
               <div key={transcript.id}>
                 <div className="group relative p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
                   <div className="flex items-start justify-between gap-4 mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge 
+                        variant="outline" 
+                        className={`text-xs ${SPEAKER_COLORS[transcript.speaker_name || 'Speaker'] || SPEAKER_COLORS['Speaker']}`}
+                      >
                         {transcript.speaker_name || 'Speaker'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">

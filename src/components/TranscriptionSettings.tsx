@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Loader2 } from "lucide-react";
 
 export const TranscriptionSettings = () => {
-  const [provider, setProvider] = useState<"lovable_ai" | "openai" | "browser">("lovable_ai");
+  const [provider, setProvider] = useState<"lovable_ai" | "openai" | "browser" | "openai_realtime">("lovable_ai");
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -35,7 +35,7 @@ export const TranscriptionSettings = () => {
       }
 
       if (data) {
-        setProvider(data.provider as "lovable_ai" | "openai" | "browser");
+        setProvider(data.provider as "lovable_ai" | "openai" | "browser" | "openai_realtime");
         setOpenaiApiKey(data.openai_api_key || "");
       }
     } catch (error) {
@@ -61,7 +61,7 @@ export const TranscriptionSettings = () => {
       const preferences = {
         user_id: user.id,
         provider,
-        openai_api_key: provider === "openai" ? openaiApiKey : null,
+        openai_api_key: (provider === "openai" || provider === "openai_realtime") ? openaiApiKey : null,
       };
 
       const { data: existing } = await supabase
@@ -120,7 +120,7 @@ export const TranscriptionSettings = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <RadioGroup value={provider} onValueChange={(v) => setProvider(v as "lovable_ai" | "openai" | "browser")}>
+        <RadioGroup value={provider} onValueChange={(v) => setProvider(v as "lovable_ai" | "openai" | "browser" | "openai_realtime")}>
           <div className="flex items-center space-x-2">
             <RadioGroupItem value="lovable_ai" id="lovable_ai" />
             <Label htmlFor="lovable_ai" className="cursor-pointer">
@@ -144,6 +144,17 @@ export const TranscriptionSettings = () => {
             </Label>
           </div>
           <div className="flex items-center space-x-2">
+            <RadioGroupItem value="openai_realtime" id="openai_realtime" />
+            <Label htmlFor="openai_realtime" className="cursor-pointer">
+              <div>
+                <p className="font-medium">OpenAI Realtime ⚡</p>
+                <p className="text-sm text-muted-foreground">
+                  Advanced: Server VAD, noise suppression, color-coded speakers
+                </p>
+              </div>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-2">
             <RadioGroupItem value="openai" id="openai" />
             <Label htmlFor="openai" className="cursor-pointer">
               <div>
@@ -156,7 +167,7 @@ export const TranscriptionSettings = () => {
           </div>
         </RadioGroup>
 
-        {provider === "openai" && (
+        {(provider === "openai" || provider === "openai_realtime") && (
           <div className="space-y-2">
             <Label htmlFor="openai-key">OpenAI API Key</Label>
             <Input
