@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
 interface LayoutProps {
@@ -15,6 +16,8 @@ const navigation = [
 ];
 
 export const Layout = ({ children }: LayoutProps) => {
+  const location = useLocation();
+  
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -26,19 +29,22 @@ export const Layout = ({ children }: LayoutProps) => {
               <h1 className="text-xl font-bold">MeetingHub</h1>
             </div>
             <nav className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => (
-                <Button
-                  key={item.name}
-                  variant="ghost"
-                  className="gap-2"
-                  asChild
-                >
-                  <a href={item.href}>
-                    <item.icon className="h-4 w-4" />
-                    {item.name}
-                  </a>
-                </Button>
-              ))}
+              {navigation.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Button
+                    key={item.name}
+                    variant={isActive ? "secondary" : "ghost"}
+                    className="gap-2"
+                    asChild
+                  >
+                    <a href={item.href}>
+                      <item.icon className="h-4 w-4" />
+                      {item.name}
+                    </a>
+                  </Button>
+                );
+              })}
             </nav>
           </div>
           <div className="flex items-center gap-4">
