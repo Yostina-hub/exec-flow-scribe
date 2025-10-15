@@ -226,7 +226,7 @@ export default function Index() {
               </div>
             </div>
             
-            <div className="grid gap-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {meetings.map((meeting, index) => {
                 const startTime = new Date(meeting.start_time);
                 const endTime = new Date(meeting.end_time);

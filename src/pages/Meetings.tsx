@@ -131,40 +131,46 @@ export default function Meetings() {
               <TabsTrigger value="all">All ({allMeetingsFormatted.length})</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="upcoming" className="space-y-3 mt-6">
-              {filterMeetings(upcomingMeetings).length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No upcoming meetings found
-                </div>
-              ) : (
-                filterMeetings(upcomingMeetings).map((meeting) => (
-                  <InlineMeetingCard key={meeting.id} {...meeting} />
-                ))
-              )}
+            <TabsContent value="upcoming" className="mt-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filterMeetings(upcomingMeetings).length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    No upcoming meetings found
+                  </div>
+                ) : (
+                  filterMeetings(upcomingMeetings).map((meeting) => (
+                    <InlineMeetingCard key={meeting.id} {...meeting} />
+                  ))
+                )}
+              </div>
             </TabsContent>
 
-            <TabsContent value="completed" className="space-y-3 mt-6">
-              {filterMeetings(completedMeetings).length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No completed meetings found
-                </div>
-              ) : (
-                filterMeetings(completedMeetings).map((meeting) => (
-                  <InlineMeetingCard key={meeting.id} {...meeting} />
-                ))
-              )}
+            <TabsContent value="completed" className="mt-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filterMeetings(completedMeetings).length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    No completed meetings found
+                  </div>
+                ) : (
+                  filterMeetings(completedMeetings).map((meeting) => (
+                    <InlineMeetingCard key={meeting.id} {...meeting} />
+                  ))
+                )}
+              </div>
             </TabsContent>
 
-            <TabsContent value="all" className="space-y-3 mt-6">
-              {filterMeetings(allMeetingsFormatted).length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  No meetings found
-                </div>
-              ) : (
-                filterMeetings(allMeetingsFormatted).map((meeting) => (
-                  <InlineMeetingCard key={meeting.id} {...meeting} />
-                ))
-              )}
+            <TabsContent value="all" className="mt-6">
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filterMeetings(allMeetingsFormatted).length === 0 ? (
+                  <div className="col-span-full text-center py-12 text-muted-foreground">
+                    No meetings found
+                  </div>
+                ) : (
+                  filterMeetings(allMeetingsFormatted).map((meeting) => (
+                    <InlineMeetingCard key={meeting.id} {...meeting} />
+                  ))
+                )}
+              </div>
             </TabsContent>
           </Tabs>
         </div>
