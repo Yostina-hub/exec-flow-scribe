@@ -149,7 +149,7 @@ export const TranscriptionSettings = () => {
               <div>
                 <p className="font-medium">OpenAI Realtime ⚡</p>
                 <p className="text-sm text-muted-foreground">
-                  Advanced: Server VAD, noise suppression, color-coded speakers
+                  Advanced: Server VAD, noise suppression, color-coded speakers (uses same API key)
                 </p>
               </div>
             </Label>
@@ -160,7 +160,7 @@ export const TranscriptionSettings = () => {
               <div>
                 <p className="font-medium">OpenAI Whisper</p>
                 <p className="text-sm text-muted-foreground">
-                  Requires your own OpenAI API key
+                  Standard transcription (uses same API key)
                 </p>
               </div>
             </Label>
@@ -178,7 +178,7 @@ export const TranscriptionSettings = () => {
               onChange={(e) => setOpenaiApiKey(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Your API key will be stored securely and encrypted
+              Same key works for both Whisper and Realtime API. Your API key is stored securely and encrypted.
             </p>
           </div>
         )}
