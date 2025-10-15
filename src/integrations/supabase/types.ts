@@ -17,43 +17,64 @@ export type Database = {
       action_items: {
         Row: {
           assigned_to: string
+          blocked_reason: string | null
           completed_at: string | null
           created_at: string
           created_by: string
           description: string | null
           due_date: string | null
+          escalated_at: string | null
+          escalated_to: string | null
+          escalation_level: number | null
+          eta: string | null
           id: string
+          last_nudge_sent: string | null
           meeting_id: string | null
           priority: Database["public"]["Enums"]["action_priority"]
           status: Database["public"]["Enums"]["action_status"]
+          status_detail: string | null
           title: string
           updated_at: string
         }
         Insert: {
           assigned_to: string
+          blocked_reason?: string | null
           completed_at?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           due_date?: string | null
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          eta?: string | null
           id?: string
+          last_nudge_sent?: string | null
           meeting_id?: string | null
           priority?: Database["public"]["Enums"]["action_priority"]
           status?: Database["public"]["Enums"]["action_status"]
+          status_detail?: string | null
           title: string
           updated_at?: string
         }
         Update: {
           assigned_to?: string
+          blocked_reason?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           due_date?: string | null
+          escalated_at?: string | null
+          escalated_to?: string | null
+          escalation_level?: number | null
+          eta?: string | null
           id?: string
+          last_nudge_sent?: string | null
           meeting_id?: string | null
           priority?: Database["public"]["Enums"]["action_priority"]
           status?: Database["public"]["Enums"]["action_status"]
+          status_detail?: string | null
           title?: string
           updated_at?: string
         }
@@ -63,6 +84,53 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      action_status_updates: {
+        Row: {
+          action_id: string
+          comment: string | null
+          created_at: string | null
+          eta: string | null
+          id: string
+          new_status: Database["public"]["Enums"]["action_status"] | null
+          new_status_detail: string | null
+          old_status: Database["public"]["Enums"]["action_status"] | null
+          old_status_detail: string | null
+          user_id: string
+        }
+        Insert: {
+          action_id: string
+          comment?: string | null
+          created_at?: string | null
+          eta?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["action_status"] | null
+          new_status_detail?: string | null
+          old_status?: Database["public"]["Enums"]["action_status"] | null
+          old_status_detail?: string | null
+          user_id: string
+        }
+        Update: {
+          action_id?: string
+          comment?: string | null
+          created_at?: string | null
+          eta?: string | null
+          id?: string
+          new_status?: Database["public"]["Enums"]["action_status"] | null
+          new_status_detail?: string | null
+          old_status?: Database["public"]["Enums"]["action_status"] | null
+          old_status_detail?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "action_status_updates_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_items"
             referencedColumns: ["id"]
           },
         ]
@@ -488,6 +556,30 @@ export type Database = {
           },
         ]
       }
+      escalation_config: {
+        Row: {
+          created_at: string | null
+          id: string
+          role_type: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role_type: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role_type?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       fact_checks: {
         Row: {
           check_result: Json
@@ -790,6 +882,54 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "minutes_versions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_log: {
+        Row: {
+          action_id: string | null
+          id: string
+          meeting_id: string | null
+          metadata: Json | null
+          notification_type: string
+          recipient_email: string
+          sent_at: string | null
+          subject: string
+        }
+        Insert: {
+          action_id?: string | null
+          id?: string
+          meeting_id?: string | null
+          metadata?: Json | null
+          notification_type: string
+          recipient_email: string
+          sent_at?: string | null
+          subject: string
+        }
+        Update: {
+          action_id?: string | null
+          id?: string
+          meeting_id?: string | null
+          metadata?: Json | null
+          notification_type?: string
+          recipient_email?: string
+          sent_at?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_log_action_id_fkey"
+            columns: ["action_id"]
+            isOneToOne: false
+            referencedRelation: "action_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_log_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"

@@ -5,3 +5,24 @@ verify_jwt = true
 
 [functions.generate-minutes]
 verify_jwt = true
+
+[functions.generate-branded-pdf]
+verify_jwt = true
+
+[functions.distribute-pdf]
+verify_jwt = true
+
+[functions.test-smtp]
+verify_jwt = true
+
+[functions.send-action-nudges]
+verify_jwt = false
+
+[functions.check-escalations]
+verify_jwt = false
+
+[functions.weekly-progress-rollup]
+verify_jwt = false
+
+[functions.update-action-status]
+verify_jwt = false
