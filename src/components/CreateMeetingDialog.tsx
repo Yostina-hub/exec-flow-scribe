@@ -24,20 +24,64 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const CreateMeetingDialog = () => {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
-  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Meeting Created",
-      description: "Your meeting has been scheduled successfully",
-    });
-    setOpen(false);
+    setLoading(true);
+
+    try {
+      const formData = new FormData(e.target as HTMLFormElement);
+      const title = formData.get("title") as string;
+      const time = formData.get("time") as string;
+      const duration = parseInt(formData.get("duration") as string);
+      const location = formData.get("location") as string;
+      const description = formData.get("description") as string;
+
+      if (!date) {
+        toast.error("Please select a date");
+        return;
+      }
+
+      // Combine date and time
+      const [hours, minutes] = time.split(":");
+      const startTime = new Date(date);
+      startTime.setHours(parseInt(hours), parseInt(minutes), 0);
+      
+      const endTime = new Date(startTime);
+      endTime.setMinutes(endTime.getMinutes() + duration);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("meetings")
+        .insert({
+          title,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          location,
+          description,
+          created_by: user.id,
+          status: "scheduled",
+        });
+
+      if (error) throw error;
+
+      toast.success("Meeting created successfully");
+      setOpen(false);
+      window.location.reload(); // Refresh to show new meeting
+    } catch (error: any) {
+      toast.error("Failed to create meeting: " + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -61,6 +105,7 @@ export const CreateMeetingDialog = () => {
               <Label htmlFor="title">Meeting Title</Label>
               <Input
                 id="title"
+                name="title"
                 placeholder="e.g., Executive Strategy Review"
                 required
               />
@@ -96,14 +141,14 @@ export const CreateMeetingDialog = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="time">Start Time</Label>
-                <Input id="time" type="time" required />
+                <Input id="time" name="time" type="time" required />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="duration">Duration</Label>
-                <Select defaultValue="60">
+                <Select defaultValue="60" name="duration">
                   <SelectTrigger id="duration">
                     <SelectValue />
                   </SelectTrigger>
@@ -119,7 +164,7 @@ export const CreateMeetingDialog = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
-                <Input id="location" placeholder="Board Room" required />
+                <Input id="location" name="location" placeholder="Board Room" required />
               </div>
             </div>
 
@@ -144,6 +189,7 @@ export const CreateMeetingDialog = () => {
               <Label htmlFor="description">Description</Label>
               <Textarea
                 id="description"
+                name="description"
                 placeholder="Additional meeting details..."
                 rows={3}
               />
@@ -153,7 +199,9 @@ export const CreateMeetingDialog = () => {
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit">Create Meeting</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Creating..." : "Create Meeting"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

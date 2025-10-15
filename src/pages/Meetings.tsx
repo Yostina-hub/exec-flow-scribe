@@ -5,101 +5,95 @@ import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Search, Filter } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { format, formatDistanceToNow } from "date-fns";
 
-const allMeetings = [
-  {
-    id: "1b09fe77-8677-4ac1-9d7e-34b6016b6ab9",
-    title: "Executive Strategy Review",
-    date: "Today",
-    time: "2:00 PM",
-    duration: "90 min",
-    location: "Board Room",
-    attendees: 8,
-    status: "upcoming" as const,
-    agendaItems: 6,
-  },
-  {
-    id: "2c19fe88-9788-5bc2-ae8f-45c7027c7bca",
-    title: "Weekly Operations Sync",
-    date: "Today",
-    time: "4:30 PM",
-    duration: "45 min",
-    location: "Conference Room B",
-    attendees: 5,
-    status: "upcoming" as const,
-    agendaItems: 3,
-  },
-  {
-    id: "3d29fe99-a899-6cd3-bf9g-56d8138d8cdb",
-    title: "Quarterly Planning Session",
-    date: "Tomorrow",
-    time: "10:00 AM",
-    duration: "120 min",
-    location: "Conference Room A",
-    attendees: 12,
-    status: "upcoming" as const,
-    agendaItems: 8,
-  },
-  {
-    id: "4e39fea0-ba90-7de4-cg0h-67e9249e9dec",
-    title: "Product Roadmap Discussion",
-    date: "Dec 20",
-    time: "3:00 PM",
-    duration: "60 min",
-    location: "Virtual",
-    attendees: 6,
-    status: "upcoming" as const,
-    agendaItems: 4,
-  },
-  {
-    id: "5f49feb1-cb01-8ef5-dh1i-78fa35af0efd",
-    title: "Leadership Team Meeting",
-    date: "Dec 16",
-    time: "1:00 PM",
-    duration: "120 min",
-    location: "Board Room",
-    attendees: 10,
-    status: "completed" as const,
-    agendaItems: 7,
-  },
-  {
-    id: "6g59fec2-dc12-9fg6-ei2j-89gb46bg1fge",
-    title: "Investor Relations Call",
-    date: "Dec 15",
-    time: "11:00 AM",
-    duration: "60 min",
-    location: "Virtual",
-    attendees: 4,
-    status: "completed" as const,
-    agendaItems: 5,
-  },
-  {
-    id: "7h69fed3-ed23-0gh7-fj3k-90hc57ch2ghf",
-    title: "Budget Review Meeting",
-    date: "Dec 14",
-    time: "2:00 PM",
-    duration: "90 min",
-    location: "Conference Room A",
-    attendees: 8,
-    status: "completed" as const,
-    agendaItems: 6,
-  },
-];
+interface Meeting {
+  id: string;
+  title: string;
+  start_time: string;
+  end_time: string;
+  location: string | null;
+  status: string;
+}
+
+interface FormattedMeeting {
+  id: string;
+  title: string;
+  date: string;
+  time: string;
+  duration: string;
+  location: string;
+  attendees: number;
+  status: "completed" | "upcoming";
+  agendaItems: number;
+}
 
 export default function Meetings() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const filterMeetings = (meetings: typeof allMeetings) => {
+  useEffect(() => {
+    fetchMeetings();
+  }, []);
+
+  const fetchMeetings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("meetings")
+        .select("*")
+        .order("start_time", { ascending: true });
+
+      if (error) throw error;
+      setMeetings(data || []);
+    } catch (error) {
+      console.error("Failed to fetch meetings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatMeetingCard = (meeting: Meeting): FormattedMeeting => {
+    const startTime = new Date(meeting.start_time);
+    const endTime = new Date(meeting.end_time);
+    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+    
+    return {
+      id: meeting.id,
+      title: meeting.title,
+      date: format(startTime, "MMM d"),
+      time: format(startTime, "h:mm a"),
+      duration: `${duration} min`,
+      location: meeting.location || "TBD",
+      attendees: 0,
+      status: meeting.status === "completed" ? "completed" as const : "upcoming" as const,
+      agendaItems: 0,
+    };
+  };
+
+  const filterMeetings = (meetings: FormattedMeeting[]) => {
     if (!searchQuery) return meetings;
     return meetings.filter((meeting) =>
       meeting.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
-  const upcomingMeetings = allMeetings.filter((m) => m.status === "upcoming");
-  const completedMeetings = allMeetings.filter((m) => m.status === "completed");
+  const upcomingMeetings = meetings.filter((m) => m.status !== "completed").map(formatMeetingCard);
+  const completedMeetings = meetings.filter((m) => m.status === "completed").map(formatMeetingCard);
+  const allMeetingsFormatted = meetings.map(formatMeetingCard);
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -132,7 +126,7 @@ export default function Meetings() {
             <TabsList>
               <TabsTrigger value="upcoming">Upcoming ({upcomingMeetings.length})</TabsTrigger>
               <TabsTrigger value="completed">Completed ({completedMeetings.length})</TabsTrigger>
-              <TabsTrigger value="all">All ({allMeetings.length})</TabsTrigger>
+              <TabsTrigger value="all">All ({allMeetingsFormatted.length})</TabsTrigger>
             </TabsList>
 
             <TabsContent value="upcoming" className="space-y-3 mt-6">
@@ -160,12 +154,12 @@ export default function Meetings() {
             </TabsContent>
 
             <TabsContent value="all" className="space-y-3 mt-6">
-              {filterMeetings(allMeetings).length === 0 ? (
+              {filterMeetings(allMeetingsFormatted).length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   No meetings found
                 </div>
               ) : (
-                filterMeetings(allMeetings).map((meeting) => (
+                filterMeetings(allMeetingsFormatted).map((meeting) => (
                   <InlineMeetingCard key={meeting.id} {...meeting} />
                 ))
               )}

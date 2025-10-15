@@ -4,32 +4,54 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
-import { useState } from "react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
 import { format, addMonths, subMonths, isSameDay } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
-const meetingsByDate: Record<string, Array<{ title: string; time: string; status: string }>> = {
-  "2024-12-18": [
-    { title: "Executive Strategy Review", time: "2:00 PM", status: "upcoming" },
-    { title: "Weekly Operations Sync", time: "4:30 PM", status: "upcoming" },
-  ],
-  "2024-12-19": [
-    { title: "Quarterly Planning Session", time: "10:00 AM", status: "upcoming" },
-  ],
-  "2024-12-20": [
-    { title: "Product Roadmap Discussion", time: "3:00 PM", status: "upcoming" },
-  ],
-  "2024-12-16": [
-    { title: "Leadership Team Meeting", time: "1:00 PM", status: "completed" },
-  ],
-  "2024-12-15": [
-    { title: "Investor Relations Call", time: "11:00 AM", status: "completed" },
-  ],
-};
+interface Meeting {
+  id: string;
+  title: string;
+  start_time: string;
+  status: string;
+}
 
 const CalendarView = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchMeetings();
+  }, []);
+
+  const fetchMeetings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("meetings")
+        .select("id, title, start_time, status")
+        .order("start_time", { ascending: true });
+
+      if (error) throw error;
+      setMeetings(data || []);
+    } catch (error) {
+      console.error("Failed to fetch meetings:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const meetingsByDate = meetings.reduce((acc, meeting) => {
+    const dateKey = format(new Date(meeting.start_time), "yyyy-MM-dd");
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push({
+      title: meeting.title,
+      time: format(new Date(meeting.start_time), "h:mm a"),
+      status: meeting.status,
+    });
+    return acc;
+  }, {} as Record<string, Array<{ title: string; time: string; status: string }>>);
 
   const selectedDateKey = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const selectedMeetings = meetingsByDate[selectedDateKey] || [];
@@ -45,6 +67,16 @@ const CalendarView = () => {
   const handleNextMonth = () => {
     setCurrentMonth(addMonths(currentMonth, 1));
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
