@@ -144,7 +144,7 @@ const Auth = () => {
               </span>
             </h1>
 
-            <p className="text-xl text-gray-300 leading-relaxed">
+            <p className="text-xl text-white leading-relaxed">
               AI-powered transcription, real-time insights, and intelligent automation for the modern executive office.
             </p>
 
@@ -159,8 +159,8 @@ const Auth = () => {
                   className="p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-105 cursor-pointer"
                 >
                   <feature.icon className="h-6 w-6 text-purple-300 mb-2" />
-                  <h3 className="font-semibold text-sm mb-1">{feature.label}</h3>
-                  <p className="text-xs text-gray-400">{feature.desc}</p>
+                  <h3 className="font-semibold text-sm mb-1 text-white">{feature.label}</h3>
+                  <p className="text-xs text-gray-200">{feature.desc}</p>
                 </div>
               ))}
             </div>
@@ -178,10 +178,10 @@ const Auth = () => {
                     <h1 className="text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
                       MeetingHub
                     </h1>
-                    <p className="text-sm text-gray-400">Executive Suite</p>
+                    <p className="text-sm text-gray-200">Executive Suite</p>
                   </div>
                 </div>
-                <CardDescription className="text-gray-300">
+                <CardDescription className="text-white font-medium">
                   Access your AI-powered executive dashboard
                 </CardDescription>
               </CardHeader>
@@ -195,7 +195,7 @@ const Auth = () => {
                   <TabsContent value="signin" className="animate-fade-in">
                     <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-gray-200">Email</Label>
+                        <Label htmlFor="email" className="text-white font-medium">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -207,7 +207,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-200">Password</Label>
+                        <Label htmlFor="password" className="text-white font-medium">Password</Label>
                         <Input
                           id="password"
                           type="password"
@@ -231,7 +231,7 @@ const Auth = () => {
                   <TabsContent value="signup" className="animate-fade-in">
                     <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fullname" className="text-gray-200">Full Name</Label>
+                        <Label htmlFor="fullname" className="text-white font-medium">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -243,7 +243,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="usertitle" className="text-gray-200">Title</Label>
+                        <Label htmlFor="usertitle" className="text-white font-medium">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
@@ -254,7 +254,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="signup-email" className="text-gray-200">Email</Label>
+                        <Label htmlFor="signup-email" className="text-white font-medium">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -266,7 +266,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="signup-password" className="text-gray-200">Password</Label>
+                        <Label htmlFor="signup-password" className="text-white font-medium">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
