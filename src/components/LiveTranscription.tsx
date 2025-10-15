@@ -151,6 +151,40 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
     }
   };
 
+  const switchToBrowser = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: existing } = await supabase
+        .from('transcription_preferences')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      let err = null as any;
+      if (existing) {
+        const { error } = await supabase
+          .from('transcription_preferences')
+          .update({ provider: 'browser', openai_api_key: null })
+          .eq('user_id', user.id);
+        err = error;
+      } else {
+        const { error } = await supabase
+          .from('transcription_preferences')
+          .insert({ user_id: user.id, provider: 'browser' });
+        err = error;
+      }
+
+      if (err) throw err;
+
+      setUseRealtime(false);
+      toast({ title: 'Switched to Browser Whisper', description: 'Stop and start recording to apply.' });
+    } catch (e: any) {
+      toast({ title: 'Failed to switch', description: e.message || 'Try again.', variant: 'destructive' });
+    }
+  };
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     return date.toLocaleTimeString('en-US', { 
@@ -166,8 +200,16 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
         <CardHeader>
           <CardTitle>Live Transcription</CardTitle>
           <CardDescription>Real-time speech-to-text will appear here</CardDescription>
-        </CardHeader>
-        <CardContent>
+      </CardHeader>
+      {useRealtime && isRecording && (
+        <div className="px-6 -mt-2">
+          <div className="mb-4 rounded-md border bg-muted/50 p-3 text-sm text-muted-foreground flex items-center justify-between">
+            <span>Seeing rate limits? Switch to Browser Whisper to continue locally.</span>
+            <Button size="sm" variant="secondary" onClick={switchToBrowser}>Switch now</Button>
+          </div>
+        </div>
+      )}
+      <CardContent>
           <div className="border-2 border-dashed rounded-lg p-12 text-center">
             <Clock className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-sm text-muted-foreground">
