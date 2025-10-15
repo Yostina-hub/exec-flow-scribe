@@ -31,6 +31,7 @@ import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 
 interface AgendaItem {
   id: string;
@@ -97,12 +98,12 @@ const decisions = [
 
 const MeetingDetail = () => {
   const { toast } = useToast();
+  const { id } = useParams<{ id: string }>();
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const completedItems = agendaItems.filter((item) => item.status === "completed").length;
   const progress = (completedItems / agendaItems.length) * 100;
   
-  // For demo purposes, using a mock meeting ID. In production, get from URL params
-  const meetingId = "demo-meeting-id";
+  const meetingId = id || "demo-meeting-id";
   const { 
     isRecording, 
     isPaused, 

@@ -330,6 +330,33 @@ export type Database = {
         }
         Relationships: []
       }
+      transcription_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          openai_api_key: string | null
+          provider: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          openai_api_key?: string | null
+          provider?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          openai_api_key?: string | null
+          provider?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       transcriptions: {
         Row: {
           confidence_score: number | null

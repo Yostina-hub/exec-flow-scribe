@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Bell, Calendar, Mic, Shield, User, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
+import { TranscriptionSettings } from "@/components/TranscriptionSettings";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -365,6 +366,11 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Transcription Tab */}
+          <TabsContent value="transcription" className="space-y-6">
+            <TranscriptionSettings />
           </TabsContent>
 
           {/* AI Provider Tab */}
