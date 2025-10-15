@@ -86,7 +86,7 @@ const priorityVariant = {
 const Index = () => {
   return (
     <Layout>
-      <div className="space-y-8">
+      <div className="space-y-8 animate-fade-in">
         {/* Header */}
         <div>
           <h1 className="text-4xl font-bold tracking-tight">Executive Dashboard</h1>

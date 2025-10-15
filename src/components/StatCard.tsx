@@ -15,7 +15,7 @@ interface StatCardProps {
 
 export const StatCard = ({ title, value, icon: Icon, trend, iconColor }: StatCardProps) => {
   return (
-    <Card>
+    <Card className="hover:shadow-md transition-all duration-300 animate-fade-in">
       <CardContent className="pt-6">
         <div className="flex items-center justify-between">
           <div>

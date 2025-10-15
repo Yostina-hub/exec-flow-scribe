@@ -43,7 +43,7 @@ export const MeetingCard = ({
   const statusInfo = statusConfig[status];
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-scale-in">
       <CardHeader>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1">
@@ -75,7 +75,9 @@ export const MeetingCard = ({
           </div>
         </div>
         <div className="flex gap-2 mt-4">
-          <Button size="sm" className="flex-1">View Details</Button>
+          <Button size="sm" className="flex-1" asChild>
+            <a href="/meetings/1">View Details</a>
+          </Button>
           <Button size="sm" variant="outline">Agenda</Button>
         </div>
       </CardContent>
