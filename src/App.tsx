@@ -11,6 +11,7 @@ import Actions from "./pages/Actions";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import MeetingDetail from "./pages/MeetingDetail";
+import MinutesEditor from "./pages/MinutesEditor";
 import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
 import Auth from "./pages/Auth";
@@ -56,6 +57,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MeetingDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/meetings/:meetingId/minutes"
+            element={
+              <ProtectedRoute>
+                <MinutesEditor />
               </ProtectedRoute>
             }
           />

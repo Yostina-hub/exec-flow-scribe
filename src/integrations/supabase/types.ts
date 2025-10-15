@@ -141,6 +141,53 @@ export type Database = {
         }
         Relationships: []
       }
+      confirmation_requests: {
+        Row: {
+          created_at: string | null
+          end_time: string
+          id: string
+          meeting_id: string
+          responded_at: string | null
+          response: string | null
+          start_time: string
+          status: string
+          transcript_segment: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_time: string
+          id?: string
+          meeting_id: string
+          responded_at?: string | null
+          response?: string | null
+          start_time: string
+          status?: string
+          transcript_segment: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_time?: string
+          id?: string
+          meeting_id?: string
+          responded_at?: string | null
+          response?: string | null
+          start_time?: string
+          status?: string
+          transcript_segment?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "confirmation_requests_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decisions: {
         Row: {
           context: string | null
@@ -172,6 +219,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "decisions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fact_checks: {
+        Row: {
+          check_result: Json
+          created_at: string | null
+          end_time: string
+          id: string
+          meeting_id: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          start_time: string
+          status: string
+          transcript_segment: string
+        }
+        Insert: {
+          check_result: Json
+          created_at?: string | null
+          end_time: string
+          id?: string
+          meeting_id: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_time: string
+          status?: string
+          transcript_segment: string
+        }
+        Update: {
+          check_result?: Json
+          created_at?: string | null
+          end_time?: string
+          id?: string
+          meeting_id?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          start_time?: string
+          status?: string
+          transcript_segment?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fact_checks_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
@@ -249,6 +343,56 @@ export type Database = {
           },
         ]
       }
+      meeting_media: {
+        Row: {
+          checksum: string
+          duration_seconds: number | null
+          file_size: number | null
+          file_url: string
+          format: string | null
+          id: string
+          media_type: string
+          meeting_id: string
+          metadata: Json | null
+          uploaded_at: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          checksum: string
+          duration_seconds?: number | null
+          file_size?: number | null
+          file_url: string
+          format?: string | null
+          id?: string
+          media_type: string
+          meeting_id: string
+          metadata?: Json | null
+          uploaded_at?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          checksum?: string
+          duration_seconds?: number | null
+          file_size?: number | null
+          file_url?: string
+          format?: string | null
+          id?: string
+          media_type?: string
+          meeting_id?: string
+          metadata?: Json | null
+          uploaded_at?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_media_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meetings: {
         Row: {
           briefing_pack_url: string | null
@@ -299,6 +443,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      minutes_versions: {
+        Row: {
+          changes_summary: string | null
+          content: string
+          created_at: string | null
+          created_by: string
+          id: string
+          is_ratified: boolean | null
+          meeting_id: string
+          ratified_at: string | null
+          ratified_by: string | null
+          version_number: number
+        }
+        Insert: {
+          changes_summary?: string | null
+          content: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_ratified?: boolean | null
+          meeting_id: string
+          ratified_at?: string | null
+          ratified_by?: string | null
+          version_number: number
+        }
+        Update: {
+          changes_summary?: string | null
+          content?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_ratified?: boolean | null
+          meeting_id?: string
+          ratified_at?: string | null
+          ratified_by?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minutes_versions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       permissions: {
         Row: {
@@ -416,6 +607,44 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      transcript_versions: {
+        Row: {
+          content: Json
+          created_at: string | null
+          created_by: string
+          id: string
+          meeting_id: string
+          notes: string | null
+          version_number: number
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          created_by: string
+          id?: string
+          meeting_id: string
+          notes?: string | null
+          version_number: number
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          notes?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcript_versions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcription_preferences: {
         Row: {

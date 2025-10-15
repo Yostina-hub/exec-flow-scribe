@@ -31,7 +31,7 @@ import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 interface AgendaItem {
   id: string;
@@ -98,6 +98,7 @@ const decisions = [
 
 const MeetingDetail = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const completedItems = agendaItems.filter((item) => item.status === "completed").length;
@@ -344,6 +345,14 @@ const MeetingDetail = () => {
                 >
                   <FileText className="h-4 w-4" />
                   Generate AI Minutes
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => navigate(`/meetings/${id}/minutes`)}
+                >
+                  <FileText className="h-4 w-4" />
+                  Open Minutes Editor
                 </Button>
                 <AgendaIntakeForm
                   meetingId={meetingId}
