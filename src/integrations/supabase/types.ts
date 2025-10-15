@@ -300,6 +300,30 @@ export type Database = {
         }
         Relationships: []
       }
+      permissions: {
+        Row: {
+          action: Database["public"]["Enums"]["permission_action"]
+          created_at: string | null
+          description: string | null
+          id: string
+          resource: Database["public"]["Enums"]["permission_resource"]
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["permission_action"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          resource: Database["public"]["Enums"]["permission_resource"]
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["permission_action"]
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          resource?: Database["public"]["Enums"]["permission_resource"]
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -327,6 +351,69 @@ export type Database = {
           id?: string
           title?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          is_system_role: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system_role?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_system_role?: boolean | null
+          name?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -398,12 +485,55 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          assigned_by: string | null
+          created_at: string | null
+          id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_role: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      has_permission: {
+        Args: {
+          _action: Database["public"]["Enums"]["permission_action"]
+          _resource: Database["public"]["Enums"]["permission_resource"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       action_priority: "low" | "medium" | "high"
@@ -415,6 +545,14 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      permission_action: "create" | "read" | "update" | "delete" | "manage"
+      permission_resource:
+        | "users"
+        | "roles"
+        | "meetings"
+        | "actions"
+        | "transcriptions"
+        | "settings"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -551,6 +689,15 @@ export const Constants = {
         "in_progress",
         "completed",
         "cancelled",
+      ],
+      permission_action: ["create", "read", "update", "delete", "manage"],
+      permission_resource: [
+        "users",
+        "roles",
+        "meetings",
+        "actions",
+        "transcriptions",
+        "settings",
       ],
     },
   },

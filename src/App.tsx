@@ -12,6 +12,8 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import MeetingDetail from "./pages/MeetingDetail";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
+import RoleManagement from "./pages/RoleManagement";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
@@ -87,6 +89,22 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <ProtectedRoute>
+                <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/roles"
+            element={
+              <ProtectedRoute>
+                <RoleManagement />
               </ProtectedRoute>
             }
           />
