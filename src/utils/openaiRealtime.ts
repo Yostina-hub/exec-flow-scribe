@@ -146,11 +146,38 @@ export class OpenAIRealtimeClient {
       this.dc = this.pc.createDataChannel("oai-events");
       this.dc.addEventListener("message", (e) => {
         const event: RealtimeMessage = JSON.parse(e.data);
-        console.log("Received event:", event.type);
+        console.log("Received event:", event.type, event);
 
         if (event.type === 'session.created') {
           this.sessionCreated = true;
-          console.log('Session created');
+          console.log('Session created, sending configuration...');
+          
+          // Send session update to enable transcription
+          if (this.dc && this.dc.readyState === 'open') {
+            this.dc.send(JSON.stringify({
+              type: "session.update",
+              session: {
+                modalities: ["text", "audio"],
+                instructions: "You are a helpful meeting assistant. Transcribe all speech accurately and identify speakers.",
+                voice: "alloy",
+                input_audio_format: "pcm16",
+                output_audio_format: "pcm16",
+                input_audio_transcription: {
+                  model: "whisper-1"
+                },
+                turn_detection: {
+                  type: "server_vad",
+                  threshold: 0.5,
+                  prefix_padding_ms: 300,
+                  silence_duration_ms: 1000
+                },
+                temperature: 0.8
+              }
+            }));
+            console.log('Session configuration sent');
+          }
+        } else if (event.type === 'session.updated') {
+          console.log('Session updated successfully');
         } else if (event.type === 'input_audio_buffer.speech_started') {
           console.log('🎤 User started speaking');
         } else if (event.type === 'input_audio_buffer.speech_stopped') {
