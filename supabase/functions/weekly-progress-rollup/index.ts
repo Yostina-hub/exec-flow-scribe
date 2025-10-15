@@ -23,26 +23,19 @@ serve(async (req) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    // Get CEO config
-    const { data: ceoConfig } = await supabase
-      .from("escalation_config")
-      .select("user_id")
-      .eq("role_type", "ceo")
-      .single();
+    // Get CEO user
+    const { data: ceoUsers } = await supabase
+      .rpc('get_users_with_role_name', { _role_name: 'CEO' });
 
-    if (!ceoConfig?.user_id) {
+    if (!ceoUsers || ceoUsers.length === 0) {
       console.error("No CEO configured");
       return new Response(
-        JSON.stringify({ error: "CEO not configured" }),
+        JSON.stringify({ error: "CEO not configured - please assign the CEO role to a user" }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { data: ceoProfile } = await supabase
-      .from("profiles")
-      .select("email, full_name")
-      .eq("id", ceoConfig.user_id)
-      .single();
+    const ceoProfile = ceoUsers[0];
 
     if (!ceoProfile?.email) {
       console.error("CEO email not found");

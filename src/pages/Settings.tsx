@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
-import { EscalationSettings } from "@/components/settings/EscalationSettings";
+import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
 import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
@@ -396,7 +396,7 @@ const Settings = () => {
 
           {/* Escalation Tab */}
           <TabsContent value="escalation" className="space-y-6">
-            <EscalationSettings />
+            <RoleAssignmentManager />
           </TabsContent>
 
           {/* Automation Tab */}

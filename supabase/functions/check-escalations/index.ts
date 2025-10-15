@@ -59,13 +59,12 @@ serve(async (req) => {
 
     console.log(`Found ${atRiskActions.length} at-risk actions`);
 
-    // Get escalation config
-    const { data: escalationConfig } = await supabase
-      .from("escalation_config")
-      .select("*");
-
-    const cosConfig = escalationConfig?.find(c => c.role_type === "chief_of_staff");
-    const ceoConfig = escalationConfig?.find(c => c.role_type === "ceo");
+    // Get users with escalation roles
+    const { data: chiefOfStaffUsers } = await supabase
+      .rpc('get_users_with_role_name', { _role_name: 'Chief of Staff' });
+    
+    const { data: ceoUsers } = await supabase
+      .rpc('get_users_with_role_name', { _role_name: 'CEO' });
 
     // Get SMTP settings
     const { data: smtpSettings } = await supabase
@@ -108,20 +107,20 @@ serve(async (req) => {
 
       // Determine escalation level
       if (action.status_detail === "blocked") {
-        // Blocked actions escalate immediately
+        // Blocked actions escalate immediately to Chief of Staff
         shouldEscalate = true;
         newEscalationLevel = 1;
-        escalateTo = cosConfig?.user_id;
+        escalateTo = chiefOfStaffUsers?.[0]?.user_id;
       } else if (daysUntilDue <= 1 && action.escalation_level === 0) {
         // First escalation to Chief of Staff
         shouldEscalate = true;
         newEscalationLevel = 1;
-        escalateTo = cosConfig?.user_id;
+        escalateTo = chiefOfStaffUsers?.[0]?.user_id;
       } else if (daysUntilDue <= 0 && action.escalation_level === 1) {
         // Second escalation to CEO
         shouldEscalate = true;
         newEscalationLevel = 2;
-        escalateTo = ceoConfig?.user_id;
+        escalateTo = ceoUsers?.[0]?.user_id;
       }
 
       if (!shouldEscalate || !escalateTo) continue;

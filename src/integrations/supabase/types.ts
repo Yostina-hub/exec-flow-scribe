@@ -1404,6 +1404,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_users_with_role_name: {
+        Args: { _role_name: string }
+        Returns: {
+          email: string
+          full_name: string
+          user_id: string
+        }[]
+      }
       has_any_role: {
         Args: { _user_id: string }
         Returns: boolean
