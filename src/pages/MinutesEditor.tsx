@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, FileDown } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft } from 'lucide-react';
 import { WaveformViewer } from '@/components/minutes/WaveformViewer';
 import { ConfidenceHeatmap } from '@/components/minutes/ConfidenceHeatmap';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
-import { PDFGenerationDialog } from '@/components/pdf/PDFGenerationDialog';
 
 interface TranscriptSegment {
   id: string;
@@ -38,8 +37,9 @@ export default function MinutesEditor() {
   const [meetingTitle, setMeetingTitle] = useState('');
   const [sensitiveSections, setSensitiveSections] = useState<any[]>([]);
   const [isSubmittingForSignOff, setIsSubmittingForSignOff] = useState(false);
-  const [showPDFDialog, setShowPDFDialog] = useState(false);
   const [latestMinutesVersionId, setLatestMinutesVersionId] = useState<string | null>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
   useEffect(() => {
     if (meetingId) {
@@ -47,17 +47,26 @@ export default function MinutesEditor() {
     }
   }, [meetingId]);
 
-  // Keyboard shortcut for save
+  // Auto-save with debouncing
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        handleSaveMinutes();
+    if (!minutes || !meetingId) return;
+    
+    // Clear existing timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    // Set new timeout for auto-save (3 seconds after last edit)
+    saveTimeoutRef.current = setTimeout(() => {
+      handleSaveMinutes(true);
+    }, 3000);
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [minutes]);
+  }, [minutes, meetingId]);
 
   const fetchMeetingData = async () => {
     try {
@@ -132,7 +141,7 @@ export default function MinutesEditor() {
     }
   };
 
-  const handleSaveMinutes = async () => {
+  const handleSaveMinutes = async (isAutoSave = false) => {
     try {
       setIsSaving(true);
       
@@ -150,30 +159,76 @@ export default function MinutesEditor() {
       const nextVersion = versions && versions.length > 0 ? versions[0].version_number + 1 : 1;
 
       // Save new version
-      const { error } = await supabase
+      const { data: newVersion, error } = await supabase
         .from('minutes_versions')
         .insert({
           meeting_id: meetingId,
           version_number: nextVersion,
           content: minutes,
           created_by: user.id,
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setLastSaved(new Date());
+      setLatestMinutesVersionId(newVersion.id);
+
+      if (!isAutoSave) {
+        toast({
+          title: 'Saved',
+          description: `Minutes version ${nextVersion} saved successfully`,
         });
+        
+        // Auto-generate PDF after manual save
+        await generatePDF(newVersion.id);
+      }
+    } catch (error) {
+      console.error('Error saving minutes:', error);
+      if (!isAutoSave) {
+        toast({
+          title: 'Error',
+          description: 'Failed to save minutes',
+          variant: 'destructive',
+        });
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const generatePDF = async (minutesVersionId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Get default brand kit
+      const { data: brandKit } = await supabase
+        .from('brand_kits')
+        .select('id')
+        .eq('is_default', true)
+        .maybeSingle();
+
+      // Generate PDF
+      const { error } = await supabase.functions.invoke('generate-branded-pdf', {
+        body: {
+          meeting_id: meetingId,
+          minutes_version_id: minutesVersionId,
+          brand_kit_id: brandKit?.id,
+          watermark: 'INTERNAL USE ONLY',
+          include_exhibits: true,
+        },
+      });
 
       if (error) throw error;
 
       toast({
-        title: 'Saved',
-        description: `Minutes version ${nextVersion} saved successfully`,
+        title: 'PDF Generated',
+        description: 'Branded PDF has been automatically generated',
       });
     } catch (error) {
-      console.error('Error saving minutes:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save minutes',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsSaving(false);
+      console.error('Error generating PDF:', error);
     }
   };
 
@@ -364,22 +419,11 @@ export default function MinutesEditor() {
               <h1 className="text-2xl font-bold">Minutes Polisher</h1>
               <p className="text-sm text-muted-foreground">
                 {meetingTitle || 'Edit and refine meeting minutes'} • {minutes.split(/\s+/).filter(w => w).length} words
+                {lastSaved && ` • Auto-saved ${lastSaved.toLocaleTimeString()}`}
               </p>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleSaveMinutes} disabled={isSaving} variant="outline">
-              <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save (Ctrl+S)'}
-            </Button>
-            <Button 
-              onClick={() => setShowPDFDialog(true)} 
-              disabled={!latestMinutesVersionId}
-              variant="outline"
-            >
-              <FileDown className="w-4 h-4 mr-2" />
-              Generate PDF
-            </Button>
             <Button onClick={handleSubmitForSignOff} disabled={isSubmittingForSignOff} variant="default">
               <CheckCircle className="w-4 h-4 mr-2" />
               {isSubmittingForSignOff ? 'Submitting...' : 'Submit for Sign-Off'}
@@ -508,14 +552,6 @@ export default function MinutesEditor() {
           />
         </div>
       </div>
-
-      {/* PDF Generation Dialog */}
-      <PDFGenerationDialog
-        open={showPDFDialog}
-        onOpenChange={setShowPDFDialog}
-        meetingId={meetingId!}
-        minutesVersionId={latestMinutesVersionId!}
-      />
     </Layout>
   );
 }
