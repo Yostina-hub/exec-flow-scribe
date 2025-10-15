@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu, BarChart3 } from "lucide-react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu, BarChart3, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
 import { useLocation } from "react-router-dom";
@@ -15,6 +15,7 @@ const navigation = [
   { name: "Meetings", href: "/meetings", icon: Calendar },
   { name: "Actions", href: "/actions", icon: CheckSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
+  { name: "Reports", href: "/reports", icon: FileText },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

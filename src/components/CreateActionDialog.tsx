@@ -129,6 +129,7 @@ export const CreateActionDialog = () => {
                       selected={deadline}
                       onSelect={setDeadline}
                       initialFocus
+                      className="p-3 pointer-events-auto"
                     />
                   </PopoverContent>
                 </Popover>
