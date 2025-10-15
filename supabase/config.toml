@@ -38,3 +38,24 @@ verify_jwt = false
 
 [functions.generate-executive-brief]
 verify_jwt = false
+
+[functions.generate-decision-replay]
+verify_jwt = false
+
+[functions.generate-catchup-card]
+verify_jwt = false
+
+[functions.generate-coach-hints]
+verify_jwt = false
+
+[functions.generate-context-capsule]
+verify_jwt = false
+
+[functions.generate-redacted-version]
+verify_jwt = false
+
+[functions.query-knowledge-graph]
+verify_jwt = false
+
+[functions.simulate-outcomes]
+verify_jwt = false

@@ -31,6 +31,7 @@ import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
+import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -219,7 +220,8 @@ const MeetingDetail = () => {
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
-                <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
+          <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
+          <TabsTrigger value="advanced-intelligence">Advanced Intelligence</TabsTrigger>
               </TabsList>
 
               <TabsContent value="transcription" className="space-y-4">

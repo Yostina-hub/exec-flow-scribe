@@ -354,6 +354,50 @@ export type Database = {
           },
         ]
       }
+      context_capsules: {
+        Row: {
+          generated_at: string | null
+          id: string
+          key_points: string[] | null
+          meeting_id: string
+          reading_time_seconds: number | null
+          role_context: string | null
+          suggested_contribution: string | null
+          user_id: string
+          viewed_at: string | null
+        }
+        Insert: {
+          generated_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          meeting_id: string
+          reading_time_seconds?: number | null
+          role_context?: string | null
+          suggested_contribution?: string | null
+          user_id: string
+          viewed_at?: string | null
+        }
+        Update: {
+          generated_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          meeting_id?: string
+          reading_time_seconds?: number | null
+          role_context?: string | null
+          suggested_contribution?: string | null
+          user_id?: string
+          viewed_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "context_capsules_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       countersignatures: {
         Row: {
           assigned_to: string | null
@@ -448,6 +492,66 @@ export type Database = {
             columns: ["decision_id"]
             isOneToOne: false
             referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_timeline_segments: {
+        Row: {
+          audio_url: string | null
+          cited_data: Json | null
+          context_after: string | null
+          context_before: string | null
+          created_at: string | null
+          decision_id: string
+          draft_snapshot: Json | null
+          id: string
+          meeting_id: string
+          segment_end: string
+          segment_start: string
+          video_timestamp: string | null
+        }
+        Insert: {
+          audio_url?: string | null
+          cited_data?: Json | null
+          context_after?: string | null
+          context_before?: string | null
+          created_at?: string | null
+          decision_id: string
+          draft_snapshot?: Json | null
+          id?: string
+          meeting_id: string
+          segment_end: string
+          segment_start: string
+          video_timestamp?: string | null
+        }
+        Update: {
+          audio_url?: string | null
+          cited_data?: Json | null
+          context_after?: string | null
+          context_before?: string | null
+          created_at?: string | null
+          decision_id?: string
+          draft_snapshot?: Json | null
+          id?: string
+          meeting_id?: string
+          segment_end?: string
+          segment_start?: string
+          video_timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_timeline_segments_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "decision_timeline_segments_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
             referencedColumns: ["id"]
           },
         ]
@@ -724,6 +828,50 @@ export type Database = {
           },
         ]
       }
+      executive_coach_hints: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          hint_message: string
+          hint_type: string
+          id: string
+          is_read: boolean | null
+          meeting_id: string
+          priority: number | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          hint_message: string
+          hint_type: string
+          id?: string
+          is_read?: boolean | null
+          meeting_id: string
+          priority?: number | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          hint_message?: string
+          hint_type?: string
+          id?: string
+          is_read?: boolean | null
+          meeting_id?: string
+          priority?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_coach_hints_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fact_checks: {
         Row: {
           check_result: Json
@@ -802,6 +950,148 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interruption_catchups: {
+        Row: {
+          created_at: string | null
+          id: string
+          key_changes: Json
+          left_at: string
+          meeting_id: string
+          missed_actions: string[] | null
+          missed_decisions: string[] | null
+          returned_at: string | null
+          status: string
+          suggested_questions: string[] | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key_changes: Json
+          left_at: string
+          meeting_id: string
+          missed_actions?: string[] | null
+          missed_decisions?: string[] | null
+          returned_at?: string | null
+          status?: string
+          suggested_questions?: string[] | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key_changes?: Json
+          left_at?: string
+          meeting_id?: string
+          missed_actions?: string[] | null
+          missed_decisions?: string[] | null
+          returned_at?: string | null
+          status?: string
+          suggested_questions?: string[] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interruption_catchups_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      knowledge_entities: {
+        Row: {
+          created_at: string | null
+          entity_data: Json | null
+          entity_name: string
+          entity_type: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entity_data?: Json | null
+          entity_name: string
+          entity_type: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entity_data?: Json | null
+          entity_name?: string
+          entity_type?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_relationships: {
+        Row: {
+          created_at: string | null
+          decision_id: string | null
+          from_entity_id: string
+          id: string
+          meeting_id: string | null
+          relationship_data: Json | null
+          relationship_type: string
+          strength: number | null
+          to_entity_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          decision_id?: string | null
+          from_entity_id: string
+          id?: string
+          meeting_id?: string | null
+          relationship_data?: Json | null
+          relationship_type: string
+          strength?: number | null
+          to_entity_id: string
+        }
+        Update: {
+          created_at?: string | null
+          decision_id?: string | null
+          from_entity_id?: string
+          id?: string
+          meeting_id?: string | null
+          relationship_data?: Json | null
+          relationship_type?: string
+          strength?: number | null
+          to_entity_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "knowledge_relationships_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_relationships_from_entity_id_fkey"
+            columns: ["from_entity_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_entities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_relationships_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "knowledge_relationships_to_entity_id_fkey"
+            columns: ["to_entity_id"]
+            isOneToOne: false
+            referencedRelation: "knowledge_entities"
             referencedColumns: ["id"]
           },
         ]
@@ -1190,6 +1480,66 @@ export type Database = {
           },
         ]
       }
+      outcome_simulations: {
+        Row: {
+          assumptions: Json
+          confidence_level: number | null
+          created_at: string | null
+          created_by: string
+          data_sources: Json | null
+          decision_id: string | null
+          id: string
+          impact_score: number | null
+          meeting_id: string
+          projected_outcomes: Json
+          scenario_description: string | null
+          scenario_name: string
+        }
+        Insert: {
+          assumptions: Json
+          confidence_level?: number | null
+          created_at?: string | null
+          created_by: string
+          data_sources?: Json | null
+          decision_id?: string | null
+          id?: string
+          impact_score?: number | null
+          meeting_id: string
+          projected_outcomes: Json
+          scenario_description?: string | null
+          scenario_name: string
+        }
+        Update: {
+          assumptions?: Json
+          confidence_level?: number | null
+          created_at?: string | null
+          created_by?: string
+          data_sources?: Json | null
+          decision_id?: string | null
+          id?: string
+          impact_score?: number | null
+          meeting_id?: string
+          projected_outcomes?: Json
+          scenario_description?: string | null
+          scenario_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outcome_simulations_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outcome_simulations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_generations: {
         Row: {
           approval_stamp: Json
@@ -1304,6 +1654,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      redacted_documents: {
+        Row: {
+          audience_type: string
+          created_at: string | null
+          created_by: string
+          id: string
+          meeting_id: string
+          original_content: string
+          redacted_content: string
+          redaction_map: Json
+          sensitivity_level: string
+        }
+        Insert: {
+          audience_type: string
+          created_at?: string | null
+          created_by: string
+          id?: string
+          meeting_id: string
+          original_content: string
+          redacted_content: string
+          redaction_map: Json
+          sensitivity_level: string
+        }
+        Update: {
+          audience_type?: string
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          original_content?: string
+          redacted_content?: string
+          redaction_map?: Json
+          sensitivity_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "redacted_documents_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       role_permissions: {
         Row: {
