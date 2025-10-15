@@ -14,6 +14,7 @@ import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { EscalationSettings } from "@/components/settings/EscalationSettings";
+import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
 
@@ -48,6 +49,7 @@ const Settings = () => {
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
             <TabsTrigger value="smtp">Email (SMTP)</TabsTrigger>
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
+            <TabsTrigger value="automation">Automation</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
@@ -395,6 +397,11 @@ const Settings = () => {
           {/* Escalation Tab */}
           <TabsContent value="escalation" className="space-y-6">
             <EscalationSettings />
+          </TabsContent>
+
+          {/* Automation Tab */}
+          <TabsContent value="automation" className="space-y-6">
+            <AutomationSettings />
           </TabsContent>
 
           {/* Branding Tab */}
