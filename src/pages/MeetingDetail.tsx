@@ -30,6 +30,7 @@ import { LiveTranscription } from "@/components/LiveTranscription";
 import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
+import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -214,10 +215,11 @@ const MeetingDetail = () => {
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="transcription" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
+                <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
               </TabsList>
 
               <TabsContent value="transcription" className="space-y-4">
@@ -297,6 +299,10 @@ const MeetingDetail = () => {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="ai-insights" className="space-y-4">
+                <AIIntelligencePanel meetingId={meetingId} />
               </TabsContent>
 
             </Tabs>

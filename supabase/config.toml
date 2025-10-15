@@ -26,3 +26,15 @@ verify_jwt = false
 
 [functions.update-action-status]
 verify_jwt = false
+
+[functions.analyze-meeting-sentiment]
+verify_jwt = false
+
+[functions.track-commitment-delta]
+verify_jwt = false
+
+[functions.suggest-next-meeting]
+verify_jwt = false
+
+[functions.generate-executive-brief]
+verify_jwt = false

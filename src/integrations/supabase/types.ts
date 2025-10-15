@@ -257,6 +257,56 @@ export type Database = {
         }
         Relationships: []
       }
+      commitments: {
+        Row: {
+          commitment_text: string
+          committed_at: string
+          committed_by: string | null
+          created_at: string | null
+          drift_score: number | null
+          due_date: string | null
+          fulfillment_evidence: string | null
+          id: string
+          meeting_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          commitment_text: string
+          committed_at: string
+          committed_by?: string | null
+          created_at?: string | null
+          drift_score?: number | null
+          due_date?: string | null
+          fulfillment_evidence?: string | null
+          id?: string
+          meeting_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          commitment_text?: string
+          committed_at?: string
+          committed_by?: string | null
+          created_at?: string | null
+          drift_score?: number | null
+          due_date?: string | null
+          fulfillment_evidence?: string | null
+          id?: string
+          meeting_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commitments_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       confirmation_requests: {
         Row: {
           created_at: string | null
@@ -351,6 +401,53 @@ export type Database = {
             columns: ["signature_request_id"]
             isOneToOne: false
             referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      decision_outcomes: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          decision_id: string
+          id: string
+          impact_score: number | null
+          measured_at: string
+          metrics: Json | null
+          notes: string | null
+          outcome_description: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          decision_id: string
+          id?: string
+          impact_score?: number | null
+          measured_at: string
+          metrics?: Json | null
+          notes?: string | null
+          outcome_description: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          decision_id?: string
+          id?: string
+          impact_score?: number | null
+          measured_at?: string
+          metrics?: Json | null
+          notes?: string | null
+          outcome_description?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decision_outcomes_decision_id_fkey"
+            columns: ["decision_id"]
+            isOneToOne: false
+            referencedRelation: "decisions"
             referencedColumns: ["id"]
           },
         ]
@@ -580,6 +677,53 @@ export type Database = {
         }
         Relationships: []
       }
+      executive_briefs: {
+        Row: {
+          action_status_summary: Json | null
+          brief_content: Json
+          created_for: string | null
+          generated_at: string | null
+          id: string
+          key_insights: string[] | null
+          meeting_id: string
+          recommended_focus: string[] | null
+          risk_alerts: string[] | null
+          sources: Json | null
+        }
+        Insert: {
+          action_status_summary?: Json | null
+          brief_content: Json
+          created_for?: string | null
+          generated_at?: string | null
+          id?: string
+          key_insights?: string[] | null
+          meeting_id: string
+          recommended_focus?: string[] | null
+          risk_alerts?: string[] | null
+          sources?: Json | null
+        }
+        Update: {
+          action_status_summary?: Json | null
+          brief_content?: Json
+          created_for?: string | null
+          generated_at?: string | null
+          id?: string
+          key_insights?: string[] | null
+          meeting_id?: string
+          recommended_focus?: string[] | null
+          risk_alerts?: string[] | null
+          sources?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "executive_briefs_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fact_checks: {
         Row: {
           check_result: Json
@@ -784,6 +928,115 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "meeting_media_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_sentiment: {
+        Row: {
+          analyzed_at: string | null
+          compliance_concerns: string[] | null
+          confidence: number | null
+          id: string
+          key_phrases: string[] | null
+          meeting_id: string
+          risk_indicators: string[] | null
+          segment_end: string
+          segment_start: string
+          sentiment_label: string | null
+          sentiment_score: number | null
+          topic: string | null
+        }
+        Insert: {
+          analyzed_at?: string | null
+          compliance_concerns?: string[] | null
+          confidence?: number | null
+          id?: string
+          key_phrases?: string[] | null
+          meeting_id: string
+          risk_indicators?: string[] | null
+          segment_end: string
+          segment_start: string
+          sentiment_label?: string | null
+          sentiment_score?: number | null
+          topic?: string | null
+        }
+        Update: {
+          analyzed_at?: string | null
+          compliance_concerns?: string[] | null
+          confidence?: number | null
+          id?: string
+          key_phrases?: string[] | null
+          meeting_id?: string
+          risk_indicators?: string[] | null
+          segment_end?: string
+          segment_start?: string
+          sentiment_label?: string | null
+          sentiment_score?: number | null
+          topic?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_sentiment_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_suggestions: {
+        Row: {
+          created_at: string | null
+          id: string
+          meeting_id: string | null
+          open_threads: number | null
+          priority_score: number | null
+          reasoning: string | null
+          status: string | null
+          suggested_agenda: Json
+          suggested_attendees: string[] | null
+          suggested_for: string | null
+          suggested_title: string
+          unresolved_risks: number | null
+          upcoming_milestones: string[] | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          meeting_id?: string | null
+          open_threads?: number | null
+          priority_score?: number | null
+          reasoning?: string | null
+          status?: string | null
+          suggested_agenda: Json
+          suggested_attendees?: string[] | null
+          suggested_for?: string | null
+          suggested_title: string
+          unresolved_risks?: number | null
+          upcoming_milestones?: string[] | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          meeting_id?: string | null
+          open_threads?: number | null
+          priority_score?: number | null
+          reasoning?: string | null
+          status?: string | null
+          suggested_agenda?: Json
+          suggested_attendees?: string[] | null
+          suggested_for?: string | null
+          suggested_title?: string
+          unresolved_risks?: number | null
+          upcoming_milestones?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_suggestions_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
