@@ -22,11 +22,15 @@ import {
   Circle,
   ArrowLeft,
   MoreHorizontal,
+  Plus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { LiveTranscription } from "@/components/LiveTranscription";
 import { ContextPanel } from "@/components/ContextPanel";
+import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
+import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
+import { useState } from "react";
 
 interface AgendaItem {
   id: string;
@@ -93,6 +97,7 @@ const decisions = [
 
 const MeetingDetail = () => {
   const { toast } = useToast();
+  const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const completedItems = agendaItems.filter((item) => item.status === "completed").length;
   const progress = (completedItems / agendaItems.length) * 100;
   
@@ -331,6 +336,23 @@ const MeetingDetail = () => {
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
+                <Button 
+                  variant="default" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => setShowMinutesDialog(true)}
+                >
+                  <FileText className="h-4 w-4" />
+                  Generate AI Minutes
+                </Button>
+                <AgendaIntakeForm
+                  meetingId={meetingId}
+                  trigger={
+                    <Button variant="outline" className="w-full justify-start gap-2">
+                      <Plus className="h-4 w-4" />
+                      Add Agenda Items
+                    </Button>
+                  }
+                />
                 <Button variant="outline" className="w-full justify-start gap-2">
                   <FileText className="h-4 w-4" />
                   View Previous Minutes
@@ -347,6 +369,12 @@ const MeetingDetail = () => {
             </Card>
           </div>
         </div>
+
+        <GenerateMinutesDialog
+          meetingId={meetingId}
+          open={showMinutesDialog}
+          onOpenChange={setShowMinutesDialog}
+        />
       </div>
     </Layout>
   );
