@@ -106,15 +106,56 @@ serve(async (req) => {
         headers: { Authorization: `Bearer ${openaiApiKey}` },
         body: formData,
       });
+
       if (!response.ok) {
-        const t = await response.text();
-        console.error("OpenAI transcription error:", t);
-        throw new Error("Failed to transcribe audio with OpenAI");
+        const errText = await response.text();
+        console.error("OpenAI transcription error:", errText);
+        const isQuota = response.status === 402 || errText.includes("insufficient_quota");
+        const isRateLimited = response.status === 429;
+        console.log("OpenAI transcription failed. status:", response.status, "quota?", isQuota, "rateLimit?", isRateLimited);
+
+        // Attempt Lovable AI fallback automatically
+        const lovableFormData = new FormData();
+        lovableFormData.append("file", audioBlob, "audio.webm");
+        lovableFormData.append("model", "whisper-1");
+        try {
+          const fallbackResp = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+            body: lovableFormData,
+          });
+
+          if (!fallbackResp.ok) {
+            const fallbackErr = await fallbackResp.text();
+            console.error("Lovable fallback transcription error:", fallbackErr);
+            // Surface rate limit / credits errors explicitly
+            if (fallbackResp.status === 429) {
+              return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
+                status: 429,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+            if (fallbackResp.status === 402) {
+              return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
+                status: 402,
+                headers: { ...corsHeaders, "Content-Type": "application/json" },
+              });
+            }
+            throw new Error("Failed to transcribe audio with both OpenAI and Lovable AI");
+          }
+
+          const fallbackData = await fallbackResp.json();
+          transcriptText = fallbackData.text;
+        } catch (fbErr) {
+          console.error("Fallback error:", fbErr);
+          throw new Error("Failed to transcribe audio");
+        }
+      } else {
+        const transcriptionData = await response.json();
+        transcriptText = transcriptionData.text;
       }
-      const transcriptionData = await response.json();
-      transcriptText = transcriptionData.text;
     } else {
-      // Fallback to Lovable AI gateway (may not support audio on all workspaces)
+      // Primary: Lovable AI gateway
       formData.append("model", "whisper-1");
       const response = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
         method: "POST",
@@ -124,6 +165,19 @@ serve(async (req) => {
       if (!response.ok) {
         const error = await response.text();
         console.error("Transcription error:", error);
+        // Surface rate limit / credits errors explicitly
+        if (response.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
+            status: 429,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        if (response.status === 402) {
+          return new Response(JSON.stringify({ error: "Payment required, please add funds to your Lovable AI workspace." }), {
+            status: 402,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
         throw new Error("Failed to transcribe audio");
       }
       const transcriptionData = await response.json();
