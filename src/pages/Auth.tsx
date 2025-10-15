@@ -168,34 +168,34 @@ const Auth = () => {
 
           {/* Auth Card */}
           <div className="animate-scale-in">
-            <Card className="border-blue-500/20 bg-gradient-to-br from-white/5 to-white/10 backdrop-blur-xl shadow-2xl shadow-blue-500/20">
+            <Card className="border-cyan-200/50 bg-white/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/20">
               <CardHeader className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
                     <Sparkles className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-white via-cyan-200 to-emerald-200 bg-clip-text text-transparent">
+                    <h1 className="text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-gray-900 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
                       MeetingHub
                     </h1>
-                    <p className="text-sm text-cyan-300">Executive Suite</p>
+                    <p className="text-sm text-cyan-600 font-medium">Executive Suite</p>
                   </div>
                 </div>
-                <CardDescription className="text-white/90 font-medium">
+                <CardDescription className="text-gray-600 font-medium">
                   Access your AI-powered executive dashboard
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-white/5 border border-white/10">
-                    <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:border-blue-500/30">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500/20 data-[state=active]:to-cyan-500/20 data-[state=active]:border-blue-500/30">Sign Up</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200">
+                    <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="signin" className="animate-fade-in">
                     <form onSubmit={handleSignIn} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-white font-medium">Email</Label>
+                        <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -203,18 +203,18 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="password" className="text-white font-medium">Password</Label>
+                        <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
@@ -231,7 +231,7 @@ const Auth = () => {
                   <TabsContent value="signup" className="animate-fade-in">
                     <form onSubmit={handleSignUp} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="fullname" className="text-white font-medium">Full Name</Label>
+                        <Label htmlFor="fullname" className="text-gray-700 font-medium">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -239,22 +239,22 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="usertitle" className="text-white font-medium">Title</Label>
+                        <Label htmlFor="usertitle" className="text-gray-700 font-medium">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="signup-email" className="text-white font-medium">Email</Label>
+                        <Label htmlFor="signup-email" className="text-gray-700 font-medium">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -262,18 +262,18 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="signup-password" className="text-white font-medium">Password</Label>
+                        <Label htmlFor="signup-password" className="text-gray-700 font-medium">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="bg-white/5 border-white/10 text-white placeholder:text-gray-500 focus:border-cyan-500/50 focus:ring-cyan-500/20"
+                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
