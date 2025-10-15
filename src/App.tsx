@@ -18,6 +18,7 @@ import Administration from "./pages/Administration";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
+import { RequirePermission } from "@/components/RequirePermission";
 
 const queryClient = new QueryClient();
 
@@ -113,11 +114,13 @@ const App = () => (
             path="/admin"
             element={
               <ProtectedRoute>
-                <Administration />
+                <RequirePermission resource="users" action="manage">
+                  <Administration />
+                </RequirePermission>
               </ProtectedRoute>
             }
           />
-          <Route path="/document" element={<DocumentViewer />} />
+           <Route path="/document" element={<DocumentViewer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
