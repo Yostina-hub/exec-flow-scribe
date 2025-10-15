@@ -32,8 +32,9 @@ import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AgendaItem {
   id: string;
@@ -103,6 +104,7 @@ const MeetingDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
+  const [userId, setUserId] = useState<string>("");
   const completedItems = agendaItems.filter((item) => item.status === "completed").length;
   const progress = (completedItems / agendaItems.length) * 100;
   
@@ -115,6 +117,16 @@ const MeetingDetail = () => {
     pauseRecording, 
     resumeRecording 
   } = useAudioRecorder(meetingId);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
 
   const getStatusIcon = (status: AgendaItem["status"]) => {
     switch (status) {
@@ -305,6 +317,10 @@ const MeetingDetail = () => {
 
               <TabsContent value="ai-insights" className="space-y-4">
                 <AIIntelligencePanel meetingId={meetingId} />
+              </TabsContent>
+
+              <TabsContent value="advanced-intelligence" className="space-y-4">
+                <AdvancedIntelligencePanel meetingId={meetingId} userId={userId} />
               </TabsContent>
 
             </Tabs>
