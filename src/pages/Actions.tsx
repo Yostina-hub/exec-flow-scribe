@@ -6,120 +6,89 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Search, Filter } from "lucide-react";
-import { useState } from "react";
+import { Search, Filter, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface ActionItem {
   id: string;
-  task: string;
-  assignee: string;
-  deadline: string;
-  priority: "high" | "medium" | "low";
-  status: "pending" | "in-progress" | "completed";
-  meeting: string;
+  title: string;
+  description: string | null;
+  due_date: string;
+  priority: string;
+  status: string;
+  assigned_to: string;
+  meeting_id: string | null;
+  assignee?: { full_name: string };
+  meeting?: { title: string };
 }
 
-const allActions: ActionItem[] = [
-  {
-    id: "1",
-    task: "Review Q4 financial projections",
-    assignee: "CFO",
-    deadline: "Dec 18",
-    priority: "high",
-    status: "in-progress",
-    meeting: "Executive Strategy Review",
-  },
-  {
-    id: "2",
-    task: "Finalize hiring plan for 2025",
-    assignee: "CHRO",
-    deadline: "Dec 20",
-    priority: "medium",
-    status: "pending",
-    meeting: "Quarterly Planning Session",
-  },
-  {
-    id: "3",
-    task: "Approve marketing budget",
-    assignee: "CMO",
-    deadline: "Dec 22",
-    priority: "high",
-    status: "pending",
-    meeting: "Budget Review Meeting",
-  },
-  {
-    id: "4",
-    task: "Schedule investor presentations",
-    assignee: "CoS",
-    deadline: "Dec 25",
-    priority: "low",
-    status: "in-progress",
-    meeting: "Investor Relations Call",
-  },
-  {
-    id: "5",
-    task: "Update product roadmap document",
-    assignee: "CPO",
-    deadline: "Dec 19",
-    priority: "high",
-    status: "in-progress",
-    meeting: "Product Roadmap Discussion",
-  },
-  {
-    id: "6",
-    task: "Prepare board presentation",
-    assignee: "CEO",
-    deadline: "Dec 23",
-    priority: "high",
-    status: "pending",
-    meeting: "Leadership Team Meeting",
-  },
-  {
-    id: "7",
-    task: "Review vendor contracts",
-    assignee: "CFO",
-    deadline: "Dec 15",
-    priority: "medium",
-    status: "completed",
-    meeting: "Budget Review Meeting",
-  },
-  {
-    id: "8",
-    task: "Conduct team performance reviews",
-    assignee: "CHRO",
-    deadline: "Dec 10",
-    priority: "medium",
-    status: "completed",
-    meeting: "Leadership Team Meeting",
-  },
-];
-
-const priorityVariant = {
-  high: "destructive" as const,
-  medium: "warning" as const,
-  low: "secondary" as const,
+const priorityVariant: Record<string, "destructive" | "warning" | "secondary"> = {
+  high: "destructive",
+  medium: "warning",
+  low: "secondary",
 };
 
-const statusVariant = {
-  pending: "outline" as const,
-  "in-progress": "warning" as const,
-  completed: "success" as const,
+const statusVariant: Record<string, "outline" | "warning" | "success"> = {
+  pending: "outline",
+  in_progress: "warning",
+  completed: "success",
 };
 
 const Actions = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const [actions, setActions] = useState<ActionItem[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const pendingActions = allActions.filter((a) => a.status === "pending");
-  const inProgressActions = allActions.filter((a) => a.status === "in-progress");
-  const completedActions = allActions.filter((a) => a.status === "completed");
+  useEffect(() => {
+    fetchActions();
+  }, []);
+
+  const fetchActions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("action_items")
+        .select("*")
+        .order("due_date", { ascending: true });
+
+      if (error) throw error;
+      
+      // Fetch related data separately
+      const enrichedActions = await Promise.all((data || []).map(async (action) => {
+        const [assignee, meeting] = await Promise.all([
+          supabase.from("profiles").select("full_name").eq("id", action.assigned_to).maybeSingle(),
+          action.meeting_id 
+            ? supabase.from("meetings").select("title").eq("id", action.meeting_id).maybeSingle()
+            : Promise.resolve({ data: null })
+        ]);
+        
+        return {
+          ...action,
+          assignee: assignee.data,
+          meeting: meeting.data
+        };
+      }));
+      
+      setActions(enrichedActions);
+    } catch (error) {
+      console.error("Failed to fetch actions:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pendingActions = actions.filter((a) => a.status === "pending");
+  const inProgressActions = actions.filter((a) => a.status === "in_progress");
+  const completedActions = actions.filter((a) => a.status === "completed");
 
   const filterActions = (actions: ActionItem[]) => {
     if (!searchQuery) return actions;
     return actions.filter(
       (a) =>
-        a.task.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.assignee.toLowerCase().includes(searchQuery.toLowerCase())
+        a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (a.assignee?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
@@ -144,23 +113,28 @@ const Actions = () => {
           />
           <div className="flex-1 space-y-3">
             <div>
-              <h3 className="font-semibold text-base">{action.task}</h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                From: {action.meeting}
-              </p>
+              <h3 className="font-semibold text-base">{action.title}</h3>
+              {action.description && (
+                <p className="text-sm text-muted-foreground mt-1">{action.description}</p>
+              )}
+              {action.meeting && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  From: {action.meeting.title}
+                </p>
+              )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={priorityVariant[action.priority]}>
+              <Badge variant={priorityVariant[action.priority] || "secondary"}>
                 {action.priority}
               </Badge>
-              <Badge variant={statusVariant[action.status]}>
-                {action.status.replace("-", " ")}
+              <Badge variant={statusVariant[action.status] || "outline"}>
+                {action.status.replace("_", " ")}
               </Badge>
               <span className="text-xs text-muted-foreground">
-                • Assigned to {action.assignee}
+                • Assigned to {action.assignee?.full_name || "Unassigned"}
               </span>
               <span className="text-xs text-muted-foreground">
-                • Due {action.deadline}
+                • Due {format(new Date(action.due_date), "MMM d, yyyy")}
               </span>
             </div>
           </div>
@@ -168,6 +142,16 @@ const Actions = () => {
       </CardContent>
     </Card>
   );
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -225,7 +209,7 @@ const Actions = () => {
         {/* Tabs */}
         <Tabs defaultValue="all" className="w-full">
           <TabsList>
-            <TabsTrigger value="all">All ({allActions.length})</TabsTrigger>
+            <TabsTrigger value="all">All ({actions.length})</TabsTrigger>
             <TabsTrigger value="pending">
               Pending ({pendingActions.length})
             </TabsTrigger>
@@ -238,27 +222,51 @@ const Actions = () => {
           </TabsList>
 
           <TabsContent value="all" className="space-y-4 mt-6">
-            {filterActions(allActions).map((action) => (
-              <ActionItemCard key={action.id} action={action} />
-            ))}
+            {filterActions(actions).length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No actions found
+              </div>
+            ) : (
+              filterActions(actions).map((action) => (
+                <ActionItemCard key={action.id} action={action} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="pending" className="space-y-4 mt-6">
-            {filterActions(pendingActions).map((action) => (
-              <ActionItemCard key={action.id} action={action} />
-            ))}
+            {filterActions(pendingActions).length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No pending actions
+              </div>
+            ) : (
+              filterActions(pendingActions).map((action) => (
+                <ActionItemCard key={action.id} action={action} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="in-progress" className="space-y-4 mt-6">
-            {filterActions(inProgressActions).map((action) => (
-              <ActionItemCard key={action.id} action={action} />
-            ))}
+            {filterActions(inProgressActions).length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No actions in progress
+              </div>
+            ) : (
+              filterActions(inProgressActions).map((action) => (
+                <ActionItemCard key={action.id} action={action} />
+              ))
+            )}
           </TabsContent>
 
           <TabsContent value="completed" className="space-y-4 mt-6">
-            {filterActions(completedActions).map((action) => (
-              <ActionItemCard key={action.id} action={action} />
-            ))}
+            {filterActions(completedActions).length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                No completed actions
+              </div>
+            ) : (
+              filterActions(completedActions).map((action) => (
+                <ActionItemCard key={action.id} action={action} />
+              ))
+            )}
           </TabsContent>
         </Tabs>
       </div>
