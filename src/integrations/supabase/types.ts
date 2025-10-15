@@ -1076,6 +1076,51 @@ export type Database = {
           },
         ]
       }
+      smtp_settings: {
+        Row: {
+          created_at: string | null
+          from_email: string
+          from_name: string
+          host: string
+          id: string
+          is_active: boolean | null
+          password: string
+          port: number
+          updated_at: string | null
+          use_tls: boolean | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          created_at?: string | null
+          from_email: string
+          from_name?: string
+          host: string
+          id?: string
+          is_active?: boolean | null
+          password: string
+          port?: number
+          updated_at?: string | null
+          use_tls?: boolean | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          created_at?: string | null
+          from_email?: string
+          from_name?: string
+          host?: string
+          id?: string
+          is_active?: boolean | null
+          password?: string
+          port?: number
+          updated_at?: string | null
+          use_tls?: boolean | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
       transcript_versions: {
         Row: {
           content: Json

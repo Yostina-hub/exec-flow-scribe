@@ -1,13 +1,11 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
-import { Resend } from "https://esm.sh/resend@2.0.0";
+import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 interface DistributeRequest {
   pdf_generation_id: string;
@@ -74,18 +72,45 @@ serve(async (req) => {
       throw new Error("No recipients specified");
     }
 
+    // Fetch SMTP settings
+    const { data: smtpSettings, error: smtpError } = await supabase
+      .from('smtp_settings')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (smtpError || !smtpSettings) {
+      throw new Error("SMTP settings not configured. Please configure SMTP in Settings.");
+    }
+
     // Generate email content
     const meetingTitle = pdfGen.meeting?.title || "Meeting";
     const approvalInfo = pdfGen.approval_stamp as any;
 
-    // Send emails using Resend
+    // Initialize SMTP client
+    const client = new SMTPClient({
+      connection: {
+        hostname: smtpSettings.host,
+        port: smtpSettings.port,
+        tls: smtpSettings.use_tls,
+        auth: {
+          username: smtpSettings.username,
+          password: smtpSettings.password,
+        },
+      },
+    });
+
+    // Send emails using SMTP
     const emailPromises = recipients.map(async (email) => {
       try {
-        await resend.emails.send({
-          from: "Minutes <noreply@resend.dev>",
+        await client.send({
+          from: `${smtpSettings.from_name} <${smtpSettings.from_email}>`,
           to: email,
           subject: `Meeting Minutes: ${meetingTitle}`,
-          html: `
+          content: `
             <h2>Meeting Minutes: ${meetingTitle}</h2>
             <p>The minutes from this meeting are now available.</p>
             
@@ -125,6 +150,9 @@ serve(async (req) => {
 
     const results = await Promise.all(emailPromises);
     const failedCount = results.filter(r => r.status === "failed").length;
+
+    // Close SMTP connection
+    await client.close();
 
     // Log distribution
     const { error: logError } = await supabase

@@ -12,6 +12,7 @@ import { Bell, Calendar, Mic, Shield, User, Brain } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
+import { SMTPSettings } from "@/components/settings/SMTPSettings";
 
 const Settings = () => {
   const { toast } = useToast();
@@ -42,6 +43,7 @@ const Settings = () => {
             <TabsTrigger value="recording">Recording</TabsTrigger>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
+            <TabsTrigger value="smtp">Email (SMTP)</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -377,6 +379,11 @@ const Settings = () => {
           {/* AI Provider Tab */}
           <TabsContent value="ai-provider" className="space-y-6">
             <AIProviderSettings />
+          </TabsContent>
+
+          {/* SMTP Tab */}
+          <TabsContent value="smtp" className="space-y-6">
+            <SMTPSettings />
           </TabsContent>
 
           {/* Security Tab */}
