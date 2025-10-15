@@ -171,7 +171,7 @@ export class OpenAIRealtimeClient {
                   prefix_padding_ms: 300,
                   silence_duration_ms: 2000,
                   idle_timeout_ms: null,
-                  create_response: true,
+                  create_response: false,
                   interrupt_response: true
                 },
                 temperature: 0.8

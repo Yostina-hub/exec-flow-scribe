@@ -66,7 +66,7 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
   const normalizedId = normalizeMeetingId(meetingId);
   
   // Use OpenAI Realtime if enabled
-  const { isConnected, transcripts: realtimeTranscripts } = useOpenAIRealtime(
+  const { isConnected, transcripts: realtimeTranscripts, rateLimited } = useOpenAIRealtime(
     normalizedId,
     useRealtime && isRecording
   );

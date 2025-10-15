@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
   const [isConnected, setIsConnected] = useState(false);
   const [transcripts, setTranscripts] = useState<Array<{ text: string; speaker: string; id: string }>>([]);
+  const [rateLimited, setRateLimited] = useState(false);
   const clientRef = useRef<OpenAIRealtimeClient | null>(null);
   const { toast } = useToast();
 
@@ -37,6 +38,7 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
         variant: 'destructive',
       });
       setIsConnected(false);
+      setRateLimited(isRateLimited);
 
       // Backoff + retry on rate limits
       if (isRateLimited && clientRef.current) {
@@ -45,6 +47,7 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
           clientRef.current?.connect(meetingId)
             .then(() => {
               setIsConnected(true);
+              setRateLimited(false);
               toast({ title: 'Reconnected', description: 'Realtime transcription resumed.' });
             })
             .catch((err) => {
@@ -77,5 +80,5 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
     clientRef.current?.sendText(text);
   };
 
-  return { isConnected, transcripts, sendText };
+  return { isConnected, transcripts, sendText, rateLimited };
 };
