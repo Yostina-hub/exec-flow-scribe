@@ -68,12 +68,36 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
     try {
       setLoading(true);
 
+      // Current auth user (used for assigned_by)
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+
       // Get current role IDs
       const currentRoleIds = new Set(user.roles.map((r) => r.id));
 
       // Determine roles to add and remove
       const rolesToAdd = Array.from(selectedRoleIds).filter((id) => !currentRoleIds.has(id));
       const rolesToRemove = Array.from(currentRoleIds).filter((id) => !selectedRoleIds.has(id));
+
+      // Detect bootstrap (no user_roles rows yet)
+      const { count } = await supabase
+        .from("user_roles")
+        .select("*", { count: "exact", head: true });
+      const isBootstrap = (count ?? 0) === 0;
+
+      // Ensure Admin is inserted first during bootstrap so subsequent inserts pass RLS
+      const adminRole = roles.find((r) => r.name.toLowerCase() === "admin");
+      if (isBootstrap && adminRole && !currentRoleIds.has(adminRole.id)) {
+        const { error: bootstrapInsertError } = await supabase
+          .from("user_roles")
+          .insert([{
+            user_id: user.id,
+            role_id: adminRole.id,
+            assigned_by: currentUser?.id,
+          }]);
+        if (bootstrapInsertError) throw bootstrapInsertError;
+        // Treat Admin as now assigned so we don't duplicate later
+        currentRoleIds.add(adminRole.id);
+      }
 
       // Remove roles
       if (rolesToRemove.length > 0) {
@@ -86,14 +110,13 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
         if (deleteError) throw deleteError;
       }
 
-      // Add roles
-      if (rolesToAdd.length > 0) {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        
+      // Add roles (excluding Admin if we already inserted it during bootstrap)
+      const remainingToAdd = rolesToAdd.filter((id) => !(adminRole && id === adminRole.id));
+      if (remainingToAdd.length > 0) {
         const { error: insertError } = await supabase
           .from("user_roles")
           .insert(
-            rolesToAdd.map((roleId) => ({
+            remainingToAdd.map((roleId) => ({
               user_id: user.id,
               role_id: roleId,
               assigned_by: currentUser?.id,
