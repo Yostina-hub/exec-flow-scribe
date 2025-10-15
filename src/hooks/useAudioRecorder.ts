@@ -64,6 +64,12 @@ export const useAudioRecorder = (meetingId: string) => {
         if (event.data.size > 0) {
           chunksRef.current.push(event.data);
           
+          // Keep only the most recent ~30s of audio to limit memory
+          const maxChunks = 6; // 6 * 5s = 30s
+          if (chunksRef.current.length > maxChunks) {
+            chunksRef.current.splice(0, chunksRef.current.length - maxChunks);
+          }
+          
           // Check transcription provider preference
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) return;
@@ -78,20 +84,25 @@ export const useAudioRecorder = (meetingId: string) => {
 
           try {
             if (provider === 'browser' || provider === 'lovable_ai') {
-              // Use browser-based Whisper for both explicit browser provider and Lemat (lovable_ai)
-              const text = await transcribeAudioBrowser(event.data);
+              // Combine recent chunks so WebAudio can decode a valid WebM segment
+              const recentChunks = chunksRef.current.slice(-maxChunks);
+              const combined = new Blob(recentChunks, { type: 'audio/webm;codecs=opus' });
+
+              const text = await transcribeAudioBrowser(combined);
               console.log('Browser transcription:', text);
               
-              // Save via secure backend (bypasses RLS issues)
-              const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
-                body: {
-                  meetingId: normalizedMeetingId,
-                  content: text,
-                  timestamp: new Date().toISOString(),
-                  speaker: 'Unknown'
-                }
-              });
-              if (saveErr) throw saveErr;
+              if (text && text.trim()) {
+                // Save via secure backend
+                const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
+                  body: {
+                    meetingId: normalizedMeetingId,
+                    content: text,
+                    timestamp: new Date().toISOString(),
+                    speaker: 'Unknown'
+                  }
+                });
+                if (saveErr) throw saveErr;
+              }
             } else {
               // Use server-side transcription (OpenAI)
               const reader = new FileReader();
