@@ -1,19 +1,10 @@
-import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Calendar, Clock, MapPin, Users, Play, Edit, Trash2, 
-  MoreVertical, FileText, Copy 
+  Clock, MapPin, Users, Play, ChevronRight, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 
 interface InlineMeetingCardProps {
@@ -29,9 +20,27 @@ interface InlineMeetingCardProps {
 }
 
 const statusConfig = {
-  upcoming: { variant: 'secondary' as const, label: 'Upcoming', color: 'bg-blue-500' },
-  'in-progress': { variant: 'default' as const, label: 'Live', color: 'bg-green-500' },
-  completed: { variant: 'outline' as const, label: 'Completed', color: 'bg-gray-500' },
+  upcoming: { 
+    variant: 'secondary' as const, 
+    label: 'Upcoming', 
+    gradient: 'from-blue-500/10 to-purple-500/10',
+    border: 'border-blue-500/20',
+    text: 'text-blue-600 dark:text-blue-400'
+  },
+  'in-progress': { 
+    variant: 'default' as const, 
+    label: 'Live', 
+    gradient: 'from-green-500/10 to-emerald-500/10',
+    border: 'border-green-500/20',
+    text: 'text-green-600 dark:text-green-400'
+  },
+  completed: { 
+    variant: 'outline' as const, 
+    label: 'Completed', 
+    gradient: 'from-gray-500/5 to-slate-500/5',
+    border: 'border-gray-500/20',
+    text: 'text-gray-600 dark:text-gray-400'
+  },
 };
 
 export function InlineMeetingCard({
@@ -46,108 +55,96 @@ export function InlineMeetingCard({
   agendaItems,
 }: InlineMeetingCardProps) {
   const navigate = useNavigate();
-  const [isHovered, setIsHovered] = useState(false);
   const config = statusConfig[status];
-
-  const quickActions = [
-    { icon: Play, label: 'Start/Join', onClick: () => navigate(`/meetings/${id}`) },
-    { icon: FileText, label: 'Minutes', onClick: () => navigate(`/meetings/${id}/minutes`) },
-    { icon: Edit, label: 'Edit', onClick: () => {} },
-  ];
 
   return (
     <Card 
       className={cn(
-        "group hover:shadow-lg transition-all duration-200 cursor-pointer relative",
-        isHovered && "shadow-xl scale-[1.02]"
+        "group relative overflow-hidden cursor-pointer",
+        "hover:shadow-xl hover:scale-[1.01] transition-all duration-300",
+        "bg-gradient-to-r", config.gradient,
+        "border", config.border,
+        "animate-fade-in"
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onClick={() => navigate(`/meetings/${id}`)}
     >
-      {/* Status indicator bar */}
-      <div className={cn("absolute left-0 top-0 bottom-0 w-1", config.color)} />
-
-      <CardContent className="p-4 pl-5">
-        <div className="flex items-start justify-between gap-4">
-          {/* Main content */}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-2">
-              <Badge variant={config.variant} className="text-xs">
-                {config.label}
-              </Badge>
-              {status === 'in-progress' && (
-                <span className="flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
-              )}
-              <span className="text-xs text-muted-foreground">{date}</span>
-            </div>
-
-            <h3 className="font-semibold text-lg mb-3 truncate">{title}</h3>
-
-            <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Clock className="h-3.5 w-3.5" />
-                <span>{time} • {duration}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3.5 w-3.5" />
-                <span className="truncate">{location}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="h-3.5 w-3.5" />
-                <span>{attendees} attendees</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FileText className="h-3.5 w-3.5" />
-                <span>{agendaItems} items</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick actions - show on hover */}
+      <div className="flex items-center gap-4 p-4">
+        {/* Left: Date Badge */}
+        <div className="flex-shrink-0 text-center">
           <div className={cn(
-            "flex items-center gap-1 transition-all duration-200",
-            isHovered ? "opacity-100" : "opacity-0"
+            "flex flex-col items-center justify-center w-16 h-16 rounded-xl",
+            "bg-gradient-to-br from-background to-muted",
+            "border shadow-sm"
           )}>
-            {quickActions.map((action, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  action.onClick();
-                }}
-              >
-                <action.icon className="h-4 w-4" />
-              </Button>
-            ))}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <MoreVertical className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenuItem onClick={() => {}}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  Duplicate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-destructive" onClick={() => {}}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Delete
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <span className="text-2xl font-bold">{date.split(' ')[1]}</span>
+            <span className="text-xs text-muted-foreground uppercase">{date.split(' ')[0]}</span>
           </div>
         </div>
-      </CardContent>
+
+        {/* Middle: Meeting Info */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant={config.variant} className="text-xs font-medium">
+              {config.label}
+            </Badge>
+            {status === 'in-progress' && (
+              <span className="flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+              </span>
+            )}
+          </div>
+          
+          <h3 className="font-semibold text-base mb-2 truncate group-hover:text-primary transition-colors">
+            {title}
+          </h3>
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              <span>{time}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5" />
+              <span className="truncate max-w-[120px]">{location}</span>
+            </div>
+            {attendees > 0 && (
+              <div className="flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" />
+                <span>{attendees}</span>
+              </div>
+            )}
+            {agendaItems > 0 && (
+              <div className="flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                <span>{agendaItems}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Action Buttons */}
+        <div className="flex-shrink-0 flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            className="gap-2 opacity-0 group-hover:opacity-100 transition-opacity"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/meetings/${id}`);
+            }}
+          >
+            <Play className="h-4 w-4" />
+            <span className="hidden sm:inline">Join</span>
+          </Button>
+          
+          <ChevronRight className={cn(
+            "h-5 w-5 transition-all duration-300",
+            config.text,
+            "group-hover:translate-x-1"
+          )} />
+        </div>
+      </div>
     </Card>
   );
 }

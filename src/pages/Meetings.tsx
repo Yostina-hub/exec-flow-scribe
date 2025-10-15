@@ -98,11 +98,13 @@ export default function Meetings() {
   return (
     <Layout>
       <div className="space-y-6 pb-20">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Meetings</h1>
-              <p className="text-muted-foreground">Manage your meetings effortlessly</p>
+              <h1 className="text-4xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+                Meetings
+              </h1>
+              <p className="text-muted-foreground mt-1">Manage your meetings effortlessly</p>
             </div>
             <CreateMeetingDialog />
           </div>
@@ -114,10 +116,10 @@ export default function Meetings() {
                 placeholder="Search meetings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-muted/50 border-muted-foreground/20 focus:bg-background"
               />
             </div>
-            <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" className="bg-muted/50">
               <Filter className="h-4 w-4" />
             </Button>
           </div>
