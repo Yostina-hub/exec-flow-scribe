@@ -13,14 +13,20 @@ import {
   Users,
   FileText,
   Mic,
+  MicOff,
   Video,
   Play,
+  Pause,
+  Square,
   CheckCircle2,
   Circle,
   ArrowLeft,
   MoreHorizontal,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { LiveTranscription } from "@/components/LiveTranscription";
+import { ContextPanel } from "@/components/ContextPanel";
 
 interface AgendaItem {
   id: string;
@@ -89,13 +95,17 @@ const MeetingDetail = () => {
   const { toast } = useToast();
   const completedItems = agendaItems.filter((item) => item.status === "completed").length;
   const progress = (completedItems / agendaItems.length) * 100;
-
-  const handleStartRecording = () => {
-    toast({
-      title: "Recording Started",
-      description: "Meeting transcription is now active",
-    });
-  };
+  
+  // For demo purposes, using a mock meeting ID. In production, get from URL params
+  const meetingId = "demo-meeting-id";
+  const { 
+    isRecording, 
+    isPaused, 
+    startRecording, 
+    stopRecording, 
+    pauseRecording, 
+    resumeRecording 
+  } = useAudioRecorder(meetingId);
 
   const getStatusIcon = (status: AgendaItem["status"]) => {
     switch (status) {
@@ -158,10 +168,30 @@ const MeetingDetail = () => {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button onClick={handleStartRecording} className="gap-2">
-                  <Mic className="h-4 w-4" />
-                  Start Recording
-                </Button>
+                {!isRecording ? (
+                  <Button onClick={startRecording} className="gap-2">
+                    <Mic className="h-4 w-4" />
+                    Start Recording
+                  </Button>
+                ) : (
+                  <>
+                    {isPaused ? (
+                      <Button onClick={resumeRecording} variant="outline" className="gap-2">
+                        <Play className="h-4 w-4" />
+                        Resume
+                      </Button>
+                    ) : (
+                      <Button onClick={pauseRecording} variant="outline" className="gap-2">
+                        <Pause className="h-4 w-4" />
+                        Pause
+                      </Button>
+                    )}
+                    <Button onClick={stopRecording} variant="destructive" className="gap-2">
+                      <Square className="h-4 w-4" />
+                      Stop Recording
+                    </Button>
+                  </>
+                )}
                 <Button variant="outline" className="gap-2">
                   <Video className="h-4 w-4" />
                   Join Video
@@ -174,14 +204,18 @@ const MeetingDetail = () => {
 
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-3">
-          {/* Agenda & Notes */}
+          {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="agenda" className="w-full">
+            <Tabs defaultValue="transcription" className="w-full">
               <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
-                <TabsTrigger value="notes">Notes</TabsTrigger>
               </TabsList>
+
+              <TabsContent value="transcription" className="space-y-4">
+                <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+              </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
                 <Card>
@@ -258,29 +292,12 @@ const MeetingDetail = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="notes" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Meeting Notes</CardTitle>
-                    <CardDescription>
-                      Live transcription and notes will appear here
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                      <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-sm text-muted-foreground">
-                        Start recording to begin transcription
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
             </Tabs>
           </div>
 
-          {/* Sidebar - Attendees & Info */}
+          {/* Sidebar - Context Panel & Attendees */}
           <div className="space-y-6">
+            <ContextPanel meetingId={meetingId} />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
