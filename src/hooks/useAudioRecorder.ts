@@ -77,8 +77,8 @@ export const useAudioRecorder = (meetingId: string) => {
           const provider = preferences?.provider || 'lovable_ai';
 
           try {
-            if (provider === 'browser') {
-              // Use browser-based Whisper
+            if (provider === 'browser' || provider === 'lovable_ai') {
+              // Use browser-based Whisper for both explicit browser provider and Lemat (lovable_ai)
               const text = await transcribeAudioBrowser(event.data);
               console.log('Browser transcription:', text);
               
@@ -93,7 +93,7 @@ export const useAudioRecorder = (meetingId: string) => {
               });
               if (saveErr) throw saveErr;
             } else {
-              // Use server-side transcription (OpenAI or Lovable AI)
+              // Use server-side transcription (OpenAI)
               const reader = new FileReader();
               reader.onloadend = async () => {
                 const base64Audio = (reader.result as string).split(',')[1];
