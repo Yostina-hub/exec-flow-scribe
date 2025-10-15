@@ -35,11 +35,12 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
             <TabsTrigger value="recording">Recording</TabsTrigger>
+            <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
