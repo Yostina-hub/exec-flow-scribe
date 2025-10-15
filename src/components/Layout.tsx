@@ -1,10 +1,24 @@
 import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu, BarChart3, FileText } from "lucide-react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
 import { supabase } from "@/integrations/supabase/client";
-import { useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { NavLink, useLocation } from "react-router-dom";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarProvider,
+  SidebarTrigger,
+  SidebarHeader,
+  SidebarFooter,
+  useSidebar,
+} from "@/components/ui/sidebar";
 
 interface LayoutProps {
   children: ReactNode;
@@ -20,67 +34,86 @@ const navigation = [
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 
-export const Layout = ({ children }: LayoutProps) => {
+function AppSidebar() {
+  const { open } = useSidebar();
   const location = useLocation();
   
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="container flex h-16 items-center justify-between">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary" />
-              <h1 className="text-xl font-bold">MeetingHub</h1>
-            </div>
-            <nav className="hidden md:flex items-center gap-1">
+    <Sidebar collapsible="icon">
+      <SidebarHeader>
+        <div className="flex items-center gap-3 px-2 py-4">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex-shrink-0" />
+          {open && <h1 className="text-xl font-bold">MeetingHub</h1>}
+        </div>
+      </SidebarHeader>
+
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
               {navigation.map((item) => {
                 const isActive = location.pathname === item.href;
                 return (
-                  <Button
-                    key={item.name}
-                    variant={isActive ? "secondary" : "ghost"}
-                    className="gap-2"
-                    asChild
-                  >
-                    <a href={item.href}>
-                      <item.icon className="h-4 w-4" />
-                      {item.name}
-                    </a>
-                  </Button>
+                  <SidebarMenuItem key={item.name}>
+                    <SidebarMenuButton asChild isActive={isActive}>
+                      <NavLink to={item.href}>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.name}</span>
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 );
               })}
-            </nav>
-          </div>
-          <div className="flex items-center gap-4">
-            <QuickSearch />
-            <Button variant="ghost" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
-            </Button>
-            <div className="hidden md:flex items-center gap-3">
-              <div className="text-right text-sm">
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+
+      <SidebarFooter>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            {open && (
+              <div className="px-2 py-2 text-sm">
                 <p className="font-medium">CEO Office</p>
                 <p className="text-xs text-muted-foreground">Executive Access</p>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  await supabase.auth.signOut();
-                }}
-                className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-semibold"
-              >
-                CE
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+            )}
+            <SidebarMenuButton onClick={handleLogout}>
+              <LogOut className="h-4 w-4" />
+              <span>Sign Out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
 
-      {/* Main Content */}
-      <main className="container py-8">
-        {children}
-      </main>
-    </div>
+export const Layout = ({ children }: LayoutProps) => {
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        
+        <div className="flex-1 flex flex-col w-full">
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center gap-4 px-4">
+              <SidebarTrigger />
+              <div className="flex-1" />
+              <QuickSearch />
+            </div>
+          </header>
+
+          <main className="flex-1 p-6">
+            {children}
+          </main>
+        </div>
+      </div>
+    </SidebarProvider>
   );
 };
