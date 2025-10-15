@@ -83,7 +83,9 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
         .eq('user_id', user.id)
         .maybeSingle();
 
-      setUseRealtime(data?.provider === 'openai_realtime');
+      const p = data?.provider as string | undefined;
+      // Treat 'openai_realtime' as well as 'lovable_ai' (default) as realtime mode
+      setUseRealtime(p === 'openai_realtime' || p === 'lovable_ai' || !p);
     };
 
     checkRealtimeMode();

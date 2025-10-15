@@ -83,7 +83,12 @@ export const useAudioRecorder = (meetingId: string) => {
           const provider = preferences?.provider || 'lovable_ai';
 
           try {
-            if (provider === 'browser' || provider === 'lovable_ai') {
+            // Determine provider behavior
+            if (provider === 'openai_realtime' || provider === 'lovable_ai') {
+              // Realtime mode (or default): handled by OpenAI Realtime via WebRTC.
+              // Do not run browser/server chunk transcription to avoid conflicts and errors.
+              return;
+            } else if (provider === 'browser') {
               // Use only the latest chunk to ensure a valid WebM container
               const latest = chunksRef.current[chunksRef.current.length - 1];
               if (!latest || latest.size < 8192) return; // skip tiny/partial segments
@@ -103,8 +108,8 @@ export const useAudioRecorder = (meetingId: string) => {
                 });
                 if (saveErr) throw saveErr;
               }
-            } else {
-              // Use server-side transcription (OpenAI)
+            } else if (provider === 'openai') {
+              // Use server-side transcription (OpenAI Whisper)
               const reader = new FileReader();
               reader.onloadend = async () => {
                 const base64Audio = (reader.result as string).split(',')[1];
