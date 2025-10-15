@@ -21,21 +21,33 @@ interface LiveTranscriptionProps {
   isRecording: boolean;
 }
 
-// Normalize meeting IDs: if not a UUID, map deterministically via localStorage
+// Normalize meeting IDs deterministically so client/server match without localStorage
+const stringToUUID = (input: string) => {
+  const s = String(input);
+  let h1 = 0xdeadbeef >>> 0, h2 = 0x41c6ce57 >>> 0;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761) >>> 0;
+    h2 = Math.imul(h2 ^ ch, 1597334677) >>> 0;
+  }
+  h1 = (h1 ^ (h1 >>> 16)) >>> 0;
+  h2 = (h2 ^ (h2 >>> 13)) >>> 0;
+  const bytes = new Uint8Array(16);
+  const v = new DataView(bytes.buffer);
+  v.setUint32(0, h1);
+  v.setUint32(4, h2);
+  v.setUint32(8, h1 ^ h2);
+  v.setUint32(12, (h1 >>> 1) ^ (h2 << 1));
+  // RFC 4122 variant & version
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+  return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+};
+
 const normalizeMeetingId = (id: string) => {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (uuidRegex.test(id)) return id;
-  try {
-    const key = `meeting-id-map:${id}`;
-    let mapped = localStorage.getItem(key);
-    if (!mapped) {
-      mapped = crypto.randomUUID();
-      localStorage.setItem(key, mapped);
-    }
-    return mapped;
-  } catch {
-    return id;
-  }
+  return uuidRegex.test(id) ? id : stringToUUID(id);
 };
 
 export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionProps) => {

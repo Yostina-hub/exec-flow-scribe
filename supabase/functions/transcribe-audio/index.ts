@@ -15,10 +15,32 @@ serve(async (req) => {
 
   try {
     const { audioBase64, meetingId } = await req.json();
-
     if (!audioBase64 || !meetingId) {
       throw new Error("Audio data and meeting ID are required");
     }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    function stringToUUID(input: string) {
+      const s = String(input);
+      let h1 = 0xdeadbeef >>> 0, h2 = 0x41c6ce57 >>> 0;
+      for (let i = 0; i < s.length; i++) {
+        const ch = s.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761) >>> 0;
+        h2 = Math.imul(h2 ^ ch, 1597334677) >>> 0;
+      }
+      h1 = (h1 ^ (h1 >>> 16)) >>> 0;
+      h2 = (h2 ^ (h2 >>> 13)) >>> 0;
+      const bytes = new Uint8Array(16);
+      const v = new DataView(bytes.buffer);
+      v.setUint32(0, h1);
+      v.setUint32(4, h2);
+      v.setUint32(8, h1 ^ h2);
+      v.setUint32(12, (h1 >>> 1) ^ (h2 << 1));
+      bytes[6] = (bytes[6] & 0x0f) | 0x40;
+      bytes[8] = (bytes[8] & 0x3f) | 0x80;
+      const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+      return `${hex.slice(0,8)}-${hex.slice(8,12)}-${hex.slice(12,16)}-${hex.slice(16,20)}-${hex.slice(20)}`;
+    }
+    const normalizedMeetingId = uuidRegex.test(String(meetingId)) ? String(meetingId) : stringToUUID(String(meetingId));
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
@@ -138,7 +160,7 @@ serve(async (req) => {
 
     // Save transcription to database
     const { error: dbError } = await supabase.from("transcriptions").insert({
-      meeting_id: meetingId,
+      meeting_id: normalizedMeetingId,
       content: transcriptText,
       timestamp: new Date().toISOString(),
       confidence_score: 0.95,
