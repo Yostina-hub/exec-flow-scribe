@@ -99,18 +99,7 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
         currentRoleIds.add(adminRole.id);
       }
 
-      // Remove roles
-      if (rolesToRemove.length > 0) {
-        const { error: deleteError } = await supabase
-          .from("user_roles")
-          .delete()
-          .eq("user_id", user.id)
-          .in("role_id", rolesToRemove);
-
-        if (deleteError) throw deleteError;
-      }
-
-      // Add roles (excluding Admin if we already inserted it during bootstrap)
+      // Add roles first to avoid losing permissions mid-operation (e.g., removing your own Admin)
       const remainingToAdd = rolesToAdd.filter((id) => !(adminRole && id === adminRole.id));
       if (remainingToAdd.length > 0) {
         const { error: insertError } = await supabase
@@ -124,6 +113,17 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
           );
 
         if (insertError) throw insertError;
+      }
+
+      // Remove roles after inserts complete
+      if (rolesToRemove.length > 0) {
+        const { error: deleteError } = await supabase
+          .from("user_roles")
+          .delete()
+          .eq("user_id", user.id)
+          .in("role_id", rolesToRemove);
+
+        if (deleteError) throw deleteError;
       }
 
       toast.success("User roles updated successfully");
