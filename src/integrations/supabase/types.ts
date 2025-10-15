@@ -141,6 +141,54 @@ export type Database = {
         }
         Relationships: []
       }
+      brand_kits: {
+        Row: {
+          color_accent: string | null
+          color_primary: string | null
+          color_secondary: string | null
+          created_at: string | null
+          created_by: string
+          footer_template: string | null
+          header_template: string | null
+          id: string
+          is_default: boolean | null
+          logo_url: string | null
+          organization_name: string
+          updated_at: string | null
+          watermark_text: string | null
+        }
+        Insert: {
+          color_accent?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
+          created_at?: string | null
+          created_by: string
+          footer_template?: string | null
+          header_template?: string | null
+          id?: string
+          is_default?: boolean | null
+          logo_url?: string | null
+          organization_name: string
+          updated_at?: string | null
+          watermark_text?: string | null
+        }
+        Update: {
+          color_accent?: string | null
+          color_primary?: string | null
+          color_secondary?: string | null
+          created_at?: string | null
+          created_by?: string
+          footer_template?: string | null
+          header_template?: string | null
+          id?: string
+          is_default?: boolean | null
+          logo_url?: string | null
+          organization_name?: string
+          updated_at?: string | null
+          watermark_text?: string | null
+        }
+        Relationships: []
+      }
       confirmation_requests: {
         Row: {
           created_at: string | null
@@ -321,6 +369,125 @@ export type Database = {
           },
         ]
       }
+      distribution_profiles: {
+        Row: {
+          audience_type: string
+          created_at: string | null
+          created_by: string
+          custom_filters: Json | null
+          description: string | null
+          id: string
+          include_sensitive_sections: boolean | null
+          name: string
+          redact_financial: boolean | null
+          redact_hr: boolean | null
+          redact_legal: boolean | null
+        }
+        Insert: {
+          audience_type: string
+          created_at?: string | null
+          created_by: string
+          custom_filters?: Json | null
+          description?: string | null
+          id?: string
+          include_sensitive_sections?: boolean | null
+          name: string
+          redact_financial?: boolean | null
+          redact_hr?: boolean | null
+          redact_legal?: boolean | null
+        }
+        Update: {
+          audience_type?: string
+          created_at?: string | null
+          created_by?: string
+          custom_filters?: Json | null
+          description?: string | null
+          id?: string
+          include_sensitive_sections?: boolean | null
+          name?: string
+          redact_financial?: boolean | null
+          redact_hr?: boolean | null
+          redact_legal?: boolean | null
+        }
+        Relationships: []
+      }
+      distribution_recipients: {
+        Row: {
+          created_at: string | null
+          id: string
+          profile_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          profile_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          profile_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_recipients_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_distributions: {
+        Row: {
+          distribution_profile_id: string | null
+          error_message: string | null
+          id: string
+          pdf_generation_id: string
+          recipients: Json
+          sent_at: string | null
+          sent_by: string
+          status: string
+        }
+        Insert: {
+          distribution_profile_id?: string | null
+          error_message?: string | null
+          id?: string
+          pdf_generation_id: string
+          recipients: Json
+          sent_at?: string | null
+          sent_by: string
+          status?: string
+        }
+        Update: {
+          distribution_profile_id?: string | null
+          error_message?: string | null
+          id?: string
+          pdf_generation_id?: string
+          recipients?: Json
+          sent_at?: string | null
+          sent_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_distributions_distribution_profile_id_fkey"
+            columns: ["distribution_profile_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_distributions_pdf_generation_id_fkey"
+            columns: ["pdf_generation_id"]
+            isOneToOne: false
+            referencedRelation: "pdf_generations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fact_checks: {
         Row: {
           check_result: Json
@@ -431,6 +598,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_exhibits: {
+        Row: {
+          created_at: string | null
+          exhibit_name: string
+          exhibit_type: string
+          file_url: string
+          id: string
+          meeting_id: string
+          order_index: number
+          page_reference: string | null
+          uploaded_by: string
+        }
+        Insert: {
+          created_at?: string | null
+          exhibit_name: string
+          exhibit_type: string
+          file_url: string
+          id?: string
+          meeting_id: string
+          order_index?: number
+          page_reference?: string | null
+          uploaded_by: string
+        }
+        Update: {
+          created_at?: string | null
+          exhibit_name?: string
+          exhibit_type?: string
+          file_url?: string
+          id?: string
+          meeting_id?: string
+          order_index?: number
+          page_reference?: string | null
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_exhibits_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
@@ -582,6 +793,67 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pdf_generations: {
+        Row: {
+          approval_stamp: Json
+          brand_kit_id: string | null
+          exhibits_included: number | null
+          generated_at: string | null
+          generated_by: string
+          id: string
+          meeting_id: string
+          minutes_version_id: string
+          pdf_url: string
+          watermark_applied: string | null
+        }
+        Insert: {
+          approval_stamp: Json
+          brand_kit_id?: string | null
+          exhibits_included?: number | null
+          generated_at?: string | null
+          generated_by: string
+          id?: string
+          meeting_id: string
+          minutes_version_id: string
+          pdf_url: string
+          watermark_applied?: string | null
+        }
+        Update: {
+          approval_stamp?: Json
+          brand_kit_id?: string | null
+          exhibits_included?: number | null
+          generated_at?: string | null
+          generated_by?: string
+          id?: string
+          meeting_id?: string
+          minutes_version_id?: string
+          pdf_url?: string
+          watermark_applied?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pdf_generations_brand_kit_id_fkey"
+            columns: ["brand_kit_id"]
+            isOneToOne: false
+            referencedRelation: "brand_kits"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_generations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pdf_generations_minutes_version_id_fkey"
+            columns: ["minutes_version_id"]
+            isOneToOne: false
+            referencedRelation: "minutes_versions"
             referencedColumns: ["id"]
           },
         ]
