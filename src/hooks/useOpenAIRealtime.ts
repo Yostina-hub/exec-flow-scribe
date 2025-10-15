@@ -28,12 +28,30 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
 
     const handleError = (error: string) => {
       console.error('Realtime error:', error);
+      const isRateLimited = /429|rate limit|Too Many Requests/i.test(error);
       toast({
-        title: 'Connection Error',
-        description: error,
+        title: isRateLimited ? 'Rate Limited' : 'Connection Error',
+        description: isRateLimited
+          ? 'OpenAI Realtime hit rate limits. We will retry in 10s. You can switch to Browser Whisper in Settings > Transcription.'
+          : error,
         variant: 'destructive',
       });
       setIsConnected(false);
+
+      // Backoff + retry on rate limits
+      if (isRateLimited && clientRef.current) {
+        try { clientRef.current.disconnect(); } catch {}
+        setTimeout(() => {
+          clientRef.current?.connect(meetingId)
+            .then(() => {
+              setIsConnected(true);
+              toast({ title: 'Reconnected', description: 'Realtime transcription resumed.' });
+            })
+            .catch((err) => {
+              console.error('Retry connect failed:', err);
+            });
+        }, 10_000);
+      }
     };
 
     const client = new OpenAIRealtimeClient(handleTranscript, handleError);
