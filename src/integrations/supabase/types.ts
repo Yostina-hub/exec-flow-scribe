@@ -2071,6 +2071,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      seed_sample_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       action_priority: "low" | "medium" | "high"
