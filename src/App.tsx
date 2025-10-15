@@ -12,6 +12,7 @@ import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
 import MeetingDetail from "./pages/MeetingDetail";
 import MinutesEditor from "./pages/MinutesEditor";
+import SignatureApproval from "./pages/SignatureApproval";
 import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
 import Auth from "./pages/Auth";
@@ -65,6 +66,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MinutesEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/signature/:requestId"
+            element={
+              <ProtectedRoute>
+                <SignatureApproval />
               </ProtectedRoute>
             }
           />

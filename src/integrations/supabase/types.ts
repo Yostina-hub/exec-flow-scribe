@@ -188,6 +188,57 @@ export type Database = {
           },
         ]
       }
+      countersignatures: {
+        Row: {
+          assigned_to: string | null
+          created_at: string | null
+          id: string
+          notes: string | null
+          required_role: string
+          section_sensitivity_id: string
+          signature_request_id: string
+          signed_at: string | null
+          status: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          required_role: string
+          section_sensitivity_id: string
+          signature_request_id: string
+          signed_at?: string | null
+          status?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          required_role?: string
+          section_sensitivity_id?: string
+          signature_request_id?: string
+          signed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "countersignatures_section_sensitivity_id_fkey"
+            columns: ["section_sensitivity_id"]
+            isOneToOne: false
+            referencedRelation: "section_sensitivities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "countersignatures_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decisions: {
         Row: {
           context: string | null
@@ -222,6 +273,50 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      delegation_records: {
+        Row: {
+          created_at: string | null
+          cryptographic_hash: string
+          delegated_at: string | null
+          delegated_from: string
+          delegated_to: string
+          id: string
+          reason_code: string
+          reason_details: string | null
+          signature_request_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          cryptographic_hash: string
+          delegated_at?: string | null
+          delegated_from: string
+          delegated_to: string
+          id?: string
+          reason_code: string
+          reason_details?: string | null
+          signature_request_id: string
+        }
+        Update: {
+          created_at?: string | null
+          cryptographic_hash?: string
+          delegated_at?: string | null
+          delegated_from?: string
+          delegated_to?: string
+          id?: string
+          reason_code?: string
+          reason_details?: string | null
+          signature_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delegation_records_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -607,6 +702,107 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      section_sensitivities: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          id: string
+          meeting_id: string
+          redacted_for_distribution: boolean | null
+          requires_countersignature: boolean | null
+          section_content: string
+          section_type: string
+          sensitivity_level: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          id?: string
+          meeting_id: string
+          redacted_for_distribution?: boolean | null
+          requires_countersignature?: boolean | null
+          section_content: string
+          section_type: string
+          sensitivity_level?: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          redacted_for_distribution?: boolean | null
+          requires_countersignature?: boolean | null
+          section_content?: string
+          section_type?: string
+          sensitivity_level?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_sensitivities_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      signature_requests: {
+        Row: {
+          assigned_to: string
+          created_at: string | null
+          id: string
+          meeting_id: string
+          minutes_version_id: string
+          package_data: Json
+          rejection_reason: string | null
+          requested_at: string | null
+          requested_by: string
+          signed_at: string | null
+          status: string
+        }
+        Insert: {
+          assigned_to: string
+          created_at?: string | null
+          id?: string
+          meeting_id: string
+          minutes_version_id: string
+          package_data: Json
+          rejection_reason?: string | null
+          requested_at?: string | null
+          requested_by: string
+          signed_at?: string | null
+          status?: string
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string | null
+          id?: string
+          meeting_id?: string
+          minutes_version_id?: string
+          package_data?: Json
+          rejection_reason?: string | null
+          requested_at?: string | null
+          requested_by?: string
+          signed_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signature_requests_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signature_requests_minutes_version_id_fkey"
+            columns: ["minutes_version_id"]
+            isOneToOne: false
+            referencedRelation: "minutes_versions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcript_versions: {
         Row: {

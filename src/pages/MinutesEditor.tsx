@@ -12,6 +12,7 @@ import { WaveformViewer } from '@/components/minutes/WaveformViewer';
 import { ConfidenceHeatmap } from '@/components/minutes/ConfidenceHeatmap';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
+import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
 
 interface TranscriptSegment {
   id: string;
@@ -34,6 +35,8 @@ export default function MinutesEditor() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
+  const [sensitiveSections, setSensitiveSections] = useState<any[]>([]);
+  const [isSubmittingForSignOff, setIsSubmittingForSignOff] = useState(false);
 
   useEffect(() => {
     if (meetingId) {
@@ -102,6 +105,16 @@ export default function MinutesEditor() {
 
       if (minutesData) {
         setMinutes(minutesData.content);
+      }
+
+      // Fetch sensitive sections
+      const { data: sections } = await supabase
+        .from('section_sensitivities')
+        .select('*')
+        .eq('meeting_id', meetingId);
+
+      if (sections) {
+        setSensitiveSections(sections);
       }
     } catch (error) {
       console.error('Error fetching meeting data:', error);
@@ -221,6 +234,109 @@ export default function MinutesEditor() {
     // TODO: Seek audio/video to this timestamp
   };
 
+  const handleSubmitForSignOff = async () => {
+    try {
+      setIsSubmittingForSignOff(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Save current minutes first
+      await handleSaveMinutes();
+
+      // Get latest minutes version
+      const { data: latestVersion, error: versionError } = await supabase
+        .from('minutes_versions')
+        .select('id, content')
+        .eq('meeting_id', meetingId)
+        .order('version_number', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (versionError) throw versionError;
+      if (!latestVersion) {
+        toast({ title: 'Error', description: 'No minutes to submit', variant: 'destructive' });
+        return;
+      }
+
+      // Fetch decisions and actions
+      const { data: decisions } = await supabase
+        .from('decisions')
+        .select('decision_text, timestamp, context')
+        .eq('meeting_id', meetingId);
+
+      const { data: actions } = await supabase
+        .from('action_items')
+        .select('title, due_date, priority, assigned_to')
+        .eq('meeting_id', meetingId);
+
+      // Get assignee names
+      const assigneeNames = new Map<string, string>();
+      if (actions) {
+        const uniqueUserIds = [...new Set(actions.map(a => a.assigned_to))];
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', uniqueUserIds);
+        
+        profiles?.forEach(p => assigneeNames.set(p.id, p.full_name || 'Unknown'));
+      }
+
+      // Format package data
+      const packageData = {
+        minutes: latestVersion.content,
+        decisions: decisions || [],
+        actions: (actions || []).map(a => ({
+          ...a,
+          assigned_to: assigneeNames.get(a.assigned_to) || 'Unknown',
+        })),
+        sensitiveSections: sensitiveSections.map(s => ({
+          section_type: s.section_type,
+          sensitivity_level: s.sensitivity_level,
+        })),
+      };
+
+      // Get CEO or default approver (for demo, use first user with admin role)
+      const { data: adminUsers } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .limit(1);
+
+      const approver = adminUsers?.[0]?.user_id || user.id;
+
+      // Create signature request
+      const { data: request, error: requestError } = await supabase
+        .from('signature_requests')
+        .insert({
+          meeting_id: meetingId,
+          minutes_version_id: latestVersion.id,
+          requested_by: user.id,
+          assigned_to: approver,
+          package_data: packageData,
+        })
+        .select()
+        .single();
+
+      if (requestError) throw requestError;
+
+      toast({
+        title: 'Success',
+        description: 'Minutes submitted for CEO sign-off',
+      });
+
+      // Navigate to signature approval page
+      navigate(`/signature/${request.id}`);
+    } catch (error: any) {
+      console.error('Error submitting for sign-off:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to submit for sign-off',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSubmittingForSignOff(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -252,9 +368,9 @@ export default function MinutesEditor() {
               <Save className="w-4 h-4 mr-2" />
               {isSaving ? 'Saving...' : 'Save (Ctrl+S)'}
             </Button>
-            <Button onClick={handleRatifyMinutes} variant="default">
+            <Button onClick={handleSubmitForSignOff} disabled={isSubmittingForSignOff} variant="default">
               <CheckCircle className="w-4 h-4 mr-2" />
-              Ratify & Lock
+              {isSubmittingForSignOff ? 'Submitting...' : 'Submit for Sign-Off'}
             </Button>
           </div>
         </div>
@@ -364,11 +480,20 @@ export default function MinutesEditor() {
                 )}
               </TabsContent>
 
-              <TabsContent value="factcheck" className="flex-1 m-0">
+              <TabsContent value="factcheck" className="flex-1 m-0 p-4">
                 <FactCheckPanel meetingId={meetingId!} transcript={transcript} />
               </TabsContent>
             </Tabs>
           </div>
+        </div>
+
+        {/* Sensitive Sections Panel */}
+        <div className="border-t p-4">
+          <SensitiveSectionManager
+            meetingId={meetingId!}
+            sections={sensitiveSections}
+            onUpdate={fetchMeetingData}
+          />
         </div>
       </div>
     </Layout>
