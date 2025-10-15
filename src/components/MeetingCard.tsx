@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MeetingCardProps {
+  id: string;
   title: string;
   date: string;
   time: string;
@@ -31,6 +32,7 @@ const statusConfig = {
 };
 
 export const MeetingCard = ({
+  id,
   title,
   date,
   time,
@@ -76,7 +78,7 @@ export const MeetingCard = ({
         </div>
         <div className="flex gap-2 mt-4">
           <Button size="sm" className="flex-1" asChild>
-            <a href="/meetings/1">View Details</a>
+            <a href={`/meetings/${id}`}>View Details</a>
           </Button>
           <Button size="sm" variant="outline">Agenda</Button>
         </div>

@@ -9,6 +9,7 @@ import { useState } from "react";
 
 const allMeetings = [
   {
+    id: "1b09fe77-8677-4ac1-9d7e-34b6016b6ab9",
     title: "Executive Strategy Review",
     date: "Today",
     time: "2:00 PM",
@@ -19,6 +20,7 @@ const allMeetings = [
     agendaItems: 6,
   },
   {
+    id: "2c19fe88-9788-5bc2-ae8f-45c7027c7bca",
     title: "Weekly Operations Sync",
     date: "Today",
     time: "4:30 PM",
@@ -29,6 +31,7 @@ const allMeetings = [
     agendaItems: 3,
   },
   {
+    id: "3d29fe99-a899-6cd3-bf9g-56d8138d8cdb",
     title: "Quarterly Planning Session",
     date: "Tomorrow",
     time: "10:00 AM",
@@ -39,6 +42,7 @@ const allMeetings = [
     agendaItems: 8,
   },
   {
+    id: "4e39fea0-ba90-7de4-cg0h-67e9249e9dec",
     title: "Product Roadmap Discussion",
     date: "Dec 20",
     time: "3:00 PM",
@@ -49,6 +53,7 @@ const allMeetings = [
     agendaItems: 4,
   },
   {
+    id: "5f49feb1-cb01-8ef5-dh1i-78fa35af0efd",
     title: "Leadership Team Meeting",
     date: "Dec 16",
     time: "1:00 PM",
@@ -59,6 +64,7 @@ const allMeetings = [
     agendaItems: 7,
   },
   {
+    id: "6g59fec2-dc12-9fg6-ei2j-89gb46bg1fge",
     title: "Investor Relations Call",
     date: "Dec 15",
     time: "11:00 AM",
@@ -69,6 +75,7 @@ const allMeetings = [
     agendaItems: 5,
   },
   {
+    id: "7h69fed3-ed23-0gh7-fj3k-90hc57ch2ghf",
     title: "Budget Review Meeting",
     date: "Dec 14",
     time: "2:00 PM",

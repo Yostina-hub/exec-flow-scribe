@@ -41,6 +41,7 @@ const stats = [
 
 const upcomingMeetings = [
   {
+    id: "1b09fe77-8677-4ac1-9d7e-34b6016b6ab9",
     title: "Executive Strategy Review",
     date: "Today",
     time: "2:00 PM",
@@ -51,6 +52,7 @@ const upcomingMeetings = [
     agendaItems: 6,
   },
   {
+    id: "3d29fe99-a899-6cd3-bf9g-56d8138d8cdb",
     title: "Quarterly Planning Session",
     date: "Tomorrow",
     time: "10:00 AM",
@@ -61,6 +63,7 @@ const upcomingMeetings = [
     agendaItems: 8,
   },
   {
+    id: "4e39fea0-ba90-7de4-cg0h-67e9249e9dec",
     title: "Product Roadmap Discussion",
     date: "Dec 20",
     time: "3:00 PM",
