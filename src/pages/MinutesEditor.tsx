@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft } from 'lucide-react';
 import { WaveformViewer } from '@/components/minutes/WaveformViewer';
 import { ConfidenceHeatmap } from '@/components/minutes/ConfidenceHeatmap';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
@@ -33,12 +33,25 @@ export default function MinutesEditor() {
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState('');
 
   useEffect(() => {
     if (meetingId) {
       fetchMeetingData();
     }
   }, [meetingId]);
+
+  // Keyboard shortcut for save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleSaveMinutes();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [minutes]);
 
   const fetchMeetingData = async () => {
     try {
@@ -66,6 +79,18 @@ export default function MinutesEditor() {
 
       setTranscript(segments);
 
+      // Fetch meeting details
+      const { data: meeting } = await supabase
+        .from('meetings')
+        .select('title')
+        .eq('id', meetingId)
+        .single();
+
+      if (meeting) {
+        setMeetingTitle(meeting.title);
+        document.title = `Minutes Editor - ${meeting.title}`;
+      }
+
       // Fetch latest minutes version
       const { data: minutesData } = await supabase
         .from('minutes_versions')
@@ -73,7 +98,7 @@ export default function MinutesEditor() {
         .eq('meeting_id', meetingId)
         .order('version_number', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (minutesData) {
         setMinutes(minutesData.content);
@@ -210,15 +235,22 @@ export default function MinutesEditor() {
     <Layout>
       <div className="h-full flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
-          <div>
-            <h1 className="text-2xl font-bold">Minutes Polisher</h1>
-            <p className="text-sm text-muted-foreground">Edit and refine meeting minutes</p>
+        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => navigate(`/meetings/${meetingId}`)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold">Minutes Polisher</h1>
+              <p className="text-sm text-muted-foreground">
+                {meetingTitle || 'Edit and refine meeting minutes'} • {minutes.split(/\s+/).filter(w => w).length} words
+              </p>
+            </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleSaveMinutes} disabled={isSaving}>
+            <Button onClick={handleSaveMinutes} disabled={isSaving} variant="outline">
               <Save className="w-4 h-4 mr-2" />
-              {isSaving ? 'Saving...' : 'Save Version'}
+              {isSaving ? 'Saving...' : 'Save (Ctrl+S)'}
             </Button>
             <Button onClick={handleRatifyMinutes} variant="default">
               <CheckCircle className="w-4 h-4 mr-2" />
@@ -259,33 +291,43 @@ export default function MinutesEditor() {
 
                 {/* Transcript Segments */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {transcript.map((segment) => (
-                    <Card
-                      key={segment.id}
-                      className={`p-4 cursor-pointer transition-colors ${
-                        selectedSegment?.id === segment.id ? 'border-primary' : ''
-                      }`}
-                      onClick={() => handleSegmentClick(segment)}
-                    >
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="font-semibold text-sm">{segment.speaker}</span>
-                            <span className="text-xs text-muted-foreground">{segment.timestamp}</span>
-                            {segment.confidence < 0.7 && (
-                              <AlertTriangle className="w-4 h-4 text-destructive" />
-                            )}
-                          </div>
-                          <p className="text-sm">{segment.content}</p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <div className="text-xs text-muted-foreground">
-                              Confidence: {(segment.confidence * 100).toFixed(0)}%
+                  {transcript.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <FileText className="w-16 h-16 text-muted-foreground/50 mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">No Transcript Available</h3>
+                      <p className="text-sm text-muted-foreground max-w-md">
+                        Start recording the meeting or upload audio to generate a transcript
+                      </p>
+                    </div>
+                  ) : (
+                    transcript.map((segment) => (
+                      <Card
+                        key={segment.id}
+                        className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                          selectedSegment?.id === segment.id ? 'border-primary ring-2 ring-primary/20' : ''
+                        }`}
+                        onClick={() => handleSegmentClick(segment)}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <span className="font-semibold text-sm">{segment.speaker}</span>
+                              <span className="text-xs text-muted-foreground">{segment.timestamp}</span>
+                              {segment.confidence < 0.7 && (
+                                <AlertTriangle className="w-4 h-4 text-destructive" />
+                              )}
+                            </div>
+                            <p className="text-sm">{segment.content}</p>
+                            <div className="mt-2 flex items-center gap-2">
+                              <div className="text-xs text-muted-foreground">
+                                Confidence: {(segment.confidence * 100).toFixed(0)}%
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))
+                  )}
                 </div>
               </TabsContent>
 
@@ -304,12 +346,22 @@ export default function MinutesEditor() {
               </TabsList>
 
               <TabsContent value="minutes" className="flex-1 m-0 p-4">
-                <Textarea
-                  value={minutes}
-                  onChange={(e) => setMinutes(e.target.value)}
-                  className="h-full resize-none font-mono text-sm"
-                  placeholder="Edit polished minutes here..."
-                />
+                {minutes || transcript.length > 0 ? (
+                  <Textarea
+                    value={minutes}
+                    onChange={(e) => setMinutes(e.target.value)}
+                    className="h-full resize-none font-mono text-sm leading-relaxed"
+                    placeholder="Type or paste your polished minutes here...&#10;&#10;Tip: Use the transcript on the left as reference. Press Ctrl+S to save."
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                    <FileText className="w-16 h-16 text-muted-foreground/50 mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Start Writing Minutes</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">
+                      Click here to start typing your meeting minutes. You can reference the transcript on the left.
+                    </p>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="factcheck" className="flex-1 m-0">
