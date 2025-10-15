@@ -2,6 +2,7 @@ import { ReactNode } from "react";
 import { Calendar, LayoutDashboard, CheckSquare, Settings, Menu, BarChart3, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
+import { supabase } from "@/integrations/supabase/client";
 import { useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 
@@ -61,9 +62,16 @@ export const Layout = ({ children }: LayoutProps) => {
                 <p className="font-medium">CEO Office</p>
                 <p className="text-xs text-muted-foreground">Executive Access</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-semibold">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                }}
+                className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-primary-foreground font-semibold"
+              >
                 CE
-              </div>
+              </Button>
             </div>
           </div>
         </div>

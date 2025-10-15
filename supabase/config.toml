@@ -1,0 +1,7 @@
+project_id = "xtqsvwhwzxcutwdbxzyn"
+
+[functions.transcribe-audio]
+verify_jwt = true
+
+[functions.generate-minutes]
+verify_jwt = true
