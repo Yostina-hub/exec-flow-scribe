@@ -178,48 +178,62 @@ const MeetingDetail = () => {
           </div>
         </div>
 
-        {/* Meeting Controls */}
-        <Card className="border-primary/20 bg-primary/5">
-          <CardContent className="pt-6">
+        {/* Enhanced Meeting Controls */}
+        <Card className="border-0 bg-gradient-to-br from-background via-muted/20 to-background backdrop-blur-xl overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 animate-pulse" />
+          <CardContent className="pt-6 relative z-10">
             <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="space-y-1">
-                <p className="text-sm font-medium">Meeting in progress</p>
-                <p className="text-xs text-muted-foreground">
-                  {completedItems} of {agendaItems.length} agenda items completed
-                </p>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg animate-pulse">
+                    <Mic className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-lg font-['Space_Grotesk']">Meeting in progress</p>
+                    <p className="text-sm text-muted-foreground">
+                      {completedItems} of {agendaItems.length} agenda items completed
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 {!isRecording ? (
-                  <Button onClick={startRecording} className="gap-2">
+                  <Button 
+                    onClick={startRecording} 
+                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+                  >
                     <Mic className="h-4 w-4" />
                     Start Recording
                   </Button>
                 ) : (
                   <>
                     {isPaused ? (
-                      <Button onClick={resumeRecording} variant="outline" className="gap-2">
+                      <Button onClick={resumeRecording} variant="outline" className="gap-2 hover:scale-105 transition-all duration-300">
                         <Play className="h-4 w-4" />
                         Resume
                       </Button>
                     ) : (
-                      <Button onClick={pauseRecording} variant="outline" className="gap-2">
+                      <Button onClick={pauseRecording} variant="outline" className="gap-2 hover:scale-105 transition-all duration-300">
                         <Pause className="h-4 w-4" />
                         Pause
                       </Button>
                     )}
-                    <Button onClick={stopRecording} variant="destructive" className="gap-2">
+                    <Button onClick={stopRecording} variant="destructive" className="gap-2 hover:scale-105 transition-all duration-300 shadow-lg">
                       <Square className="h-4 w-4" />
                       Stop Recording
                     </Button>
                   </>
                 )}
-                <Button variant="outline" className="gap-2">
+                <Button variant="outline" className="gap-2 hover:scale-105 transition-all duration-300">
                   <Video className="h-4 w-4" />
                   Join Video
                 </Button>
               </div>
             </div>
-            <Progress value={progress} className="mt-4" />
+            <div className="mt-4 relative">
+              <Progress value={progress} className="h-2" />
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 rounded-full blur-sm animate-pulse pointer-events-none" />
+            </div>
           </CardContent>
         </Card>
 
