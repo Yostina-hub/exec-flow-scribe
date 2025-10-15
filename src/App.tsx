@@ -14,6 +14,7 @@ import MeetingDetail from "./pages/MeetingDetail";
 import Settings from "./pages/Settings";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import DocumentViewer from "./components/DocumentViewer";
 
 const queryClient = new QueryClient();
 
@@ -89,6 +90,7 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route path="/document" element={<DocumentViewer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
