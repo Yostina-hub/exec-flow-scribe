@@ -30,6 +30,9 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { LiveTranscription } from "@/components/LiveTranscription";
 import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
+import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
+import { RescheduleMeetingDialog } from "@/components/RescheduleMeetingDialog";
+import { ManageAttendeesDialog } from "@/components/ManageAttendeesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
@@ -105,6 +108,9 @@ const MeetingDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
+  const [showViewMinutesDialog, setShowViewMinutesDialog] = useState(false);
+  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
+  const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
@@ -478,7 +484,6 @@ const MeetingDetail = () => {
                   variant="default" 
                   className="w-full justify-start gap-2"
                   onClick={() => setShowMinutesDialog(true)}
-                  disabled={!meeting?.minutes_url}
                 >
                   <FileText className="h-4 w-4" />
                   Generate AI Minutes
@@ -504,21 +509,7 @@ const MeetingDetail = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={() => {
-                    if (meeting?.minutes_url) {
-                      // Show minutes in a modal or new view
-                      toast({
-                        title: "Meeting Minutes",
-                        description: "Viewing current meeting minutes",
-                      });
-                    } else {
-                      toast({
-                        title: "No Minutes Available",
-                        description: "Generate AI minutes first",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
+                  onClick={() => setShowViewMinutesDialog(true)}
                   disabled={!meeting?.minutes_url}
                 >
                   <FileText className="h-4 w-4" />
@@ -527,13 +518,7 @@ const MeetingDetail = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={async () => {
-                    // Implement reschedule functionality
-                    toast({
-                      title: "Reschedule Meeting",
-                      description: "Meeting rescheduling will open in dialog",
-                    });
-                  }}
+                  onClick={() => setShowRescheduleDialog(true)}
                 >
                   <Calendar className="h-4 w-4" />
                   Reschedule Meeting
@@ -541,13 +526,7 @@ const MeetingDetail = () => {
                 <Button 
                   variant="outline" 
                   className="w-full justify-start gap-2"
-                  onClick={async () => {
-                    // Implement manage attendees
-                    toast({
-                      title: "Manage Attendees",
-                      description: "Attendee management will open in dialog",
-                    });
-                  }}
+                  onClick={() => setShowManageAttendeesDialog(true)}
                 >
                   <Users className="h-4 w-4" />
                   Manage Attendees
@@ -561,6 +540,26 @@ const MeetingDetail = () => {
           meetingId={meetingId}
           open={showMinutesDialog}
           onOpenChange={setShowMinutesDialog}
+        />
+
+        <ViewMinutesDialog
+          meetingId={meetingId}
+          open={showViewMinutesDialog}
+          onOpenChange={setShowViewMinutesDialog}
+        />
+
+        <RescheduleMeetingDialog
+          meetingId={meetingId}
+          open={showRescheduleDialog}
+          onOpenChange={setShowRescheduleDialog}
+          onSuccess={fetchMeetingDetails}
+        />
+
+        <ManageAttendeesDialog
+          meetingId={meetingId}
+          open={showManageAttendeesDialog}
+          onOpenChange={setShowManageAttendeesDialog}
+          onSuccess={fetchMeetingDetails}
         />
       </div>
     </Layout>

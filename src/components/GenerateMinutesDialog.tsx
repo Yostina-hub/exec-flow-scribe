@@ -33,8 +33,27 @@ export const GenerateMinutesDialog = ({
   useEffect(() => {
     if (open) {
       fetchAIProvider();
+      fetchExistingMinutes();
     }
   }, [open]);
+
+  const fetchExistingMinutes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('meetings')
+        .select('minutes_url')
+        .eq('id', meetingId)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.minutes_url) {
+        setMinutes(data.minutes_url);
+      }
+    } catch (error) {
+      console.error('Error fetching existing minutes:', error);
+    }
+  };
 
   const fetchAIProvider = async () => {
     try {
