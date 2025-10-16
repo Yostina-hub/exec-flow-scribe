@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Settings, Mail, Zap } from "lucide-react";
+import { Shield, Settings, Mail, Zap, UserCog } from "lucide-react";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { RoleManagementTab } from "@/components/admin/RoleManagementTab";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
@@ -37,7 +37,7 @@ export default function Administration() {
               Roles
             </TabsTrigger>
             <TabsTrigger value="assignments">
-              <Zap className="h-4 w-4 mr-2" />
+              <UserCog className="h-4 w-4 mr-2" />
               Assignments
             </TabsTrigger>
             <TabsTrigger value="email">
