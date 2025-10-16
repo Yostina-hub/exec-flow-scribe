@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
@@ -23,7 +23,11 @@ import {
   ArrowRight,
   Loader2,
   Brain,
-  Zap
+  Zap,
+  Volume2,
+  VolumeX,
+  Play,
+  Pause
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -48,12 +52,25 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [briefing, setBriefing] = useState<BriefingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [animating, setAnimating] = useState(false);
+  const [isNarrating, setIsNarrating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const narratingRef = useRef(false);
 
   useEffect(() => {
     if (open) {
       generateBriefing();
+    } else {
+      stopNarration();
     }
   }, [open]);
+
+  useEffect(() => {
+    if (briefing && voiceEnabled && !loading) {
+      narrateCurrentSlide();
+    }
+  }, [currentSlide, briefing, voiceEnabled, loading]);
 
   const generateBriefing = async () => {
     setLoading(true);
@@ -77,8 +94,105 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
     }
   };
 
+  const stopNarration = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setIsNarrating(false);
+    setIsPaused(false);
+    narratingRef.current = false;
+  };
+
+  const getNarrationText = (slideIndex: number): string => {
+    if (!briefing) return '';
+    
+    const slideTexts = [
+      `Executive Overview. ${briefing.executive_summary}`,
+      `Key Performance Metrics. ${briefing.key_metrics.join('. ')}`,
+      `Organizational Strengths and Achievements. ${briefing.strengths.join('. ')}`,
+      `Areas of Concern and Risks. ${briefing.concerns.join('. ')}`,
+      `Strategic Priorities and Focus Areas. ${briefing.priorities.join('. ')}`,
+      `Strategic Recommendations. ${briefing.recommendations.join('. ')}`,
+      `Immediate Next Actions. ${briefing.next_actions.join('. ')}. This concludes your executive briefing.`
+    ];
+    
+    return slideTexts[slideIndex] || '';
+  };
+
+  const narrateCurrentSlide = async () => {
+    if (!voiceEnabled || narratingRef.current) return;
+    
+    stopNarration();
+    narratingRef.current = true;
+    setIsNarrating(true);
+    
+    const text = getNarrationText(currentSlide);
+    if (!text) {
+      setIsNarrating(false);
+      narratingRef.current = false;
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('text-to-speech', {
+        body: { text, voice: 'onyx' }
+      });
+
+      if (error) throw error;
+
+      const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
+      audioRef.current = audio;
+
+      audio.onended = () => {
+        setIsNarrating(false);
+        narratingRef.current = false;
+        // Auto-advance to next slide
+        if (currentSlide < slides.length - 1) {
+          setTimeout(() => {
+            setCurrentSlide(prev => prev + 1);
+          }, 1000);
+        }
+      };
+
+      audio.onerror = () => {
+        setIsNarrating(false);
+        narratingRef.current = false;
+      };
+
+      await audio.play();
+    } catch (error: any) {
+      console.error('Narration error:', error);
+      setIsNarrating(false);
+      narratingRef.current = false;
+      if (error.message?.includes('API key')) {
+        toast.error('Voice narration requires OpenAI API key configuration');
+      }
+    }
+  };
+
+  const togglePause = () => {
+    if (!audioRef.current) return;
+    
+    if (isPaused) {
+      audioRef.current.play();
+      setIsPaused(false);
+    } else {
+      audioRef.current.pause();
+      setIsPaused(true);
+    }
+  };
+
+  const toggleVoice = () => {
+    if (voiceEnabled) {
+      stopNarration();
+    }
+    setVoiceEnabled(!voiceEnabled);
+  };
+
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
+      stopNarration();
       setAnimating(true);
       setTimeout(() => {
         setCurrentSlide(prev => prev + 1);
@@ -89,6 +203,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
 
   const prevSlide = () => {
     if (currentSlide > 0) {
+      stopNarration();
       setAnimating(true);
       setTimeout(() => {
         setCurrentSlide(prev => prev - 1);
@@ -397,15 +512,47 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
                     })()
                   )}
                   <DialogTitle className="text-2xl">{slides[currentSlide]?.title}</DialogTitle>
+                  {isNarrating && (
+                    <div className="flex items-center gap-2 ml-4">
+                      <div className="flex gap-1">
+                        <div className="w-1 h-4 bg-white animate-pulse" style={{ animationDelay: '0ms' }}></div>
+                        <div className="w-1 h-4 bg-white animate-pulse" style={{ animationDelay: '150ms' }}></div>
+                        <div className="w-1 h-4 bg-white animate-pulse" style={{ animationDelay: '300ms' }}></div>
+                      </div>
+                      <span className="text-sm">AI Speaking...</span>
+                    </div>
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={onClose}
-                  className="text-white hover:bg-white/20"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleVoice}
+                    className="text-white hover:bg-white/20"
+                    title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
+                  >
+                    {voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
+                  </Button>
+                  {isNarrating && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={togglePause}
+                      className="text-white hover:bg-white/20"
+                      title={isPaused ? 'Resume' : 'Pause'}
+                    >
+                      {isPaused ? <Play className="h-5 w-5" /> : <Pause className="h-5 w-5" />}
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={onClose}
+                    className="text-white hover:bg-white/20"
+                  >
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
               </div>
               <div className="flex items-center gap-2 mt-4">
                 {slides.map((_, idx) => (
