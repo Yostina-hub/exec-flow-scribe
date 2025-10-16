@@ -21,6 +21,8 @@ export default function Index() {
   const [actions, setActions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [completionRate, setCompletionRate] = useState(0);
+  const [totalActions, setTotalActions] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -43,6 +45,18 @@ export default function Index() {
         .in("status", ["pending", "in_progress"])
         .order("due_date", { ascending: true})
         .limit(3);
+
+      // Fetch completion rate
+      const { data: allActions } = await supabase
+        .from("action_items")
+        .select("status");
+      
+      if (allActions && allActions.length > 0) {
+        const completed = allActions.filter(a => a.status === 'completed').length;
+        const rate = Math.round((completed / allActions.length) * 100);
+        setCompletionRate(rate);
+        setTotalActions(allActions.length);
+      }
 
       const enrichedActions = await Promise.all((actionsData || []).map(async (action) => {
         const [assignee, meeting] = await Promise.all([
@@ -127,11 +141,11 @@ export default function Index() {
 
         {/* Enhanced Stats Grid */}
         <div className="grid gap-3 lg:gap-6 grid-cols-2 lg:grid-cols-4">
-          {[
+        {[
             { icon: Calendar, label: "Today's Meetings", value: todayMeetingsCount, color: "from-blue-500 to-cyan-500", delay: "0" },
             { icon: Target, label: "Pending Actions", value: pendingActionsCount, color: "from-purple-500 to-pink-500", delay: "100" },
-            { icon: Activity, label: "Active Projects", value: meetings.length, color: "from-green-500 to-emerald-500", delay: "200" },
-            { icon: TrendingUp, label: "Completion Rate", value: "87%", color: "from-orange-500 to-red-500", delay: "300" },
+            { icon: Activity, label: "Total Actions", value: totalActions, color: "from-green-500 to-emerald-500", delay: "200" },
+            { icon: TrendingUp, label: "Completion Rate", value: `${completionRate}%`, color: "from-orange-500 to-red-500", delay: "300" },
           ].map((stat, i) => (
             <Card 
               key={i}
