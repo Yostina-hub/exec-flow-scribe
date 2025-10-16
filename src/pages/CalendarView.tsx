@@ -7,11 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { format, addMonths, subMonths, isSameDay } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
 import { CategoryLegend } from "@/components/calendar/CategoryLegend";
 import { CreateCategoryDialog } from "@/components/calendar/CreateCategoryDialog";
+import { EventRSVPControls } from "@/components/calendar/EventRSVPControls";
+import { generateRecurrenceInstances } from "@/utils/recurrenceUtils";
 
 interface Meeting {
   id: string;
@@ -19,13 +21,19 @@ interface Meeting {
   start_time: string;
   end_time: string;
   location?: string;
+  description?: string;
   status: string;
   timezone?: string;
   category_id?: string;
+  is_recurring?: boolean;
   event_categories?: {
     name: string;
     color_hex: string;
   };
+  recurrence_rules?: any[];
+  event_exceptions?: any[];
+  user_response_status?: string;
+  is_exception?: boolean;
 }
 
 interface Category {
@@ -51,26 +59,45 @@ const CalendarView = () => {
 
   const fetchMeetings = async () => {
     try {
-      const { data, error } = await supabase
+      const { data: meetingsData, error } = await supabase
         .from("meetings")
         .select(`
-          id,
-          title,
-          start_time,
-          end_time,
-          location,
-          status,
-          timezone,
-          category_id,
+          *,
           event_categories (
             name,
             color_hex
-          )
+          ),
+          recurrence_rules (*),
+          event_exceptions (*)
         `)
         .order("start_time", { ascending: true });
 
       if (error) throw error;
-      setMeetings(data || []);
+
+      // Get current user for RSVP status
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Fetch attendee status for each meeting
+        const meetingsWithAttendees = await Promise.all(
+          (meetingsData || []).map(async (meeting) => {
+            const { data: attendeeData } = await supabase
+              .from('meeting_attendees')
+              .select('response_status')
+              .eq('meeting_id', meeting.id)
+              .eq('user_id', user.id)
+              .single();
+
+            return {
+              ...meeting,
+              user_response_status: attendeeData?.response_status || 'none'
+            };
+          })
+        );
+        setMeetings(meetingsWithAttendees);
+      } else {
+        setMeetings(meetingsData || []);
+      }
     } catch (error) {
       console.error("Failed to fetch meetings:", error);
     } finally {
@@ -93,16 +120,42 @@ const CalendarView = () => {
     }
   };
 
-  const meetingsByDate = meetings.reduce((acc, meeting) => {
+  // Generate all event instances including recurring ones
+  const allEventInstances = meetings.flatMap(meeting => {
+    if (meeting.is_recurring && meeting.recurrence_rules?.[0]) {
+      const rangeStart = startOfMonth(currentMonth);
+      const rangeEnd = endOfMonth(currentMonth);
+      
+      const instances = generateRecurrenceInstances(
+        {
+          id: meeting.id,
+          start_time: meeting.start_time,
+          end_time: meeting.end_time,
+          recurrence_rule: meeting.recurrence_rules[0],
+          exceptions: meeting.event_exceptions || []
+        },
+        rangeStart,
+        rangeEnd
+      );
+
+      return instances.map(instance => ({
+        ...meeting,
+        start_time: instance.start.toISOString(),
+        end_time: instance.end.toISOString(),
+        location: instance.overrides?.override_location || meeting.location,
+        description: instance.overrides?.override_description || meeting.description,
+        is_exception: instance.isException
+      }));
+    }
+    return [meeting];
+  });
+
+  const meetingsByDate = allEventInstances.reduce((acc, meeting) => {
     const dateKey = format(new Date(meeting.start_time), "yyyy-MM-dd");
     if (!acc[dateKey]) acc[dateKey] = [];
-    acc[dateKey].push({
-      title: meeting.title,
-      time: format(new Date(meeting.start_time), "h:mm a"),
-      status: meeting.status,
-    });
+    acc[dateKey].push(meeting);
     return acc;
-  }, {} as Record<string, Array<{ title: string; time: string; status: string }>>);
+  }, {} as Record<string, Meeting[]>);
 
   const selectedDateKey = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const selectedMeetings = meetingsByDate[selectedDateKey] || [];
@@ -250,25 +303,45 @@ const CalendarView = () => {
                             {selectedMeetings.length === 1 ? "meeting" : "meetings"} scheduled
                           </p>
                           {selectedMeetings.map((meeting, index) => (
-                            <Card key={index} className="border-l-4 border-l-primary">
+                            <Card key={`${meeting.id}-${meeting.start_time}`} className="border-l-4 border-l-primary">
                               <CardContent className="p-4">
                                 <div className="space-y-2">
                                   <div className="flex items-start justify-between gap-2">
-                                    <p className="font-medium text-sm">{meeting.title}</p>
-                                    <Badge
-                                      variant={
-                                        meeting.status === "completed"
-                                          ? "success"
-                                          : "secondary"
-                                      }
-                                      className="shrink-0 text-xs"
-                                    >
-                                      {meeting.status}
-                                    </Badge>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-medium text-sm">{meeting.title}</p>
+                                        {meeting.is_recurring && (
+                                          <Badge variant="outline" className="text-xs">Recurring</Badge>
+                                        )}
+                                        {meeting.is_exception && (
+                                          <Badge variant="outline" className="text-xs">Modified</Badge>
+                                        )}
+                                      </div>
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {format(new Date(meeting.start_time), "h:mm a")} - {format(new Date(meeting.end_time), "h:mm a")}
+                                      </p>
+                                      {meeting.location && (
+                                        <p className="text-xs text-muted-foreground truncate">{meeting.location}</p>
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 items-end">
+                                      <Badge
+                                        variant={
+                                          meeting.status === "completed"
+                                            ? "success"
+                                            : "secondary"
+                                        }
+                                        className="shrink-0 text-xs"
+                                      >
+                                        {meeting.status}
+                                      </Badge>
+                                      <EventRSVPControls
+                                        meetingId={meeting.id}
+                                        currentStatus={meeting.user_response_status || 'none'}
+                                        onStatusChange={fetchMeetings}
+                                      />
+                                    </div>
                                   </div>
-                                  <p className="text-xs text-muted-foreground">
-                                    {meeting.time}
-                                  </p>
                                 </div>
                               </CardContent>
                             </Card>
