@@ -50,12 +50,19 @@ const Settings = () => {
     speaker_diarization: true,
     auto_generate_summary: true,
   });
+  const [securitySettings, setSecuritySettings] = useState({
+    data_retention_period: "1year",
+    two_factor_enabled: false,
+    encrypt_recordings: true,
+    activity_logging: true,
+  });
 
   useEffect(() => {
     fetchProfile();
     fetchNotificationSettings();
     fetchMeetingSettings();
     fetchRecordingSettings();
+    fetchSecuritySettings();
   }, []);
 
   const fetchProfile = async () => {
@@ -292,6 +299,64 @@ const Settings = () => {
       toast({
         title: "Error",
         description: "Failed to update recording preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fetchSecuritySettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("security_preferences")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.security_preferences) {
+        const prefs = data.security_preferences as Record<string, any>;
+        setSecuritySettings({
+          data_retention_period: prefs.data_retention_period ?? "1year",
+          two_factor_enabled: prefs.two_factor_enabled ?? false,
+          encrypt_recordings: prefs.encrypt_recordings ?? true,
+          activity_logging: prefs.activity_logging ?? true,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching security settings:", error);
+    }
+  };
+
+  const handleSecurityUpdate = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          security_preferences: securitySettings,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Security settings updated",
+        description: "Your security preferences have been saved",
+      });
+    } catch (error) {
+      console.error("Error updating security settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update security preferences",
         variant: "destructive",
       });
     } finally {
@@ -878,7 +943,15 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Data Retention Period</Label>
-                    <Select defaultValue="1year">
+                    <Select
+                      value={securitySettings.data_retention_period}
+                      onValueChange={(value) =>
+                        setSecuritySettings({
+                          ...securitySettings,
+                          data_retention_period: value,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -906,7 +979,15 @@ const Settings = () => {
                         Add an extra layer of security to your account
                       </p>
                     </div>
-                    <Switch />
+                    <Switch
+                      checked={securitySettings.two_factor_enabled}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({
+                          ...securitySettings,
+                          two_factor_enabled: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -918,7 +999,15 @@ const Settings = () => {
                         End-to-end encryption for sensitive meeting data
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={securitySettings.encrypt_recordings}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({
+                          ...securitySettings,
+                          encrypt_recordings: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -930,21 +1019,41 @@ const Settings = () => {
                         Track all actions performed in the system
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={securitySettings.activity_logging}
+                      onCheckedChange={(checked) =>
+                        setSecuritySettings({
+                          ...securitySettings,
+                          activity_logging: checked,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 
                 <Separator />
 
                 <div className="space-y-4">
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" disabled>
                     Change Password
                   </Button>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" disabled>
                     Download My Data
                   </Button>
-                  <Button variant="destructive" className="w-full">
+                  <Button variant="destructive" className="w-full" disabled>
                     Delete Account
+                  </Button>
+                </div>
+
+                <Separator />
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={fetchSecuritySettings}>
+                    Reset
+                  </Button>
+                  <Button onClick={handleSecurityUpdate} disabled={saving}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
                   </Button>
                 </div>
               </CardContent>
