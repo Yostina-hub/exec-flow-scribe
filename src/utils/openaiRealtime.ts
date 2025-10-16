@@ -129,6 +129,7 @@ export class OpenAIRealtimeClient {
   private onTranscript: (text: string, speaker?: string) => void;
   private onError: (error: string) => void;
   private sessionCreated = false;
+  private currentMeetingId: string | null = null;
 
   constructor(
     onTranscript: (text: string, speaker?: string) => void,
@@ -141,6 +142,7 @@ export class OpenAIRealtimeClient {
   }
 
   async connect(meetingId: string) {
+    this.currentMeetingId = meetingId;
     try {
       console.log('Getting ephemeral token...');
       
@@ -191,7 +193,7 @@ export class OpenAIRealtimeClient {
               type: "session.update",
               session: {
                 modalities: ["text", "audio"],
-                instructions: "You are a helpful meeting assistant. Transcribe all speech accurately and identify speakers.",
+                instructions: "You are a meeting transcription assistant. Your tasks: 1) Accurately transcribe all speech in the original language spoken 2) Automatically detect and maintain the language throughout 3) Identify and label different speakers consistently (Speaker 1, Speaker 2, etc.) 4) Preserve speaker identity across the entire meeting 5) Include punctuation and proper capitalization. Do not translate - transcribe in the original language.",
                 voice: "alloy",
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",
@@ -223,6 +225,8 @@ export class OpenAIRealtimeClient {
             const cleaned = cleanTranscript(event.transcript);
             if (cleaned) {
               console.log('User transcript:', cleaned);
+              // Save transcription to database
+              this.saveTranscription(meetingId, cleaned, 'User');
               this.onTranscript(cleaned, 'User');
             }
           }
@@ -296,6 +300,7 @@ export class OpenAIRealtimeClient {
   }
 
   disconnect() {
+    this.currentMeetingId = null;
     this.recorder?.stop();
     this.recorder = null;
     
@@ -338,5 +343,27 @@ export class OpenAIRealtimeClient {
 
     this.dc.send(JSON.stringify(event));
     this.dc.send(JSON.stringify({ type: 'response.create' }));
+  }
+
+  private async saveTranscription(meetingId: string, content: string, speaker: string, detectedLanguage: string = 'auto') {
+    try {
+      const { error } = await supabase.functions.invoke('save-transcription', {
+        body: {
+          meetingId,
+          content,
+          speaker,
+          detectedLanguage,
+          timestamp: new Date().toISOString()
+        }
+      });
+      
+      if (error) {
+        console.error('Failed to save transcription:', error);
+      } else {
+        console.log(`Saved transcription: ${speaker} (${detectedLanguage}): ${content.substring(0, 50)}...`);
+      }
+    } catch (error) {
+      console.error('Error saving transcription:', error);
+    }
   }
 }

@@ -2384,6 +2384,7 @@ export type Database = {
           confidence_score: number | null
           content: string
           created_at: string
+          detected_language: string | null
           id: string
           meeting_id: string
           speaker_id: string | null
@@ -2394,6 +2395,7 @@ export type Database = {
           confidence_score?: number | null
           content: string
           created_at?: string
+          detected_language?: string | null
           id?: string
           meeting_id: string
           speaker_id?: string | null
@@ -2404,6 +2406,7 @@ export type Database = {
           confidence_score?: number | null
           content?: string
           created_at?: string
+          detected_language?: string | null
           id?: string
           meeting_id?: string
           speaker_id?: string | null

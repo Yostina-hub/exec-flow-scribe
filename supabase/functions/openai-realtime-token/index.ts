@@ -29,7 +29,16 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
         voice: "alloy",
-        instructions: "You are a helpful meeting assistant. Transcribe speech accurately with speaker detection."
+        input_audio_transcription: {
+          model: "whisper-1"
+        },
+        turn_detection: {
+          type: "server_vad",
+          threshold: 0.5,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 500
+        },
+        instructions: "You are a meeting transcription assistant. Transcribe speech accurately with automatic language detection and speaker identification. Label speakers consistently as Speaker 1, Speaker 2, etc. Maintain speaker identity throughout the conversation. Transcribe in the original language without translation."
       }),
     });
 

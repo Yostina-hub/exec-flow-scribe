@@ -204,7 +204,8 @@ export const useAudioRecorder = (meetingId: string) => {
                     meetingId: normalizedMeetingId,
                     content: text,
                     timestamp: new Date().toISOString(),
-                    speaker: 'Unknown'
+                    speaker: 'Unknown',
+                    detectedLanguage: language || 'auto'
                   }
                 });
                 if (saveErr) throw saveErr;

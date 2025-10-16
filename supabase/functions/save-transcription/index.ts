@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { meetingId, content, timestamp, speaker } = await req.json();
+    const { meetingId, content, timestamp, speaker, detectedLanguage } = await req.json();
     if (!meetingId || !content) {
       return new Response(JSON.stringify({ error: "meetingId and content are required" }), {
         status: 400,
@@ -61,6 +61,7 @@ serve(async (req) => {
       meeting_id: normalizedMeetingId,
       content,
       timestamp: timestamp || new Date().toISOString(),
+      detected_language: detectedLanguage || 'auto',
     };
     if (speaker) insertPayload.speaker_name = speaker;
 
