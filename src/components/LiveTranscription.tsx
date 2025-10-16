@@ -90,29 +90,22 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
 
     checkRealtimeMode();
 
-    // Fetch existing transcriptions via backend function (bypasses RLS issues)
+    // Fetch existing transcriptions
     const fetchTranscriptions = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('list-transcriptions', {
-          body: { meetingId: normalizedId }
-        });
-        if (error) throw error;
-        if (data?.transcriptions) {
-          setTranscriptions(data.transcriptions as Transcription[]);
-        }
-      } catch (e) {
-        console.error('Error fetching transcriptions (edge):', e);
+      const { data, error } = await supabase
+        .from('transcriptions')
+        .select('*')
+        .eq('meeting_id', normalizedId)
+        .order('timestamp', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching transcriptions:', error);
+      } else if (data) {
+        setTranscriptions(data);
       }
     };
 
     fetchTranscriptions();
-
-    // Lightweight polling while recording to keep UI fresh
-    let poll: any = undefined;
-    if (isRecording) {
-      poll = setInterval(fetchTranscriptions, 5000);
-    }
-
 
     // Subscribe to real-time updates
     const channel = supabase
@@ -132,10 +125,9 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
       .subscribe();
 
     return () => {
-      if (poll) clearInterval(poll);
       supabase.removeChannel(channel);
     };
-  }, [normalizedId, isRecording]);
+  }, [normalizedId]);
 
   const handleHighlight = async (transcriptionId: string, content: string) => {
     const { error } = await supabase.from('highlights').insert({
