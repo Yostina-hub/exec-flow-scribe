@@ -105,15 +105,18 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-950">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0">
+      {/* Animated Background Elements - Reduced on mobile */}
+      <div className="absolute inset-0 hidden lg:block">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-500/25 to-cyan-500/20 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
         <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-cyan-500/15 to-sky-500/15 rounded-full blur-3xl animate-pulse delay-2000" />
       </div>
 
-      {/* Floating Particles */}
-      <div className="absolute inset-0 overflow-hidden">
+      {/* Simplified mobile background */}
+      <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-blue-500/10 to-cyan-500/5" />
+
+      {/* Floating Particles - Hidden on mobile for performance */}
+      <div className="absolute inset-0 overflow-hidden hidden lg:block">
         {[...Array(20)].map((_, i) => (
           <div
             key={i}
@@ -128,9 +131,9 @@ const Auth = () => {
         ))}
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent hidden lg:block" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+      <div className="relative z-10 min-h-screen flex items-center justify-center lg:p-4">
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
           {/* Hero Section */}
           <div className="text-white space-y-8 animate-fade-in hidden lg:block">
@@ -169,25 +172,25 @@ const Auth = () => {
           </div>
 
           {/* Auth Card */}
-          <div className="animate-scale-in">
-            <Card className="border-cyan-200/50 bg-white/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/20">
-              <CardHeader className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
-                    <Sparkles className="h-7 w-7 text-white" />
+          <div className="animate-scale-in w-full lg:w-auto">
+            <Card className="border-cyan-200/50 bg-white/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/20 lg:rounded-2xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center">
+              <CardHeader className="space-y-4 px-6 lg:px-6 pt-8 lg:pt-6">
+                <div className="flex items-center justify-center lg:justify-start gap-3">
+                  <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
+                    <Sparkles className="h-6 w-6 lg:h-7 lg:w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-gray-900 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
+                    <h1 className="text-2xl lg:text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-gray-900 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
                       MeetingHub
                     </h1>
-                    <p className="text-sm text-cyan-600 font-medium">Executive Suite</p>
+                    <p className="text-xs lg:text-sm text-cyan-600 font-medium">Executive Suite</p>
                   </div>
                 </div>
-                <CardDescription className="text-gray-600 font-medium">
+                <CardDescription className="text-gray-600 font-medium text-center lg:text-left">
                   Access your AI-powered executive dashboard
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-6 lg:px-6 pb-8">
                 <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200">
                     <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
