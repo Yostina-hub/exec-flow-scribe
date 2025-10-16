@@ -39,16 +39,16 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    // Auto-open briefing for CEO on first login of the day
+    // Auto-open briefing for CEO on every login (session-based)
     if (isCEO && !loading) {
-      const briefingKey = `briefing-seen-${format(new Date(), 'yyyy-MM-dd')}`;
-      const seen = localStorage.getItem(briefingKey);
+      const briefingKey = 'ceo-briefing-shown';
+      const shown = sessionStorage.getItem(briefingKey);
       
-      // Always show on first login of the day
-      if (!seen) {
+      // Show on every new login session
+      if (!shown) {
         setTimeout(() => {
           setShowBriefing(true);
-          localStorage.setItem(briefingKey, 'true');
+          sessionStorage.setItem(briefingKey, 'true');
         }, 800);
       }
     }
