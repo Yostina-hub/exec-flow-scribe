@@ -80,6 +80,58 @@ export const encodeAudioForAPI = (float32Array: Float32Array): string => {
   return btoa(binary);
 };
 
+// Convert Float32 PCM to WAV and return base64 string
+export const float32ToWavBase64 = (float32Array: Float32Array, sampleRate = 24000): string => {
+  const numOfChannels = 1;
+  const bytesPerSample = 2; // 16-bit PCM
+  const blockAlign = numOfChannels * bytesPerSample;
+  const byteRate = sampleRate * blockAlign;
+
+  // Convert Float32 to 16-bit PCM
+  const buffer = new ArrayBuffer(44 + float32Array.length * bytesPerSample);
+  const view = new DataView(buffer);
+
+  // Write WAV header
+  let offset = 0;
+  const writeString = (str: string) => {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+    offset += str.length;
+  };
+
+  writeString('RIFF');
+  view.setUint32(offset, 36 + float32Array.length * bytesPerSample, true); offset += 4;
+  writeString('WAVE');
+  writeString('fmt ');
+  view.setUint32(offset, 16, true); offset += 4; // PCM chunk size
+  view.setUint16(offset, 1, true); offset += 2; // PCM format
+  view.setUint16(offset, numOfChannels, true); offset += 2;
+  view.setUint32(offset, sampleRate, true); offset += 4;
+  view.setUint32(offset, byteRate, true); offset += 4;
+  view.setUint16(offset, blockAlign, true); offset += 2;
+  view.setUint16(offset, 16, true); offset += 2; // bits per sample
+  writeString('data');
+  view.setUint32(offset, float32Array.length * bytesPerSample, true); offset += 4;
+
+  // PCM samples
+  let idx = 44;
+  for (let i = 0; i < float32Array.length; i++, idx += 2) {
+    const s = Math.max(-1, Math.min(1, float32Array[i]));
+    view.setInt16(idx, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+
+  // Base64 encode
+  const uint8Array = new Uint8Array(buffer);
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let i = 0; i < uint8Array.length; i += chunkSize) {
+    const chunk = uint8Array.subarray(i, Math.min(i + chunkSize, uint8Array.length));
+    binary += String.fromCharCode.apply(null, Array.from(chunk));
+  }
+  return btoa(binary);
+};
+
 interface RealtimeMessage {
   type: string;
   transcript?: string;
@@ -365,8 +417,8 @@ export class OpenAIRealtimeClient {
         offset += chunk.length;
       }
       
-      // Convert to base64
-      const audioBase64 = encodeAudioForAPI(mergedAudio);
+      // Convert collected PCM to WAV base64 to ensure valid audio container
+      const audioBase64 = float32ToWavBase64(mergedAudio, 24000);
       
       // Get user's language preference
       const { data: userData } = await supabase.auth.getUser();
@@ -387,7 +439,8 @@ export class OpenAIRealtimeClient {
         body: {
           audioBase64,
           meetingId,
-          language
+          language,
+          contentType: 'audio/wav'
         }
       });
       

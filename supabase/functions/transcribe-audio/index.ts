@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
     try {
-      const { audioBase64, meetingId, language } = await req.json();
+      const { audioBase64, meetingId, language, contentType } = await req.json();
     if (!audioBase64 || !meetingId) {
       throw new Error("Audio data and meeting ID are required");
     }
@@ -116,8 +116,10 @@ serve(async (req) => {
     
     // Create FormData for file upload
     const formData = new FormData();
-    const audioBlob = new Blob([binaryAudio], { type: "audio/webm" });
-    formData.append("file", audioBlob, "audio.webm");
+    const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
+    const filename = type === 'audio/wav' ? 'audio.wav' : 'audio.webm';
+    const audioBlob = new Blob([binaryAudio], { type });
+    formData.append("file", audioBlob, filename);
 
     let transcriptText = "";
 
