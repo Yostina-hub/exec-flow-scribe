@@ -29,7 +29,8 @@ export class AudioRecorder {
       
       this.processor.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
-        this.onAudioData(new Float32Array(inputData));
+        const audioData = new Float32Array(inputData);
+        this.onAudioData(audioData);
       };
       
       this.source.connect(this.processor);
@@ -130,6 +131,8 @@ export class OpenAIRealtimeClient {
   private onError: (error: string) => void;
   private sessionCreated = false;
   private currentMeetingId: string | null = null;
+  private audioChunks: Float32Array[] = [];
+  private isCollectingAudio: boolean = false;
 
   constructor(
     onTranscript: (text: string, speaker?: string) => void,
@@ -193,13 +196,11 @@ export class OpenAIRealtimeClient {
               type: "session.update",
               session: {
                 modalities: ["text", "audio"],
-                instructions: "You are a meeting transcription assistant. CRITICAL RULES: 1) Always transcribe in the ORIGINAL SCRIPT - never transliterate. For Amharic use Ge'ez script (አማርኛ), not Latin letters. 2) Auto-detect language. 3) Identify speakers as Speaker 1, Speaker 2, etc. 4) Maintain speaker consistency. 5) Use proper punctuation. 6) Never romanize non-Latin scripts.",
+                instructions: "You are a meeting transcription assistant. Auto-detect language, identify speakers as Speaker 1, Speaker 2, etc., and maintain speaker consistency.",
                 voice: "alloy",
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",
-                input_audio_transcription: {
-                  model: "whisper-1"
-                },
+                input_audio_transcription: null, // Disable built-in transcription
                 turn_detection: {
                   type: "server_vad",
                   threshold: 0.7,
@@ -218,22 +219,15 @@ export class OpenAIRealtimeClient {
           console.log('Session updated successfully');
         } else if (event.type === 'input_audio_buffer.speech_started') {
           console.log('🎤 User started speaking');
+          this.isCollectingAudio = true;
+          this.audioChunks = [];
         } else if (event.type === 'input_audio_buffer.speech_stopped') {
           console.log('🎤 User stopped speaking');
-        } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
-          if (event.transcript) {
-            const cleaned = cleanTranscript(event.transcript);
-            if (cleaned) {
-              console.log('User transcript:', cleaned);
-              // Save transcription to database
-              this.saveTranscription(meetingId, cleaned, 'User');
-              this.onTranscript(cleaned, 'User');
-            }
+          this.isCollectingAudio = false;
+          // Transcribe collected audio with proper Amharic script preservation
+          if (this.audioChunks.length > 0 && this.currentMeetingId) {
+            this.transcribeCollectedAudio(this.currentMeetingId);
           }
-        } else if (event.type === 'conversation.item.input_audio_transcription.failed') {
-          const errMsg = event?.error?.message || 'Transcription failed';
-          console.warn('User transcription failed:', errMsg);
-          this.onError(errMsg);
         } else if (event.type === 'response.audio_transcript.delta') {
           if (event.delta) {
             const cleaned = cleanTranscript(event.delta);
@@ -292,6 +286,17 @@ export class OpenAIRealtimeClient {
       await this.pc.setRemoteDescription(answer);
       console.log("WebRTC connection established successfully");
 
+      // Start audio recording for transcription
+      console.log('Starting audio recorder for transcription...');
+      this.recorder = new AudioRecorder((audioData) => {
+        // Collect audio chunks when user is speaking
+        if (this.isCollectingAudio) {
+          this.audioChunks.push(new Float32Array(audioData));
+        }
+      });
+      await this.recorder.start();
+      console.log('Audio recorder started');
+
     } catch (error: any) {
       console.error('Connection error:', error);
       this.onError(error.message || 'Failed to connect');
@@ -301,6 +306,8 @@ export class OpenAIRealtimeClient {
 
   disconnect() {
     this.currentMeetingId = null;
+    this.isCollectingAudio = false;
+    this.audioChunks = [];
     this.recorder?.stop();
     this.recorder = null;
     
@@ -343,6 +350,65 @@ export class OpenAIRealtimeClient {
 
     this.dc.send(JSON.stringify(event));
     this.dc.send(JSON.stringify({ type: 'response.create' }));
+  }
+
+  private async transcribeCollectedAudio(meetingId: string) {
+    try {
+      console.log(`Transcribing ${this.audioChunks.length} audio chunks...`);
+      
+      // Merge audio chunks into single Float32Array
+      const totalLength = this.audioChunks.reduce((acc, chunk) => acc + chunk.length, 0);
+      const mergedAudio = new Float32Array(totalLength);
+      let offset = 0;
+      for (const chunk of this.audioChunks) {
+        mergedAudio.set(chunk, offset);
+        offset += chunk.length;
+      }
+      
+      // Convert to base64
+      const audioBase64 = encodeAudioForAPI(mergedAudio);
+      
+      // Get user's language preference
+      const { data: userData } = await supabase.auth.getUser();
+      let language = 'auto';
+      if (userData?.user?.id) {
+        const { data: prefs } = await supabase
+          .from('transcription_preferences')
+          .select('language')
+          .eq('user_id', userData.user.id)
+          .maybeSingle();
+        if (prefs?.language) {
+          language = prefs.language;
+        }
+      }
+      
+      // Transcribe using Whisper API with proper Amharic support
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+        body: {
+          audioBase64,
+          meetingId,
+          language
+        }
+      });
+      
+      if (error) {
+        console.error('Transcription error:', error);
+        this.onError('Transcription failed');
+        return;
+      }
+      
+      if (data?.transcription) {
+        const cleaned = cleanTranscript(data.transcription);
+        if (cleaned) {
+          console.log('✅ Transcribed with Amharic support:', cleaned);
+          this.onTranscript(cleaned, 'User');
+        }
+      }
+    } catch (error) {
+      console.error('Error transcribing audio:', error);
+    } finally {
+      this.audioChunks = [];
+    }
   }
 
   private async saveTranscription(meetingId: string, content: string, speaker: string, detectedLanguage: string = 'auto') {
