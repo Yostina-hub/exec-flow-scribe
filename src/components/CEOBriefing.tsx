@@ -29,9 +29,11 @@ import {
   Play,
   Pause,
   Timer,
-  TimerOff
+  TimerOff,
+  MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { CEOAssistantPanel } from './CEOAssistantPanel';
 
 interface BriefingData {
   executive_summary: string;
@@ -56,9 +58,11 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [animating, setAnimating] = useState(false);
   const [isNarrating, setIsNarrating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true); // Enabled by default for autonomous mode
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [autoAdvance, setAutoAdvance] = useState(true);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [presentationPaused, setPresentationPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const narratingRef = useRef(false);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -89,17 +93,17 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   }, [open]);
 
   useEffect(() => {
-    if (open && briefing && voiceEnabled && !loading) {
+    if (open && briefing && voiceEnabled && !loading && !presentationPaused) {
       narrateCurrentSlide();
     }
-  }, [open, currentSlide, briefing, voiceEnabled, loading]);
+  }, [open, currentSlide, briefing, voiceEnabled, loading, presentationPaused]);
 
   // Auto-advance timer (works independently of voice)
   useEffect(() => {
     clearAutoAdvanceTimer();
     
-    if (open && briefing && autoAdvance && !loading && !isNarrating && currentSlide < slides.length - 1) {
-      // Auto-advance after 12 seconds if not narrating
+    if (open && briefing && autoAdvance && !loading && !isNarrating && !presentationPaused && currentSlide < slides.length - 1) {
+      // Auto-advance after 12 seconds if not narrating and not paused for assistant
       autoAdvanceTimerRef.current = setTimeout(() => {
         setAnimating(true);
         setTimeout(() => {
@@ -110,7 +114,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
     }
     
     return () => clearAutoAdvanceTimer();
-  }, [open, currentSlide, briefing, autoAdvance, loading, isNarrating]);
+  }, [open, currentSlide, briefing, autoAdvance, loading, isNarrating, presentationPaused]);
 
   const generateBriefing = async () => {
     setLoading(true);
@@ -648,6 +652,20 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => {
+                      setAssistantOpen(true);
+                      setPresentationPaused(true);
+                      stopNarration();
+                      clearAutoAdvanceTimer();
+                    }}
+                    className="text-white hover:bg-white/20"
+                    title="Ask AI Assistant"
+                  >
+                    <MessageCircle className="h-5 w-5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={() => setAutoAdvance(!autoAdvance)}
                     className="text-white hover:bg-white/20"
                     title={autoAdvance ? 'Disable auto-advance' : 'Enable auto-advance'}
@@ -743,6 +761,22 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           </div>
         )}
       </DialogContent>
+
+      {/* AI Assistant Panel */}
+      <CEOAssistantPanel
+        briefingData={briefing}
+        currentSlide={currentSlide}
+        isOpen={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+        onPausePresentation={() => {
+          setPresentationPaused(true);
+          stopNarration();
+          clearAutoAdvanceTimer();
+        }}
+        onResumePresentation={() => {
+          setPresentationPaused(false);
+        }}
+      />
     </Dialog>
   );
 }
