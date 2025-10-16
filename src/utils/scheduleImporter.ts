@@ -271,6 +271,56 @@ export async function importSchedule(): Promise<{ success: boolean; message: str
       return { success: false, message: "User not authenticated" };
     }
 
+    // Create or fetch categories for color coding
+    const categoryMap: Record<string, string> = {};
+    
+    const categories = [
+      { name: "Board Meeting", color_hex: "#8B5CF6", pattern: ["Board Meeting", "Project Horizon"] },
+      { name: "Executive 1:1", color_hex: "#3B82F6", pattern: ["Meeting with"] },
+      { name: "Revenue Council", color_hex: "#10B981", pattern: ["Revenue Council"] },
+      { name: "Council Chairs", color_hex: "#F59E0B", pattern: ["Councils Chairs"] },
+      { name: "Strategic", color_hex: "#EF4444", pattern: ["Evaluation Meeting"] },
+      { name: "Operations", color_hex: "#6366F1", pattern: ["Road", "Field"] }
+    ];
+
+    // Create categories if they don't exist
+    for (const cat of categories) {
+      const { data: existing } = await supabase
+        .from('event_categories')
+        .select('id')
+        .eq('name', cat.name)
+        .single();
+
+      if (existing) {
+        categoryMap[cat.name] = existing.id;
+      } else {
+        const { data: newCat } = await supabase
+          .from('event_categories')
+          .insert({
+            name: cat.name,
+            color_hex: cat.color_hex,
+            description: `Auto-created for ${cat.name}`,
+            created_by: user.id
+          })
+          .select('id')
+          .single();
+        
+        if (newCat) {
+          categoryMap[cat.name] = newCat.id;
+        }
+      }
+    }
+
+    // Helper function to assign category based on meeting title
+    const getCategoryId = (title: string): string | undefined => {
+      for (const cat of categories) {
+        if (cat.pattern.some(p => title.includes(p))) {
+          return categoryMap[cat.name];
+        }
+      }
+      return undefined;
+    };
+
     // Get the first Monday of October 2025 (Week 42 starts Oct 13, 2025)
     const baseDate = new Date('2025-10-13'); // Monday, Oct 13, 2025
     let insertedCount = 0;
@@ -288,7 +338,8 @@ export async function importSchedule(): Promise<{ success: boolean; message: str
       const endTime = new Date(meetingDate);
       endTime.setMinutes(endTime.getMinutes() + meeting.durationMinutes);
 
-      // Insert the meeting
+      // Insert the meeting with category
+      const categoryId = getCategoryId(meeting.title);
       const { data: insertedMeeting, error: meetingError } = await supabase
         .from('meetings')
         .insert({
@@ -299,6 +350,8 @@ export async function importSchedule(): Promise<{ success: boolean; message: str
           location: meeting.location || 'TBD',
           status: 'scheduled',
           created_by: user.id,
+          category_id: categoryId,
+          is_recurring: true
         })
         .select()
         .single();

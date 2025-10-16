@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { importSchedule } from "@/utils/scheduleImporter";
 import { Upload, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export const ImportScheduleButton = () => {
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleImport = async () => {
     setIsImporting(true);
@@ -19,6 +21,10 @@ export const ImportScheduleButton = () => {
           title: "Schedule Imported Successfully",
           description: result.message,
         });
+        // Refresh the page to show the new meetings
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
       } else {
         toast({
           title: "Import Failed",
