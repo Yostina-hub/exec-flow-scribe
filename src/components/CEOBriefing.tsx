@@ -59,8 +59,6 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [autoAdvance, setAutoAdvance] = useState(true);
-  const [presenterImage, setPresenterImage] = useState<string | null>(null);
-  const [loadingPresenter, setLoadingPresenter] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const narratingRef = useRef(false);
   const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -68,7 +66,6 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   useEffect(() => {
     if (open) {
       generateBriefing();
-      generatePresenter();
     } else {
       // Full cleanup when closing
       stopNarration();
@@ -123,26 +120,6 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       toast.error('Failed to generate executive briefing');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const generatePresenter = async () => {
-    setLoadingPresenter(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('generate-presenter-image', {
-        body: {}
-      });
-
-      if (error) throw error;
-
-      if (data?.imageUrl) {
-        setPresenterImage(data.imageUrl);
-      }
-    } catch (error: any) {
-      console.error('Failed to generate presenter:', error);
-      // Don't show error toast, just fail silently
-    } finally {
-      setLoadingPresenter(false);
     }
   };
 
@@ -686,46 +663,6 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
                   {voiceError}
                 </div>
               )}
-              
-              {/* AI Presenter Avatar */}
-              {presenterImage && (
-                <div className="fixed bottom-8 right-8 z-50 animate-fade-in">
-                  <div className={`relative transition-all duration-300 ${isNarrating ? 'scale-110' : 'scale-100'}`}>
-                    <div className={`absolute inset-0 rounded-2xl blur-xl transition-opacity duration-300 ${
-                      isNarrating ? 'opacity-70 bg-gradient-to-r from-purple-500 to-pink-500' : 'opacity-0'
-                    }`} />
-                    <div className={`relative rounded-2xl overflow-hidden border-4 transition-all duration-300 ${
-                      isNarrating 
-                        ? 'border-purple-500 shadow-2xl shadow-purple-500/50' 
-                        : 'border-border shadow-lg'
-                    }`}>
-                      <img 
-                        src={presenterImage} 
-                        alt="AI Presenter"
-                        className="w-48 h-48 object-cover"
-                      />
-                      {isNarrating && (
-                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-purple-900/90 to-transparent p-3">
-                          <div className="flex items-center gap-2 text-white">
-                            <div className="flex gap-1">
-                              <div className="w-1 h-3 bg-white animate-pulse" style={{ animationDelay: '0ms' }}></div>
-                              <div className="w-1 h-3 bg-white animate-pulse" style={{ animationDelay: '150ms' }}></div>
-                              <div className="w-1 h-3 bg-white animate-pulse" style={{ animationDelay: '300ms' }}></div>
-                            </div>
-                            <span className="text-xs font-medium">Presenting...</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    {loadingPresenter && !presenterImage && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-2xl">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-              
               {slides[currentSlide]?.content}
             </div>
 
