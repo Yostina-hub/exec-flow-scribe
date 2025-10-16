@@ -54,7 +54,8 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [animating, setAnimating] = useState(false);
   const [isNarrating, setIsNarrating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [voiceEnabled, setVoiceEnabled] = useState(false); // Disabled by default
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const narratingRef = useRef(false);
 
@@ -139,7 +140,14 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
         body: { text, voice: 'onyx' }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('TTS error:', error);
+        setVoiceError('Voice narration unavailable. Please check API configuration.');
+        setIsNarrating(false);
+        narratingRef.current = false;
+        setVoiceEnabled(false);
+        return;
+      }
 
       const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
       audioRef.current = audio;
@@ -165,8 +173,16 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       console.error('Narration error:', error);
       setIsNarrating(false);
       narratingRef.current = false;
-      if (error.message?.includes('API key')) {
-        toast.error('Voice narration requires OpenAI API key configuration');
+      setVoiceEnabled(false);
+      
+      if (error.message?.includes('quota')) {
+        setVoiceError('Voice quota exceeded. Please check your OpenAI billing.');
+        toast.error('Voice narration quota exceeded');
+      } else if (error.message?.includes('API key')) {
+        setVoiceError('OpenAI API key not configured.');
+        toast.error('Voice narration requires API key configuration');
+      } else {
+        setVoiceError('Voice narration unavailable.');
       }
     }
   };
@@ -186,6 +202,8 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const toggleVoice = () => {
     if (voiceEnabled) {
       stopNarration();
+    } else {
+      setVoiceError(null);
     }
     setVoiceEnabled(!voiceEnabled);
   };
@@ -232,29 +250,32 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
             <p className="text-lg leading-relaxed">{briefing.executive_summary}</p>
           </div>
           {briefing.context && (
-            <div className="grid grid-cols-3 gap-4">
-              <Card className="border-purple-500/20">
+            <div className="grid grid-cols-3 gap-4 animate-fade-in">
+              <Card className="border-purple-500/20 hover:border-purple-500/40 transition-all hover-scale">
                 <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-purple-500">
+                  <div className="text-3xl font-bold text-purple-500 animate-pulse">
                     {briefing.context.meetings?.total || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">Total Meetings</div>
+                  <Progress value={85} className="mt-2 h-1" />
                 </CardContent>
               </Card>
-              <Card className="border-purple-500/20">
+              <Card className="border-purple-500/20 hover:border-purple-500/40 transition-all hover-scale">
                 <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-pink-500">
+                  <div className="text-3xl font-bold text-pink-500 animate-pulse">
                     {briefing.context.actions?.stats?.total || 0}
                   </div>
                   <div className="text-sm text-muted-foreground">Action Items</div>
+                  <Progress value={briefing.context.actions?.completion_rate || 0} className="mt-2 h-1" />
                 </CardContent>
               </Card>
-              <Card className="border-purple-500/20">
+              <Card className="border-purple-500/20 hover:border-purple-500/40 transition-all hover-scale">
                 <CardContent className="pt-6">
-                  <div className="text-3xl font-bold text-blue-500">
+                  <div className="text-3xl font-bold text-blue-500 animate-pulse">
                     {briefing.context.actions?.completion_rate || 0}%
                   </div>
                   <div className="text-sm text-muted-foreground">Completion Rate</div>
+                  <Progress value={briefing.context.actions?.completion_rate || 0} className="mt-2 h-1" />
                 </CardContent>
               </Card>
             </div>
@@ -280,9 +301,13 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           {briefing.key_metrics.length > 0 ? (
             <div className="space-y-4">
               {briefing.key_metrics.map((metric, idx) => (
-                <Card key={idx} className="border-blue-500/20 hover:border-blue-500/40 transition-all">
+                <Card 
+                  key={idx} 
+                  className="border-blue-500/20 hover:border-blue-500/40 transition-all hover-scale animate-fade-in"
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
                   <CardContent className="pt-6 flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 animate-pulse">
                       <span className="text-white font-bold">{idx + 1}</span>
                     </div>
                     <p className="text-lg flex-1">{metric}</p>
@@ -316,9 +341,13 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           {briefing.strengths.length > 0 ? (
             <div className="space-y-4">
               {briefing.strengths.map((strength, idx) => (
-                <Card key={idx} className="border-green-500/20 hover:border-green-500/40 transition-all">
+                <Card 
+                  key={idx} 
+                  className="border-green-500/20 hover:border-green-500/40 transition-all hover-scale animate-fade-in"
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
                   <CardContent className="pt-6 flex items-start gap-4">
-                    <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0 mt-1" />
+                    <CheckCircle2 className="h-6 w-6 text-green-500 flex-shrink-0 mt-1 animate-pulse" />
                     <p className="text-lg flex-1">{strength}</p>
                   </CardContent>
                 </Card>
@@ -350,11 +379,15 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           {briefing.concerns.length > 0 ? (
             <div className="space-y-4">
               {briefing.concerns.map((concern, idx) => (
-                <Card key={idx} className="border-orange-500/20 hover:border-orange-500/40 transition-all">
+                <Card 
+                  key={idx} 
+                  className="border-orange-500/20 hover:border-orange-500/40 transition-all hover-scale animate-fade-in"
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
                   <CardContent className="pt-6 flex items-start gap-4">
-                    <AlertTriangle className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1" />
+                    <AlertTriangle className="h-6 w-6 text-orange-500 flex-shrink-0 mt-1 animate-pulse" />
                     <div className="flex-1">
-                      <Badge variant="destructive" className="mb-2">Priority</Badge>
+                      <Badge variant="destructive" className="mb-2 animate-pulse">Priority</Badge>
                       <p className="text-lg">{concern}</p>
                     </div>
                   </CardContent>
@@ -387,9 +420,13 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           {briefing.priorities.length > 0 ? (
             <div className="space-y-4">
               {briefing.priorities.map((priority, idx) => (
-                <Card key={idx} className="border-indigo-500/20 hover:border-indigo-500/40 transition-all">
+                <Card 
+                  key={idx} 
+                  className="border-indigo-500/20 hover:border-indigo-500/40 transition-all hover-scale animate-fade-in"
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
                   <CardContent className="pt-6 flex items-start gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 animate-pulse">
                       <span className="text-white font-bold">{idx + 1}</span>
                     </div>
                     <div className="flex-1">
@@ -426,9 +463,13 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           {briefing.recommendations.length > 0 ? (
             <div className="space-y-4">
               {briefing.recommendations.map((rec, idx) => (
-                <Card key={idx} className="border-teal-500/20 hover:border-teal-500/40 transition-all">
+                <Card 
+                  key={idx} 
+                  className="border-teal-500/20 hover:border-teal-500/40 transition-all hover-scale animate-fade-in"
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
                   <CardContent className="pt-6 flex items-start gap-4">
-                    <Zap className="h-6 w-6 text-teal-500 flex-shrink-0 mt-1" />
+                    <Zap className="h-6 w-6 text-teal-500 flex-shrink-0 mt-1 animate-pulse" />
                     <p className="text-lg flex-1">{rec}</p>
                   </CardContent>
                 </Card>
@@ -460,9 +501,13 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
           {briefing.next_actions.length > 0 ? (
             <div className="space-y-4">
               {briefing.next_actions.map((action, idx) => (
-                <Card key={idx} className="border-violet-500/20 hover:border-violet-500/40 transition-all">
+                <Card 
+                  key={idx} 
+                  className="border-violet-500/20 hover:border-violet-500/40 transition-all hover-scale animate-fade-in"
+                  style={{ animationDelay: `${idx * 150}ms` }}
+                >
                   <CardContent className="pt-6 flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center flex-shrink-0 animate-pulse">
                       <CheckCircle2 className="h-5 w-5 text-white" />
                     </div>
                     <p className="text-lg flex-1">{action}</p>
@@ -529,7 +574,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
                     size="icon"
                     onClick={toggleVoice}
                     className="text-white hover:bg-white/20"
-                    title={voiceEnabled ? 'Disable voice' : 'Enable voice'}
+                    title={voiceEnabled ? 'Disable voice (requires OpenAI API key)' : 'Enable voice'}
                   >
                     {voiceEnabled ? <Volume2 className="h-5 w-5" /> : <VolumeX className="h-5 w-5" />}
                   </Button>
@@ -566,7 +611,12 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
               </div>
             </DialogHeader>
 
-            <div className={`p-8 overflow-y-auto max-h-[calc(90vh-200px)] transition-opacity duration-150 ${animating ? 'opacity-0' : 'opacity-100'}`}>
+            <div className={`p-8 overflow-y-auto max-h-[calc(90vh-200px)] transition-all duration-300 ${animating ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+              {voiceError && (
+                <div className="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg text-sm text-orange-500 animate-fade-in">
+                  {voiceError}
+                </div>
+              )}
               {slides[currentSlide]?.content}
             </div>
 

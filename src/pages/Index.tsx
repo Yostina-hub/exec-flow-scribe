@@ -30,7 +30,6 @@ export default function Index() {
   const [weekMeetings, setWeekMeetings] = useState<any[]>([]);
   const [showBriefing, setShowBriefing] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
-  const [hasSeenBriefing, setHasSeenBriefing] = useState(false);
 
   useEffect(() => {
     checkUserRole();
@@ -40,19 +39,20 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    // Auto-open briefing for CEO on first visit
-    if (isCEO && !hasSeenBriefing && !loading) {
+    // Auto-open briefing for CEO on first login of the day
+    if (isCEO && !loading) {
       const briefingKey = `briefing-seen-${format(new Date(), 'yyyy-MM-dd')}`;
       const seen = localStorage.getItem(briefingKey);
+      
+      // Always show on first login of the day
       if (!seen) {
         setTimeout(() => {
           setShowBriefing(true);
           localStorage.setItem(briefingKey, 'true');
-        }, 1000);
+        }, 800);
       }
-      setHasSeenBriefing(true);
     }
-  }, [isCEO, hasSeenBriefing, loading]);
+  }, [isCEO, loading]);
 
   const checkUserRole = async () => {
     try {
