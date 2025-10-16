@@ -50,8 +50,8 @@ export default function Meetings() {
   useEffect(() => {
     fetchMeetings();
     
-    // Set up realtime subscription
-    const channel = supabase
+    // Set up realtime subscription for meetings and agenda items
+    const meetingsChannel = supabase
       .channel('meetings-changes')
       .on(
         'postgres_changes',
@@ -64,10 +64,21 @@ export default function Meetings() {
           fetchMeetings();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'agenda_items'
+        },
+        () => {
+          fetchMeetings();
+        }
+      )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(meetingsChannel);
     };
   }, []);
 

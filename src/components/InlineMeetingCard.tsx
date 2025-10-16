@@ -2,10 +2,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Clock, MapPin, Users, Play, FileText, Calendar
+  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { AgendaIntakeForm } from './AgendaIntakeForm';
 
 interface InlineMeetingCardProps {
   id: string;
@@ -117,22 +118,37 @@ export function InlineMeetingCard({
           </div>
         </div>
 
-        {/* Action Button */}
-        <Button
-          size="sm"
-          className={cn(
-            "w-full gap-2 bg-gradient-to-r",
-            config.gradient,
-            "hover:opacity-90 transition-opacity"
-          )}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/meetings/${id}`);
-          }}
-        >
-          <Play className="h-4 w-4" />
-          Join Meeting
-        </Button>
+        {/* Action Buttons */}
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            className={cn(
+              "flex-1 gap-2 bg-gradient-to-r",
+              config.gradient,
+              "hover:opacity-90 transition-opacity"
+            )}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/meetings/${id}`);
+            }}
+          >
+            <Play className="h-4 w-4" />
+            Join Meeting
+          </Button>
+          <AgendaIntakeForm 
+            meetingId={id} 
+            trigger={
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ListPlus className="h-4 w-4" />
+              </Button>
+            }
+          />
+        </div>
       </CardContent>
     </Card>
   );
