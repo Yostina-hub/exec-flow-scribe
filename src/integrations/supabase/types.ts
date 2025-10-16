@@ -257,6 +257,62 @@ export type Database = {
         }
         Relationships: []
       }
+      call_logs: {
+        Row: {
+          answered_at: string | null
+          call_duration_seconds: number | null
+          call_sid: string | null
+          call_status: string
+          call_type: string
+          ended_at: string | null
+          id: string
+          message_log_id: string | null
+          metadata: Json | null
+          phone_number: string
+          recording_url: string | null
+          started_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          answered_at?: string | null
+          call_duration_seconds?: number | null
+          call_sid?: string | null
+          call_status?: string
+          call_type: string
+          ended_at?: string | null
+          id?: string
+          message_log_id?: string | null
+          metadata?: Json | null
+          phone_number: string
+          recording_url?: string | null
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          answered_at?: string | null
+          call_duration_seconds?: number | null
+          call_sid?: string | null
+          call_status?: string
+          call_type?: string
+          ended_at?: string | null
+          id?: string
+          message_log_id?: string | null
+          metadata?: Json | null
+          phone_number?: string
+          recording_url?: string | null
+          started_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "call_logs_message_log_id_fkey"
+            columns: ["message_log_id"]
+            isOneToOne: false
+            referencedRelation: "message_logs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commitments: {
         Row: {
           commitment_text: string
@@ -306,6 +362,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      communication_settings: {
+        Row: {
+          config: Json
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          setting_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          config?: Json
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          setting_type?: string
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       confirmation_requests: {
         Row: {
@@ -778,6 +861,39 @@ export type Database = {
           role_type?: string
           updated_at?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      escalation_rules: {
+        Row: {
+          created_at: string | null
+          escalate_to: string
+          id: string
+          is_active: boolean | null
+          priority_level: number
+          rule_name: string
+          updated_at: string | null
+          wait_time_minutes: number
+        }
+        Insert: {
+          created_at?: string | null
+          escalate_to: string
+          id?: string
+          is_active?: boolean | null
+          priority_level: number
+          rule_name: string
+          updated_at?: string | null
+          wait_time_minutes?: number
+        }
+        Update: {
+          created_at?: string | null
+          escalate_to?: string
+          id?: string
+          is_active?: boolean | null
+          priority_level?: number
+          rule_name?: string
+          updated_at?: string | null
+          wait_time_minutes?: number
         }
         Relationships: []
       }
@@ -1545,6 +1661,77 @@ export type Database = {
           },
         ]
       }
+      message_logs: {
+        Row: {
+          channel: string
+          content: string | null
+          created_at: string | null
+          delivered_at: string | null
+          escalated_at: string | null
+          escalation_level: number | null
+          id: string
+          is_urgent: boolean | null
+          meeting_id: string | null
+          message_type: string
+          metadata: Json | null
+          read_at: string | null
+          recipient_phone: string
+          response_received: boolean | null
+          sent_at: string | null
+          status: string
+          urgency_keywords: string[] | null
+          user_id: string | null
+        }
+        Insert: {
+          channel: string
+          content?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          escalated_at?: string | null
+          escalation_level?: number | null
+          id?: string
+          is_urgent?: boolean | null
+          meeting_id?: string | null
+          message_type: string
+          metadata?: Json | null
+          read_at?: string | null
+          recipient_phone: string
+          response_received?: boolean | null
+          sent_at?: string | null
+          status?: string
+          urgency_keywords?: string[] | null
+          user_id?: string | null
+        }
+        Update: {
+          channel?: string
+          content?: string | null
+          created_at?: string | null
+          delivered_at?: string | null
+          escalated_at?: string | null
+          escalation_level?: number | null
+          id?: string
+          is_urgent?: boolean | null
+          meeting_id?: string | null
+          message_type?: string
+          metadata?: Json | null
+          read_at?: string | null
+          recipient_phone?: string
+          response_received?: boolean | null
+          sent_at?: string | null
+          status?: string
+          urgency_keywords?: string[] | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_logs_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       minutes_versions: {
         Row: {
           changes_summary: string | null
@@ -2229,6 +2416,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      urgent_keywords: {
+        Row: {
+          auto_escalate: boolean | null
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          keyword: string
+          priority_level: number | null
+        }
+        Insert: {
+          auto_escalate?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          keyword: string
+          priority_level?: number | null
+        }
+        Update: {
+          auto_escalate?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          keyword?: string
+          priority_level?: number | null
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

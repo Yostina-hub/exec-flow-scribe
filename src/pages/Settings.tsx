@@ -17,6 +17,7 @@ import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
+import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -393,6 +394,7 @@ const Settings = () => {
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
+            <TabsTrigger value="communication">Communication</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
@@ -915,6 +917,11 @@ const Settings = () => {
           {/* Automation Tab */}
           <TabsContent value="automation" className="space-y-6">
             <AutomationSettings />
+          </TabsContent>
+
+          {/* Communication Tab */}
+          <TabsContent value="communication" className="space-y-6">
+            <CommunicationSettings />
           </TabsContent>
 
           {/* Branding Tab */}
