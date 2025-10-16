@@ -271,26 +271,6 @@ export async function importSchedule(): Promise<{ success: boolean; message: str
       return { success: false, message: "User not authenticated" };
     }
 
-    // Check if schedule has already been imported
-    const { data: existingMeetings } = await supabase
-      .from('meetings')
-      .select('id')
-      .eq('created_by', user.id)
-      .in('title', [
-        'Project Horizon Board Meeting',
-        'Revenue Council: Yale',
-        'Meeting with KIDI',
-        'Meeting with MULE'
-      ])
-      .limit(1);
-
-    if (existingMeetings && existingMeetings.length > 0) {
-      return { 
-        success: false, 
-        message: "Schedule appears to be already imported. Please delete existing meetings first if you want to re-import." 
-      };
-    }
-
     // Create or fetch categories for color coding
     const categoryMap: Record<string, string> = {};
     
