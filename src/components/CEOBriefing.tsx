@@ -27,7 +27,9 @@ import {
   Volume2,
   VolumeX,
   Play,
-  Pause
+  Pause,
+  Timer,
+  TimerOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -56,14 +58,17 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(false); // Disabled by default
   const [voiceError, setVoiceError] = useState<string | null>(null);
+  const [autoAdvance, setAutoAdvance] = useState(true); // Auto-advance enabled by default
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const narratingRef = useRef(false);
+  const autoAdvanceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (open) {
       generateBriefing();
     } else {
       stopNarration();
+      clearAutoAdvanceTimer();
     }
   }, [open]);
 
@@ -72,6 +77,24 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       narrateCurrentSlide();
     }
   }, [currentSlide, briefing, voiceEnabled, loading]);
+
+  // Auto-advance timer (works independently of voice)
+  useEffect(() => {
+    clearAutoAdvanceTimer();
+    
+    if (briefing && autoAdvance && !loading && !isNarrating && currentSlide < slides.length - 1) {
+      // Auto-advance after 12 seconds if not narrating
+      autoAdvanceTimerRef.current = setTimeout(() => {
+        setAnimating(true);
+        setTimeout(() => {
+          setCurrentSlide(prev => prev + 1);
+          setAnimating(false);
+        }, 150);
+      }, 12000);
+    }
+    
+    return () => clearAutoAdvanceTimer();
+  }, [currentSlide, briefing, autoAdvance, loading, isNarrating]);
 
   const generateBriefing = async () => {
     setLoading(true);
@@ -92,6 +115,13 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       toast.error('Failed to generate executive briefing');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const clearAutoAdvanceTimer = () => {
+    if (autoAdvanceTimerRef.current) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
     }
   };
 
@@ -211,6 +241,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const nextSlide = () => {
     if (currentSlide < slides.length - 1) {
       stopNarration();
+      clearAutoAdvanceTimer();
       setAnimating(true);
       setTimeout(() => {
         setCurrentSlide(prev => prev + 1);
@@ -222,6 +253,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const prevSlide = () => {
     if (currentSlide > 0) {
       stopNarration();
+      clearAutoAdvanceTimer();
       setAnimating(true);
       setTimeout(() => {
         setCurrentSlide(prev => prev - 1);
@@ -569,6 +601,15 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setAutoAdvance(!autoAdvance)}
+                    className="text-white hover:bg-white/20"
+                    title={autoAdvance ? 'Disable auto-advance' : 'Enable auto-advance'}
+                  >
+                    {autoAdvance ? <Timer className="h-5 w-5" /> : <TimerOff className="h-5 w-5" />}
+                  </Button>
                   <Button
                     variant="ghost"
                     size="icon"
