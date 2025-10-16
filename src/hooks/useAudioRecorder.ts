@@ -32,6 +32,26 @@ const normalizeMeetingId = (id: string) => {
   return uuidRegex.test(id) ? id : stringToUUID(id);
 };
 
+// Choose a recording mime type that this browser supports (Safari prefers MP4/AAC)
+const pickSupportedMimeType = () => {
+  const candidates = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4;codecs=mp4a.40.2',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg',
+  ];
+  for (const t of candidates) {
+    try {
+      if ((window as any).MediaRecorder && (MediaRecorder as any).isTypeSupported?.(t)) {
+        return t;
+      }
+    } catch {}
+  }
+  return undefined;
+};
+
 export const useAudioRecorder = (meetingId: string) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -52,9 +72,9 @@ export const useAudioRecorder = (meetingId: string) => {
         } 
       });
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
+      const supported = pickSupportedMimeType();
+      const options: MediaRecorderOptions | undefined = supported ? { mimeType: supported } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, options as any);
       
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
