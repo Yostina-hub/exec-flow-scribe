@@ -6,10 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Search, Filter, Loader2, Calendar, Clock, Users, TrendingUp } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Search, Filter, Loader2, Calendar, Clock, Users, TrendingUp, Download, SortAsc } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isPast, isFuture, startOfDay } from "date-fns";
+import { format, isPast, isFuture, startOfDay, startOfWeek, endOfWeek } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "@/components/ui/dropdown-menu";
 
 interface Meeting {
   id: string;
@@ -42,10 +53,13 @@ interface MeetingStats {
 }
 
 export default function Meetings() {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<MeetingStats>({ total: 0, upcoming: 0, completed: 0, thisWeek: 0 });
+  const [filterLocation, setFilterLocation] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"date" | "title" | "attendees">("date");
 
   useEffect(() => {
     fetchMeetings();
@@ -167,26 +181,110 @@ export default function Meetings() {
   };
 
   const filterMeetings = (meetings: FormattedMeeting[]) => {
-    if (!searchQuery) return meetings;
-    return meetings.filter((meeting) =>
-      meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meeting.location.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    let filtered = meetings;
+    
+    // Apply search filter
+    if (searchQuery) {
+      filtered = filtered.filter((meeting) =>
+        meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        meeting.location.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // Apply location filter
+    if (filterLocation !== "all") {
+      filtered = filtered.filter((meeting) => 
+        meeting.location.toLowerCase() === filterLocation.toLowerCase()
+      );
+    }
+    
+    return filtered;
   };
 
-  const upcomingMeetings = meetings
-    .filter((m) => m.status !== "completed")
-    .map(formatMeetingCard)
-    .sort((a, b) => new Date(meetings.find(m => m.id === a.id)!.start_time).getTime() - 
-                     new Date(meetings.find(m => m.id === b.id)!.start_time).getTime());
+  const sortMeetings = (meetings: FormattedMeeting[], originalMeetings: Meeting[]) => {
+    const sorted = [...meetings];
+    
+    switch (sortBy) {
+      case "title":
+        return sorted.sort((a, b) => a.title.localeCompare(b.title));
+      case "attendees":
+        return sorted.sort((a, b) => b.attendees - a.attendees);
+      case "date":
+      default:
+        return sorted.sort((a, b) => {
+          const meetingA = originalMeetings.find(m => m.id === a.id);
+          const meetingB = originalMeetings.find(m => m.id === b.id);
+          if (!meetingA || !meetingB) return 0;
+          return new Date(meetingA.start_time).getTime() - 
+                 new Date(meetingB.start_time).getTime();
+        });
+    }
+  };
+
+  // Get unique locations for filter
+  const uniqueLocations = useMemo(() => {
+    const locations = meetings
+      .map(m => m.location)
+      .filter((loc): loc is string => loc !== null && loc !== "");
+    return ["all", ...Array.from(new Set(locations))];
+  }, [meetings]);
+
+  const exportMeetings = () => {
+    try {
+      const csvData = meetings.map(m => ({
+        Title: m.title,
+        Date: format(new Date(m.start_time), "yyyy-MM-dd"),
+        Time: format(new Date(m.start_time), "HH:mm"),
+        Location: m.location || "",
+        Status: m.status,
+        Attendees: m.attendee_count || 0,
+        Agenda: m.agenda_count || 0,
+      }));
+
+      const headers = Object.keys(csvData[0]).join(",");
+      const rows = csvData.map(row => Object.values(row).join(","));
+      const csv = [headers, ...rows].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `meetings-export-${format(new Date(), "yyyy-MM-dd")}.csv`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export successful",
+        description: "Meetings exported to CSV",
+      });
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "Could not export meetings",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const upcomingMeetings = sortMeetings(
+    filterMeetings(
+      meetings
+        .filter((m) => m.status !== "completed")
+        .map(formatMeetingCard)
+    ),
+    meetings
+  );
   
-  const completedMeetings = meetings
-    .filter((m) => m.status === "completed")
-    .map(formatMeetingCard)
-    .sort((a, b) => new Date(meetings.find(m => m.id === b.id)!.start_time).getTime() - 
-                     new Date(meetings.find(m => m.id === a.id)!.start_time).getTime());
+  const completedMeetings = sortMeetings(
+    filterMeetings(
+      meetings
+        .filter((m) => m.status === "completed")
+        .map(formatMeetingCard)
+    ),
+    meetings
+  );
   
-  const allMeetingsFormatted = meetings.map(formatMeetingCard);
+  const allMeetingsFormatted = sortMeetings(filterMeetings(meetings.map(formatMeetingCard)), meetings);
 
   if (loading) {
     return (
@@ -277,8 +375,8 @@ export default function Meetings() {
 
         {/* Search and Filters */}
         <Card className="p-6 shadow-lg border-2">
-          <div className="flex gap-3">
-            <div className="relative flex-1">
+          <div className="flex gap-3 flex-wrap">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search meetings by title or location..."
@@ -287,9 +385,59 @@ export default function Meetings() {
                 className="pl-12 h-12 text-base bg-muted/30 border-2 focus:bg-background focus:border-primary transition-all"
               />
             </div>
-            <Button variant="outline" size="lg" className="gap-2 border-2 hover:border-primary hover:bg-primary/5">
-              <Filter className="h-5 w-5" />
-              Filters
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" className="gap-2 border-2 hover:border-primary hover:bg-primary/5">
+                  <Filter className="h-5 w-5" />
+                  Filter
+                  {filterLocation !== "all" && (
+                    <span className="ml-1 px-2 py-0.5 text-xs bg-primary text-primary-foreground rounded-full">
+                      1
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Filter by Location</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup value={filterLocation} onValueChange={setFilterLocation}>
+                  {uniqueLocations.map((loc) => (
+                    <DropdownMenuRadioItem key={loc} value={loc}>
+                      {loc === "all" ? "All Locations" : loc}
+                    </DropdownMenuRadioItem>
+                  ))}
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="lg" className="gap-2 border-2 hover:border-primary hover:bg-primary/5">
+                  <SortAsc className="h-5 w-5" />
+                  Sort
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Sort by</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuRadioGroup value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                  <DropdownMenuRadioItem value="date">Date</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="title">Title</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="attendees">Attendees</DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="gap-2 border-2 hover:border-primary hover:bg-primary/5"
+              onClick={exportMeetings}
+              disabled={meetings.length === 0}
+            >
+              <Download className="h-5 w-5" />
+              Export
             </Button>
           </div>
         </Card>

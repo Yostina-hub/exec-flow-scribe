@@ -82,6 +82,17 @@ export const CreateMeetingDialog = () => {
         return;
       }
 
+      // Validate that date is not in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const selectedDate = new Date(date);
+      selectedDate.setHours(0, 0, 0, 0);
+      
+      if (selectedDate < today) {
+        toast.error("Cannot schedule meetings in the past");
+        return;
+      }
+
       // Combine date and time
       const [hours, minutes] = time.split(":");
       const startTime = new Date(date);
@@ -142,7 +153,7 @@ export const CreateMeetingDialog = () => {
       setOpen(false);
       setDate(undefined);
       setIsRecurring(false);
-      window.location.reload(); // Refresh to show new meeting
+      // Meeting will appear automatically via realtime subscription
     } catch (error: any) {
       toast.error("Failed to create meeting: " + error.message);
     } finally {

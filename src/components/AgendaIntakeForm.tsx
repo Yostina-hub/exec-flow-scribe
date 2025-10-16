@@ -93,6 +93,7 @@ export const AgendaIntakeForm = ({ meetingId, trigger }: AgendaIntakeFormProps) 
         description: `${validItems.length} item(s) added to meeting agenda`,
       });
 
+      // Reset form and close dialog
       setOpen(false);
       setItems([{ title: '', description: '', duration_minutes: 15, order_index: 0 }]);
     } catch (error: any) {
