@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { transcribeAudioBrowser } from '@/utils/browserWhisper';
+import { initBrowserWhisper } from '@/utils/browserWhisper';
 
 // Normalize meeting IDs deterministically so client/server match without localStorage
 const stringToUUID = (input: string) => {
@@ -57,6 +57,10 @@ export const useAudioRecorder = (meetingId: string) => {
   const [isPaused, setIsPaused] = useState(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const pcmChunksRef = useRef<Float32Array[]>([]);
   const { toast } = useToast();
   const normalizedMeetingId = normalizeMeetingId(meetingId);
 
@@ -78,6 +82,31 @@ export const useAudioRecorder = (meetingId: string) => {
       
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
+
+      // Set up PCM capture via WebAudio for Browser Whisper (avoids container decode issues)
+      try {
+        const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 }) as AudioContext;
+        audioContextRef.current = audioCtx;
+        sourceRef.current = audioCtx.createMediaStreamSource(stream);
+        processorRef.current = audioCtx.createScriptProcessor(4096, 1, 1);
+        pcmChunksRef.current = [];
+
+        processorRef.current.onaudioprocess = (e) => {
+          const input = e.inputBuffer.getChannelData(0);
+          // Copy buffer to avoid referencing the same underlying memory
+          pcmChunksRef.current.push(new Float32Array(input));
+          // Keep roughly last 30s of audio (~4096 samples per chunk at 24kHz ≈ 170ms → ~176 chunks)
+          const maxPcmChunks = 200;
+          if (pcmChunksRef.current.length > maxPcmChunks) {
+            pcmChunksRef.current.splice(0, pcmChunksRef.current.length - maxPcmChunks);
+          }
+        };
+
+        sourceRef.current.connect(processorRef.current);
+        processorRef.current.connect(audioCtx.destination);
+      } catch (e) {
+        console.warn('Failed to initialize PCM capture for Browser Whisper', e);
+      }
 
       // Send audio chunks every 5 seconds for transcription
       mediaRecorder.ondataavailable = async (event) => {
@@ -109,15 +138,66 @@ export const useAudioRecorder = (meetingId: string) => {
               // Do not run browser/server chunk transcription to avoid conflicts and errors.
               return;
             } else if (provider === 'browser') {
-              // Use only the latest chunk to ensure a valid WebM container
-              const latest = chunksRef.current[chunksRef.current.length - 1];
-              if (!latest || latest.size < 8192) return; // skip tiny/partial segments
+              // Use PCM ring buffer captured via WebAudio; avoid container decoding
+              const sampleRate = 24000;
+              const windowSeconds = 8;
+              const neededSamples = sampleRate * windowSeconds;
 
-              const text = await transcribeAudioBrowser(latest);
-              console.log('Browser transcription:', text);
-              
+              // Gather last neededSamples from pcmChunksRef
+              let remaining = neededSamples;
+              const selected: Float32Array[] = [];
+              for (let i = pcmChunksRef.current.length - 1; i >= 0 && remaining > 0; i--) {
+                const chunk = pcmChunksRef.current[i];
+                selected.push(chunk);
+                remaining -= chunk.length;
+              }
+              if (selected.length === 0) return;
+
+              // Concatenate in correct order
+              const total = Math.min(neededSamples, selected.reduce((sum, c) => sum + c.length, 0));
+              const segment = new Float32Array(total);
+              let offset = total;
+              for (let i = 0; i < selected.length; i++) {
+                const chunk = selected[i];
+                const write = Math.min(chunk.length, offset);
+                segment.set(chunk.subarray(chunk.length - write), offset - write);
+                offset -= write;
+                if (offset <= 0) break;
+              }
+
+              // Simple cleaner
+              const clean = (text: string) => {
+                if (!text) return '';
+                let t = text
+                  .replace(/\[MUSIC\]/gi, '')
+                  .replace(/\[music\]/gi, '')
+                  .replace(/\(breathing heavily\)/gi, '')
+                  .replace(/\(breathing\)/gi, '')
+                  .replace(/\[NOISE\]/gi, '')
+                  .replace(/\[noise\]/gi, '')
+                  .replace(/\[SOUND\]/gi, '')
+                  .replace(/\[sound\]/gi, '')
+                  .replace(/\[APPLAUSE\]/gi, '')
+                  .replace(/\[applause\]/gi, '')
+                  .replace(/\[LAUGHTER\]/gi, '')
+                  .replace(/\[laughter\]/gi, '')
+                  .replace(/\(coughing\)/gi, '')
+                  .replace(/\(sighs\)/gi, '')
+                  .replace(/\(clears throat\)/gi, '')
+                  .trim();
+                if (!t) return '';
+                t = t.charAt(0).toUpperCase() + t.slice(1);
+                if (t.length > 3 && !/[.!?]$/.test(t)) t += '.';
+                return t;
+              };
+
+              const model = await initBrowserWhisper();
+              const result = await model(segment);
+              const rawText = (result?.text as string) || '';
+              const text = clean(rawText);
+              console.log('Browser transcription (PCM):', text);
+
               if (text && text.trim()) {
-                // Save via secure backend
                 const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
                   body: {
                     meetingId: normalizedMeetingId,
@@ -161,7 +241,18 @@ export const useAudioRecorder = (meetingId: string) => {
       };
 
       mediaRecorder.onstop = () => {
-        stream.getTracks().forEach(track => track.stop());
+        try {
+          stream.getTracks().forEach(track => track.stop());
+        } catch {}
+        try {
+          processorRef.current?.disconnect();
+          sourceRef.current?.disconnect();
+          audioContextRef.current?.close();
+        } catch {}
+        processorRef.current = null;
+        sourceRef.current = null;
+        audioContextRef.current = null;
+        pcmChunksRef.current = [];
       };
 
       mediaRecorder.start(5000); // Record in 5-second chunks
