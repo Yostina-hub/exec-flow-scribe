@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "date-fns";
 
@@ -30,6 +30,7 @@ export default function Index() {
   const [weekMeetings, setWeekMeetings] = useState<any[]>([]);
   const [showBriefing, setShowBriefing] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
+  const openedRef = useRef(false);
 
   useEffect(() => {
     checkUserRole();
@@ -38,19 +39,40 @@ export default function Index() {
     return () => clearInterval(timer);
   }, []);
 
+  // Open briefing on every SIGNED_IN event
   useEffect(() => {
-    // Auto-open briefing for CEO on every login (session-based)
-    if (isCEO && !loading) {
-      const briefingKey = 'ceo-briefing-shown';
-      const shown = sessionStorage.getItem(briefingKey);
-      
-      // Show on every new login session
-      if (!shown) {
-        setTimeout(() => {
-          setShowBriefing(true);
-          sessionStorage.setItem(briefingKey, 'true');
-        }, 800);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN') {
+        openedRef.current = false; // reset so it opens again for this login
+        setTimeout(async () => {
+          try {
+            const userId = session?.user?.id;
+            if (!userId) return;
+            const { data: userRoles } = await supabase
+              .from('user_roles')
+              .select('roles(name)')
+              .eq('user_id', userId);
+            const hasCEORole = (userRoles || []).some((ur: any) => ur.roles?.name?.toLowerCase().includes('ceo') || ur.roles?.name?.toLowerCase().includes('executive'));
+            if (hasCEORole) {
+              setShowBriefing(true);
+            }
+          } catch (e) {
+            console.error('Auto-open on sign-in failed:', e);
+          }
+        }, 0);
       }
+      if (event === 'SIGNED_OUT') {
+        openedRef.current = false;
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Ensure it opens once per page visit when already authenticated
+  useEffect(() => {
+    if (isCEO && !loading && !openedRef.current) {
+      openedRef.current = true;
+      setTimeout(() => setShowBriefing(true), 800);
     }
   }, [isCEO, loading]);
 
