@@ -191,12 +191,26 @@ export class OpenAIRealtimeClient {
             this.onTranscript(event.transcript, 'User');
           }
         } else if (event.type === 'conversation.item.input_audio_transcription.failed') {
-          const msg = event?.error?.message || 'Transcription rate limited, retrying soon.';
-          console.warn('User transcription failed:', msg);
-          this.onError(msg);
+          const errMsg = event?.error?.message || 'Transcription failed';
+          console.warn('User transcription failed:', errMsg);
+          this.onError(errMsg);
         } else if (event.type === 'response.audio_transcript.delta') {
           if (event.delta) {
             this.onTranscript(event.delta, 'Assistant');
+          }
+        } else if (event.type === 'response.done') {
+          try {
+            const status = event?.response?.status;
+            const details = event?.response?.status_details?.error;
+            if (status === 'failed') {
+              const code = details?.code;
+              const message = details?.message || 'Realtime response failed';
+              const finalMsg = code ? `${code}: ${message}` : message;
+              console.error('Realtime response failed:', finalMsg);
+              this.onError(finalMsg);
+            }
+          } catch (e) {
+            console.warn('Failed to parse response.done event', e);
           }
         } else if (event.type === 'error') {
           console.error('Realtime API error:', event);
@@ -210,7 +224,7 @@ export class OpenAIRealtimeClient {
 
       // Connect to OpenAI's Realtime API
       const baseUrl = "https://api.openai.com/v1/realtime";
-      const model = "gpt-4o-realtime-preview-2024-10-01";
+      const model = "gpt-4o-realtime-preview-2024-12-17";
       
       console.log('Connecting to OpenAI Realtime API...');
       const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
