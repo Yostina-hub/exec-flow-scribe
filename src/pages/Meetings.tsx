@@ -2,6 +2,7 @@ import { Layout } from "@/components/Layout";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
+import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -318,7 +319,10 @@ export default function Meetings() {
               </h1>
               <p className="text-white/90 text-lg">Your complete meeting management hub</p>
             </div>
-            <CreateMeetingDialog />
+            <div className="flex gap-3">
+              <ImportScheduleButton />
+              <CreateMeetingDialog />
+            </div>
           </div>
         </div>
 
