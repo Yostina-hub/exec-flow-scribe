@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -21,16 +21,45 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus } from "lucide-react";
+import { CalendarIcon, Plus, Repeat } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Switch } from "@/components/ui/switch";
+
+interface Category {
+  id: string;
+  name: string;
+  color_hex: string;
+}
 
 export const CreateMeetingDialog = () => {
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isRecurring, setIsRecurring] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      fetchCategories();
+    }
+  }, [open]);
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from("event_categories")
+      .select("id, name, color_hex")
+      .eq("is_active", true)
+      .order("name");
+    
+    if (error) {
+      console.error("Failed to fetch categories:", error);
+    } else {
+      setCategories(data || []);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +72,10 @@ export const CreateMeetingDialog = () => {
       const duration = parseInt(formData.get("duration") as string);
       const location = formData.get("location") as string;
       const description = formData.get("description") as string;
+      const categoryId = formData.get("category") as string;
+      const timezone = formData.get("timezone") as string;
+      const recurrenceFreq = formData.get("recurrence_freq") as string;
+      const recurrenceInterval = parseInt(formData.get("recurrence_interval") as string || "1");
 
       if (!date) {
         toast.error("Please select a date");
@@ -60,7 +93,8 @@ export const CreateMeetingDialog = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
+      // Insert meeting
+      const { data: meeting, error: meetingError } = await supabase
         .from("meetings")
         .insert({
           title,
@@ -70,12 +104,44 @@ export const CreateMeetingDialog = () => {
           description,
           created_by: user.id,
           status: "scheduled",
+          category_id: categoryId || null,
+          timezone,
+          is_recurring: isRecurring,
+        })
+        .select()
+        .single();
+
+      if (meetingError) throw meetingError;
+
+      // If recurring, create recurrence rule
+      if (isRecurring && recurrenceFreq && recurrenceFreq !== "none") {
+        const { error: recurrenceError } = await supabase
+          .from("recurrence_rules")
+          .insert({
+            meeting_id: meeting.id,
+            frequency: recurrenceFreq,
+            interval: recurrenceInterval,
+          });
+
+        if (recurrenceError) throw recurrenceError;
+      }
+
+      // Add creator as attendee
+      const { error: attendeeError } = await supabase
+        .from("meeting_attendees")
+        .insert({
+          meeting_id: meeting.id,
+          user_id: user.id,
+          role: "required",
+          attendance_confirmed: true,
         });
 
-      if (error) throw error;
+      if (attendeeError) throw attendeeError;
 
       toast.success("Meeting created successfully");
       setOpen(false);
+      setDate(undefined);
+      setIsRecurring(false);
       window.location.reload(); // Refresh to show new meeting
     } catch (error: any) {
       toast.error("Failed to create meeting: " + error.message);
@@ -168,21 +234,91 @@ export const CreateMeetingDialog = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="attendees">Attendees</Label>
-              <Input
-                id="attendees"
-                placeholder="Enter email addresses (comma separated)"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select name="category">
+                  <SelectTrigger id="category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => (
+                      <SelectItem key={cat.id} value={cat.id}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-3 h-3 rounded-full" 
+                            style={{ backgroundColor: cat.color_hex }}
+                          />
+                          {cat.name}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="timezone">Timezone</Label>
+                <Select defaultValue="Africa/Addis_Ababa" name="timezone">
+                  <SelectTrigger id="timezone">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Africa/Addis_Ababa">ETH (Addis Ababa)</SelectItem>
+                    <SelectItem value="UTC">UTC</SelectItem>
+                    <SelectItem value="America/New_York">EST (New York)</SelectItem>
+                    <SelectItem value="Europe/London">GMT (London)</SelectItem>
+                    <SelectItem value="Asia/Tokyo">JST (Tokyo)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="agenda">Agenda Items</Label>
-              <Textarea
-                id="agenda"
-                placeholder="Enter agenda items (one per line)"
-                rows={4}
-              />
+            <div className="space-y-3 border rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-muted-foreground" />
+                  <Label htmlFor="recurring" className="cursor-pointer">Recurring Meeting</Label>
+                </div>
+                <Switch
+                  id="recurring"
+                  checked={isRecurring}
+                  onCheckedChange={setIsRecurring}
+                />
+              </div>
+
+              {isRecurring && (
+                <div className="grid grid-cols-2 gap-4 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_freq">Frequency</Label>
+                    <Select defaultValue="WEEKLY" name="recurrence_freq">
+                      <SelectTrigger id="recurrence_freq">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DAILY">Daily</SelectItem>
+                        <SelectItem value="WEEKLY">Weekly</SelectItem>
+                        <SelectItem value="MONTHLY">Monthly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="recurrence_interval">Every</Label>
+                    <Select defaultValue="1" name="recurrence_interval">
+                      <SelectTrigger id="recurrence_interval">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 week</SelectItem>
+                        <SelectItem value="2">2 weeks</SelectItem>
+                        <SelectItem value="3">3 weeks</SelectItem>
+                        <SelectItem value="4">4 weeks</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
