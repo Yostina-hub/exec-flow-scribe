@@ -9,6 +9,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from './ui/dialog';
 import {
   ChevronLeft,
@@ -617,6 +618,11 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+        {/* A11y: Always provide a title/description for DialogContent */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>Executive Briefing</DialogTitle>
+          <DialogDescription>AI-generated briefing with voice narration and assistant.</DialogDescription>
+        </DialogHeader>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 px-8">
             <Loader2 className="h-16 w-16 animate-spin text-primary mb-6" />

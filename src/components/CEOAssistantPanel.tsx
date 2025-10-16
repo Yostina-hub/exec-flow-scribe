@@ -70,6 +70,8 @@ export function CEOAssistantPanel({
           setIsAISpeaking(speaking);
           if (speaking) {
             onPausePresentation();
+          } else {
+            onResumePresentation();
           }
         }
       );
@@ -91,7 +93,6 @@ export function CEOAssistantPanel({
       };
 
       await assistant.connect(context);
-      onPausePresentation();
       
       toast.success('AI Assistant connected - ask me anything!');
     } catch (error) {
