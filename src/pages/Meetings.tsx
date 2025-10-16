@@ -5,6 +5,7 @@ import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { CleanupDuplicatesButton } from "@/components/CleanupDuplicatesButton";
 import { DeleteCEOScheduleButton } from "@/components/DeleteCEOScheduleButton";
+import { MeetingNotebookPanel } from "@/components/MeetingNotebookPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -379,6 +380,9 @@ export default function Meetings() {
             </CardContent>
           </Card>
         </div>
+
+        {/* AI NotebookLM Panel */}
+        <MeetingNotebookPanel meetings={meetings} />
 
         {/* Search and Filters */}
         <Card className="p-6 shadow-lg border-2">
