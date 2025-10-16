@@ -3,6 +3,8 @@ import { SmartDashboardCard } from "@/components/SmartDashboardCard";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { CEOBriefing } from "@/components/CEOBriefing";
+import { WhatsAppIntegration } from "@/components/WhatsAppIntegration";
+import { UrgentMessagesPanel } from "@/components/UrgentMessagesPanel";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
@@ -17,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "date-fns";
+import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -31,6 +34,8 @@ export default function Index() {
   const [showBriefing, setShowBriefing] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
   const openedRef = useRef(false);
+  
+  useNotificationDispatcher();
 
   useEffect(() => {
     checkUserRole();
@@ -596,6 +601,12 @@ export default function Index() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Communication Panels */}
+      <div className="grid gap-4 md:grid-cols-2 animate-fade-in pb-6">
+        <UrgentMessagesPanel />
+        <WhatsAppIntegration />
       </div>
 
       {/* CEO Briefing Dialog */}

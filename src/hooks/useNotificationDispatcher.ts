@@ -257,6 +257,46 @@ export const useNotificationDispatcher = () => {
             showCoachHint(payload.new);
           }
         )
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'message_logs',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            if (payload.new.is_urgent) {
+              toast({
+                title: '🚨 Urgent Communication',
+                description: payload.new.content?.substring(0, 100) || 'New urgent message received',
+                variant: 'destructive',
+              });
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'message_logs',
+            filter: `user_id=eq.${user.id}`,
+          },
+          (payload) => {
+            if (payload.new.escalation_level === 2) {
+              toast({
+                title: '⚠️ Message Escalated to SMS',
+                description: 'An urgent message has been escalated to SMS',
+              });
+            } else if (payload.new.escalation_level === 3) {
+              toast({
+                title: '📞 Call Initiated',
+                description: 'A critical message has been escalated to a phone call',
+              });
+            }
+          }
+        )
         .subscribe();
 
       return () => {
@@ -295,11 +335,36 @@ export const useNotificationDispatcher = () => {
     });
   };
 
+  const checkEscalations = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-escalations');
+      
+      if (error) throw error;
+      
+      if (data.escalations_triggered > 0) {
+        toast({
+          title: 'Escalations Processed',
+          description: `${data.escalations_triggered} messages escalated`,
+        });
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Error checking escalations:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to check for escalations',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return {
     sendEmail,
     sendMeetingReminder,
     sendActionItemUpdate,
     sendMinutesReady,
     sendConfirmationRequest,
+    checkEscalations,
   };
 };
