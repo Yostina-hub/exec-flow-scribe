@@ -90,43 +90,43 @@ export default function Index() {
 
   return (
     <Layout>
-      <div className="space-y-8 pb-20">
+      <div className="space-y-4 lg:space-y-8 pb-16 lg:pb-20">
         {/* Animated Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 p-8 border border-purple-500/20 animate-fade-in">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="relative overflow-hidden rounded-xl lg:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 p-4 lg:p-8 border border-purple-500/20 animate-fade-in">
+          <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000 hidden lg:block" />
           
-          <div className="relative z-10 flex items-start justify-between">
-            <div className="space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 animate-scale-in">
-                <Sparkles className="h-4 w-4 text-purple-400" />
-                <span className="text-sm font-medium">Live Dashboard</span>
+          <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-4">
+            <div className="space-y-3 lg:space-y-4 flex-1">
+              <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 animate-scale-in">
+                <Sparkles className="h-3 w-3 lg:h-4 lg:w-4 text-purple-400" />
+                <span className="text-xs lg:text-sm font-medium">Live Dashboard</span>
               </div>
               
-              <h1 className="text-5xl font-bold font-['Space_Grotesk'] animate-fade-in">
+              <h1 className="text-3xl lg:text-5xl font-bold font-['Space_Grotesk'] animate-fade-in">
                 Welcome Back! 
-                <span className="inline-block animate-bounce ml-3">👋</span>
+                <span className="inline-block animate-bounce ml-2 lg:ml-3">👋</span>
               </h1>
               
-              <p className="text-lg text-muted-foreground max-w-2xl">
+              <p className="text-sm lg:text-lg text-muted-foreground max-w-2xl">
                 You have <span className="font-bold text-purple-400">{todayMeetingsCount}</span> meeting{todayMeetingsCount !== 1 ? 's' : ''} today and{' '}
                 <span className="font-bold text-blue-400">{pendingActionsCount}</span> pending action{pendingActionsCount !== 1 ? 's' : ''}
               </p>
             </div>
             
-            <div className="hidden md:block text-right space-y-2 animate-scale-in">
-              <div className="text-4xl font-bold font-['Space_Grotesk'] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+            <div className="text-right space-y-2 animate-scale-in">
+              <div className="text-2xl lg:text-4xl font-bold font-['Space_Grotesk'] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
                 {format(currentTime, 'HH:mm')}
               </div>
-              <div className="text-sm text-muted-foreground">
-                {format(currentTime, 'EEEE, MMMM d')}
+              <div className="text-xs lg:text-sm text-muted-foreground">
+                {format(currentTime, 'EEE, MMM d')}
               </div>
             </div>
           </div>
         </div>
 
         {/* Enhanced Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 lg:gap-6 grid-cols-2 lg:grid-cols-4">
           {[
             { icon: Calendar, label: "Today's Meetings", value: todayMeetingsCount, color: "from-blue-500 to-cyan-500", delay: "0" },
             { icon: Target, label: "Pending Actions", value: pendingActionsCount, color: "from-purple-500 to-pink-500", delay: "100" },
@@ -139,14 +139,14 @@ export default function Index() {
               style={{ animationDelay: `${stat.delay}ms` }}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
-                    <p className="text-4xl font-bold font-['Space_Grotesk']">{stat.value}</p>
+              <CardContent className="p-3 lg:p-6">
+                <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
+                  <div className="space-y-1 lg:space-y-2 w-full">
+                    <p className="text-xs lg:text-sm font-medium text-muted-foreground">{stat.label}</p>
+                    <p className="text-2xl lg:text-4xl font-bold font-['Space_Grotesk']">{stat.value}</p>
                   </div>
-                  <div className={`p-4 rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                    <stat.icon className="h-8 w-8 text-white" />
+                  <div className={`p-2 lg:p-4 rounded-xl lg:rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300 self-end lg:self-auto`}>
+                    <stat.icon className="h-5 w-5 lg:h-8 lg:w-8 text-white" />
                   </div>
                 </div>
               </CardContent>
@@ -155,7 +155,7 @@ export default function Index() {
         </div>
 
         {/* Smart Action Cards */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 lg:gap-6 grid-cols-1 lg:grid-cols-3">
           <SmartDashboardCard
             title="Today's Meetings"
             description={`${todayMeetingsCount} meeting${todayMeetingsCount !== 1 ? 's' : ''} scheduled`}
@@ -215,18 +215,18 @@ export default function Index() {
 
         {/* Upcoming Meetings with Enhanced Design */}
         {meetings.length > 0 && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-4 lg:space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-3">
-                  <Rocket className="h-8 w-8 text-purple-500" />
+                <h2 className="text-xl lg:text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-2 lg:gap-3">
+                  <Rocket className="h-5 w-5 lg:h-8 lg:w-8 text-purple-500" />
                   Upcoming Meetings
                 </h2>
-                <p className="text-sm text-muted-foreground mt-2">Quick access to your scheduled meetings</p>
+                <p className="text-xs lg:text-sm text-muted-foreground mt-1 lg:mt-2">Quick access to your scheduled meetings</p>
               </div>
             </div>
             
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 lg:gap-4 grid-cols-1 lg:grid-cols-3">
               {meetings.map((meeting, index) => {
                 const startTime = new Date(meeting.start_time);
                 const endTime = new Date(meeting.end_time);
@@ -258,18 +258,18 @@ export default function Index() {
 
         {/* Active Actions with Modern Cards */}
         {actions.length > 0 && (
-          <div className="space-y-6 animate-fade-in">
+          <div className="space-y-4 lg:space-y-6 animate-fade-in">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-3">
-                  <Zap className="h-8 w-8 text-yellow-500" />
+                <h2 className="text-xl lg:text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-2 lg:gap-3">
+                  <Zap className="h-5 w-5 lg:h-8 lg:w-8 text-yellow-500" />
                   Active Actions
                 </h2>
-                <p className="text-sm text-muted-foreground mt-2">Track your high-priority tasks</p>
+                <p className="text-xs lg:text-sm text-muted-foreground mt-1 lg:mt-2">Track your high-priority tasks</p>
               </div>
             </div>
 
-            <div className="grid gap-4">
+            <div className="grid gap-3 lg:gap-4">
               {actions.map((action, index) => {
                 const dueDate = new Date(action.due_date);
                 const isOverdue = dueDate < new Date() && action.status !== 'completed';
@@ -281,10 +281,10 @@ export default function Index() {
                     onClick={() => navigate('/actions')}
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1 space-y-3">
-                          <div className="flex items-center gap-3">
+                    <CardContent className="p-4 lg:p-6">
+                      <div className="flex items-start justify-between gap-3 lg:gap-4">
+                        <div className="flex-1 space-y-2 lg:space-y-3">
+                          <div className="flex items-center gap-2 lg:gap-3 flex-wrap">
                             <Badge 
                               variant={action.priority === 'high' ? 'destructive' : 'secondary'}
                               className="text-xs font-semibold"
@@ -297,23 +297,23 @@ export default function Index() {
                             </span>
                           </div>
                           
-                          <p className="font-semibold text-lg">{action.title}</p>
+                          <p className="font-semibold text-base lg:text-lg">{action.title}</p>
                           
-                          <div className="flex items-center gap-4">
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <Users className="h-4 w-4" />
+                          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-2 lg:gap-4">
+                            <div className="flex items-center gap-2 text-xs lg:text-sm text-muted-foreground">
+                              <Users className="h-3 w-3 lg:h-4 lg:w-4" />
                               <span>{action.assignee?.full_name || 'Unassigned'}</span>
                             </div>
                             {action.meeting && (
-                              <span className="text-sm text-muted-foreground">
+                              <span className="text-xs lg:text-sm text-muted-foreground">
                                 From: {action.meeting.title}
                               </span>
                             )}
                           </div>
                         </div>
                         
-                        <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 group-hover:scale-110 transition-transform duration-300">
-                          <CheckSquare className="h-6 w-6 text-purple-500" />
+                        <div className="p-2 lg:p-3 rounded-lg lg:rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 group-hover:scale-110 transition-transform duration-300 flex-shrink-0">
+                          <CheckSquare className="h-5 w-5 lg:h-6 lg:w-6 text-purple-500" />
                         </div>
                       </div>
                     </CardContent>

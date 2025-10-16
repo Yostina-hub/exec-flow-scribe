@@ -140,6 +140,21 @@ All colors MUST be HSL.
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Space Grotesk', system-ui, sans-serif;
   }
+  
+  /* Mobile app-like experience */
+  @media (max-width: 768px) {
+    body {
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    
+    /* Prevent pull-to-refresh on mobile */
+    html, body {
+      overscroll-behavior-y: contain;
+    }
+  }
 }
 
 @layer utilities {
