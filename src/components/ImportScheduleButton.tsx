@@ -11,6 +11,13 @@ export const ImportScheduleButton = () => {
   const navigate = useNavigate();
 
   const handleImport = async () => {
+    // Confirm before importing
+    const confirmImport = window.confirm(
+      "This will import all CEO meetings from the schedule. Are you sure you want to continue?"
+    );
+    
+    if (!confirmImport) return;
+    
     setIsImporting(true);
     
     try {
