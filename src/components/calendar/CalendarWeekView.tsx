@@ -178,62 +178,47 @@ export function CalendarWeekView({
                     <button
                       key={event.id}
                       onClick={() => onEventClick?.(event)}
-                      className="calendar-event-card absolute left-1 right-1 rounded-lg px-2 py-1 text-left overflow-visible group"
+                      className="calendar-event-hover absolute left-1 right-1 rounded-md px-2 py-1 text-left overflow-visible group"
                       style={{
                         top: position.top,
                         height: position.height,
                         backgroundColor: event.category?.color_hex || 
                           (event.status === 'completed' ? 'hsl(142 71% 45%)' : 
                            event.status === 'in-progress' ? 'hsl(38 92% 50%)' : 'hsl(237 83% 28%)'),
-                        minHeight: "32px",
-                        perspective: '1000px'
+                        minHeight: "32px"
                       }}
                     >
-                      <div className="event-shimmer rounded-lg" />
-                      
-                      <div className="relative z-10">
-                        <div className="flex items-start justify-between gap-1">
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs font-semibold text-white truncate flex items-center gap-1">
-                              {event.title}
-                              {conflict && (
-                                <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4">
-                                  !
-                                </Badge>
-                              )}
-                            </div>
-                            {event.location && (
-                              <div className="text-xs text-white/90 truncate mt-0.5">
-                                📍 {event.location}
-                              </div>
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-white truncate flex items-center gap-1">
+                            {event.title}
+                            {conflict && (
+                              <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4">
+                                !
+                              </Badge>
                             )}
                           </div>
-                          {event.attendee_count && event.attendee_count > 0 && (
-                            <div className="flex items-center gap-1 text-white shrink-0">
-                              <Users className="h-3 w-3" />
-                              <span className="text-[10px]">{event.attendee_count}</span>
+                          {event.location && (
+                            <div className="text-xs text-white/80 truncate">
+                              {event.location}
                             </div>
                           )}
                         </div>
-
-                        {/* Reveal on Hover */}
-                        <div className="event-details-reveal mt-2 glass-morphism rounded-md p-2 border border-white/30">
-                          <div className="text-[10px] text-white/90 space-y-1">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              <span className="font-medium">
-                                {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
-                              </span>
-                            </div>
-                            {event.category && (
-                              <div className="inline-block px-2 py-0.5 rounded-full bg-white/20 text-white text-[9px] font-medium">
-                                {event.category.name}
-                              </div>
-                            )}
-                            <div className="holographic-text font-bold text-xs mt-1">
-                              Click to view details →
-                            </div>
+                        {event.attendee_count && event.attendee_count > 0 && (
+                          <div className="flex items-center gap-1 text-white">
+                            <Users className="h-3 w-3" />
+                            <span className="text-[10px]">{event.attendee_count}</span>
                           </div>
+                        )}
+                      </div>
+                      
+                      {/* Subtle reveal on hover */}
+                      <div className="calendar-event-details">
+                        <div className="text-[10px] text-white/90 pt-1 border-t border-white/20">
+                          {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
+                          {event.category && (
+                            <span className="ml-2 opacity-75">• {event.category.name}</span>
+                          )}
                         </div>
                       </div>
                     </button>
