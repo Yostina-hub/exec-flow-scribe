@@ -88,6 +88,39 @@ interface RealtimeMessage {
   [key: string]: any;
 }
 
+// Clean up transcription: remove non-speech tags, add punctuation
+const cleanTranscript = (text: string): string => {
+  if (!text) return '';
+  
+  let cleaned = text
+    .replace(/\[MUSIC\]/gi, '')
+    .replace(/\[music\]/gi, '')
+    .replace(/\(breathing heavily\)/gi, '')
+    .replace(/\(breathing\)/gi, '')
+    .replace(/\[NOISE\]/gi, '')
+    .replace(/\[noise\]/gi, '')
+    .replace(/\[SOUND\]/gi, '')
+    .replace(/\[sound\]/gi, '')
+    .replace(/\[APPLAUSE\]/gi, '')
+    .replace(/\[applause\]/gi, '')
+    .replace(/\[LAUGHTER\]/gi, '')
+    .replace(/\[laughter\]/gi, '')
+    .replace(/\(coughing\)/gi, '')
+    .replace(/\(sighs\)/gi, '')
+    .replace(/\(clears throat\)/gi, '')
+    .trim();
+  
+  if (!cleaned) return '';
+  
+  cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  
+  if (cleaned.length > 3 && !/[.!?]$/.test(cleaned)) {
+    cleaned += '.';
+  }
+  
+  return cleaned;
+};
+
 export class OpenAIRealtimeClient {
   private pc: RTCPeerConnection | null = null;
   private dc: RTCDataChannel | null = null;
@@ -187,8 +220,11 @@ export class OpenAIRealtimeClient {
           console.log('🎤 User stopped speaking');
         } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
           if (event.transcript) {
-            console.log('User transcript:', event.transcript);
-            this.onTranscript(event.transcript, 'User');
+            const cleaned = cleanTranscript(event.transcript);
+            if (cleaned) {
+              console.log('User transcript:', cleaned);
+              this.onTranscript(cleaned, 'User');
+            }
           }
         } else if (event.type === 'conversation.item.input_audio_transcription.failed') {
           const errMsg = event?.error?.message || 'Transcription failed';
@@ -196,7 +232,10 @@ export class OpenAIRealtimeClient {
           this.onError(errMsg);
         } else if (event.type === 'response.audio_transcript.delta') {
           if (event.delta) {
-            this.onTranscript(event.delta, 'Assistant');
+            const cleaned = cleanTranscript(event.delta);
+            if (cleaned) {
+              this.onTranscript(cleaned, 'Assistant');
+            }
           }
         } else if (event.type === 'response.done') {
           try {

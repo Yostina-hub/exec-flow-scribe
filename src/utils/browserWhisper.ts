@@ -24,6 +24,42 @@ export const initBrowserWhisper = async () => {
   return transcriberPromise; 
 };
 
+// Clean up transcription: remove non-speech tags, add punctuation
+const cleanTranscript = (text: string): string => {
+  if (!text) return '';
+  
+  // Remove common non-speech patterns
+  let cleaned = text
+    .replace(/\[MUSIC\]/gi, '')
+    .replace(/\[music\]/gi, '')
+    .replace(/\(breathing heavily\)/gi, '')
+    .replace(/\(breathing\)/gi, '')
+    .replace(/\[NOISE\]/gi, '')
+    .replace(/\[noise\]/gi, '')
+    .replace(/\[SOUND\]/gi, '')
+    .replace(/\[sound\]/gi, '')
+    .replace(/\[APPLAUSE\]/gi, '')
+    .replace(/\[applause\]/gi, '')
+    .replace(/\[LAUGHTER\]/gi, '')
+    .replace(/\[laughter\]/gi, '')
+    .replace(/\(coughing\)/gi, '')
+    .replace(/\(sighs\)/gi, '')
+    .replace(/\(clears throat\)/gi, '')
+    .trim();
+  
+  if (!cleaned) return '';
+  
+  // Capitalize first letter
+  cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+  
+  // Add period if missing and text is substantial
+  if (cleaned.length > 3 && !/[.!?]$/.test(cleaned)) {
+    cleaned += '.';
+  }
+  
+  return cleaned;
+};
+
 export const transcribeAudioBrowser = async (audioBlob: Blob): Promise<string> => {
   let ctx: AudioContext | null = null;
   let url: string | null = null;
@@ -48,13 +84,15 @@ export const transcribeAudioBrowser = async (audioBlob: Blob): Promise<string> =
       const segment = pcm.slice(Math.max(0, start));
 
       const result = await model(segment);
-      return (result?.text as string) || '';
+      const rawText = (result?.text as string) || '';
+      return cleanTranscript(rawText);
     } catch (primaryErr) {
       console.warn('Primary decode failed, trying pipeline URL fallback...', primaryErr);
       // Fallback: let transformers.js handle decoding from a Blob URL
       url = URL.createObjectURL(audioBlob);
       const result = await model(url);
-      return (result?.text as string) || '';
+      const rawText = (result?.text as string) || '';
+      return cleanTranscript(rawText);
     }
   } catch (error) {
     console.error('Browser transcription error:', error);
