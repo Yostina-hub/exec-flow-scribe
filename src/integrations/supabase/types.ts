@@ -781,6 +781,127 @@ export type Database = {
         }
         Relationships: []
       }
+      event_categories: {
+        Row: {
+          color_hex: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+        }
+        Insert: {
+          color_hex: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+        }
+        Update: {
+          color_hex?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+        }
+        Relationships: []
+      }
+      event_exceptions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          exception_date: string
+          id: string
+          is_cancelled: boolean | null
+          meeting_id: string
+          override_description: string | null
+          override_end_time: string | null
+          override_fields: Json | null
+          override_location: string | null
+          override_start_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          exception_date: string
+          id?: string
+          is_cancelled?: boolean | null
+          meeting_id: string
+          override_description?: string | null
+          override_end_time?: string | null
+          override_fields?: Json | null
+          override_location?: string | null
+          override_start_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          exception_date?: string
+          id?: string
+          is_cancelled?: boolean | null
+          meeting_id?: string
+          override_description?: string | null
+          override_end_time?: string | null
+          override_fields?: Json | null
+          override_location?: string | null
+          override_start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_exceptions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_notifications: {
+        Row: {
+          channel: string
+          created_at: string
+          id: string
+          is_sent: boolean | null
+          meeting_id: string
+          offset_minutes: number
+          sent_at: string | null
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          id?: string
+          is_sent?: boolean | null
+          meeting_id: string
+          offset_minutes: number
+          sent_at?: string | null
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          id?: string
+          is_sent?: boolean | null
+          meeting_id?: string
+          offset_minutes?: number
+          sent_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_notifications_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       executive_briefs: {
         Row: {
           action_status_summary: Json | null
@@ -1103,6 +1224,9 @@ export type Database = {
           created_at: string
           id: string
           meeting_id: string
+          responded_at: string | null
+          response_status: string | null
+          role: string | null
           user_id: string
         }
         Insert: {
@@ -1111,6 +1235,9 @@ export type Database = {
           created_at?: string
           id?: string
           meeting_id: string
+          responded_at?: string | null
+          response_status?: string | null
+          role?: string | null
           user_id: string
         }
         Update: {
@@ -1119,6 +1246,9 @@ export type Database = {
           created_at?: string
           id?: string
           meeting_id?: string
+          responded_at?: string | null
+          response_status?: string | null
+          role?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1337,53 +1467,76 @@ export type Database = {
       meetings: {
         Row: {
           briefing_pack_url: string | null
+          category_id: string | null
           created_at: string
           created_by: string
           description: string | null
           end_time: string
           id: string
+          is_recurring: boolean | null
           location: string | null
           minutes_url: string | null
+          organizer_notes: string | null
           recording_url: string | null
           start_time: string
           status: Database["public"]["Enums"]["meeting_status"]
+          timezone: string | null
           title: string
           transcript_url: string | null
           updated_at: string
+          visibility: string | null
         }
         Insert: {
           briefing_pack_url?: string | null
+          category_id?: string | null
           created_at?: string
           created_by: string
           description?: string | null
           end_time: string
           id?: string
+          is_recurring?: boolean | null
           location?: string | null
           minutes_url?: string | null
+          organizer_notes?: string | null
           recording_url?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["meeting_status"]
+          timezone?: string | null
           title: string
           transcript_url?: string | null
           updated_at?: string
+          visibility?: string | null
         }
         Update: {
           briefing_pack_url?: string | null
+          category_id?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
           end_time?: string
           id?: string
+          is_recurring?: boolean | null
           location?: string | null
           minutes_url?: string | null
+          organizer_notes?: string | null
           recording_url?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["meeting_status"]
+          timezone?: string | null
           title?: string
           transcript_url?: string | null
           updated_at?: string
+          visibility?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meetings_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "event_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       minutes_versions: {
         Row: {
@@ -1654,6 +1807,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recurrence_rules: {
+        Row: {
+          by_day: string[] | null
+          by_month_day: number[] | null
+          created_at: string
+          frequency: string
+          id: string
+          interval: number | null
+          meeting_id: string
+          occurrence_count: number | null
+          until_date: string | null
+        }
+        Insert: {
+          by_day?: string[] | null
+          by_month_day?: number[] | null
+          created_at?: string
+          frequency: string
+          id?: string
+          interval?: number | null
+          meeting_id: string
+          occurrence_count?: number | null
+          until_date?: string | null
+        }
+        Update: {
+          by_day?: string[] | null
+          by_month_day?: number[] | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          interval?: number | null
+          meeting_id?: string
+          occurrence_count?: number | null
+          until_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurrence_rules_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       redacted_documents: {
         Row: {
