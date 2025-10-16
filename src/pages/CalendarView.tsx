@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, Bell } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
 import { CategoryLegend } from "@/components/calendar/CategoryLegend";
 import { CreateCategoryDialog } from "@/components/calendar/CreateCategoryDialog";
 import { EventRSVPControls } from "@/components/calendar/EventRSVPControls";
+import { EventNotificationSettings } from "@/components/calendar/EventNotificationSettings";
 import { generateRecurrenceInstances } from "@/utils/recurrenceUtils";
 
 interface Meeting {
@@ -51,6 +52,7 @@ const CalendarView = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"month" | "week">("week");
+  const [selectedMeetingForNotifications, setSelectedMeetingForNotifications] = useState<Meeting | null>(null);
 
   useEffect(() => {
     fetchMeetings();
@@ -335,11 +337,18 @@ const CalendarView = () => {
                                       >
                                         {meeting.status}
                                       </Badge>
-                                      <EventRSVPControls
+                                       <EventRSVPControls
                                         meetingId={meeting.id}
                                         currentStatus={meeting.user_response_status || 'none'}
                                         onStatusChange={fetchMeetings}
                                       />
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setSelectedMeetingForNotifications(meeting)}
+                                      >
+                                        <Bell className="h-4 w-4" />
+                                      </Button>
                                     </div>
                                   </div>
                                 </div>
@@ -363,6 +372,13 @@ const CalendarView = () => {
                   categories={categories}
                   onAddCategory={fetchCategories}
                 />
+
+                {selectedMeetingForNotifications && (
+                  <EventNotificationSettings
+                    meetingId={selectedMeetingForNotifications.id}
+                    meetingTitle={selectedMeetingForNotifications.title}
+                  />
+                )}
               </div>
             </div>
           </TabsContent>
