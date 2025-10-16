@@ -1787,6 +1787,7 @@ export type Database = {
           id: string
           meeting_preferences: Json | null
           notification_preferences: Json | null
+          recording_preferences: Json | null
           title: string | null
           updated_at: string
         }
@@ -1798,6 +1799,7 @@ export type Database = {
           id: string
           meeting_preferences?: Json | null
           notification_preferences?: Json | null
+          recording_preferences?: Json | null
           title?: string | null
           updated_at?: string
         }
@@ -1809,6 +1811,7 @@ export type Database = {
           id?: string
           meeting_preferences?: Json | null
           notification_preferences?: Json | null
+          recording_preferences?: Json | null
           title?: string | null
           updated_at?: string
         }

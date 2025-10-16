@@ -43,11 +43,19 @@ const Settings = () => {
     auto_schedule_followup: false,
     enable_virtual_links: true,
   });
+  const [recordingSettings, setRecordingSettings] = useState({
+    audio_quality: "high",
+    transcription_language: "en",
+    auto_start_recording: false,
+    speaker_diarization: true,
+    auto_generate_summary: true,
+  });
 
   useEffect(() => {
     fetchProfile();
     fetchNotificationSettings();
     fetchMeetingSettings();
+    fetchRecordingSettings();
   }, []);
 
   const fetchProfile = async () => {
@@ -170,6 +178,34 @@ const Settings = () => {
     }
   };
 
+  const fetchRecordingSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("recording_preferences")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.recording_preferences) {
+        const prefs = data.recording_preferences as Record<string, any>;
+        setRecordingSettings({
+          audio_quality: prefs.audio_quality ?? "high",
+          transcription_language: prefs.transcription_language ?? "en",
+          auto_start_recording: prefs.auto_start_recording ?? false,
+          speaker_diarization: prefs.speaker_diarization ?? true,
+          auto_generate_summary: prefs.auto_generate_summary ?? true,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching recording settings:", error);
+    }
+  };
+
   const handleNotificationUpdate = async () => {
     setSaving(true);
     try {
@@ -225,6 +261,37 @@ const Settings = () => {
       toast({
         title: "Error",
         description: "Failed to update meeting preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRecordingUpdate = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          recording_preferences: recordingSettings,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Recording settings updated",
+        description: "Your recording preferences have been saved",
+      });
+    } catch (error) {
+      console.error("Error updating recording settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update recording preferences",
         variant: "destructive",
       });
     } finally {
@@ -639,7 +706,15 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Audio Quality</Label>
-                    <Select defaultValue="high">
+                    <Select
+                      value={recordingSettings.audio_quality}
+                      onValueChange={(value) =>
+                        setRecordingSettings({
+                          ...recordingSettings,
+                          audio_quality: value,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -653,7 +728,15 @@ const Settings = () => {
 
                   <div className="space-y-2">
                     <Label>Transcription Language</Label>
-                    <Select defaultValue="en">
+                    <Select
+                      value={recordingSettings.transcription_language}
+                      onValueChange={(value) =>
+                        setRecordingSettings({
+                          ...recordingSettings,
+                          transcription_language: value,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -677,7 +760,15 @@ const Settings = () => {
                         Automatically start recording when meeting begins
                       </p>
                     </div>
-                    <Switch />
+                    <Switch
+                      checked={recordingSettings.auto_start_recording}
+                      onCheckedChange={(checked) =>
+                        setRecordingSettings({
+                          ...recordingSettings,
+                          auto_start_recording: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -689,7 +780,15 @@ const Settings = () => {
                         Identify and label different speakers in transcription
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={recordingSettings.speaker_diarization}
+                      onCheckedChange={(checked) =>
+                        setRecordingSettings({
+                          ...recordingSettings,
+                          speaker_diarization: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -701,15 +800,28 @@ const Settings = () => {
                         AI-powered meeting summary and action item extraction
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={recordingSettings.auto_generate_summary}
+                      onCheckedChange={(checked) =>
+                        setRecordingSettings({
+                          ...recordingSettings,
+                          auto_generate_summary: checked,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 
                 <Separator />
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline">Cancel</Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
+                  <Button variant="outline" onClick={fetchRecordingSettings}>
+                    Reset
+                  </Button>
+                  <Button onClick={handleRecordingUpdate} disabled={saving}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
                 </div>
               </CardContent>
             </Card>
