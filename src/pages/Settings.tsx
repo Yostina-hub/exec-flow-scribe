@@ -12,7 +12,6 @@ import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send, Loader2 } from
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
-import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
 import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
@@ -390,7 +389,6 @@ const Settings = () => {
             <TabsTrigger value="recording">Recording</TabsTrigger>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
-            <TabsTrigger value="smtp">Email (SMTP)</TabsTrigger>
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
@@ -900,11 +898,6 @@ const Settings = () => {
           {/* AI Provider Tab */}
           <TabsContent value="ai-provider" className="space-y-6">
             <AIProviderSettings />
-          </TabsContent>
-
-          {/* SMTP Tab */}
-          <TabsContent value="smtp" className="space-y-6">
-            <SMTPSettings />
           </TabsContent>
 
           {/* Escalation Tab */}
