@@ -27,14 +27,37 @@ export default function SignatureApproval() {
     try {
       setIsLoading(true);
 
+      // Verify user is authenticated
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please sign in to view this signature request',
+          variant: 'destructive',
+        });
+        navigate('/auth');
+        return;
+      }
+
       // Fetch signature request
       const { data: request, error: requestError } = await supabase
         .from('signature_requests')
         .select('*')
         .eq('id', requestId)
-        .single();
+        .maybeSingle();
 
       if (requestError) throw requestError;
+      
+      if (!request) {
+        toast({
+          title: 'Not Found',
+          description: 'This signature request does not exist',
+          variant: 'destructive',
+        });
+        navigate('/meetings');
+        return;
+      }
+
       setSignatureRequest(request);
 
       // Fetch delegation chain

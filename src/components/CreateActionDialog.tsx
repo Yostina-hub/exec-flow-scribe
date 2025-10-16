@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -25,19 +25,113 @@ import { CalendarIcon, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+interface User {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+interface Meeting {
+  id: string;
+  title: string;
+}
 
 export const CreateActionDialog = () => {
   const [open, setOpen] = useState(false);
   const [deadline, setDeadline] = useState<Date>();
+  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [meetings, setMeetings] = useState<Meeting[]>([]);
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (open) {
+      fetchUsers();
+      fetchMeetings();
+    }
+  }, [open]);
+
+  const fetchUsers = async () => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, email')
+      .order('full_name');
+    
+    if (!error && data) {
+      setUsers(data);
+    }
+  };
+
+  const fetchMeetings = async () => {
+    const { data, error } = await supabase
+      .from('meetings')
+      .select('id, title')
+      .order('start_time', { ascending: false })
+      .limit(10);
+    
+    if (!error && data) {
+      setMeetings(data);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Action Item Created",
-      description: "The action item has been assigned successfully",
-    });
-    setOpen(false);
+    setLoading(true);
+
+    try {
+      const formData = new FormData(e.target as HTMLFormElement);
+      const title = formData.get('task') as string;
+      const description = formData.get('details') as string;
+      const assignedTo = formData.get('assignee') as string;
+      const priority = formData.get('priority') as string;
+      const meetingId = formData.get('meeting') as string || null;
+
+      if (!deadline) {
+        toast({
+          title: "Error",
+          description: "Please select a deadline",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from('action_items')
+        .insert([{
+          title,
+          description,
+          assigned_to: assignedTo,
+          created_by: user.id,
+          due_date: deadline.toISOString().split('T')[0],
+          priority: priority as 'low' | 'medium' | 'high',
+          meeting_id: meetingId,
+          status: 'pending' as const,
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Action item created successfully",
+      });
+      
+      setOpen(false);
+      setDeadline(undefined);
+    } catch (error: any) {
+      console.error('Error creating action:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create action item",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -77,18 +171,16 @@ export const CreateActionDialog = () => {
 
             <div className="space-y-2">
               <Label htmlFor="assignee">Assign To</Label>
-              <Select required>
+              <Select name="assignee" required>
                 <SelectTrigger id="assignee">
                   <SelectValue placeholder="Select assignee" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="ceo">CEO</SelectItem>
-                  <SelectItem value="cfo">CFO</SelectItem>
-                  <SelectItem value="chro">CHRO</SelectItem>
-                  <SelectItem value="cmo">CMO</SelectItem>
-                  <SelectItem value="cpo">CPO</SelectItem>
-                  <SelectItem value="cto">CTO</SelectItem>
-                  <SelectItem value="cos">Chief of Staff</SelectItem>
+                  {users.map(user => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.full_name || user.email}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -138,23 +230,27 @@ export const CreateActionDialog = () => {
 
             <div className="space-y-2">
               <Label htmlFor="meeting">Related Meeting</Label>
-              <Select>
+              <Select name="meeting">
                 <SelectTrigger id="meeting">
                   <SelectValue placeholder="Select meeting (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="1">Executive Strategy Review</SelectItem>
-                  <SelectItem value="2">Quarterly Planning Session</SelectItem>
-                  <SelectItem value="3">Budget Review Meeting</SelectItem>
+                  {meetings.map(meeting => (
+                    <SelectItem key={meeting.id} value={meeting.id}>
+                      {meeting.title}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={loading}>
               Cancel
             </Button>
-            <Button type="submit">Create Action</Button>
+            <Button type="submit" disabled={loading}>
+              {loading ? "Creating..." : "Create Action"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

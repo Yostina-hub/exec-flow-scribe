@@ -169,9 +169,19 @@ const triggerAIProcessingPipeline = async (meetingId: string) => {
   try {
     console.log('Starting AI processing pipeline for meeting:', meetingId);
 
-    // 1. Generate minutes
+    // Get auth session for proper authorization
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      console.error('No active session for AI processing');
+      return;
+    }
+
+    // 1. Generate minutes with proper authorization
     const { data: minutesData, error: minutesError } = await supabase.functions.invoke('generate-minutes', {
-      body: { meeting_id: meetingId }
+      body: { meeting_id: meetingId },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
     });
 
     if (minutesError) {

@@ -16,12 +16,6 @@ export function QuickActionFAB() {
       color: 'bg-primary hover:bg-primary/90'
     },
     { 
-      icon: Mic, 
-      label: 'Quick Record', 
-      onClick: () => navigate('/meetings/1b09fe77-8677-4ac1-9d7e-34b6016b6ab9'),
-      color: 'bg-destructive hover:bg-destructive/90'
-    },
-    { 
       icon: FileText, 
       label: 'New Action', 
       onClick: () => navigate('/actions'),
