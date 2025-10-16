@@ -193,7 +193,7 @@ export class OpenAIRealtimeClient {
               type: "session.update",
               session: {
                 modalities: ["text", "audio"],
-                instructions: "You are a meeting transcription assistant. Your tasks: 1) Accurately transcribe all speech in the original language spoken 2) Automatically detect and maintain the language throughout 3) Identify and label different speakers consistently (Speaker 1, Speaker 2, etc.) 4) Preserve speaker identity across the entire meeting 5) Include punctuation and proper capitalization. Do not translate - transcribe in the original language.",
+                instructions: "You are a meeting transcription assistant. CRITICAL RULES: 1) Always transcribe in the ORIGINAL SCRIPT - never transliterate. For Amharic use Ge'ez script (አማርኛ), not Latin letters. 2) Auto-detect language. 3) Identify speakers as Speaker 1, Speaker 2, etc. 4) Maintain speaker consistency. 5) Use proper punctuation. 6) Never romanize non-Latin scripts.",
                 voice: "alloy",
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",

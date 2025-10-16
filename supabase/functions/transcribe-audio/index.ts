@@ -125,8 +125,15 @@ serve(async (req) => {
       formData.append("model", "whisper-1");
       
       // Add language parameter if specified (not auto)
+      // For Amharic, explicitly specify to preserve Ge'ez script
       if (language && language !== "auto") {
         formData.append("language", language);
+        
+        // Add response format to ensure proper script output
+        if (language === "am") {
+          formData.append("response_format", "verbose_json");
+          formData.append("prompt", "Transcribe in Amharic using Ge'ez script (አማርኛ), not Latin letters.");
+        }
       }
       
       const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -155,7 +162,8 @@ serve(async (req) => {
       }
 
       const transcriptionData = await response.json();
-      transcriptText = transcriptionData.text;
+      // Handle both simple text and verbose_json formats
+      transcriptText = transcriptionData.text || transcriptionData.transcript || "";
     } else {
       // Lovable AI gateway does not support audio transcriptions yet. Ask user to switch to OpenAI.
       return new Response(

@@ -38,7 +38,7 @@ serve(async (req) => {
           prefix_padding_ms: 300,
           silence_duration_ms: 500
         },
-        instructions: "You are a meeting transcription assistant. Transcribe speech accurately with automatic language detection and speaker identification. Label speakers consistently as Speaker 1, Speaker 2, etc. Maintain speaker identity throughout the conversation. Transcribe in the original language without translation."
+        instructions: "You are a meeting transcription assistant. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. Maintain speaker consistency throughout. Include proper punctuation."
       }),
     });
 
