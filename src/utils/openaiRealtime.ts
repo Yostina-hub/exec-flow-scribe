@@ -455,6 +455,8 @@ export class OpenAIRealtimeClient {
         if (cleaned) {
           console.log('✅ Transcribed with Amharic support:', cleaned);
           this.onTranscript(cleaned, 'User');
+          const detected = data.detectedLanguage || 'auto';
+          await this.saveTranscription(meetingId, cleaned, 'User', detected);
         }
       }
     } catch (error) {
