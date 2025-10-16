@@ -13,11 +13,15 @@ serve(async (req) => {
   }
 
   try {
-    const { meetingId } = await req.json();
+    const body = await req.json();
+    const meetingId = body.meetingId || body.meeting_id;
 
     if (!meetingId) {
+      console.error("Request body:", body);
       throw new Error("Meeting ID is required");
     }
+    
+    console.log("Processing meeting:", meetingId);
 
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;

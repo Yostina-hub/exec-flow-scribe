@@ -478,6 +478,7 @@ const MeetingDetail = () => {
                   variant="default" 
                   className="w-full justify-start gap-2"
                   onClick={() => setShowMinutesDialog(true)}
+                  disabled={!meeting?.minutes_url}
                 >
                   <FileText className="h-4 w-4" />
                   Generate AI Minutes
@@ -486,6 +487,7 @@ const MeetingDetail = () => {
                   variant="outline" 
                   className="w-full justify-start gap-2"
                   onClick={() => navigate(`/meetings/${id}/minutes`)}
+                  disabled={!meeting?.minutes_url}
                 >
                   <FileText className="h-4 w-4" />
                   Open Minutes Editor
@@ -499,15 +501,54 @@ const MeetingDetail = () => {
                     </Button>
                   }
                 />
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => {
+                    if (meeting?.minutes_url) {
+                      // Show minutes in a modal or new view
+                      toast({
+                        title: "Meeting Minutes",
+                        description: "Viewing current meeting minutes",
+                      });
+                    } else {
+                      toast({
+                        title: "No Minutes Available",
+                        description: "Generate AI minutes first",
+                        variant: "destructive",
+                      });
+                    }
+                  }}
+                  disabled={!meeting?.minutes_url}
+                >
                   <FileText className="h-4 w-4" />
                   View Previous Minutes
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={async () => {
+                    // Implement reschedule functionality
+                    toast({
+                      title: "Reschedule Meeting",
+                      description: "Meeting rescheduling will open in dialog",
+                    });
+                  }}
+                >
                   <Calendar className="h-4 w-4" />
                   Reschedule Meeting
                 </Button>
-                <Button variant="outline" className="w-full justify-start gap-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={async () => {
+                    // Implement manage attendees
+                    toast({
+                      title: "Manage Attendees",
+                      description: "Attendee management will open in dialog",
+                    });
+                  }}
+                >
                   <Users className="h-4 w-4" />
                   Manage Attendees
                 </Button>
