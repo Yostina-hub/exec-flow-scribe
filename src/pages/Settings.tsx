@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send } from "lucide-react";
+import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
@@ -17,9 +17,86 @@ import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManag
 import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const { toast } = useToast();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [profile, setProfile] = useState({
+    full_name: "",
+    email: "",
+    title: "",
+  });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        setProfile({
+          full_name: data.full_name || "",
+          email: data.email || user.email || "",
+          title: data.title || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load profile data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileUpdate = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          full_name: profile.full_name,
+          title: profile.title,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully",
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSave = () => {
     toast({
@@ -68,47 +145,82 @@ const Settings = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex items-center gap-6">
-                  <Avatar className="h-20 w-20 bg-gradient-to-br from-primary to-secondary">
-                    <AvatarFallback className="bg-transparent text-white text-2xl">
-                      CE
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-2">
-                    <Button variant="outline" size="sm">Change Photo</Button>
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG or GIF. Max size 2MB
-                    </p>
+                {loading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-6">
+                      <Avatar className="h-20 w-20 bg-gradient-to-br from-primary to-secondary">
+                        <AvatarFallback className="bg-transparent text-white text-2xl">
+                          {profile.full_name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .toUpperCase() || "U"}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="space-y-2">
+                        <Button variant="outline" size="sm" disabled>
+                          Change Photo
+                        </Button>
+                        <p className="text-xs text-muted-foreground">
+                          JPG, PNG or GIF. Max size 2MB
+                        </p>
+                      </div>
+                    </div>
 
-                <Separator />
+                    <Separator />
 
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Full Name</Label>
-                    <Input id="name" defaultValue="Chief Executive Officer" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="title">Title</Label>
-                    <Input id="title" defaultValue="CEO" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" defaultValue="ceo@company.com" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
-                    <Input id="phone" type="tel" defaultValue="+1 (555) 123-4567" />
-                  </div>
-                </div>
+                    <div className="grid gap-6 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Full Name</Label>
+                        <Input
+                          id="name"
+                          value={profile.full_name}
+                          onChange={(e) =>
+                            setProfile({ ...profile, full_name: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="title">Title</Label>
+                        <Input
+                          id="title"
+                          value={profile.title}
+                          onChange={(e) =>
+                            setProfile({ ...profile, title: e.target.value })
+                          }
+                        />
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={profile.email}
+                          disabled
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Email cannot be changed
+                        </p>
+                      </div>
+                    </div>
 
-                <Separator />
+                    <Separator />
 
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline">Cancel</Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
-                </div>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" onClick={fetchProfile}>
+                        Reset
+                      </Button>
+                      <Button onClick={handleProfileUpdate} disabled={saving}>
+                        {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
