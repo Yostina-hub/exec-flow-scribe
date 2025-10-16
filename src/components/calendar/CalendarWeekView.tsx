@@ -10,6 +10,7 @@ interface CalendarEvent {
   title: string;
   start_time: string;
   end_time: string;
+  status?: string;
   category?: {
     name: string;
     color_hex: string;
@@ -181,7 +182,9 @@ export function CalendarWeekView({
                       style={{
                         top: position.top,
                         height: position.height,
-                        backgroundColor: event.category?.color_hex || "hsl(var(--primary))",
+                        backgroundColor: event.category?.color_hex || 
+                          (event.status === 'completed' ? 'hsl(142 71% 45%)' : 
+                           event.status === 'in-progress' ? 'hsl(38 92% 50%)' : 'hsl(237 83% 28%)'),
                         minHeight: "32px"
                       }}
                     >

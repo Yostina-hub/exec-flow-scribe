@@ -5,15 +5,16 @@ import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
-  BarChart3, Activity, Rocket
+  BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, isToday, isTomorrow } from "date-fns";
+import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "date-fns";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -23,6 +24,8 @@ export default function Index() {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [completionRate, setCompletionRate] = useState(0);
   const [totalActions, setTotalActions] = useState(0);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | undefined>(new Date());
+  const [weekMeetings, setWeekMeetings] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -32,6 +35,19 @@ export default function Index() {
 
   const fetchData = async () => {
     try {
+      // Fetch this week's meetings for calendar
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
+      
+      const { data: allMeetingsData } = await supabase
+        .from("meetings")
+        .select("*, event_categories(name, color_hex)")
+        .gte("start_time", weekStart.toISOString())
+        .lte("start_time", weekEnd.toISOString())
+        .order("start_time", { ascending: true });
+
+      setWeekMeetings(allMeetingsData || []);
+
       const { data: meetingsData } = await supabase
         .from("meetings")
         .select("*")
@@ -91,6 +107,14 @@ export default function Index() {
 
   const todayMeetingsCount = meetings.filter(m => isToday(new Date(m.start_time))).length;
   const pendingActionsCount = actions.length;
+  
+  // Get meetings for selected calendar date
+  const selectedDateMeetings = weekMeetings.filter(m => 
+    selectedCalendarDate && isSameDay(new Date(m.start_time), selectedCalendarDate)
+  );
+
+  // Calculate dates with meetings for calendar
+  const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
   if (loading) {
     return (
@@ -225,6 +249,162 @@ export default function Index() {
               },
             ]}
           />
+        </div>
+
+        {/* Quick Calendar Widget */}
+        <div className="grid gap-6 lg:grid-cols-3 animate-fade-in">
+          <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-background via-muted/20 to-background backdrop-blur-xl overflow-hidden group hover:shadow-2xl transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5 animate-pulse" />
+            <CardHeader className="relative">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg">
+                    <CalendarDays className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-2xl font-['Space_Grotesk']">This Week</CardTitle>
+                    <p className="text-sm text-muted-foreground">{weekMeetings.length} meetings scheduled</p>
+                  </div>
+                </div>
+                <Badge 
+                  variant="outline" 
+                  className="gap-2 cursor-pointer hover:bg-primary/10 transition-colors"
+                  onClick={() => navigate('/calendar')}
+                >
+                  View Calendar
+                  <ArrowUpRight className="h-3 w-3" />
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="relative">
+              <div className="grid lg:grid-cols-2 gap-6">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedCalendarDate}
+                  onSelect={setSelectedCalendarDate}
+                  className="rounded-md border-0"
+                  modifiers={{
+                    hasMeetings: datesWithMeetings,
+                  }}
+                  modifiersClassNames={{
+                    hasMeetings: "bg-gradient-to-br from-purple-500/20 to-blue-500/20 font-bold border-2 border-purple-500/50",
+                  }}
+                />
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm font-medium">
+                    <div className="h-2 w-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 animate-pulse" />
+                    {selectedCalendarDate ? format(selectedCalendarDate, "EEEE, MMM d") : "Select a date"}
+                  </div>
+                  <div className="space-y-2 max-h-[250px] overflow-y-auto pr-2 custom-scrollbar">
+                    {selectedDateMeetings.length > 0 ? (
+                      selectedDateMeetings.map((meeting) => (
+                        <div
+                          key={meeting.id}
+                          onClick={() => navigate(`/meetings/${meeting.id}`)}
+                          className="p-3 rounded-lg bg-gradient-to-br from-background to-muted/30 border border-border/50 hover:border-purple-500/50 hover:shadow-lg transition-all duration-300 cursor-pointer group/meeting"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate group-hover/meeting:text-purple-500 transition-colors">
+                                {meeting.title}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(meeting.start_time), "h:mm a")}
+                                </span>
+                                {meeting.event_categories && (
+                                  <Badge 
+                                    variant="outline" 
+                                    className="text-xs"
+                                    style={{ 
+                                      borderColor: meeting.event_categories.color_hex,
+                                      color: meeting.event_categories.color_hex 
+                                    }}
+                                  >
+                                    {meeting.event_categories.name}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                            <Badge
+                              variant={meeting.status === "completed" ? "success" : "secondary"}
+                              className="text-xs shrink-0"
+                            >
+                              {meeting.status}
+                            </Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-8 text-center">
+                        <CalendarDays className="h-12 w-12 text-muted-foreground/30 mb-2" />
+                        <p className="text-sm text-muted-foreground">No meetings scheduled</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Stats Progress */}
+          <Card className="border-0 bg-gradient-to-br from-background via-muted/20 to-background backdrop-blur-xl overflow-hidden hover:shadow-2xl transition-all duration-300">
+            <div className="absolute inset-0 bg-gradient-to-r from-green-500/5 via-emerald-500/5 to-teal-500/5 animate-pulse" />
+            <CardHeader className="relative">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 shadow-lg">
+                  <Activity className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl font-['Space_Grotesk']">Progress</CardTitle>
+                  <p className="text-xs text-muted-foreground">Your performance metrics</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="relative space-y-6">
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Task Completion</span>
+                  <span className="text-2xl font-bold font-['Space_Grotesk'] text-green-500">
+                    {completionRate}%
+                  </span>
+                </div>
+                <div className="relative">
+                  <Progress value={completionRate} className="h-3" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-green-500/20 via-emerald-500/20 to-teal-500/20 rounded-full blur-sm animate-pulse pointer-events-none" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {Math.round((completionRate / 100) * totalActions)} of {totalActions} actions completed
+                </p>
+              </div>
+
+              <div className="space-y-3 pt-3 border-t">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-blue-500/5">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-medium">Meetings Today</span>
+                  </div>
+                  <span className="text-lg font-bold">{todayMeetingsCount}</span>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-br from-purple-500/10 to-purple-500/5">
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-medium">Pending Actions</span>
+                  </div>
+                  <span className="text-lg font-bold">{pendingActionsCount}</span>
+                </div>
+                
+                <div className="flex items-center justify-between p-3 rounded-lg bg-gradient-to-br from-orange-500/10 to-orange-500/5">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-orange-500" />
+                    <span className="text-sm font-medium">This Week</span>
+                  </div>
+                  <span className="text-lg font-bold">{weekMeetings.length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Upcoming Meetings with Enhanced Design */}

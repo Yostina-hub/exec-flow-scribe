@@ -226,6 +226,7 @@ const CalendarView = () => {
                     end_time: m.end_time,
                     location: m.location,
                     timezone: m.timezone,
+                    status: m.status,
                     category: m.event_categories,
                     attendee_count: m.attendee_count
                   }))}
@@ -254,6 +255,7 @@ const CalendarView = () => {
                     end_time: m.end_time,
                     location: m.location,
                     timezone: m.timezone,
+                    status: m.status,
                     category: m.event_categories,
                     attendee_count: m.attendee_count
                   }))}
@@ -308,13 +310,27 @@ const CalendarView = () => {
                       hasMeetings: datesWithMeetings,
                     }}
                     modifiersClassNames={{
-                      hasMeetings: "bg-primary/10 font-bold",
+                      hasMeetings: "bg-gradient-to-br from-purple-500/20 to-blue-500/20 font-bold border-2 border-purple-500/30",
                     }}
                   />
-                  <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-4 mt-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <div className="h-3 w-3 rounded-full bg-primary/10 border border-primary" />
-                      <span>Has meetings</span>
+                      <div className="h-3 w-3 rounded-full bg-gradient-to-br from-purple-500/40 to-blue-500/40 border-2 border-purple-500/50" />
+                      <span className="text-muted-foreground">Has meetings</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(237 83% 28%)' }} />
+                      <span className="text-muted-foreground">Scheduled</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(38 92% 50%)' }} />
+                      <span className="text-muted-foreground">In Progress</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
+                      <span className="text-muted-foreground">Completed</span>
                     </div>
                   </div>
                 </CardContent>
@@ -343,7 +359,12 @@ const CalendarView = () => {
                           {selectedMeetings.map((meeting, index) => (
                             <Card 
                               key={`${meeting.id}-${meeting.start_time}`} 
-                              className="border-l-4 border-l-primary hover:shadow-md transition-shadow cursor-pointer"
+                              className="border-l-4 hover:shadow-md transition-shadow cursor-pointer"
+                              style={{ 
+                                borderLeftColor: meeting.event_categories?.color_hex || 
+                                  (meeting.status === 'completed' ? '#10b981' : 
+                                   meeting.status === 'in-progress' ? '#f59e0b' : '#3b82f6')
+                              }}
                               onClick={() => navigate(`/meetings/${meeting.id}`)}
                             >
                               <CardContent className="p-4">

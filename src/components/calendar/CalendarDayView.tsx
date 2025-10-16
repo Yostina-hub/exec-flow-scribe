@@ -8,6 +8,7 @@ interface CalendarEvent {
   title: string;
   start_time: string;
   end_time: string;
+  status?: string;
   category?: {
     name: string;
     color_hex: string;
@@ -132,7 +133,9 @@ export function CalendarDayView({
                         onClick={() => onEventClick?.(event)}
                         className="absolute left-2 right-2 rounded-md p-2 text-left text-sm hover:opacity-90 transition-opacity"
                         style={{
-                          backgroundColor: event.category?.color_hex || "#6366f1",
+                          backgroundColor: event.category?.color_hex || 
+                            (event.status === 'completed' ? 'hsl(142 71% 45%)' : 
+                             event.status === 'in-progress' ? 'hsl(38 92% 50%)' : 'hsl(237 83% 28%)'),
                           top: position.top,
                           height: position.height,
                           minHeight: "40px",
