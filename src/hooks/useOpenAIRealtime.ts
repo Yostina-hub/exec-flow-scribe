@@ -4,8 +4,9 @@ import { useToast } from '@/hooks/use-toast';
 
 export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
   const [isConnected, setIsConnected] = useState(false);
-  const [transcripts, setTranscripts] = useState<Array<{ text: string; speaker: string; id: string }>>([]);
+  const [transcripts, setTranscripts] = useState<Array<{ text: string; speaker: string; id: string; language?: string }>>([]);
   const [rateLimited, setRateLimited] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const clientRef = useRef<OpenAIRealtimeClient | null>(null);
   const { toast } = useToast();
 
@@ -29,6 +30,7 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
 
     const handleError = (error: string) => {
       console.error('Realtime error:', error);
+      setIsProcessing(false); // Always clear processing state on error
       const isRateLimited = /429|rate limit|Too Many Requests/i.test(error);
       toast({
         title: isRateLimited ? 'Rate Limited' : 'Connection Error',
@@ -57,7 +59,11 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
       }
     };
 
-    const client = new OpenAIRealtimeClient(handleTranscript, handleError);
+    const client = new OpenAIRealtimeClient(
+      handleTranscript, 
+      handleError,
+      (processing) => setIsProcessing(processing)
+    );
     clientRef.current = client;
 
     client.connect(meetingId).then(() => {
@@ -80,5 +86,5 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
     clientRef.current?.sendText(text);
   };
 
-  return { isConnected, transcripts, sendText, rateLimited };
+  return { isConnected, transcripts, sendText, rateLimited, isProcessing };
 };

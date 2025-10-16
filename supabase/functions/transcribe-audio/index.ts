@@ -208,24 +208,56 @@ serve(async (req) => {
       }
     }
 
-    // Save transcription to database
+    // Validate and save transcription
+    if (!transcriptText || transcriptText.trim().length === 0) {
+      console.warn("Empty transcription result");
+      return new Response(
+        JSON.stringify({ error: "Transcription produced no text" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Calculate basic confidence score based on audio quality
+    const duration = binaryAudio.length / (24000 * 2); // 24kHz, 16-bit
+    const confidenceScore = duration > 1 ? 0.95 : duration > 0.5 ? 0.85 : 0.75;
+
+    // Save transcription to database with enhanced metadata
     const { error: dbError } = await supabase.from("transcriptions").insert({
       meeting_id: normalizedMeetingId,
-      content: transcriptText,
+      content: transcriptText.trim(),
       timestamp: new Date().toISOString(),
-      confidence_score: 0.95,
+      confidence_score: confidenceScore,
+      speaker_name: 'User',
+      detected_language: detectedLanguage || 'auto'
     });
 
     if (dbError) {
-      console.error("Database error:", dbError);
-      throw new Error("Failed to save transcription");
+      console.error("❌ Database error:", dbError);
+      // Return success anyway since transcription succeeded
+      return new Response(
+        JSON.stringify({
+          success: true,
+          transcription: transcriptText.trim(),
+          detectedLanguage: detectedLanguage,
+          warning: "Transcription succeeded but saving to database failed"
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
+    console.log(`✅ Transcription saved successfully (${detectedLanguage})`);
+    
     return new Response(
       JSON.stringify({
         success: true,
-        transcription: transcriptText,
-        detectedLanguage: detectedLanguage
+        transcription: transcriptText.trim(),
+        detectedLanguage: detectedLanguage,
+        confidenceScore: confidenceScore
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

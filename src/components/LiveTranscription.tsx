@@ -65,8 +65,7 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
 
   const normalizedId = normalizeMeetingId(meetingId);
   
-  // Use OpenAI Realtime if enabled
-  const { isConnected, transcripts: realtimeTranscripts, rateLimited } = useOpenAIRealtime(
+  const { isConnected, transcripts: realtimeTranscripts, rateLimited, isProcessing } = useOpenAIRealtime(
     normalizedId,
     useRealtime && isRecording
   );
@@ -236,7 +235,13 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
                 AI Mode
               </Badge>
             )}
-            {isRecording && (
+            {isProcessing && (
+              <Badge variant="outline" className="gap-2 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20">
+                <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                Processing
+              </Badge>
+            )}
+            {isRecording && !isProcessing && (
               <Badge variant="destructive" className="gap-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                 Recording

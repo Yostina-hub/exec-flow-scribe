@@ -59,21 +59,30 @@ serve(async (req) => {
 
     const insertPayload: Record<string, any> = {
       meeting_id: normalizedMeetingId,
-      content,
+      content: content.trim(),
       timestamp: timestamp || new Date().toISOString(),
       detected_language: detectedLanguage || 'auto',
+      confidence_score: 0.95
     };
-    if (speaker) insertPayload.speaker_name = speaker;
+    
+    // Add speaker if provided
+    if (speaker && speaker.trim()) {
+      insertPayload.speaker_name = speaker.trim();
+    }
+
+    console.log(`💾 Saving transcription: speaker=${speaker}, lang=${detectedLanguage}`);
 
     const { error } = await supabase.from("transcriptions").insert(insertPayload);
     if (error) {
-      console.error("save-transcription DB error:", error);
-      return new Response(JSON.stringify({ error: "Failed to save transcription" }), {
+      console.error("❌ save-transcription DB error:", error);
+      return new Response(JSON.stringify({ error: "Failed to save transcription to database" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    console.log("✅ Transcription saved successfully");
+    
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
