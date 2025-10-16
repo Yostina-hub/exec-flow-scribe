@@ -1,9 +1,12 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield } from "lucide-react";
+import { Shield, Settings, Mail, Zap } from "lucide-react";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { RoleManagementTab } from "@/components/admin/RoleManagementTab";
+import { SMTPSettings } from "@/components/settings/SMTPSettings";
+import { AutomationSettings } from "@/components/settings/AutomationSettings";
+import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
 
 export default function Administration() {
   const [activeTab, setActiveTab] = useState("users");
@@ -24,9 +27,27 @@ export default function Administration() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="users">Users</TabsTrigger>
-            <TabsTrigger value="roles">Roles</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="users">
+              <Shield className="h-4 w-4 mr-2" />
+              Users
+            </TabsTrigger>
+            <TabsTrigger value="roles">
+              <Settings className="h-4 w-4 mr-2" />
+              Roles
+            </TabsTrigger>
+            <TabsTrigger value="assignments">
+              <Zap className="h-4 w-4 mr-2" />
+              Assignments
+            </TabsTrigger>
+            <TabsTrigger value="email">
+              <Mail className="h-4 w-4 mr-2" />
+              Email
+            </TabsTrigger>
+            <TabsTrigger value="automation">
+              <Zap className="h-4 w-4 mr-2" />
+              Automation
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-6">
@@ -35,6 +56,18 @@ export default function Administration() {
 
           <TabsContent value="roles" className="mt-6">
             <RoleManagementTab />
+          </TabsContent>
+
+          <TabsContent value="assignments" className="mt-6">
+            <RoleAssignmentManager />
+          </TabsContent>
+
+          <TabsContent value="email" className="mt-6">
+            <SMTPSettings />
+          </TabsContent>
+
+          <TabsContent value="automation" className="mt-6">
+            <AutomationSettings />
           </TabsContent>
         </Tabs>
       </div>
