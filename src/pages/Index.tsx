@@ -2,16 +2,18 @@ import { Layout } from "@/components/Layout";
 import { SmartDashboardCard } from "@/components/SmartDashboardCard";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
+import { CEOBriefing } from "@/components/CEOBriefing";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
-  BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight
+  BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight, Brain
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "date-fns";
@@ -26,12 +28,54 @@ export default function Index() {
   const [totalActions, setTotalActions] = useState(0);
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | undefined>(new Date());
   const [weekMeetings, setWeekMeetings] = useState<any[]>([]);
+  const [showBriefing, setShowBriefing] = useState(false);
+  const [isCEO, setIsCEO] = useState(false);
+  const [hasSeenBriefing, setHasSeenBriefing] = useState(false);
 
   useEffect(() => {
+    checkUserRole();
     fetchData();
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    // Auto-open briefing for CEO on first visit
+    if (isCEO && !hasSeenBriefing && !loading) {
+      const briefingKey = `briefing-seen-${format(new Date(), 'yyyy-MM-dd')}`;
+      const seen = localStorage.getItem(briefingKey);
+      if (!seen) {
+        setTimeout(() => {
+          setShowBriefing(true);
+          localStorage.setItem(briefingKey, 'true');
+        }, 1000);
+      }
+      setHasSeenBriefing(true);
+    }
+  }, [isCEO, hasSeenBriefing, loading]);
+
+  const checkUserRole = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Check if user has CEO role
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('roles(name)')
+        .eq('user_id', user.id);
+
+      if (userRoles) {
+        const hasCEORole = userRoles.some((ur: any) => 
+          ur.roles?.name?.toLowerCase().includes('ceo') || 
+          ur.roles?.name?.toLowerCase().includes('executive')
+        );
+        setIsCEO(hasCEORole);
+      }
+    } catch (error) {
+      console.error('Error checking user role:', error);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -138,7 +182,9 @@ export default function Index() {
             <div className="space-y-3 lg:space-y-4 flex-1">
               <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 animate-scale-in">
                 <Sparkles className="h-3 w-3 lg:h-4 lg:w-4 text-purple-400" />
-                <span className="text-xs lg:text-sm font-medium">Live Dashboard</span>
+                <span className="text-xs lg:text-sm font-medium">
+                  {isCEO ? 'AI-Powered Executive Dashboard' : 'Live Dashboard'}
+                </span>
               </div>
               
               <h1 className="text-3xl lg:text-5xl font-bold font-['Space_Grotesk'] animate-fade-in">
@@ -150,6 +196,17 @@ export default function Index() {
                 You have <span className="font-bold text-purple-400">{todayMeetingsCount}</span> meeting{todayMeetingsCount !== 1 ? 's' : ''} today and{' '}
                 <span className="font-bold text-blue-400">{pendingActionsCount}</span> pending action{pendingActionsCount !== 1 ? 's' : ''}
               </p>
+
+              {isCEO && (
+                <Button
+                  onClick={() => setShowBriefing(true)}
+                  className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 mt-4 group"
+                >
+                  <Brain className="h-5 w-5 group-hover:scale-110 transition-transform" />
+                  AI Executive Briefing
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              )}
             </div>
             
             <div className="text-right space-y-2 animate-scale-in">
@@ -500,7 +557,7 @@ export default function Index() {
                             </div>
                             {action.meeting && (
                               <span className="text-xs lg:text-sm text-muted-foreground">
-                                From: {action.meeting.title}
+                               From: {action.meeting.title}
                               </span>
                             )}
                           </div>
@@ -518,6 +575,9 @@ export default function Index() {
           </div>
         )}
       </div>
+
+      {/* CEO Briefing Dialog */}
+      <CEOBriefing open={showBriefing} onClose={() => setShowBriefing(false)} />
 
       <QuickActionFAB />
     </Layout>
