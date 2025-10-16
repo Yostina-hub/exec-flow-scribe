@@ -36,10 +36,18 @@ const Settings = () => {
     daily_digest: false,
     reminder_timing: 15,
   });
+  const [meetingSettings, setMeetingSettings] = useState({
+    default_duration: 60,
+    default_location: "Board Room",
+    calendar_sync: "google",
+    auto_schedule_followup: false,
+    enable_virtual_links: true,
+  });
 
   useEffect(() => {
     fetchProfile();
     fetchNotificationSettings();
+    fetchMeetingSettings();
   }, []);
 
   const fetchProfile = async () => {
@@ -134,6 +142,34 @@ const Settings = () => {
     }
   };
 
+  const fetchMeetingSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("meeting_preferences")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.meeting_preferences) {
+        const prefs = data.meeting_preferences as Record<string, any>;
+        setMeetingSettings({
+          default_duration: prefs.default_duration ?? 60,
+          default_location: prefs.default_location ?? "Board Room",
+          calendar_sync: prefs.calendar_sync ?? "google",
+          auto_schedule_followup: prefs.auto_schedule_followup ?? false,
+          enable_virtual_links: prefs.enable_virtual_links ?? true,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching meeting settings:", error);
+    }
+  };
+
   const handleNotificationUpdate = async () => {
     setSaving(true);
     try {
@@ -158,6 +194,37 @@ const Settings = () => {
       toast({
         title: "Error",
         description: "Failed to update notification preferences",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleMeetingUpdate = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          meeting_preferences: meetingSettings,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Meeting settings updated",
+        description: "Your meeting preferences have been saved",
+      });
+    } catch (error) {
+      console.error("Error updating meeting settings:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update meeting preferences",
         variant: "destructive",
       });
     } finally {
@@ -441,7 +508,15 @@ const Settings = () => {
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>Default Meeting Duration</Label>
-                    <Select defaultValue="60">
+                    <Select
+                      value={meetingSettings.default_duration.toString()}
+                      onValueChange={(value) =>
+                        setMeetingSettings({
+                          ...meetingSettings,
+                          default_duration: parseInt(value),
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -457,12 +532,28 @@ const Settings = () => {
 
                   <div className="space-y-2">
                     <Label>Default Location</Label>
-                    <Input defaultValue="Board Room" />
+                    <Input
+                      value={meetingSettings.default_location}
+                      onChange={(e) =>
+                        setMeetingSettings({
+                          ...meetingSettings,
+                          default_location: e.target.value,
+                        })
+                      }
+                    />
                   </div>
 
                   <div className="space-y-2">
                     <Label>Calendar Sync</Label>
-                    <Select defaultValue="google">
+                    <Select
+                      value={meetingSettings.calendar_sync}
+                      onValueChange={(value) =>
+                        setMeetingSettings({
+                          ...meetingSettings,
+                          calendar_sync: value,
+                        })
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -485,7 +576,15 @@ const Settings = () => {
                         Automatically create follow-up meetings based on action items
                       </p>
                     </div>
-                    <Switch />
+                    <Switch
+                      checked={meetingSettings.auto_schedule_followup}
+                      onCheckedChange={(checked) =>
+                        setMeetingSettings({
+                          ...meetingSettings,
+                          auto_schedule_followup: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -497,15 +596,28 @@ const Settings = () => {
                         Automatically generate video conferencing links
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={meetingSettings.enable_virtual_links}
+                      onCheckedChange={(checked) =>
+                        setMeetingSettings({
+                          ...meetingSettings,
+                          enable_virtual_links: checked,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 
                 <Separator />
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline">Cancel</Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
+                  <Button variant="outline" onClick={fetchMeetingSettings}>
+                    Reset
+                  </Button>
+                  <Button onClick={handleMeetingUpdate} disabled={saving}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
                 </div>
               </CardContent>
             </Card>
