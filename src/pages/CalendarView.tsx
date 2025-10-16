@@ -5,10 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, Bell } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, Bell, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
 import { CalendarDayView } from "@/components/calendar/CalendarDayView";
 import { CategoryLegend } from "@/components/calendar/CategoryLegend";
@@ -49,6 +50,7 @@ interface Category {
 }
 
 const CalendarView = () => {
+  const navigate = useNavigate();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(new Date());
@@ -338,13 +340,20 @@ const CalendarView = () => {
                             {selectedMeetings.length === 1 ? "meeting" : "meetings"} scheduled
                           </p>
                           {selectedMeetings.map((meeting, index) => (
-                            <Card key={`${meeting.id}-${meeting.start_time}`} className="border-l-4 border-l-primary">
+                            <Card 
+                              key={`${meeting.id}-${meeting.start_time}`} 
+                              className="border-l-4 border-l-primary hover:shadow-md transition-shadow cursor-pointer"
+                              onClick={() => navigate(`/meetings/${meeting.id}`)}
+                            >
                               <CardContent className="p-4">
                                 <div className="space-y-2">
                                   <div className="flex items-start justify-between gap-2">
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <p className="font-medium text-sm">{meeting.title}</p>
+                                        <p className="font-medium text-sm hover:text-primary transition-colors">
+                                          {meeting.title}
+                                        </p>
+                                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
                                         {meeting.is_recurring && (
                                           <Badge variant="outline" className="text-xs">Recurring</Badge>
                                         )}
@@ -358,8 +367,17 @@ const CalendarView = () => {
                                       {meeting.location && (
                                         <p className="text-xs text-muted-foreground truncate">{meeting.location}</p>
                                       )}
+                                      {meeting.event_categories && (
+                                        <Badge 
+                                          variant="outline" 
+                                          className="text-xs mt-1"
+                                          style={{ borderColor: meeting.event_categories.color_hex }}
+                                        >
+                                          {meeting.event_categories.name}
+                                        </Badge>
+                                      )}
                                     </div>
-                                    <div className="flex flex-col gap-2 items-end">
+                                    <div className="flex flex-col gap-2 items-end" onClick={(e) => e.stopPropagation()}>
                                       <Badge
                                         variant={
                                           meeting.status === "completed"
@@ -379,7 +397,10 @@ const CalendarView = () => {
                                         <Button
                                           variant="ghost"
                                           size="icon"
-                                          onClick={() => setSelectedMeetingForNotifications(meeting)}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedMeetingForNotifications(meeting);
+                                          }}
                                         >
                                           <Bell className="h-4 w-4" />
                                         </Button>
@@ -387,7 +408,10 @@ const CalendarView = () => {
                                           <Button
                                             variant="ghost"
                                             size="sm"
-                                            onClick={() => setSelectedMeetingForException(meeting)}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedMeetingForException(meeting);
+                                            }}
                                           >
                                             Edit
                                           </Button>
