@@ -1,6 +1,6 @@
 import { format, startOfDay, addHours } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface CalendarEvent {
@@ -131,7 +131,7 @@ export function CalendarDayView({
                       <button
                         key={event.id}
                         onClick={() => onEventClick?.(event)}
-                        className="absolute left-2 right-2 rounded-md p-2 text-left text-sm hover:opacity-90 transition-opacity"
+                        className="calendar-event-card absolute left-2 right-2 rounded-lg p-3 text-left group"
                         style={{
                           backgroundColor: event.category?.color_hex || 
                             (event.status === 'completed' ? 'hsl(142 71% 45%)' : 
@@ -139,33 +139,61 @@ export function CalendarDayView({
                           top: position.top,
                           height: position.height,
                           minHeight: "40px",
+                          perspective: '1000px'
                         }}
                       >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0 text-white">
-                            <div className="font-semibold truncate flex items-center gap-1">
-                              {event.title}
-                              {conflict && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Conflict
-                                </Badge>
+                        <div className="event-shimmer rounded-lg" />
+                        
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0 text-white">
+                              <div className="font-bold truncate flex items-center gap-1.5 text-sm">
+                                {event.title}
+                                {conflict && (
+                                  <Badge variant="destructive" className="text-xs">
+                                    Conflict
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-white/90 mt-1 flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
+                              </div>
+                              {event.location && (
+                                <div className="text-xs text-white/80 truncate mt-1 flex items-center gap-1">
+                                  📍 {event.location}
+                                </div>
                               )}
                             </div>
-                            <div className="text-xs opacity-90 truncate">
-                              {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
-                            </div>
-                            {event.location && (
-                              <div className="text-xs opacity-75 truncate mt-1">
-                                📍 {event.location}
+                            {event.attendee_count && event.attendee_count > 0 && (
+                              <div className="glass-morphism rounded-full px-2 py-1 flex items-center gap-1 text-white shrink-0">
+                                <Users className="h-3 w-3" />
+                                <span className="text-xs font-medium">{event.attendee_count}</span>
                               </div>
                             )}
                           </div>
-                          {event.attendee_count && event.attendee_count > 0 && (
-                            <div className="flex items-center gap-1 text-white text-xs">
-                              <Users className="h-3 w-3" />
-                              <span>{event.attendee_count}</span>
+
+                          {/* Enhanced Reveal on Hover */}
+                          <div className="event-details-reveal mt-3 glass-morphism rounded-lg p-3 border border-white/30 space-y-2">
+                            {event.category && (
+                              <div className="flex items-center gap-2">
+                                <div 
+                                  className="h-3 w-3 rounded-full ring-2 ring-white/50" 
+                                  style={{ backgroundColor: event.category.color_hex }}
+                                />
+                                <span className="text-white/90 text-xs font-medium">
+                                  {event.category.name}
+                                </span>
+                              </div>
+                            )}
+                            <div className="text-white/80 text-xs">
+                              {event.timezone || 'Africa/Addis_Ababa'}
                             </div>
-                          )}
+                            <div className="holographic-text font-bold text-sm pt-1 flex items-center gap-2">
+                              Click for full details
+                              <span className="inline-block animate-bounce">→</span>
+                            </div>
+                          </div>
                         </div>
                       </button>
                     );
