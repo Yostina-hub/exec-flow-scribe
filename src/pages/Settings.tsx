@@ -16,6 +16,7 @@ import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManag
 import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
+import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -389,6 +390,7 @@ const Settings = () => {
             <TabsTrigger value="recording">Recording</TabsTrigger>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
+            <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
@@ -898,6 +900,11 @@ const Settings = () => {
           {/* AI Provider Tab */}
           <TabsContent value="ai-provider" className="space-y-6">
             <AIProviderSettings />
+          </TabsContent>
+
+          {/* Email Tab */}
+          <TabsContent value="email" className="space-y-6">
+            <SMTPSettings />
           </TabsContent>
 
           {/* Escalation Tab */}

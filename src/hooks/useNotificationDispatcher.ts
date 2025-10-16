@@ -2,12 +2,228 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
+interface SendNotificationParams {
+  to: string;
+  subject: string;
+  html: string;
+  type: "meeting_reminder" | "action_item_update" | "minutes_ready" | "confirmation" | "notification";
+}
+
 /**
  * Central notification dispatcher
- * Handles all app notifications based on user preferences
+ * Handles all app notifications based on user preferences and email delivery
  */
 export const useNotificationDispatcher = () => {
   const { toast } = useToast();
+
+  const sendEmail = async (params: SendNotificationParams) => {
+    try {
+      const { data, error } = await supabase.functions.invoke(
+        "send-notification-email",
+        {
+          body: params,
+        }
+      );
+
+      if (error) throw error;
+
+      return { success: true, data };
+    } catch (error: any) {
+      console.error("Error sending email:", error);
+      toast({
+        title: "Email Error",
+        description: error.message || "Failed to send email",
+        variant: "destructive",
+      });
+      return { success: false, error };
+    }
+  };
+
+  const sendMeetingReminder = async (
+    email: string,
+    meetingTitle: string,
+    startTime: string,
+    location: string
+  ) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+            .meeting-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .detail-row { display: flex; margin: 10px 0; }
+            .detail-label { font-weight: bold; min-width: 100px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Meeting Reminder</h1>
+            </div>
+            <div class="content">
+              <p>You have an upcoming meeting:</p>
+              <div class="meeting-details">
+                <div class="detail-row">
+                  <span class="detail-label">Meeting:</span>
+                  <span>${meetingTitle}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Time:</span>
+                  <span>${new Date(startTime).toLocaleString()}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Location:</span>
+                  <span>${location}</span>
+                </div>
+              </div>
+              <p>Please make sure you're prepared and on time.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return sendEmail({
+      to: email,
+      subject: `Reminder: ${meetingTitle}`,
+      html,
+      type: "meeting_reminder",
+    });
+  };
+
+  const sendActionItemUpdate = async (
+    email: string,
+    actionTitle: string,
+    status: string,
+    dueDate: string
+  ) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+            .action-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            .status-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; }
+            .status-pending { background: #fef3c7; color: #92400e; }
+            .status-in-progress { background: #dbeafe; color: #1e40af; }
+            .status-completed { background: #d1fae5; color: #065f46; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Action Item Update</h1>
+            </div>
+            <div class="content">
+              <div class="action-details">
+                <h2>${actionTitle}</h2>
+                <p><span class="status-badge status-${status}">${status.toUpperCase()}</span></p>
+                <p><strong>Due Date:</strong> ${new Date(dueDate).toLocaleDateString()}</p>
+              </div>
+              <p>Your action item has been updated. Please review and take necessary actions.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return sendEmail({
+      to: email,
+      subject: `Action Item Update: ${actionTitle}`,
+      html,
+      type: "action_item_update",
+    });
+  };
+
+  const sendMinutesReady = async (
+    email: string,
+    meetingTitle: string,
+    minutesUrl: string
+  ) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+            .button { display: inline-block; background: #4facfe; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Meeting Minutes Ready</h1>
+            </div>
+            <div class="content">
+              <p>The minutes for <strong>${meetingTitle}</strong> are now available.</p>
+              <a href="${minutesUrl}" class="button">View Minutes</a>
+              <p style="margin-top: 20px;">Thank you for your participation.</p>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return sendEmail({
+      to: email,
+      subject: `Minutes Ready: ${meetingTitle}`,
+      html,
+      type: "minutes_ready",
+    });
+  };
+
+  const sendConfirmationRequest = async (
+    email: string,
+    meetingTitle: string,
+    transcriptSegment: string,
+    confirmationUrl: string
+  ) => {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+            .header { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 30px; border-radius: 10px 10px 0 0; }
+            .content { background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px; }
+            .transcript { background: white; padding: 20px; border-left: 4px solid #fa709a; margin: 20px 0; font-style: italic; }
+            .button { display: inline-block; background: #fa709a; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>Confirmation Required</h1>
+            </div>
+            <div class="content">
+              <p>Please confirm the following statement from <strong>${meetingTitle}</strong>:</p>
+              <div class="transcript">"${transcriptSegment}"</div>
+              <a href="${confirmationUrl}" class="button">Confirm or Update</a>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    return sendEmail({
+      to: email,
+      subject: `Confirmation Needed: ${meetingTitle}`,
+      html,
+      type: "confirmation",
+    });
+  };
 
   useEffect(() => {
     const setupNotifications = async () => {
@@ -77,5 +293,13 @@ export const useNotificationDispatcher = () => {
       description: hint.hint_message,
       duration: 8000,
     });
+  };
+
+  return {
+    sendEmail,
+    sendMeetingReminder,
+    sendActionItemUpdate,
+    sendMinutesReady,
+    sendConfirmationRequest,
   };
 };
