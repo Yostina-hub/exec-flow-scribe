@@ -1,7 +1,8 @@
 import { format, startOfDay, addHours } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CalendarEvent {
   id: string;
@@ -91,8 +92,9 @@ export function CalendarDayView({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <TooltipProvider>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={() => navigateDay("prev")}>
             <ChevronLeft className="h-4 w-4" />
@@ -128,59 +130,103 @@ export function CalendarDayView({
                     const conflict = hasConflict(event);
                     
                     return (
-                      <button
-                        key={event.id}
-                        onClick={() => onEventClick?.(event)}
-                        className="calendar-event-hover absolute left-2 right-2 rounded-md p-2 text-left text-sm"
-                        style={{
-                          backgroundColor: event.category?.color_hex || 
-                            (event.status === 'completed' ? 'hsl(142 71% 45%)' : 
-                             event.status === 'in-progress' ? 'hsl(38 92% 50%)' : 'hsl(237 83% 28%)'),
-                          top: position.top,
-                          height: position.height,
-                          minHeight: "40px",
-                        }}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0 text-white">
-                            <div className="font-semibold truncate flex items-center gap-1">
-                              {event.title}
-                              {conflict && (
-                                <Badge variant="destructive" className="text-xs">
-                                  Conflict
-                                </Badge>
+                      <Tooltip key={event.id} delayDuration={200}>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onEventClick?.(event)}
+                            className="calendar-event-hover absolute left-2 right-2 rounded-md p-2 text-left text-sm"
+                            style={{
+                              backgroundColor: event.category?.color_hex || 
+                                (event.status === 'completed' ? 'hsl(142 71% 45%)' : 
+                                 event.status === 'in-progress' ? 'hsl(38 92% 50%)' : 'hsl(237 83% 28%)'),
+                              top: position.top,
+                              height: position.height,
+                              minHeight: "40px",
+                            }}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex-1 min-w-0 text-white">
+                                <div className="font-semibold truncate flex items-center gap-1">
+                                  {event.title}
+                                  {conflict && (
+                                    <Badge variant="destructive" className="text-xs">
+                                      Conflict
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="text-xs opacity-90 truncate">
+                                  {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
+                                </div>
+                                {event.location && (
+                                  <div className="text-xs opacity-75 truncate mt-1">
+                                    📍 {event.location}
+                                  </div>
+                                )}
+                              </div>
+                              {event.attendee_count && event.attendee_count > 0 && (
+                                <div className="flex items-center gap-1 text-white text-xs">
+                                  <Users className="h-3 w-3" />
+                                  <span>{event.attendee_count}</span>
+                                </div>
                               )}
                             </div>
-                            <div className="text-xs opacity-90 truncate">
-                              {format(new Date(event.start_time), "h:mm a")} - {format(new Date(event.end_time), "h:mm a")}
-                            </div>
-                            {event.location && (
-                              <div className="text-xs opacity-75 truncate mt-1">
-                                📍 {event.location}
+                            
+                            {/* Subtle reveal on hover */}
+                            {event.category && (
+                              <div className="calendar-event-details">
+                                <div className="text-xs text-white/90 pt-2 border-t border-white/20 flex items-center gap-2">
+                                  <div 
+                                    className="h-2 w-2 rounded-full" 
+                                    style={{ backgroundColor: event.category.color_hex }}
+                                  />
+                                  <span>{event.category.name}</span>
+                                </div>
                               </div>
                             )}
-                          </div>
-                          {event.attendee_count && event.attendee_count > 0 && (
-                            <div className="flex items-center gap-1 text-white text-xs">
-                              <Users className="h-3 w-3" />
-                              <span>{event.attendee_count}</span>
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" className="max-w-xs">
+                          <div className="space-y-2">
+                            <div className="font-semibold">{event.title}</div>
+                            <div className="space-y-1 text-sm">
+                              <div className="flex items-center gap-2">
+                                <Clock className="h-3 w-3" />
+                                <span>{format(new Date(event.start_time), "MMM d, h:mm a")} - {format(new Date(event.end_time), "h:mm a")}</span>
+                              </div>
+                              {event.location && (
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-3 w-3" />
+                                  <span>{event.location}</span>
+                                </div>
+                              )}
+                              {event.category && (
+                                <div className="flex items-center gap-2">
+                                  <div className="h-3 w-3 rounded-full" style={{ backgroundColor: event.category.color_hex }} />
+                                  <span>{event.category.name}</span>
+                                </div>
+                              )}
+                              {event.attendee_count && event.attendee_count > 0 && (
+                                <div className="flex items-center gap-2">
+                                  <Users className="h-3 w-3" />
+                                  <span>{event.attendee_count} attendee{event.attendee_count !== 1 ? 's' : ''}</span>
+                                </div>
+                              )}
+                              {event.status && (
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-xs">
+                                    {event.status}
+                                  </Badge>
+                                </div>
+                              )}
+                              {event.timezone && (
+                                <div className="text-xs text-muted-foreground">
+                                  Timezone: {event.timezone}
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        
-                        {/* Subtle reveal on hover */}
-                        {event.category && (
-                          <div className="calendar-event-details">
-                            <div className="text-xs text-white/90 pt-2 border-t border-white/20 flex items-center gap-2">
-                              <div 
-                                className="h-2 w-2 rounded-full" 
-                                style={{ backgroundColor: event.category.color_hex }}
-                              />
-                              <span>{event.category.name}</span>
-                            </div>
                           </div>
-                        )}
-                      </button>
+                        </TooltipContent>
+                      </Tooltip>
                     );
                   })}
                 </div>
@@ -190,5 +236,6 @@ export function CalendarDayView({
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
