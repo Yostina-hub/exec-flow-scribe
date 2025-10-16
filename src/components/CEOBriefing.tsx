@@ -56,7 +56,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [animating, setAnimating] = useState(false);
   const [isNarrating, setIsNarrating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true); // Enabled by default for autonomous mode
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [autoAdvance, setAutoAdvance] = useState(true);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -66,12 +66,23 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   useEffect(() => {
     if (open) {
       generateBriefing();
+      // Enable audio context on first interaction to avoid autoplay blocking
+      const enableAudio = async () => {
+        try {
+          const tempAudio = new Audio();
+          tempAudio.volume = 0;
+          await tempAudio.play();
+          tempAudio.pause();
+        } catch (e) {
+          console.log('Audio context initialization:', e);
+        }
+      };
+      enableAudio();
     } else {
       // Full cleanup when closing
       stopNarration();
       clearAutoAdvanceTimer();
       setCurrentSlide(0);
-      setVoiceEnabled(false);
       setIsPaused(false);
       setVoiceError(null);
     }
@@ -187,6 +198,10 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       const audio = new Audio(`data:audio/mp3;base64,${data.audioContent}`);
       audioRef.current = audio;
 
+      // Handle autoplay policy - browsers may block autoplay
+      audio.volume = 1.0; // Ensure full volume
+      audio.muted = false; // Ensure not muted
+
       audio.onended = () => {
         setIsNarrating(false);
         narratingRef.current = false;
@@ -203,7 +218,31 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
         narratingRef.current = false;
       };
 
-      await audio.play();
+      // Try to play with proper error handling for autoplay policy
+      try {
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          await playPromise;
+        }
+      } catch (playError: any) {
+        console.error('Autoplay error:', playError);
+        // If autoplay is blocked, show a user-friendly message
+        if (playError.name === 'NotAllowedError') {
+          toast.error('Click anywhere to enable audio playback');
+          // Retry play on next user interaction
+          const retryPlay = async () => {
+            try {
+              await audio.play();
+              document.removeEventListener('click', retryPlay);
+            } catch (e) {
+              console.error('Retry play failed:', e);
+            }
+          };
+          document.addEventListener('click', retryPlay, { once: true });
+        }
+        setIsNarrating(false);
+        narratingRef.current = false;
+      }
     } catch (error: any) {
       console.error('Narration error:', error);
       setIsNarrating(false);
