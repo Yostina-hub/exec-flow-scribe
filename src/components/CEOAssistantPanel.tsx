@@ -70,7 +70,9 @@ export function CEOAssistantPanel({
           setIsAISpeaking(speaking);
           if (speaking) {
             onPausePresentation();
+            // Stop narrator when assistant speaks
           } else {
+            // Resume can happen when assistant is done
             onResumePresentation();
           }
         }

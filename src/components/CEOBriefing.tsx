@@ -94,7 +94,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   }, [open]);
 
   useEffect(() => {
-    if (open && briefing && voiceEnabled && !loading && !presentationPaused) {
+    if (open && briefing && voiceEnabled && !loading && !presentationPaused && !isNarrating) {
       narrateCurrentSlide();
     }
   }, [open, currentSlide, briefing, voiceEnabled, loading, presentationPaused]);

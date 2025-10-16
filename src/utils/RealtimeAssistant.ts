@@ -215,7 +215,7 @@ export class RealtimeAssistant {
   async connect(briefingContext: any) {
     this.onStatusChange('connecting');
     
-    const wsUrl = `wss://${this.projectId}.functions.supabase.co/functions/v1/ceo-assistant-realtime`;
+    const wsUrl = `wss://${this.projectId}.supabase.co/functions/v1/ceo-assistant-realtime`;
     console.log('Connecting to WebSocket:', wsUrl);
     this.ws = new WebSocket(wsUrl);
 
