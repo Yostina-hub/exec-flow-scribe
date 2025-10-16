@@ -90,18 +90,16 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
 
     checkRealtimeMode();
 
-    // Fetch existing transcriptions
+    // Fetch existing transcriptions using edge function to bypass RLS
     const fetchTranscriptions = async () => {
-      const { data, error } = await supabase
-        .from('transcriptions')
-        .select('*')
-        .eq('meeting_id', normalizedId)
-        .order('timestamp', { ascending: true });
+      const { data, error } = await supabase.functions.invoke('list-transcriptions', {
+        body: { meetingId: normalizedId }
+      });
 
       if (error) {
         console.error('Error fetching transcriptions:', error);
-      } else if (data) {
-        setTranscriptions(data);
+      } else if (data?.transcriptions) {
+        setTranscriptions(data.transcriptions);
       }
     };
 
