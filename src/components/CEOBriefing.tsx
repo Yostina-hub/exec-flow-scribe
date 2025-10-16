@@ -67,22 +67,27 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
     if (open) {
       generateBriefing();
     } else {
+      // Full cleanup when closing
       stopNarration();
       clearAutoAdvanceTimer();
+      setCurrentSlide(0);
+      setVoiceEnabled(false);
+      setIsPaused(false);
+      setVoiceError(null);
     }
   }, [open]);
 
   useEffect(() => {
-    if (briefing && voiceEnabled && !loading) {
+    if (open && briefing && voiceEnabled && !loading) {
       narrateCurrentSlide();
     }
-  }, [currentSlide, briefing, voiceEnabled, loading]);
+  }, [open, currentSlide, briefing, voiceEnabled, loading]);
 
   // Auto-advance timer (works independently of voice)
   useEffect(() => {
     clearAutoAdvanceTimer();
     
-    if (briefing && autoAdvance && !loading && !isNarrating && currentSlide < slides.length - 1) {
+    if (open && briefing && autoAdvance && !loading && !isNarrating && currentSlide < slides.length - 1) {
       // Auto-advance after 12 seconds if not narrating
       autoAdvanceTimerRef.current = setTimeout(() => {
         setAnimating(true);
@@ -94,7 +99,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
     }
     
     return () => clearAutoAdvanceTimer();
-  }, [currentSlide, briefing, autoAdvance, loading, isNarrating]);
+  }, [open, currentSlide, briefing, autoAdvance, loading, isNarrating]);
 
   const generateBriefing = async () => {
     setLoading(true);
