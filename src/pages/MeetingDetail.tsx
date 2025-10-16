@@ -23,6 +23,7 @@ import {
   ArrowLeft,
   MoreHorizontal,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -105,8 +106,10 @@ const MeetingDetail = () => {
   const { id } = useParams<{ id: string }>();
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const [userId, setUserId] = useState<string>("");
-  const completedItems = agendaItems.filter((item) => item.status === "completed").length;
-  const progress = (completedItems / agendaItems.length) * 100;
+  const [meeting, setMeeting] = useState<any>(null);
+  const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
+  const [attendeesData, setAttendeesData] = useState(attendees);
+  const [loading, setLoading] = useState(true);
   
   const meetingId = id || "demo-meeting-id";
   const { 
@@ -126,7 +129,82 @@ const MeetingDetail = () => {
       }
     };
     getUser();
-  }, []);
+    
+    if (id) {
+      fetchMeetingDetails();
+    } else {
+      setLoading(false);
+    }
+  }, [id]);
+
+  const fetchMeetingDetails = async () => {
+    try {
+      // Fetch meeting with agenda and attendees
+      const { data: meetingData, error: meetingError } = await supabase
+        .from("meetings")
+        .select(`
+          *,
+          agenda_items(*),
+          meeting_attendees(
+            user_id,
+            attended,
+            profiles(full_name, email, title)
+          )
+        `)
+        .eq("id", id)
+        .single();
+
+      if (meetingError) throw meetingError;
+
+      setMeeting(meetingData);
+
+      // Format agenda items
+      if (meetingData.agenda_items && meetingData.agenda_items.length > 0) {
+        const formattedAgenda = meetingData.agenda_items.map((item: any) => ({
+          id: item.id,
+          title: item.title,
+          duration: `${item.duration_minutes || 20} min`,
+          presenter: item.presenter_id || "TBD",
+          status: item.status as "pending" | "in-progress" | "completed",
+        }));
+        setAgendaData(formattedAgenda);
+      }
+
+      // Format attendees
+      if (meetingData.meeting_attendees && meetingData.meeting_attendees.length > 0) {
+        const formattedAttendees = meetingData.meeting_attendees.map((attendee: any) => {
+          const profile = attendee.profiles;
+          const name = profile?.full_name || "Unknown";
+          const role = profile?.title || profile?.email || "Participant";
+          const initials = name
+            .split(" ")
+            .map((n: string) => n[0])
+            .join("")
+            .toUpperCase()
+            .substring(0, 2);
+
+          return {
+            name,
+            initials,
+            role,
+          };
+        });
+        setAttendeesData(formattedAttendees);
+      }
+    } catch (error) {
+      console.error("Error fetching meeting details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load meeting details",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completedItems = agendaData.filter((item) => item.status === "completed").length;
+  const progress = agendaData.length > 0 ? (completedItems / agendaData.length) * 100 : 0;
 
   const getStatusIcon = (status: AgendaItem["status"]) => {
     switch (status) {
@@ -138,6 +216,26 @@ const MeetingDetail = () => {
         return <Circle className="h-5 w-5 text-muted-foreground" />;
     }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-fade-in">
+          <div className="relative">
+            <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
+          </div>
+          <div className="text-center space-y-2">
+            <p className="text-lg font-medium">Loading meeting details</p>
+            <p className="text-sm text-muted-foreground">Preparing your workspace...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  const meetingTitle = meeting?.title || "Executive Strategy Review";
+  const meetingLocation = meeting?.location || "Board Room";
 
   return (
     <Layout>
@@ -153,7 +251,7 @@ const MeetingDetail = () => {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h1 className="text-4xl font-bold tracking-tight">
-                  Executive Strategy Review
+                  {meetingTitle}
                 </h1>
                 <div className="flex items-center gap-3 mt-3 flex-wrap">
                   <Badge variant="warning">In Progress</Badge>
@@ -167,7 +265,7 @@ const MeetingDetail = () => {
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <MapPin className="h-4 w-4" />
-                    <span>Board Room</span>
+                    <span>{meetingLocation}</span>
                   </div>
                 </div>
               </div>
@@ -191,7 +289,7 @@ const MeetingDetail = () => {
                   <div>
                     <p className="font-bold text-lg font-['Space_Grotesk']">Meeting in progress</p>
                     <p className="text-sm text-muted-foreground">
-                      {completedItems} of {agendaItems.length} agenda items completed
+                      {completedItems} of {agendaData.length} agenda items completed
                     </p>
                   </div>
                 </div>
@@ -263,7 +361,7 @@ const MeetingDetail = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {agendaItems.map((item, index) => (
+                    {agendaData.map((item, index) => (
                       <div key={item.id}>
                         <div className="flex items-start gap-3 py-3">
                           {getStatusIcon(item.status)}
@@ -290,7 +388,7 @@ const MeetingDetail = () => {
                             </div>
                           </div>
                         </div>
-                        {index < agendaItems.length - 1 && <Separator />}
+                        {index < agendaData.length - 1 && <Separator />}
                       </div>
                     ))}
                   </CardContent>
@@ -347,13 +445,13 @@ const MeetingDetail = () => {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Users className="h-5 w-5" />
-                  Attendees ({attendees.length})
+                  Attendees ({attendeesData.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {attendees.map((attendee) => (
-                    <div key={attendee.role} className="flex items-center gap-3">
+                  {attendeesData.map((attendee, idx) => (
+                    <div key={`${attendee.role}-${idx}`} className="flex items-center gap-3">
                       <Avatar className="h-9 w-9 bg-gradient-to-br from-primary to-secondary">
                         <AvatarFallback className="bg-transparent text-white text-xs">
                           {attendee.initials}
