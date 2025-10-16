@@ -97,9 +97,14 @@ serve(async (req) => {
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audioBase64);
     
-    // Determine provider from preferences
-    let provider: "openai" | "lovable" = "lovable";
+    // Determine provider and API key
     let openaiApiKey: string | null = null;
+    const serverOpenAI = Deno.env.get("OPENAI_API_KEY") || null;
+
+    // Default to server key
+    openaiApiKey = serverOpenAI;
+
+    // If user has a preference with their own key, prefer it
     if (userData?.user?.id) {
       const { data: prefs, error: prefsErr } = await supabase
         .from("transcription_preferences")
@@ -108,10 +113,13 @@ serve(async (req) => {
         .maybeSingle();
       if (!prefsErr && prefs) {
         if (prefs.provider === "openai" && prefs.openai_api_key) {
-          provider = "openai";
           openaiApiKey = prefs.openai_api_key;
         }
       }
+    }
+
+    if (!openaiApiKey) {
+      throw new Error("OPENAI_API_KEY is not configured on the server");
     }
     
     // Create FormData for file upload
@@ -123,7 +131,7 @@ serve(async (req) => {
 
     let transcriptText = "";
 
-    if (provider === "openai" && openaiApiKey) {
+    if (openaiApiKey) {
       formData.append("model", "whisper-1");
       
       // Add language parameter if specified (not auto)
@@ -166,12 +174,6 @@ serve(async (req) => {
       const transcriptionData = await response.json();
       // Handle both simple text and verbose_json formats
       transcriptText = transcriptionData.text || transcriptionData.transcript || "";
-    } else {
-      // Lovable AI gateway does not support audio transcriptions yet. Ask user to switch to OpenAI.
-      return new Response(
-        JSON.stringify({ error: "Audio transcription via Lovable AI is not supported. Please switch provider to OpenAI in Settings and add a valid OpenAI API key." }),
-        { status: 501, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
 
     // Save transcription to database
