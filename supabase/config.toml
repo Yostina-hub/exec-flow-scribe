@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.openai-realtime-token]
 verify_jwt = true
+
+[functions.ceo-assistant-realtime]
+verify_jwt = false
