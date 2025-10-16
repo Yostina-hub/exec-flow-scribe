@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield } from "lucide-react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
 import { supabase } from "@/integrations/supabase/client";
@@ -32,6 +32,7 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Administration", href: "/admin", icon: Shield },
+  { name: "Integration Test", href: "/integration-test", icon: Activity },
   { name: "Settings", href: "/settings", icon: Settings },
 ];
 

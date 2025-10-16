@@ -19,6 +19,7 @@ import MinutesEditor from "./pages/MinutesEditor";
 import SignatureApproval from "./pages/SignatureApproval";
 import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
+import IntegrationTest from "./pages/IntegrationTest";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
@@ -128,6 +129,14 @@ const App = () => (
                 <RequirePermission resource="users" action="manage">
                   <Administration />
                 </RequirePermission>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/integration-test"
+            element={
+              <ProtectedRoute>
+                <IntegrationTest />
               </ProtectedRoute>
             }
           />
