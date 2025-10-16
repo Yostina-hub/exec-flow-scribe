@@ -29,9 +29,17 @@ const Settings = () => {
     email: "",
     title: "",
   });
+  const [notificationSettings, setNotificationSettings] = useState({
+    meeting_reminders: true,
+    action_item_updates: true,
+    minutes_ready: true,
+    daily_digest: false,
+    reminder_timing: 15,
+  });
 
   useEffect(() => {
     fetchProfile();
+    fetchNotificationSettings();
   }, []);
 
   const fetchProfile = async () => {
@@ -91,6 +99,65 @@ const Settings = () => {
       toast({
         title: "Error",
         description: "Failed to update profile",
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const fetchNotificationSettings = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("notification_preferences")
+        .eq("id", user.id)
+        .single();
+
+      if (error) throw error;
+
+      if (data?.notification_preferences) {
+        const prefs = data.notification_preferences as Record<string, any>;
+        setNotificationSettings({
+          meeting_reminders: prefs.meeting_reminders ?? true,
+          action_item_updates: prefs.action_item_updates ?? true,
+          minutes_ready: prefs.minutes_ready ?? true,
+          daily_digest: prefs.daily_digest ?? false,
+          reminder_timing: prefs.reminder_timing ?? 15,
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching notification settings:", error);
+    }
+  };
+
+  const handleNotificationUpdate = async () => {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          notification_preferences: notificationSettings,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Notifications updated",
+        description: "Your notification preferences have been saved",
+      });
+    } catch (error) {
+      console.error("Error updating notifications:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update notification preferences",
         variant: "destructive",
       });
     } finally {
@@ -246,7 +313,15 @@ const Settings = () => {
                         Get notified before meetings start
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={notificationSettings.meeting_reminders}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings({
+                          ...notificationSettings,
+                          meeting_reminders: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -258,7 +333,15 @@ const Settings = () => {
                         Notifications when action items are assigned or completed
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={notificationSettings.action_item_updates}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings({
+                          ...notificationSettings,
+                          action_item_updates: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -270,7 +353,15 @@ const Settings = () => {
                         Alert when AI-generated minutes are available
                       </p>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={notificationSettings.minutes_ready}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings({
+                          ...notificationSettings,
+                          minutes_ready: checked,
+                        })
+                      }
+                    />
                   </div>
 
                   <Separator />
@@ -282,7 +373,15 @@ const Settings = () => {
                         Daily summary of meetings and action items
                       </p>
                     </div>
-                    <Switch />
+                    <Switch
+                      checked={notificationSettings.daily_digest}
+                      onCheckedChange={(checked) =>
+                        setNotificationSettings({
+                          ...notificationSettings,
+                          daily_digest: checked,
+                        })
+                      }
+                    />
                   </div>
                 </div>
 
@@ -290,7 +389,15 @@ const Settings = () => {
 
                 <div className="space-y-4">
                   <Label>Reminder Timing</Label>
-                  <Select defaultValue="15">
+                  <Select
+                    value={notificationSettings.reminder_timing.toString()}
+                    onValueChange={(value) =>
+                      setNotificationSettings({
+                        ...notificationSettings,
+                        reminder_timing: parseInt(value),
+                      })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -306,8 +413,13 @@ const Settings = () => {
                 <Separator />
 
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline">Cancel</Button>
-                  <Button onClick={handleSave}>Save Changes</Button>
+                  <Button variant="outline" onClick={fetchNotificationSettings}>
+                    Reset
+                  </Button>
+                  <Button onClick={handleNotificationUpdate} disabled={saving}>
+                    {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                  </Button>
                 </div>
               </CardContent>
             </Card>
