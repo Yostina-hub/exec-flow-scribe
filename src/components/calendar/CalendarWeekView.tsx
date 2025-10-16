@@ -2,7 +2,7 @@ import { useState } from "react";
 import { format, addWeeks, subWeeks, startOfWeek, endOfWeek, eachDayOfInterval, getWeek, isSameDay, isToday } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import { ChevronLeft, ChevronRight, Clock, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CalendarEvent {
@@ -16,6 +16,7 @@ interface CalendarEvent {
   };
   location?: string;
   timezone?: string;
+  attendee_count?: number;
 }
 
 interface CalendarWeekViewProps {
@@ -56,6 +57,17 @@ export function CalendarWeekView({
       top: `${(startHour / 24) * 100}%`,
       height: `${Math.max((duration / 24) * 100, 2)}%`
     };
+  };
+
+  const hasConflict = (event: CalendarEvent, dayEvents: CalendarEvent[]) => {
+    return dayEvents.some(other => {
+      if (other.id === event.id) return false;
+      const start1 = new Date(event.start_time);
+      const end1 = new Date(event.end_time);
+      const start2 = new Date(other.start_time);
+      const end2 = new Date(other.end_time);
+      return start1 < end2 && start2 < end1;
+    });
   };
 
   return (
@@ -159,6 +171,7 @@ export function CalendarWeekView({
                 {/* Events */}
                 {dayEvents.map(event => {
                   const position = getEventPosition(event);
+                  const conflict = hasConflict(event, dayEvents);
                   
                   return (
                     <button
@@ -172,14 +185,29 @@ export function CalendarWeekView({
                         minHeight: "32px"
                       }}
                     >
-                      <div className="text-xs font-medium text-white truncate">
-                        {event.title}
-                      </div>
-                      {event.location && (
-                        <div className="text-xs text-white/80 truncate">
-                          {event.location}
+                      <div className="flex items-start justify-between gap-1">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-white truncate flex items-center gap-1">
+                            {event.title}
+                            {conflict && (
+                              <Badge variant="destructive" className="text-[10px] py-0 px-1 h-4">
+                                !
+                              </Badge>
+                            )}
+                          </div>
+                          {event.location && (
+                            <div className="text-xs text-white/80 truncate">
+                              {event.location}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        {event.attendee_count && event.attendee_count > 0 && (
+                          <div className="flex items-center gap-1 text-white">
+                            <Users className="h-3 w-3" />
+                            <span className="text-[10px]">{event.attendee_count}</span>
+                          </div>
+                        )}
+                      </div>
                     </button>
                   );
                 })}

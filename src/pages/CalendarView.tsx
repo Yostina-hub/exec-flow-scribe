@@ -10,6 +10,7 @@ import { useState, useEffect } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
+import { CalendarDayView } from "@/components/calendar/CalendarDayView";
 import { CategoryLegend } from "@/components/calendar/CategoryLegend";
 import { CreateCategoryDialog } from "@/components/calendar/CreateCategoryDialog";
 import { EventRSVPControls } from "@/components/calendar/EventRSVPControls";
@@ -35,6 +36,8 @@ interface Meeting {
   event_exceptions?: any[];
   user_response_status?: string;
   is_exception?: boolean;
+  meeting_attendees?: any[];
+  attendee_count?: number;
 }
 
 interface Category {
@@ -47,11 +50,12 @@ interface Category {
 const CalendarView = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
+  const [currentDay, setCurrentDay] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"month" | "week">("week");
+  const [view, setView] = useState<"day" | "week" | "month">("week");
   const [selectedMeetingForNotifications, setSelectedMeetingForNotifications] = useState<Meeting | null>(null);
 
   useEffect(() => {
@@ -70,7 +74,8 @@ const CalendarView = () => {
             color_hex
           ),
           recurrence_rules (*),
-          event_exceptions (*)
+          event_exceptions (*),
+          meeting_attendees (user_id, response_status)
         `)
         .order("start_time", { ascending: true });
 
@@ -80,22 +85,18 @@ const CalendarView = () => {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // Fetch attendee status for each meeting
-        const meetingsWithAttendees = await Promise.all(
-          (meetingsData || []).map(async (meeting) => {
-            const { data: attendeeData } = await supabase
-              .from('meeting_attendees')
-              .select('response_status')
-              .eq('meeting_id', meeting.id)
-              .eq('user_id', user.id)
-              .single();
+        // Add attendee status and count for each meeting
+        const meetingsWithAttendees = (meetingsData || []).map((meeting) => {
+          const userAttendee = meeting.meeting_attendees?.find(
+            (a: any) => a.user_id === user.id
+          );
 
-            return {
-              ...meeting,
-              user_response_status: attendeeData?.response_status || 'none'
-            };
-          })
-        );
+          return {
+            ...meeting,
+            user_response_status: userAttendee?.response_status || 'none',
+            attendee_count: meeting.meeting_attendees?.length || 0
+          };
+        });
         setMeetings(meetingsWithAttendees);
       } else {
         setMeetings(meetingsData || []);
@@ -202,11 +203,40 @@ const CalendarView = () => {
         </div>
 
         {/* Calendar Views */}
-        <Tabs value={view} onValueChange={(v) => setView(v as "month" | "week")}>
+        <Tabs value={view} onValueChange={(v) => setView(v as "day" | "week" | "month")}>
           <TabsList>
+            <TabsTrigger value="day">Day View</TabsTrigger>
             <TabsTrigger value="week">Week View</TabsTrigger>
             <TabsTrigger value="month">Month View</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="day" className="space-y-4">
+            <div className="grid gap-6 lg:grid-cols-4">
+              <div className="lg:col-span-3">
+                <CalendarDayView
+                  events={meetings.map(m => ({
+                    id: m.id,
+                    title: m.title,
+                    start_time: m.start_time,
+                    end_time: m.end_time,
+                    location: m.location,
+                    timezone: m.timezone,
+                    category: m.event_categories,
+                    attendee_count: m.attendee_count
+                  }))}
+                  currentDay={currentDay}
+                  onDayChange={setCurrentDay}
+                  timezone="Africa/Addis_Ababa"
+                />
+              </div>
+              <div className="space-y-4">
+                <CategoryLegend
+                  categories={categories}
+                  onAddCategory={fetchCategories}
+                />
+              </div>
+            </div>
+          </TabsContent>
 
           <TabsContent value="week" className="space-y-4">
             <div className="grid gap-6 lg:grid-cols-4">
@@ -219,7 +249,8 @@ const CalendarView = () => {
                     end_time: m.end_time,
                     location: m.location,
                     timezone: m.timezone,
-                    category: m.event_categories
+                    category: m.event_categories,
+                    attendee_count: m.attendee_count
                   }))}
                   currentWeek={currentWeek}
                   onWeekChange={setCurrentWeek}
