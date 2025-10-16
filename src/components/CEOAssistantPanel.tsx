@@ -27,7 +27,7 @@ export function CEOAssistantPanel({
 }: CEOAssistantPanelProps) {
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [inputText, setInputText] = useState('');
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('disconnected');
+  const [status, setStatus] = useState<'connecting' | 'connected' | 'disconnected' | 'error'>('connecting');
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const assistantRef = useRef<RealtimeAssistant | null>(null);

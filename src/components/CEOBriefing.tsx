@@ -61,7 +61,7 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [voiceError, setVoiceError] = useState<string | null>(null);
   const [autoAdvance, setAutoAdvance] = useState(true);
-  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(true);
   const [presentationPaused, setPresentationPaused] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const narratingRef = useRef(false);
