@@ -15,6 +15,7 @@ import { CategoryLegend } from "@/components/calendar/CategoryLegend";
 import { CreateCategoryDialog } from "@/components/calendar/CreateCategoryDialog";
 import { EventRSVPControls } from "@/components/calendar/EventRSVPControls";
 import { EventNotificationSettings } from "@/components/calendar/EventNotificationSettings";
+import { CreateEventExceptionDialog } from "@/components/calendar/CreateEventExceptionDialog";
 import { generateRecurrenceInstances } from "@/utils/recurrenceUtils";
 
 interface Meeting {
@@ -57,6 +58,7 @@ const CalendarView = () => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [selectedMeetingForNotifications, setSelectedMeetingForNotifications] = useState<Meeting | null>(null);
+  const [selectedMeetingForException, setSelectedMeetingForException] = useState<Meeting | null>(null);
 
   useEffect(() => {
     fetchMeetings();
@@ -373,13 +375,24 @@ const CalendarView = () => {
                                         currentStatus={meeting.user_response_status || 'none'}
                                         onStatusChange={fetchMeetings}
                                       />
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => setSelectedMeetingForNotifications(meeting)}
-                                      >
-                                        <Bell className="h-4 w-4" />
-                                      </Button>
+                                       <div className="flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => setSelectedMeetingForNotifications(meeting)}
+                                        >
+                                          <Bell className="h-4 w-4" />
+                                        </Button>
+                                        {meeting.is_recurring && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setSelectedMeetingForException(meeting)}
+                                          >
+                                            Edit
+                                          </Button>
+                                        )}
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -414,6 +427,21 @@ const CalendarView = () => {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Exception Dialog */}
+        {selectedMeetingForException && (
+          <CreateEventExceptionDialog
+            open={!!selectedMeetingForException}
+            onOpenChange={(open) => !open && setSelectedMeetingForException(null)}
+            meetingId={selectedMeetingForException.id}
+            exceptionDate={new Date(selectedMeetingForException.start_time)}
+            originalStartTime={selectedMeetingForException.start_time}
+            originalEndTime={selectedMeetingForException.end_time}
+            originalLocation={selectedMeetingForException.location}
+            originalDescription={selectedMeetingForException.description}
+            onSuccess={fetchMeetings}
+          />
+        )}
       </div>
     </Layout>
   );
