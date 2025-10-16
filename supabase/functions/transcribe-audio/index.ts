@@ -13,8 +13,8 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const { audioBase64, meetingId } = await req.json();
+    try {
+      const { audioBase64, meetingId, language } = await req.json();
     if (!audioBase64 || !meetingId) {
       throw new Error("Audio data and meeting ID are required");
     }
@@ -123,6 +123,12 @@ serve(async (req) => {
 
     if (provider === "openai" && openaiApiKey) {
       formData.append("model", "whisper-1");
+      
+      // Add language parameter if specified (not auto)
+      if (language && language !== "auto") {
+        formData.append("language", language);
+      }
+      
       const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
         method: "POST",
         headers: { Authorization: `Bearer ${openaiApiKey}` },

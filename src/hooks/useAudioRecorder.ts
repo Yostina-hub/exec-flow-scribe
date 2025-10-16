@@ -125,11 +125,12 @@ export const useAudioRecorder = (meetingId: string) => {
 
           const { data: preferences } = await supabase
             .from('transcription_preferences')
-            .select('provider')
+            .select('provider, language')
             .eq('user_id', user.id)
             .maybeSingle();
 
           const provider = preferences?.provider || 'lovable_ai';
+          const language = preferences?.language || 'auto';
 
           try {
             // Determine provider behavior
@@ -216,7 +217,11 @@ export const useAudioRecorder = (meetingId: string) => {
                 
                 try {
                   const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-                    body: { audioBase64: base64Audio, meetingId: normalizedMeetingId }
+                    body: { 
+                      audioBase64: base64Audio, 
+                      meetingId: normalizedMeetingId,
+                      language: language !== 'auto' ? language : undefined
+                    }
                   });
 
                   if (error) throw error;

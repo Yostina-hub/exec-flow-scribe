@@ -2353,6 +2353,7 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          language: string | null
           openai_api_key: string | null
           provider: string
           updated_at: string
@@ -2361,6 +2362,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          language?: string | null
           openai_api_key?: string | null
           provider?: string
           updated_at?: string
@@ -2369,6 +2371,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          language?: string | null
           openai_api_key?: string | null
           provider?: string
           updated_at?: string

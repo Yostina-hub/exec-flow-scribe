@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 export const TranscriptionSettings = () => {
   const [provider, setProvider] = useState<"lovable_ai" | "openai" | "browser" | "openai_realtime">("lovable_ai");
   const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [language, setLanguage] = useState("auto");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -37,6 +38,7 @@ export const TranscriptionSettings = () => {
       if (data) {
         setProvider(data.provider as "lovable_ai" | "openai" | "browser" | "openai_realtime");
         setOpenaiApiKey(data.openai_api_key || "");
+        setLanguage(data.language || "auto");
       }
     } catch (error) {
       console.error("Error fetching preferences:", error);
@@ -61,6 +63,7 @@ export const TranscriptionSettings = () => {
       const preferences = {
         user_id: user.id,
         provider,
+        language,
         openai_api_key: (provider === "openai" || provider === "openai_realtime") ? openaiApiKey : null,
       };
 
@@ -166,6 +169,36 @@ export const TranscriptionSettings = () => {
             </Label>
           </div>
         </RadioGroup>
+
+        <div className="space-y-2">
+          <Label htmlFor="language">Transcription Language</Label>
+          <select
+            id="language"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <option value="auto">Auto-detect</option>
+            <option value="am">Amharic (አማርኛ)</option>
+            <option value="en">English</option>
+            <option value="ar">Arabic (العربية)</option>
+            <option value="fr">French (Français)</option>
+            <option value="es">Spanish (Español)</option>
+            <option value="de">German (Deutsch)</option>
+            <option value="it">Italian (Italiano)</option>
+            <option value="pt">Portuguese (Português)</option>
+            <option value="ru">Russian (Русский)</option>
+            <option value="zh">Chinese (中文)</option>
+            <option value="ja">Japanese (日本語)</option>
+            <option value="ko">Korean (한국어)</option>
+            <option value="hi">Hindi (हिन्दी)</option>
+            <option value="sw">Swahili</option>
+            <option value="so">Somali</option>
+          </select>
+          <p className="text-xs text-muted-foreground">
+            Select the primary language for transcription. Auto-detect works well for most cases.
+          </p>
+        </div>
 
         {(provider === "openai" || provider === "openai_realtime") && (
           <div className="space-y-2">
