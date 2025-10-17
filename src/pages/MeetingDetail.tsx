@@ -24,6 +24,8 @@ import {
   MoreHorizontal,
   Plus,
   Loader2,
+  Sparkles,
+  ListChecks,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -277,9 +279,19 @@ const MeetingDetail = () => {
                   </div>
                 </div>
               </div>
-              <Button variant="outline" size="icon">
-                <MoreHorizontal className="h-5 w-5" />
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => window.location.href = `/notebook?meeting=${id}`}
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Open in Notebook
+                </Button>
+                <Button variant="outline" size="icon">
+                  <MoreHorizontal className="h-5 w-5" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>

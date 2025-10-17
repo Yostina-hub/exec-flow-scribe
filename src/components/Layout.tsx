@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity } from "lucide-react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,6 +28,7 @@ const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Meetings", href: "/meetings", icon: Calendar },
+  { name: "Notebook", href: "/notebook", icon: Sparkles },
   { name: "Actions", href: "/actions", icon: CheckSquare },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reports", href: "/reports", icon: FileText },
