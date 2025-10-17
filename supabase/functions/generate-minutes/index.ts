@@ -119,27 +119,37 @@ serve(async (req) => {
       throw new Error("Failed to fetch decisions");
     }
 
-    // Detect language from transcriptions
-    const detectLanguage = (text: string): 'am' | 'ar' | 'en' | 'other' => {
-      if (!text) return 'en';
-      const ethiopicRegex = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]/;
-      const arabicRegex = /[\u0600-\u06FF]/;
-      
-      if (ethiopicRegex.test(text)) return 'am';
-      if (arabicRegex.test(text)) return 'ar';
-      return 'en';
-    };
-
-    const detectedLang = transcriptions && transcriptions.length > 0
-      ? detectLanguage(transcriptions.map(t => t.content).join(' ').substring(0, 500))
-      : 'en';
-    
-    console.log(`📍 Detected meeting language: ${detectedLang}`);
-
-    // Combine all context
+    // Combine and analyze transcript to detect dominant language (favor Amharic when mixed)
     const fullTranscript = transcriptions
       ?.map((t) => `${t.speaker_name || "Speaker"}: ${t.content}`)
       .join("\n\n") || "";
+
+    const flatText = transcriptions?.map(t => t.content).join(' ') || '';
+    const ETH = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]/g; // Ge'ez/Ethiopic
+    const ARA = /[\u0600-\u06FF]/g; // Arabic
+    const LAT = /[A-Za-z]/g; // Latin letters
+
+    const etCount = (flatText.match(ETH) || []).length;
+    const arCount = (flatText.match(ARA) || []).length;
+    const laCount = (flatText.match(LAT) || []).length;
+    const total = etCount + arCount + laCount;
+
+    let detectedLang: 'am' | 'ar' | 'en' = 'en';
+    if (total > 0) {
+      const etRatio = etCount / total;
+      const arRatio = arCount / total;
+      const laRatio = laCount / total;
+      // Prefer Amharic if present significantly (>=30%) or clearly dominant
+      if ((etRatio >= 0.3 && etRatio >= arRatio) || (etCount >= arCount && etCount >= laCount && etCount >= 10)) {
+        detectedLang = 'am';
+      } else if (arRatio > etRatio && arRatio >= 0.3) {
+        detectedLang = 'ar';
+      } else {
+        detectedLang = 'en';
+      }
+      console.log(`📊 Script counts -> Ge'ez:${etCount} Arabic:${arCount} Latin:${laCount} | ratios -> am:${etRatio.toFixed(2)} ar:${arRatio.toFixed(2)} en:${laRatio.toFixed(2)}`);
+    }
+    console.log(`📍 Detected meeting language: ${detectedLang}`);
 
     const agendaList = meeting.agenda_items
       ?.map((item: any) => `- ${item.title}`)
@@ -195,48 +205,38 @@ Format the output as a professional meeting minutes document in markdown format.
 
     let minutes = "";
 
+    // Try provider-specific first (Gemini), then fallback to Lovable AI
     if (provider === "gemini") {
-      // Use custom Gemini API key
-      const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
-      if (!geminiKey) {
-        throw new Error("Gemini API key not configured");
-      }
+      try {
+        const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
+        if (!geminiKey) throw new Error("Gemini API key not configured");
 
-      const geminiResponse = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: prompt,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 2000,
-            },
-          }),
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
+            }),
+          }
+        );
+
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        } else {
+          const error = await geminiResponse.text();
+          console.error("Gemini generation error:", error);
         }
-      );
-
-      if (!geminiResponse.ok) {
-        const error = await geminiResponse.text();
-        console.error("Gemini generation error:", error);
-        throw new Error("Failed to generate minutes with Gemini");
+      } catch (e) {
+        console.error("Gemini provider failed:", e);
       }
+    }
 
-      const geminiData = await geminiResponse.json();
-      minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    } else {
-      // Use Lovable AI (default)
+    if (!minutes) {
+      // Lovable AI fallback/default
       const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
       if (!LOVABLE_API_KEY) {
         throw new Error("LOVABLE_API_KEY not configured");
@@ -253,10 +253,8 @@ Format the output as a professional meeting minutes document in markdown format.
           body: JSON.stringify({
             model: "google/gemini-2.5-flash",
             messages: [
-              {
-                role: "user",
-                content: prompt,
-              },
+              { role: "system", content: "You are a professional minutes generator. Preserve the transcript language and script. For Amharic, use Ge'ez (no Latin)." },
+              { role: "user", content: prompt },
             ],
             temperature: 0.7,
             max_tokens: 2000,
@@ -265,13 +263,19 @@ Format the output as a professional meeting minutes document in markdown format.
       );
 
       if (!aiResponse.ok) {
+        if (aiResponse.status === 429) {
+          return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+        if (aiResponse.status === 402) {
+          return new Response(JSON.stringify({ error: "Payment required, please add AI credits." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
         const error = await aiResponse.text();
-        console.error("AI generation error:", error);
-        throw new Error("Failed to generate minutes with Lovable AI");
+        console.error("Lovable AI generation error:", error);
+        throw new Error("Failed to generate minutes");
       }
 
       const aiData = await aiResponse.json();
-      minutes = aiData.choices[0]?.message?.content || "";
+      minutes = aiData.choices?.[0]?.message?.content || "";
     }
 
     // Update meeting with generated minutes
