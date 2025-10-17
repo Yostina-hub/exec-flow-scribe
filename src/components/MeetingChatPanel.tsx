@@ -32,7 +32,6 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
 
   useEffect(() => {
     loadChatHistory();
-    generateAutoSummary();
     
     // Subscribe to new messages
     const channel = supabase
@@ -54,7 +53,14 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [meetingId, sourceIds]);
+  }, [meetingId]);
+
+  useEffect(() => {
+    // Generate summary whenever sourceIds change
+    if (sourceIds && sourceIds.length > 0) {
+      generateAutoSummary();
+    }
+  }, [sourceIds]);
 
   useEffect(() => {
     // Auto-scroll to bottom
@@ -140,58 +146,60 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
   return (
     <div className="flex flex-col h-full p-4">
       <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
-        {summaryLoading ? (
-          <div className="flex items-center justify-center h-full">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : autoSummary && messages.length === 0 ? (
-          <div className="space-y-4">
-            <div className="flex items-center gap-3 mb-4">
-              <FileText className="h-8 w-8 text-primary" />
+        {messages.length === 0 ? (
+          summaryLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : autoSummary ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-4">
+                <FileText className="h-8 w-8 text-primary" />
+                <div>
+                  <h3 className="font-semibold text-lg">
+                    {sourceTitles && sourceTitles.length === 1 
+                      ? sourceTitles[0].title 
+                      : `${sourceIds?.length || 0} sources`}
+                  </h3>
+                  {sourceTitles && sourceTitles.length > 1 && (
+                    <div className="flex gap-2 flex-wrap mt-1">
+                      {sourceTitles.map((source) => (
+                        <Badge key={source.id} variant="secondary" className="text-xs">
+                          {source.title}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="bg-muted rounded-lg p-4">
+                <p className="text-sm whitespace-pre-wrap leading-relaxed">{autoSummary}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
+              <MessageSquare className="h-12 w-12 text-muted-foreground" />
               <div>
-                <h3 className="font-semibold text-lg">
-                  {sourceTitles && sourceTitles.length === 1 
-                    ? sourceTitles[0].title 
-                    : `${sourceIds?.length || 0} sources`}
-                </h3>
-                {sourceTitles && sourceTitles.length > 1 && (
-                  <div className="flex gap-2 flex-wrap mt-1">
-                    {sourceTitles.map((source) => (
-                      <Badge key={source.id} variant="secondary" className="text-xs">
-                        {source.title}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+                <p className="text-sm text-muted-foreground mb-4">
+                  Start a conversation about your meeting
+                </p>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium">Try asking:</p>
+                  {suggestedQuestions.map((question, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-left justify-start"
+                      onClick={() => setQuery(question)}
+                    >
+                      {question}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
-            <div className="bg-muted rounded-lg p-4">
-              <p className="text-sm whitespace-pre-wrap leading-relaxed">{autoSummary}</p>
-            </div>
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
-            <MessageSquare className="h-12 w-12 text-muted-foreground" />
-            <div>
-              <p className="text-sm text-muted-foreground mb-4">
-                Start a conversation about your meeting
-              </p>
-              <div className="space-y-2">
-                <p className="text-xs font-medium">Try asking:</p>
-                {suggestedQuestions.map((question, index) => (
-                  <Button
-                    key={index}
-                    variant="outline"
-                    size="sm"
-                    className="w-full text-left justify-start"
-                    onClick={() => setQuery(question)}
-                  >
-                    {question}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </div>
+          )
         ) : (
           <div className="space-y-4">
             {messages.map((message) => (
