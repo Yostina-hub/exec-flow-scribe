@@ -210,9 +210,14 @@ serve(async (req) => {
 
     // Validate and save transcription
     if (!transcriptText || transcriptText.trim().length === 0) {
-      console.warn("Empty transcription result");
+      console.warn("Empty transcription result - audio may be too long, silent, or corrupted");
+      console.log(`Audio size: ${binaryAudio.length} bytes, estimated duration: ${(binaryAudio.length / (24000 * 2)).toFixed(2)}s`);
       return new Response(
-        JSON.stringify({ error: "Transcription produced no text" }),
+        JSON.stringify({ 
+          error: "Transcription produced no text. Audio may be too long (>30s), silent, or corrupted.",
+          audioSize: binaryAudio.length,
+          estimatedDuration: (binaryAudio.length / (24000 * 2)).toFixed(2)
+        }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },

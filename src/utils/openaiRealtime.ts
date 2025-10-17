@@ -441,8 +441,16 @@ export class OpenAIRealtimeClient {
         return;
       }
       
+      // Limit to 15 seconds to prevent empty results from Whisper API
+      let finalAudio = mergedAudio;
+      if (duration > 15) {
+        console.warn(`⚠️ Audio too long (${duration.toFixed(2)}s), truncating to last 15 seconds`);
+        const maxSamples = 24000 * 15; // 15 seconds at 24kHz
+        finalAudio = mergedAudio.slice(-maxSamples); // Take last 15 seconds
+      }
+      
       // Convert collected PCM to WAV base64
-      const audioBase64 = float32ToWavBase64(mergedAudio, 24000);
+      const audioBase64 = float32ToWavBase64(finalAudio, 24000);
       
       // Get user's language preference
       const { data: userData } = await supabase.auth.getUser();
