@@ -14,23 +14,21 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { meeting_id, user_id, content, audience_type } = await req.json();
 
     // Generate redacted version with AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{
-          role: "user",
-          content: `Create a redacted version for ${audience_type} circulation:
+        contents: [{
+          parts: [{
+            text: `Create a redacted version for ${audience_type} circulation:
 
 Original content:
 ${content}
@@ -49,28 +47,27 @@ Return JSON:
   },
   "sensitivity_level": "low|medium|high"
 }`
+          }]
         }],
-        tools: [{
-          type: "function",
-          function: {
-            name: "create_redaction",
-            parameters: {
-              type: "object",
-              properties: {
-                redacted_content: { type: "string" },
-                redaction_map: { type: "object" },
-                sensitivity_level: { type: "string" }
-              },
-              required: ["redacted_content", "redaction_map", "sensitivity_level"]
-            }
+        generationConfig: {
+          temperature: 0.7,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              redacted_content: { type: "string" },
+              redaction_map: { type: "object" },
+              sensitivity_level: { type: "string" }
+            },
+            required: ["redacted_content", "redaction_map", "sensitivity_level"]
           }
-        }],
-        tool_choice: { type: "function", function: { name: "create_redaction" } }
+        }
       }),
     });
 
     const result = await aiResponse.json();
-    const redaction = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+    const redactionText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+    const redaction = JSON.parse(redactionText);
 
     // Save redacted version
     const { data: savedDoc } = await supabase

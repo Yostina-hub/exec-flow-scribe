@@ -14,10 +14,10 @@ serve(async (req) => {
 
   try {
     const { meetingId } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -57,19 +57,20 @@ Generate 8-12 frequently asked questions with detailed answers covering:
 Format as JSON: { faqs: [{ question: string, answer: string, category: string }] }
 Categories should be one of: "Overview", "Decisions", "Actions", "Process", "Timeline"`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are an expert at creating comprehensive FAQs. Always respond with valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.6,
+        contents: [{
+          parts: [{
+            text: `You are an expert at creating comprehensive FAQs. Always respond with valid JSON.\n\n${prompt}`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.6
+        }
       }),
     });
 
@@ -78,7 +79,7 @@ Categories should be one of: "Overview", "Decisions", "Actions", "Process", "Tim
     }
 
     const data = await response.json();
-    const content = data.choices[0].message.content;
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
     
     // Parse JSON response
     const jsonMatch = content.match(/\{[\s\S]*\}/);

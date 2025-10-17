@@ -14,7 +14,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY")!;
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { meeting_id } = await req.json();
@@ -108,7 +108,8 @@ Return format:
       });
 
       const result = await aiResponse.json();
-      const analysis = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+      const analysisText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+      const analysis = JSON.parse(analysisText);
 
       sentiments.push({
         meeting_id,
