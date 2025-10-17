@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { detectLanguage, isNoise } from "@/utils/langDetect";
 
 export class AudioRecorder {
   private stream: MediaStream | null = null;
@@ -188,7 +189,7 @@ export class OpenAIRealtimeClient {
   private isCollectingAudio: boolean = false;
   private speakerCount: number = 0;
   private lastSpeaker: string = 'User';
-  private sessionLanguage: string | null = null;
+  private sessionLanguage: string | null = null; // 'am' | 'ar' | null when auto
   private pendingTranscriptionTimer: number | null = null;
   private builtinTranscriptionReceived: boolean = false;
 
@@ -196,7 +197,7 @@ export class OpenAIRealtimeClient {
     onTranscript: (text: string, speaker?: string) => void,
     onError: (error: string) => void,
     onProcessingChange?: (isProcessing: boolean) => void,
-    language: string = 'en'
+    language: string = 'auto'
   ) {
     this.onTranscript = onTranscript;
     this.onError = onError;
@@ -246,7 +247,7 @@ export class OpenAIRealtimeClient {
 
       // Set up data channel
       this.dc = this.pc.createDataChannel("oai-events");
-      this.dc.addEventListener("message", (e) => {
+      this.dc.addEventListener("message", async (e) => {
         const event: RealtimeMessage = JSON.parse(e.data);
         console.log("Received event:", event.type, event);
 
@@ -260,7 +261,7 @@ export class OpenAIRealtimeClient {
               ? "You are a silent meeting transcription system for AMHARIC language. CRITICAL RULES FOR AMHARIC:\n1. ALWAYS write in Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)\n2. NEVER use Latin letters (a-z)\n3. NEVER transliterate or romanize\n4. Example correct: 'ሰላም ነው' NOT 'selam new'\n5. Identify speakers as ተናጋሪ 1, ተናጋሪ 2, etc.\n6. Include proper Amharic punctuation (።፣፤፥፦)\n7. DO NOT respond or speak back. Only transcribe silently."
               : this.sessionLanguage === 'ar'
               ? "You are a silent meeting transcription system for ARABIC language. CRITICAL: Always write in Arabic script (ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي). Never use Latin letters. Identify speakers as متحدث 1, متحدث 2, etc. DO NOT respond or speak back. Only transcribe silently."
-              : "You are a silent meeting transcription system. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. DO NOT respond or speak back. Only transcribe silently.";
+              : "You are a silent meeting transcription system. CRITICAL: Auto-detect language and SUPPORT CODE-SWITCHING between Amharic and English in the same utterance. Always transcribe in the ORIGINAL SCRIPT (no romanization). For Amharic, use Ge'ez script (አማርኛ). For Arabic, use Arabic script. Identify speakers as Speaker 1, Speaker 2, etc. DO NOT respond or speak back. Only transcribe silently.";
             
             this.dc.send(JSON.stringify({
               type: "session.update",
@@ -269,7 +270,8 @@ export class OpenAIRealtimeClient {
                 instructions,
                 input_audio_format: "pcm16",
                 input_audio_transcription: {
-                  model: "whisper-1"
+                  model: "whisper-1",
+                  language: this.sessionLanguage && this.sessionLanguage !== 'auto' ? this.sessionLanguage : null
                 },
                 turn_detection: {
                   type: "server_vad",
@@ -319,11 +321,23 @@ export class OpenAIRealtimeClient {
           
           const transcript = event.transcript?.trim();
           if (transcript) {
-            console.log('✅ Built-in transcription received:', transcript.substring(0, 100));
+            if (isNoise(transcript)) {
+              console.warn('⚠️ Ignoring likely noise transcript');
+              this.onProcessingChange?.(false);
+              return;
+            }
+            const lang = detectLanguage(transcript);
+            console.log('✅ Built-in transcription received:', transcript.substring(0, 100), 'lang:', lang);
+            // Bias future recognition when confident
+            if ((lang === 'am' || lang === 'ar') && this.sessionLanguage !== lang) {
+              await this.updateSessionLanguageBias(lang);
+            } else if (lang === 'en' && this.sessionLanguage) {
+              await this.updateSessionLanguageBias(null);
+            }
             this.onTranscript(transcript, 'User');
             // Save to database
             if (this.currentMeetingId) {
-              this.saveTranscription(this.currentMeetingId, transcript, 'User', 'auto');
+              this.saveTranscription(this.currentMeetingId, transcript, 'User', lang);
             }
             this.onProcessingChange?.(false);
           } else {
@@ -462,6 +476,8 @@ export class OpenAIRealtimeClient {
   }
 
   private async transcribeCollectedAudio(meetingId: string) {
+    // Fallback server transcription using Whisper with Amharic script enforcement
+  
     try {
       console.log(`📝 Transcribing ${this.audioChunks.length} audio chunks...`);
       
@@ -537,21 +553,15 @@ export class OpenAIRealtimeClient {
         const cleaned = cleanTranscript(data.transcription);
         if (cleaned) {
           const detectedLang = data.detectedLanguage || 'auto';
-          
-          // Track session language for consistency
-          if (this.sessionLanguage === null && detectedLang !== 'auto') {
-            this.sessionLanguage = detectedLang;
-            console.log(`📍 Session language set to: ${detectedLang}`);
+          // Bias future recognition if confident language detected
+          if ((detectedLang === 'am' || detectedLang === 'ar') && this.sessionLanguage !== detectedLang) {
+            await this.updateSessionLanguageBias(detectedLang);
           }
-          
           console.log(`✅ Transcribed (${detectedLang}):`, cleaned.substring(0, 100) + (cleaned.length > 100 ? '...' : ''));
-          
           // Display immediately
           this.onTranscript(cleaned, this.lastSpeaker);
-          
           // Save to database with all metadata
           await this.saveTranscription(meetingId, cleaned, this.lastSpeaker, detectedLang);
-          
           // Signal processing complete
           this.onProcessingChange?.(false);
         } else {
@@ -569,6 +579,41 @@ export class OpenAIRealtimeClient {
     } finally {
       // Always clear chunks to prevent memory buildup
       this.audioChunks = [];
+    }
+  }
+
+  private async updateSessionLanguageBias(nextLang: string | null) {
+    try {
+      if (!this.dc || this.dc.readyState !== 'open') return;
+      const useLang = nextLang && nextLang !== 'auto' ? nextLang : null;
+      const instructions = useLang === 'am'
+        ? "You are a silent meeting transcription system for AMHARIC language. CRITICAL RULES FOR AMHARIC:\n1. ALWAYS write in Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)\n2. NEVER use Latin letters (a-z)\n3. NEVER transliterate or romanize\n4. Use proper Amharic punctuation (።፣፤፥፦).\n5. DO NOT respond or speak back. Only transcribe silently."
+        : useLang === 'ar'
+        ? "You are a silent meeting transcription system for ARABIC language. Always write in Arabic script. Do not romanize."
+        : "You are a silent meeting transcription system. Auto-detect language and SUPPORT CODE-SWITCHING (Amharic/English). Always use original scripts; for Amharic, use Ge'ez. Do not respond. Only transcribe.";
+      this.dc.send(JSON.stringify({
+        type: 'session.update',
+        session: {
+          modalities: ['text'],
+          instructions,
+          input_audio_format: 'pcm16',
+          input_audio_transcription: {
+            model: 'whisper-1',
+            language: useLang
+          },
+          turn_detection: {
+            type: 'server_vad',
+            threshold: 0.5,
+            prefix_padding_ms: 300,
+            silence_duration_ms: 500,
+            create_response: false
+          }
+        }
+      }));
+      this.sessionLanguage = useLang;
+      console.log('🔧 Session language bias updated to:', this.sessionLanguage ?? 'auto');
+    } catch (e) {
+      console.warn('Failed to update session language bias', e);
     }
   }
 
