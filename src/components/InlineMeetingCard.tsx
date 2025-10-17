@@ -2,11 +2,12 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus
+  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { AgendaIntakeForm } from './AgendaIntakeForm';
+import { EditMeetingDialog } from './EditMeetingDialog';
 
 interface InlineMeetingCardProps {
   id: string;
@@ -135,6 +136,19 @@ export function InlineMeetingCard({
             <Play className="h-4 w-4" />
             Join Meeting
           </Button>
+          <EditMeetingDialog 
+            meetingId={id}
+            trigger={
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Pencil className="h-4 w-4" />
+              </Button>
+            }
+          />
           <AgendaIntakeForm 
             meetingId={id} 
             trigger={
