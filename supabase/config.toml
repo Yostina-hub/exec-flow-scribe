@@ -92,3 +92,27 @@ verify_jwt = true
 
 [functions.generate-audio-overview]
 verify_jwt = true
+
+[functions.generate-study-guide]
+verify_jwt = true
+
+[functions.generate-briefing]
+verify_jwt = true
+
+[functions.generate-faq]
+verify_jwt = true
+
+[functions.generate-timeline]
+verify_jwt = true
+
+[functions.generate-table-of-contents]
+verify_jwt = true
+
+[functions.text-to-speech]
+verify_jwt = true
+
+[functions.send-notification-email]
+verify_jwt = false
+
+[functions.generate-executive-briefing]
+verify_jwt = false
