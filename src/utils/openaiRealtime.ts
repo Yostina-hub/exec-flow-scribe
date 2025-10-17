@@ -255,11 +255,9 @@ export class OpenAIRealtimeClient {
             this.dc.send(JSON.stringify({
               type: "session.update",
               session: {
-                modalities: ["text", "audio"],
-                instructions: "You are a meeting transcription assistant. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. Maintain speaker consistency throughout. Include proper punctuation.",
-                voice: "alloy",
+                modalities: ["text"],
+                instructions: "You are a silent meeting transcription system. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. DO NOT respond or speak back. Only transcribe silently.",
                 input_audio_format: "pcm16",
-                output_audio_format: "pcm16",
                 input_audio_transcription: {
                   model: "whisper-1"
                 },
@@ -268,11 +266,8 @@ export class OpenAIRealtimeClient {
                   threshold: 0.5,
                   prefix_padding_ms: 300,
                   silence_duration_ms: 500,
-                  idle_timeout_ms: null,
-                  create_response: true,
-                  interrupt_response: true
-                },
-                temperature: 0.8
+                  create_response: false
+                }
               }
             }));
             console.log('Session configuration sent with optimized VAD settings');
