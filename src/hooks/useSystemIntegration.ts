@@ -167,16 +167,17 @@ const handleMeetingUpdated = async (newMeeting: any, oldMeeting: any) => {
  */
 const triggerAIProcessingPipeline = async (meetingId: string) => {
   try {
-    console.log('Starting AI processing pipeline for meeting:', meetingId);
+    console.log('✨ Starting AI processing pipeline for meeting:', meetingId);
 
     // Get auth session for proper authorization
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      console.error('No active session for AI processing');
+      console.error('❌ No active session for AI processing');
       return;
     }
 
-    // 1. Generate minutes with proper authorization
+    // 1. Generate minutes with proper authorization and error handling
+    console.log('📝 Generating meeting minutes...');
     const { data: minutesData, error: minutesError } = await supabase.functions.invoke('generate-minutes', {
       body: { meeting_id: meetingId },
       headers: {
@@ -185,11 +186,12 @@ const triggerAIProcessingPipeline = async (meetingId: string) => {
     });
 
     if (minutesError) {
-      console.error('Error generating minutes:', minutesError);
-      return;
+      console.error('❌ Error generating minutes:', minutesError);
+      // Don't stop the pipeline for minutes error, continue with other processing
+      console.log('⚠️ Continuing with other AI processing tasks...');
+    } else {
+      console.log('✅ Minutes generated successfully');
     }
-
-    console.log('Minutes generated successfully');
 
     // 2. Analyze sentiment
     await supabase.functions.invoke('analyze-meeting-sentiment', {

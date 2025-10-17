@@ -18,20 +18,35 @@ serve(async (req) => {
 
     if (!meetingId) {
       console.error("Request body:", body);
-      throw new Error("Meeting ID is required");
+      return new Response(
+        JSON.stringify({ error: "Meeting ID is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
-    console.log("Processing meeting:", meetingId);
+    console.log("✨ Processing meeting:", meetingId);
 
     // Create Supabase client
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase credentials");
+      return new Response(
+        JSON.stringify({ error: "Server configuration error" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Get authorization header to identify user
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
-      throw new Error("No authorization header");
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Verify JWT and get user
@@ -40,8 +55,14 @@ serve(async (req) => {
     );
 
     if (authError || !user) {
-      throw new Error("Invalid authorization");
+      console.error("Auth error:", authError);
+      return new Response(
+        JSON.stringify({ error: "Invalid authentication" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    
+    console.log("✅ User authenticated:", user.id);
 
     // Get user's AI provider preference
     const { data: preference } = await supabase
@@ -54,17 +75,23 @@ serve(async (req) => {
     console.log(`Using AI provider: ${provider}`);
 
     // Fetch meeting details
+    console.log("📋 Fetching meeting details...");
     const { data: meeting, error: meetingError } = await supabase
       .from("meetings")
       .select("*, agenda_items(*)")
       .eq("id", meetingId)
       .single();
 
-    if (meetingError || !meeting) {
-      throw new Error("Meeting not found");
+    if (meetingError) {
+      console.error("Meeting fetch error:", meetingError);
+      return new Response(
+        JSON.stringify({ error: "Meeting not found or access denied" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Fetch transcriptions
+    console.log("📝 Fetching transcriptions...");
     const { data: transcriptions, error: transcError } = await supabase
       .from("transcriptions")
       .select("*")
@@ -72,7 +99,14 @@ serve(async (req) => {
       .order("timestamp", { ascending: true });
 
     if (transcError) {
-      throw new Error("Failed to fetch transcriptions");
+      console.error("Transcription fetch error:", transcError);
+    }
+    
+    if (!transcriptions || transcriptions.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "No transcriptions found for this meeting. Please record the meeting first." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Fetch decisions

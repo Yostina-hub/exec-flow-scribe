@@ -7,12 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2 } from 'lucide-react';
 import { WaveformViewer } from '@/components/minutes/WaveformViewer';
 import { ConfidenceHeatmap } from '@/components/minutes/ConfidenceHeatmap';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
+import { Badge } from '@/components/ui/badge';
 
 interface TranscriptSegment {
   id: string;
@@ -34,6 +35,7 @@ export default function MinutesEditor() {
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
   const [sensitiveSections, setSensitiveSections] = useState<any[]>([]);
   const [isSubmittingForSignOff, setIsSubmittingForSignOff] = useState(false);
@@ -51,12 +53,10 @@ export default function MinutesEditor() {
   useEffect(() => {
     if (!minutes || !meetingId) return;
     
-    // Clear existing timeout
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
     
-    // Set new timeout for auto-save (3 seconds after last edit)
     saveTimeoutRef.current = setTimeout(() => {
       handleSaveMinutes(true);
     }, 3000);
@@ -72,7 +72,6 @@ export default function MinutesEditor() {
     try {
       setIsLoading(true);
       
-      // Fetch transcriptions
       const { data: transcriptions, error: transError } = await supabase
         .from('transcriptions')
         .select('*')
@@ -81,20 +80,18 @@ export default function MinutesEditor() {
 
       if (transError) throw transError;
 
-      // Transform transcriptions into segments
       const segments: TranscriptSegment[] = (transcriptions || []).map((t, idx) => ({
         id: t.id,
         speaker: t.speaker_name || 'Unknown Speaker',
         content: t.content,
         timestamp: new Date(t.timestamp).toLocaleTimeString(),
         confidence: t.confidence_score ? Number(t.confidence_score) : 0.9,
-        startTime: idx * 5, // Mock timing
+        startTime: idx * 5,
         endTime: (idx + 1) * 5,
       }));
 
       setTranscript(segments);
 
-      // Fetch meeting details
       const { data: meeting } = await supabase
         .from('meetings')
         .select('title')
@@ -106,7 +103,6 @@ export default function MinutesEditor() {
         document.title = `Minutes Editor - ${meeting.title}`;
       }
 
-      // Fetch latest minutes version
       const { data: minutesData } = await supabase
         .from('minutes_versions')
         .select('id, content')
@@ -120,7 +116,6 @@ export default function MinutesEditor() {
         setLatestMinutesVersionId(minutesData.id);
       }
 
-      // Fetch sensitive sections
       const { data: sections } = await supabase
         .from('section_sensitivities')
         .select('*')
@@ -141,6 +136,61 @@ export default function MinutesEditor() {
     }
   };
 
+  const handleGenerateMinutes = async () => {
+    try {
+      setIsGenerating(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: 'Authentication Required',
+          description: 'Please log in to generate minutes',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'Generating Minutes',
+        description: 'AI is analyzing your meeting transcript...',
+      });
+
+      const { data, error } = await supabase.functions.invoke('generate-minutes', {
+        body: { meeting_id: meetingId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (error) {
+        console.error('Error generating minutes:', error);
+        toast({
+          title: 'Generation Failed',
+          description: error.message || 'Failed to generate minutes. Please try again.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (data?.minutes) {
+        setMinutes(data.minutes);
+        toast({
+          title: 'Success!',
+          description: 'Meeting minutes generated successfully',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'An unexpected error occurred',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleSaveMinutes = async (isAutoSave = false) => {
     try {
       setIsSaving(true);
@@ -148,7 +198,6 @@ export default function MinutesEditor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Get current version number
       const { data: versions } = await supabase
         .from('minutes_versions')
         .select('version_number')
@@ -158,7 +207,6 @@ export default function MinutesEditor() {
 
       const nextVersion = versions && versions.length > 0 ? versions[0].version_number + 1 : 1;
 
-      // Save new version
       const { data: newVersion, error } = await supabase
         .from('minutes_versions')
         .insert({
@@ -181,7 +229,6 @@ export default function MinutesEditor() {
           description: `Minutes version ${nextVersion} saved successfully`,
         });
         
-        // Auto-generate PDF after manual save
         await generatePDF(newVersion.id);
       }
     } catch (error) {
@@ -203,14 +250,12 @@ export default function MinutesEditor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Get default brand kit
       const { data: brandKit } = await supabase
         .from('brand_kits')
         .select('id')
         .eq('is_default', true)
         .maybeSingle();
 
-      // Generate PDF
       const { error } = await supabase.functions.invoke('generate-branded-pdf', {
         body: {
           meeting_id: meetingId,
@@ -232,65 +277,8 @@ export default function MinutesEditor() {
     }
   };
 
-  const handleRatifyMinutes = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Save current version first if there are changes
-      if (minutes.trim()) {
-        await handleSaveMinutes();
-      }
-
-      // Get latest version
-      const { data: latestVersion, error: fetchError } = await supabase
-        .from('minutes_versions')
-        .select('id')
-        .eq('meeting_id', meetingId)
-        .order('version_number', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (fetchError) throw fetchError;
-
-      if (!latestVersion) {
-        toast({
-          title: 'No minutes to ratify',
-          description: 'Please save minutes before ratifying',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Mark as ratified
-      const { error } = await supabase
-        .from('minutes_versions')
-        .update({
-          is_ratified: true,
-          ratified_at: new Date().toISOString(),
-          ratified_by: user.id,
-        })
-        .eq('id', latestVersion.id);
-
-      if (error) throw error;
-
-      toast({
-        title: 'Success',
-        description: 'Minutes have been ratified and locked',
-      });
-    } catch (error: any) {
-      console.error('Error ratifying minutes:', error);
-      toast({
-        title: 'Error',
-        description: error.message || 'Failed to ratify minutes',
-        variant: 'destructive',
-      });
-    }
-  };
-
   const handleSegmentClick = (segment: TranscriptSegment) => {
     setSelectedSegment(segment);
-    // TODO: Seek audio/video to this timestamp
   };
 
   const handleSubmitForSignOff = async () => {
@@ -299,10 +287,8 @@ export default function MinutesEditor() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Save current minutes first
       await handleSaveMinutes();
 
-      // Get latest minutes version
       const { data: latestVersion, error: versionError } = await supabase
         .from('minutes_versions')
         .select('id, content')
@@ -317,7 +303,6 @@ export default function MinutesEditor() {
         return;
       }
 
-      // Fetch decisions and actions
       const { data: decisions } = await supabase
         .from('decisions')
         .select('decision_text, timestamp, context')
@@ -328,7 +313,6 @@ export default function MinutesEditor() {
         .select('title, due_date, priority, assigned_to')
         .eq('meeting_id', meetingId);
 
-      // Get assignee names
       const assigneeNames = new Map<string, string>();
       if (actions) {
         const uniqueUserIds = [...new Set(actions.map(a => a.assigned_to))];
@@ -340,7 +324,6 @@ export default function MinutesEditor() {
         profiles?.forEach(p => assigneeNames.set(p.id, p.full_name || 'Unknown'));
       }
 
-      // Format package data
       const packageData = {
         minutes: latestVersion.content,
         decisions: decisions || [],
@@ -354,7 +337,6 @@ export default function MinutesEditor() {
         })),
       };
 
-      // Get CEO or default approver (for demo, use first user with admin role)
       const { data: adminUsers } = await supabase
         .from('user_roles')
         .select('user_id')
@@ -362,7 +344,6 @@ export default function MinutesEditor() {
 
       const approver = adminUsers?.[0]?.user_id || user.id;
 
-      // Create signature request
       const { data: request, error: requestError } = await supabase
         .from('signature_requests')
         .insert({
@@ -382,7 +363,6 @@ export default function MinutesEditor() {
         description: 'Minutes submitted for CEO sign-off',
       });
 
-      // Navigate to signature approval page
       navigate(`/signature/${request.id}`);
     } catch (error: any) {
       console.error('Error submitting for sign-off:', error);
@@ -400,33 +380,96 @@ export default function MinutesEditor() {
     return (
       <Layout>
         <div className="flex items-center justify-center h-full">
-          <div className="text-muted-foreground">Loading meeting data...</div>
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-muted-foreground">Loading meeting data...</p>
+          </div>
         </div>
       </Layout>
     );
   }
 
+  const wordCount = minutes.split(/\s+/).filter(w => w).length;
+
   return (
     <Layout>
       <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        {/* Enhanced Header */}
+        <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-background via-background to-primary/5 backdrop-blur supports-[backdrop-filter]:bg-background/95">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(`/meetings/${meetingId}`)}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate(`/meetings/${meetingId}`)}
+              className="hover:scale-110 transition-transform"
+            >
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="text-2xl font-bold">Minutes Polisher</h1>
-              <p className="text-sm text-muted-foreground">
-                {meetingTitle || 'Edit and refine meeting minutes'} • {minutes.split(/\s+/).filter(w => w).length} words
-                {lastSaved && ` • Auto-saved ${lastSaved.toLocaleTimeString()}`}
-              </p>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                  Minutes Polisher
+                </h1>
+                <Badge variant="secondary" className="animate-pulse">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  AI-Powered
+                </Badge>
+              </div>
+              <div className="flex items-center gap-3 mt-2">
+                <p className="text-sm text-muted-foreground font-medium">
+                  {meetingTitle || 'Edit and refine meeting minutes'}
+                </p>
+                <span className="text-xs text-muted-foreground">•</span>
+                <Badge variant="outline" className="text-xs">
+                  {wordCount} words
+                </Badge>
+                {lastSaved && (
+                  <>
+                    <span className="text-xs text-muted-foreground">•</span>
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="w-3 h-3" />
+                      Auto-saved {lastSaved.toLocaleTimeString()}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <div className="flex gap-2">
-            <Button onClick={handleSubmitForSignOff} disabled={isSubmittingForSignOff} variant="default">
-              <CheckCircle className="w-4 h-4 mr-2" />
-              {isSubmittingForSignOff ? 'Submitting...' : 'Submit for Sign-Off'}
+            <Button 
+              onClick={handleGenerateMinutes} 
+              disabled={isGenerating || transcript.length === 0}
+              variant="secondary"
+              className="hover:scale-105 transition-transform"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Generate with AI
+                </>
+              )}
+            </Button>
+            <Button 
+              onClick={handleSubmitForSignOff} 
+              disabled={isSubmittingForSignOff || !minutes}
+              className="bg-gradient-to-r from-primary to-accent hover:scale-105 transition-transform"
+            >
+              {isSubmittingForSignOff ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Submitting...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Submit for Sign-Off
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -434,14 +477,14 @@ export default function MinutesEditor() {
         {/* Main Content */}
         <div className="flex-1 flex overflow-hidden">
           {/* Left Pane - Transcript */}
-          <div className="w-1/2 flex flex-col border-r">
+          <div className="w-1/2 flex flex-col border-r bg-muted/20">
             <Tabs defaultValue="transcript" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start border-b rounded-none">
-                <TabsTrigger value="transcript">
+              <TabsList className="w-full justify-start border-b rounded-none bg-background/50 backdrop-blur">
+                <TabsTrigger value="transcript" className="data-[state=active]:bg-primary/10">
                   <FileText className="w-4 h-4 mr-2" />
                   Transcript
                 </TabsTrigger>
-                <TabsTrigger value="media">
+                <TabsTrigger value="media" className="data-[state=active]:bg-primary/10">
                   <Film className="w-4 h-4 mr-2" />
                   Media
                 </TabsTrigger>
@@ -449,7 +492,7 @@ export default function MinutesEditor() {
               
               <TabsContent value="transcript" className="flex-1 flex flex-col m-0">
                 {/* Waveform */}
-                <div className="p-4 border-b">
+                <div className="p-4 border-b bg-background/80 backdrop-blur">
                   <WaveformViewer 
                     meetingId={meetingId!}
                     onSeek={(time) => console.log('Seek to:', time)}
@@ -457,16 +500,18 @@ export default function MinutesEditor() {
                 </div>
 
                 {/* Confidence Heatmap */}
-                <div className="p-4 border-b">
+                <div className="p-4 border-b bg-background/50">
                   <ConfidenceHeatmap segments={transcript} />
                 </div>
 
                 {/* Transcript Segments */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                   {transcript.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                      <FileText className="w-16 h-16 text-muted-foreground/50 mb-4" />
-                      <h3 className="text-lg font-semibold mb-2">No Transcript Available</h3>
+                      <div className="rounded-full bg-primary/10 p-6 mb-4">
+                        <FileText className="w-16 h-16 text-primary" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">No Transcript Available</h3>
                       <p className="text-sm text-muted-foreground max-w-md">
                         Start recording the meeting or upload audio to generate a transcript
                       </p>
@@ -475,23 +520,31 @@ export default function MinutesEditor() {
                     transcript.map((segment) => (
                       <Card
                         key={segment.id}
-                        className={`p-4 cursor-pointer transition-all hover:shadow-md ${
-                          selectedSegment?.id === segment.id ? 'border-primary ring-2 ring-primary/20' : ''
+                        className={`p-4 cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-[1.02] ${
+                          selectedSegment?.id === segment.id 
+                            ? 'border-primary ring-2 ring-primary/30 bg-primary/5' 
+                            : 'hover:bg-accent/5'
                         }`}
                         onClick={() => handleSegmentClick(segment)}
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="font-semibold text-sm">{segment.speaker}</span>
+                              <Badge variant="secondary" className="text-xs font-semibold">
+                                {segment.speaker}
+                              </Badge>
                               <span className="text-xs text-muted-foreground">{segment.timestamp}</span>
                               {segment.confidence < 0.7 && (
-                                <AlertTriangle className="w-4 h-4 text-destructive" />
+                                <AlertTriangle className="w-4 h-4 text-destructive animate-pulse" />
                               )}
                             </div>
-                            <p className="text-sm">{segment.content}</p>
+                            <p className="text-sm leading-relaxed">{segment.content}</p>
                             <div className="mt-2 flex items-center gap-2">
-                              <div className="text-xs text-muted-foreground">
+                              <div className={`text-xs px-2 py-1 rounded-full ${
+                                segment.confidence >= 0.9 ? 'bg-success/10 text-success' :
+                                segment.confidence >= 0.7 ? 'bg-warning/10 text-warning' :
+                                'bg-destructive/10 text-destructive'
+                              }`}>
                                 Confidence: {(segment.confidence * 100).toFixed(0)}%
                               </div>
                             </div>
@@ -510,33 +563,45 @@ export default function MinutesEditor() {
           </div>
 
           {/* Right Pane - Polished Minutes */}
-          <div className="w-1/2 flex flex-col">
+          <div className="w-1/2 flex flex-col bg-background">
             <Tabs defaultValue="minutes" className="flex-1 flex flex-col">
-              <TabsList className="w-full justify-start border-b rounded-none">
-                <TabsTrigger value="minutes">Polished Minutes</TabsTrigger>
-                <TabsTrigger value="factcheck">Fact Checks</TabsTrigger>
+              <TabsList className="w-full justify-start border-b rounded-none bg-muted/30">
+                <TabsTrigger value="minutes" className="data-[state=active]:bg-primary/10">
+                  <FileText className="w-4 h-4 mr-2" />
+                  Polished Minutes
+                </TabsTrigger>
+                <TabsTrigger value="factcheck" className="data-[state=active]:bg-primary/10">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Fact Checks
+                </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="minutes" className="flex-1 m-0 p-4">
+              <TabsContent value="minutes" className="flex-1 m-0 p-6">
                 {minutes || transcript.length > 0 ? (
                   <Textarea
                     value={minutes}
                     onChange={(e) => setMinutes(e.target.value)}
-                    className="h-full resize-none font-mono text-sm leading-relaxed"
-                    placeholder="Type or paste your polished minutes here...&#10;&#10;Tip: Use the transcript on the left as reference. Press Ctrl+S to save."
+                    className="h-full resize-none text-sm leading-relaxed focus:ring-2 focus:ring-primary/50 transition-all custom-scrollbar"
+                    placeholder="Type or paste your polished minutes here...
+
+Tip: Use the transcript on the left as reference. Press Ctrl+S to save.
+
+The AI assistant can help generate a professional structure for you."
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                    <FileText className="w-16 h-16 text-muted-foreground/50 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">Start Writing Minutes</h3>
-                    <p className="text-sm text-muted-foreground max-w-md">
-                      Click here to start typing your meeting minutes. You can reference the transcript on the left.
+                    <div className="rounded-full bg-primary/10 p-6 mb-4 animate-pulse">
+                      <FileText className="w-16 h-16 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Start Writing Minutes</h3>
+                    <p className="text-sm text-muted-foreground max-w-md mb-4">
+                      Click "Generate with AI" to auto-generate minutes, or start typing manually.
                     </p>
                   </div>
                 )}
               </TabsContent>
 
-              <TabsContent value="factcheck" className="flex-1 m-0 p-4">
+              <TabsContent value="factcheck" className="flex-1 m-0 p-6">
                 <FactCheckPanel meetingId={meetingId!} transcript={transcript} />
               </TabsContent>
             </Tabs>
@@ -544,7 +609,7 @@ export default function MinutesEditor() {
         </div>
 
         {/* Sensitive Sections Panel */}
-        <div className="border-t p-4">
+        <div className="border-t p-4 bg-muted/10">
           <SensitiveSectionManager
             meetingId={meetingId!}
             sections={sensitiveSections}
