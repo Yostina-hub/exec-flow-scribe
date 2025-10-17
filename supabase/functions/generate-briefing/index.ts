@@ -24,17 +24,22 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get meeting data
+    let prompt = '';
+    let entityId = meetingId;
+    let entityType = 'unknown';
+
+    // Try to get meeting data first
     const { data: meeting, error: meetingError } = await supabase
       .from('meetings')
       .select('*, transcriptions(*), decisions(*), action_items(*), meeting_attendees(*, profiles(*))')
       .eq('id', meetingId)
       .single();
 
-    if (meetingError) throw meetingError;
-
-    // Generate briefing document using AI
-    const prompt = `Create an executive briefing document for this meeting:
+    if (meeting && !meetingError) {
+      console.log('Generating briefing for meeting:', meeting.title);
+      entityType = 'meeting';
+      // Generate briefing document for meeting
+      prompt = `Create an executive briefing document for this meeting:
 
 Meeting: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
@@ -58,6 +63,40 @@ Create a professional briefing document with:
 6. Concerns/Risks (if any)
 
 Format as JSON with sections: executive_summary (string), highlights (array), decisions (array), action_items (array), next_steps (array), concerns (array)`;
+    } else {
+      // Try to get source data (for notebook sources)
+      console.log('Not a meeting, trying to fetch as notebook source:', meetingId);
+      const { data: source, error: sourceError } = await supabase
+        .from('notebook_sources')
+        .select('*')
+        .eq('id', meetingId)
+        .single();
+
+      if (sourceError || !source) {
+        console.error('Source fetch error:', sourceError);
+        throw new Error('No meeting or source found with this ID');
+      }
+
+      console.log('Generating briefing for source:', source.title, 'type:', source.source_type);
+      entityType = 'source';
+
+      // Generate briefing document for source
+      prompt = `Create an executive briefing document for this source:
+
+Title: ${source.title}
+Type: ${source.source_type}
+Content: ${source.content || 'No content available'}
+
+Create a professional briefing document with:
+1. Executive Summary (2-3 sentences)
+2. Key Highlights (most important points)
+3. Main Topics/Themes
+4. Important Details
+5. Next Steps or Recommendations
+6. Concerns/Risks (if any)
+
+Format as JSON with sections: executive_summary (string), highlights (array), topics (array), details (array), next_steps (array), concerns (array)`;
+    }
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -86,20 +125,27 @@ Format as JSON with sections: executive_summary (string), highlights (array), de
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     const briefing = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: 'Failed to parse response' };
 
-    // Save to database
-    const { data: savedOutput, error: saveError } = await supabase
-      .from('studio_outputs')
-      .insert({
-        meeting_id: meetingId,
-        output_type: 'briefing',
-        content: briefing,
-      })
-      .select()
-      .single();
+    // Save to database (only if it's a meeting, not a source)
+    let savedOutput = null;
+    if (meeting) {
+      const { data, error: saveError } = await supabase
+        .from('studio_outputs')
+        .insert({
+          meeting_id: meetingId,
+          output_type: 'briefing',
+          content: briefing,
+        })
+        .select()
+        .single();
 
-    if (saveError) throw saveError;
+      if (saveError) {
+        console.error('Error saving to studio_outputs:', saveError);
+      } else {
+        savedOutput = data;
+      }
+    }
 
-    return new Response(JSON.stringify({ briefing, outputId: savedOutput.id }), {
+    return new Response(JSON.stringify({ briefing, outputId: savedOutput?.id }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 

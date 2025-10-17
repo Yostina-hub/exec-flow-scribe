@@ -404,26 +404,114 @@ const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
               <ScrollArea className="h-[600px]">
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-semibold mb-2">Summary</h4>
-                    <p className="text-sm text-muted-foreground">{briefing.summary}</p>
+                    <h4 className="font-semibold mb-2">Executive Summary</h4>
+                    <p className="text-sm text-muted-foreground">{briefing.executive_summary || briefing.summary}</p>
                   </div>
                   <Separator />
                   <div>
-                    <h4 className="font-semibold mb-2">Key Points</h4>
+                    <h4 className="font-semibold mb-2">Key Highlights</h4>
                     <ul className="list-disc list-inside space-y-1">
-                      {briefing.key_points?.map((point: string, i: number) => (
+                      {(briefing.highlights || briefing.key_points || []).map((point: string, i: number) => (
                         <li key={i} className="text-sm text-muted-foreground">{point}</li>
                       ))}
                     </ul>
                   </div>
+                  
+                  {/* For meetings: decisions and action items */}
+                  {briefing.decisions && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Decisions Made</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.decisions.map((decision: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{decision}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
+                  {briefing.action_items && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Action Items</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.action_items.map((item: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* For sources: topics and details */}
+                  {briefing.topics && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Main Topics</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.topics.map((topic: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{topic}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
+                  {briefing.details && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Important Details</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.details.map((detail: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{detail}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
+                  {/* Next steps (common to both) */}
+                  {briefing.next_steps && briefing.next_steps.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Next Steps</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.next_steps.map((step: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{step}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
                   {briefing.recommendations && (
                     <>
                       <Separator />
                       <div>
                         <h4 className="font-semibold mb-2">Recommendations</h4>
                         <ul className="list-disc list-inside space-y-1">
-                          {briefing.recommendations?.map((rec: string, i: number) => (
+                          {briefing.recommendations.map((rec: string, i: number) => (
                             <li key={i} className="text-sm text-muted-foreground">{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                  
+                  {briefing.concerns && briefing.concerns.length > 0 && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Concerns/Risks</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.concerns.map((concern: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{concern}</li>
                           ))}
                         </ul>
                       </div>
