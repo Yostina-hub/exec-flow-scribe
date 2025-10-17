@@ -120,6 +120,8 @@ const MeetingDetail = () => {
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const [loading, setLoading] = useState(true);
+  const [wasRecording, setWasRecording] = useState(false);
+  const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   
   const meetingId = id || "demo-meeting-id";
   const { 
@@ -146,6 +148,61 @@ const MeetingDetail = () => {
       setLoading(false);
     }
   }, [id]);
+
+  // Auto-generate minutes when recording stops
+  useEffect(() => {
+    const autoGenerateMinutes = async () => {
+      // Check if recording just stopped (was recording, now not recording)
+      if (wasRecording && !isRecording && !isAutoGenerating) {
+        setIsAutoGenerating(true);
+        
+        toast({
+          title: 'Processing recording',
+          description: 'Automatically generating meeting minutes...',
+        });
+
+        try {
+          // Auto-save meeting status
+          if (id) {
+            await supabase
+              .from('meetings')
+              .update({ 
+                status: 'completed',
+                actual_end_time: new Date().toISOString()
+              })
+              .eq('id', id);
+          }
+
+          // Generate minutes automatically
+          const { data, error } = await supabase.functions.invoke('generate-minutes', {
+            body: { meetingId },
+          });
+
+          if (error) throw error;
+
+          toast({
+            title: 'Minutes generated',
+            description: 'Your meeting minutes are ready to view',
+          });
+
+          // Auto-open the view minutes dialog
+          setShowViewMinutesDialog(true);
+        } catch (error: any) {
+          console.error('Error auto-generating minutes:', error);
+          toast({
+            title: 'Auto-generation failed',
+            description: 'You can manually generate minutes from the Actions menu',
+            variant: 'destructive',
+          });
+        } finally {
+          setIsAutoGenerating(false);
+        }
+      }
+    };
+
+    autoGenerateMinutes();
+    setWasRecording(isRecording);
+  }, [isRecording, wasRecording, meetingId, id, toast, isAutoGenerating]);
 
   const fetchMeetingDetails = async () => {
     try {
