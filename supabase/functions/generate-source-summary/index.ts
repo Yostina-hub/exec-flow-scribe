@@ -55,12 +55,15 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const systemPrompt = `You are an expert at analyzing and summarizing documents. Create a comprehensive yet concise overview that:
-- Identifies the main topics and themes
-- Highlights key information, decisions, and important details
-- Notes significant dates, people, or entities mentioned
-- Provides context about what these sources contain
-Keep the summary clear and well-structured.`;
+    const systemPrompt = `You are an expert at analyzing and summarizing documents. Create a comprehensive summary that:
+- Uses **bold markdown** for key terms, names, amounts, dates, and important concepts
+- Identifies the main topics and themes with clear emphasis
+- Highlights critical information like agreements, decisions, monetary values, and dates
+- Notes significant people, organizations, or entities
+- Provides clear context about what these sources contain
+- Uses proper formatting with bold (**text**) for emphasis on important details
+
+Format the summary as a single, well-structured paragraph with key information emphasized in bold.`;
 
     const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: "POST",

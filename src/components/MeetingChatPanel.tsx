@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
+import ReactMarkdown from "react-markdown";
 
 interface Message {
   id: string;
@@ -158,28 +159,69 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
               <p className="text-sm text-muted-foreground">Extracting summary from your sources...</p>
             </div>
           ) : autoSummary ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 mb-4">
-                <FileText className="h-8 w-8 text-primary" />
-                <div>
-                  <h3 className="font-semibold text-lg">
-                    {sourceTitles && sourceTitles.length === 1 
-                      ? sourceTitles[0].title 
-                      : `${sourceIds?.length || 0} sources`}
-                  </h3>
-                  {sourceTitles && sourceTitles.length > 1 && (
-                    <div className="flex gap-2 flex-wrap mt-1">
-                      {sourceTitles.map((source) => (
-                        <Badge key={source.id} variant="secondary" className="text-xs">
-                          {source.title}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
+            <div className="w-full max-w-5xl mx-auto space-y-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <FileText className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-semibold text-lg">
+                      {sourceTitles && sourceTitles.length === 1 
+                        ? sourceTitles[0].title 
+                        : `${sourceIds?.length || 0} sources`}
+                    </h3>
+                    {sourceTitles && sourceTitles.length > 1 && (
+                      <div className="flex gap-2 flex-wrap mt-1">
+                        {sourceTitles.map((source) => (
+                          <Badge key={source.id} variant="secondary" className="text-xs">
+                            {source.title}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(autoSummary);
+                    toast({
+                      title: "Copied to clipboard",
+                      description: "Summary has been copied to your clipboard",
+                    });
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                  </svg>
+                  Copy
+                </Button>
               </div>
-              <div className="bg-muted rounded-lg p-4">
-                <p className="text-sm whitespace-pre-wrap leading-relaxed">{autoSummary}</p>
+              <div className="bg-muted/50 rounded-lg p-6 border">
+                <div className="text-sm leading-relaxed text-foreground prose prose-sm max-w-none dark:prose-invert">
+                  <ReactMarkdown
+                    components={{
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-foreground">{children}</strong>
+                      ),
+                      p: ({ children }) => <p className="mb-0">{children}</p>,
+                    }}
+                  >
+                    {autoSummary}
+                  </ReactMarkdown>
+                </div>
               </div>
             </div>
           ) : sourceIds && sourceIds.length > 0 ? (
