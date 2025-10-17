@@ -20,12 +20,10 @@ serve(async (req) => {
       throw new Error("API keys not configured");
     }
 
-    // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get authorization header
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       throw new Error("No authorization header");
@@ -39,31 +37,64 @@ serve(async (req) => {
       throw new Error("Invalid authorization");
     }
 
-    // Fetch meeting data
-    const { data: meeting } = await supabase
-      .from("meetings")
-      .select("*, agenda_items(*)")
+    let scriptPrompt = "";
+    let entityId = meetingId;
+
+    // Try to fetch as a notebook source first
+    const { data: source } = await supabase
+      .from("notebook_sources")
+      .select("*")
       .eq("id", meetingId)
       .single();
 
-    const { data: decisions } = await supabase
-      .from("decisions")
-      .select("*")
-      .eq("meeting_id", meetingId);
+    if (source) {
+      // This is a notebook source
+      const contentPreview = source.content 
+        ? source.content.substring(0, 2000) 
+        : "No content available";
 
-    const { data: actions } = await supabase
-      .from("action_items")
-      .select("*")
-      .eq("meeting_id", meetingId);
+      scriptPrompt = `Create an engaging audio overview for this document. Make it sound like a professional podcast host presenting key insights from the document.
 
-    // Generate script with Gemini
-    const scriptPrompt = `Create an engaging audio overview script for this executive meeting. Make it sound like a professional podcast discussion between two AI hosts discussing the meeting insights.
+Document: ${source.title}
+Type: ${source.source_type}
+Content Preview: ${contentPreview}
+
+Create a 2-3 minute script with:
+- Brief introduction to the document
+- Key highlights and main points
+- Important takeaways
+- Closing summary
+
+Make it conversational and engaging. Format as natural narration.`;
+    } else {
+      // Try as a meeting
+      const { data: meeting } = await supabase
+        .from("meetings")
+        .select("*, agenda_items(*)")
+        .eq("id", meetingId)
+        .single();
+
+      if (!meeting) {
+        throw new Error("Meeting or source not found");
+      }
+
+      const { data: decisions } = await supabase
+        .from("decisions")
+        .select("*")
+        .eq("meeting_id", meetingId);
+
+      const { data: actions } = await supabase
+        .from("action_items")
+        .select("*")
+        .eq("meeting_id", meetingId);
+
+      scriptPrompt = `Create an engaging audio overview script for this executive meeting. Make it sound like a professional podcast discussion between two AI hosts discussing the meeting insights.
 
 Meeting: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
 
-Key Decisions: ${decisions?.map(d => d.decision_text).join("; ")}
-Action Items: ${actions?.map(a => a.title).join("; ")}
+Key Decisions: ${decisions?.map(d => d.decision_text).join("; ") || "No decisions recorded"}
+Action Items: ${actions?.map(a => a.title).join("; ") || "No action items recorded"}
 
 Create a 2-3 minute conversational script with:
 - Brief introduction
@@ -72,6 +103,7 @@ Create a 2-3 minute conversational script with:
 - Closing summary
 
 Format as natural dialogue.`;
+    }
 
     const scriptResponse = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
@@ -118,7 +150,7 @@ Format as natural dialogue.`;
 
     // Save to database
     await supabase.from("studio_outputs").insert({
-      meeting_id: meetingId,
+      meeting_id: entityId,
       output_type: "audio_overview",
       content: { script, voice },
       generated_by: user.id,
