@@ -10,7 +10,6 @@ import {
   Loader2,
   Sparkles,
   File,
-  Link as LinkIcon,
   Music,
   Globe,
   Youtube,
@@ -75,7 +74,6 @@ const Notebook = () => {
   }, [currentNotebook]);
 
   useEffect(() => {
-    // Auto-add meeting if URL parameter is present
     if (meetingIdFromUrl) {
       addMeetingAsSource(meetingIdFromUrl);
     }
@@ -96,14 +94,12 @@ const Notebook = () => {
 
       setNotebooks(data || []);
       
-      // Set current notebook from URL or first notebook
       if (notebookIdFromUrl && data?.some(n => n.id === notebookIdFromUrl)) {
         setCurrentNotebook(notebookIdFromUrl);
       } else if (data && data.length > 0) {
         setCurrentNotebook(data[0].id);
         setSearchParams({ notebook: data[0].id });
       } else {
-        // No notebooks exist - create a default one
         await createDefaultNotebook();
       }
     } catch (error) {
@@ -204,7 +200,6 @@ const Notebook = () => {
 
       await loadSources();
       
-      // Auto-select the newly added meeting - just select the most recent
       const { data: latestSources } = await supabase
         .from("notebook_sources")
         .select("id")
@@ -258,22 +253,22 @@ const Notebook = () => {
   const getSourceIcon = (sourceType: string) => {
     switch (sourceType) {
       case "pdf":
-        return <File className="h-3 w-3 text-red-500" />;
+        return <File className="h-3.5 w-3.5 text-red-500" />;
       case "text":
       case "markdown":
-        return <FileText className="h-3 w-3 text-blue-500" />;
+        return <FileText className="h-3.5 w-3.5 text-blue-500" />;
       case "audio":
-        return <Music className="h-3 w-3 text-purple-500" />;
+        return <Music className="h-3.5 w-3.5 text-purple-500" />;
       case "website":
-        return <Globe className="h-3 w-3 text-green-500" />;
+        return <Globe className="h-3.5 w-3.5 text-green-500" />;
       case "youtube":
-        return <Youtube className="h-3 w-3 text-red-600" />;
+        return <Youtube className="h-3.5 w-3.5 text-red-600" />;
       case "pasted_text":
-        return <ClipboardPaste className="h-3 w-3 text-orange-500" />;
+        return <ClipboardPaste className="h-3.5 w-3.5 text-orange-500" />;
       case "meeting":
-        return <FileText className="h-3 w-3 text-primary" />;
+        return <FileText className="h-3.5 w-3.5 text-primary" />;
       default:
-        return <FileText className="h-3 w-3" />;
+        return <FileText className="h-3.5 w-3.5" />;
     }
   };
 
@@ -285,7 +280,7 @@ const Notebook = () => {
       setSelectedSources(ids);
       return;
     }
-    // Fallback: select most recent
+    
     const { data } = await supabase
       .from("notebook_sources")
       .select("id")
@@ -301,44 +296,52 @@ const Notebook = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin mx-auto text-primary" />
+          <p className="text-sm text-muted-foreground">Loading notebook...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      {/* Full-width Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-3">
+      {/* Header */}
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/")}
-              className="shrink-0"
+              className="shrink-0 hover:bg-accent"
+              title="Back to dashboard"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Button variant="ghost" className="gap-3 h-auto py-2 px-3 hover:bg-accent">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
                     <BookOpen className="h-5 w-5 text-white" />
                   </div>
                   <div className="text-left">
-                    <h1 className="text-2xl font-bold">
+                    <h1 className="text-lg font-semibold leading-none mb-1">
                       {notebooks.find(n => n.id === currentNotebook)?.title || "Meeting Notebook"}
                     </h1>
-                    <p className="text-sm text-muted-foreground">
-                      Analyze and explore your meetings with AI
+                    <p className="text-xs text-muted-foreground">
+                      Analyze and explore with AI
                     </p>
                   </div>
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  <ChevronDown className="h-4 w-4 text-muted-foreground ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-64">
+              <DropdownMenuContent align="start" className="w-72">
+                <div className="px-2 py-1.5">
+                  <p className="text-xs font-medium text-muted-foreground">Your Notebooks</p>
+                </div>
                 {notebooks.map((notebook) => (
                   <DropdownMenuItem
                     key={notebook.id}
@@ -352,218 +355,227 @@ const Notebook = () => {
                     <div className="flex-1">
                       <div className="font-medium">{notebook.title}</div>
                       {notebook.description && (
-                        <div className="text-xs text-muted-foreground">{notebook.description}</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">{notebook.description}</div>
                       )}
                     </div>
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)}>
+                <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)} className="text-primary">
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Notebook
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
-          <Badge variant="secondary" className="gap-1">
-            <FileText className="h-3 w-3" />
-            {selectedSources.length} {selectedSources.length === 1 ? "source" : "sources"} selected
+          
+          <Badge variant="secondary" className="gap-2 px-3 py-1.5">
+            <FileText className="h-3.5 w-3.5" />
+            <span className="font-medium">
+              {selectedSources.length} {selectedSources.length === 1 ? "source" : "sources"}
+            </span>
           </Badge>
         </div>
       </div>
 
       {/* Three-panel layout */}
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
-          {/* Sources Panel */}
-          <div className="col-span-3 border-r flex flex-col bg-muted/20">
-            <div className="p-4 border-b">
-              <h2 className="font-semibold mb-3 flex items-center gap-2">
+        {/* Sources Panel */}
+        <div className="col-span-3 border-r flex flex-col bg-muted/30">
+          <div className="px-4 py-4 border-b bg-background/50">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold flex items-center gap-2 text-sm">
                 <FileText className="h-4 w-4" />
                 Sources
               </h2>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1 justify-start gap-2"
-                  onClick={() => setShowAddSourceDialog(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add
-                </Button>
-              </div>
-              {sources.length > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-full justify-start text-xs mt-2"
-                  onClick={() => {
-                    if (selectedSources.length === sources.length) {
-                      setSelectedSources([]);
-                    } else {
-                      setSelectedSources(sources.map(s => s.id));
-                    }
-                  }}
-                >
-                  {selectedSources.length === sources.length ? "Deselect all" : "Select all sources"}
-                </Button>
-              )}
-              <p className="text-xs text-muted-foreground mt-2">
-                {sources.length} / 50 sources
+              <p className="text-xs text-muted-foreground">
+                {sources.length} / 50
               </p>
             </div>
-
-            <ScrollArea className="flex-1">
-
-              {/* Sources List */}
-              <div className="p-4">
-                {sources.length === 0 ? (
-                  <div className="text-center py-12">
-                    <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-3" />
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Saved sources will appear here
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Click Add Meeting above to add your first source
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {sources.map((source) => (
-                      <Card
-                        key={source.id}
-                        className={`p-3 cursor-pointer transition-all hover:shadow-md ${
-                          selectedSources.includes(source.id)
-                            ? "border-primary bg-primary/5"
-                            : ""
-                        }`}
-                        onClick={() => toggleSourceSelection(source.id)}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              {getSourceIcon(source.source_type)}
-                              <p className="text-xs text-muted-foreground capitalize">
-                                {source.source_type.replace("_", " ")}
-                              </p>
-                            </div>
-                            <p className="text-sm font-medium line-clamp-2">
-                              {source.title}
-                            </p>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6 shrink-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              removeSource(source.id);
-                            }}
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* Center Panel - Chat */}
-          <div className="col-span-5 flex flex-col">
-            {selectedSources.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-4 max-w-md px-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
-                    <MessageSquare className="h-8 w-8 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold mb-2">
-                      Add a source to get started
-                    </h2>
-                    <p className="text-sm text-muted-foreground">
-                      Add documents, links, or text to analyze them with AI
-                    </p>
-                  </div>
-                  <Button onClick={() => setShowAddSourceDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Source
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col">
-                <div className="border-b p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="font-semibold text-lg">
-                      {selectedSources.length === 1
-                        ? sources.find(s => s.id === selectedSources[0])?.title
-                        : `${selectedSources.length} sources selected`}
-                    </h2>
-                  </div>
-                  {selectedSources.length > 1 && (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedSources.map(sourceId => {
-                        const source = sources.find(s => s.id === sourceId);
-                        return source ? (
-                          <Badge key={sourceId} variant="secondary" className="gap-1">
-                            {getSourceIcon(source.source_type)}
-                            <span className="text-xs">{source.title}</span>
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <MeetingChatPanel 
-                    meetingId={selectedSources[0]}
-                    sourceIds={selectedSources}
-                    sourceTitles={selectedSources.map(id => {
-                      const source = sources.find(s => s.id === id);
-                      return source ? { id: source.id, title: source.title, type: source.source_type } : null;
-                    }).filter(Boolean) as Array<{id: string; title: string; type: string}>}
-                  />
-                </div>
-              </div>
+            
+            <Button
+              variant="default"
+              size="sm"
+              className="w-full justify-center gap-2"
+              onClick={() => setShowAddSourceDialog(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Add Source
+            </Button>
+            
+            {sources.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-center text-xs mt-2"
+                onClick={() => {
+                  if (selectedSources.length === sources.length) {
+                    setSelectedSources([]);
+                  } else {
+                    setSelectedSources(sources.map(s => s.id));
+                  }
+                }}
+              >
+                {selectedSources.length === sources.length ? "Deselect all" : "Select all"}
+              </Button>
             )}
           </div>
 
-          {/* Studio Panel */}
-          <div className="col-span-4 border-l flex flex-col bg-muted/10">
-            <div className="border-b p-4">
-              <h2 className="font-semibold flex items-center gap-2">
-                <Sparkles className="h-5 w-5" />
-                Studio
-              </h2>
-              <p className="text-xs text-muted-foreground mt-1">
-                Studio output will be saved here
-              </p>
-            </div>
-            <ScrollArea className="flex-1">
-              {selectedSources.length === 0 ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="text-center space-y-4 max-w-sm px-4">
-                    <Sparkles className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium mb-2">
-                        Studio Features
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        After adding sources, generate audio overviews, study guides, briefings, and more
-                      </p>
-                    </div>
+          <ScrollArea className="flex-1">
+            <div className="p-3">
+              {sources.length === 0 ? (
+                <div className="text-center py-16 px-4">
+                  <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                    <FileText className="h-7 w-7 text-muted-foreground" />
                   </div>
+                  <p className="text-sm font-medium mb-2">
+                    No sources yet
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Add documents, websites, or meetings to get started with AI analysis
+                  </p>
                 </div>
               ) : (
-                <div className="p-4">
-                  <MeetingStudioPanel meetingId={selectedSources[0]} />
+                <div className="space-y-2">
+                  {sources.map((source) => (
+                    <Card
+                      key={source.id}
+                      className={`p-3 cursor-pointer transition-all hover:shadow-sm border ${
+                        selectedSources.includes(source.id)
+                          ? "border-primary bg-primary/5 shadow-sm"
+                          : "hover:border-border/60"
+                      }`}
+                      onClick={() => toggleSourceSelection(source.id)}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1.5">
+                            {getSourceIcon(source.source_type)}
+                            <p className="text-xs text-muted-foreground capitalize font-medium">
+                              {source.source_type.replace("_", " ")}
+                            </p>
+                          </div>
+                          <p className="text-sm font-medium line-clamp-2 leading-snug">
+                            {source.title}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeSource(source.id);
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               )}
-            </ScrollArea>
-          </div>
+            </div>
+          </ScrollArea>
         </div>
+
+        {/* Center Panel - Chat */}
+        <div className="col-span-5 flex flex-col bg-background">
+          {selectedSources.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center p-8">
+              <div className="text-center space-y-6 max-w-md">
+                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
+                  <MessageSquare className="h-10 w-10 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h2 className="text-xl font-semibold">
+                    Ready to explore your sources
+                  </h2>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Add and select sources from the left panel to start asking questions and getting AI-powered insights
+                  </p>
+                </div>
+                <Button size="lg" onClick={() => setShowAddSourceDialog(true)} className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Your First Source
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 flex flex-col">
+              <div className="border-b px-4 py-3 bg-muted/30">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold text-base">
+                    {selectedSources.length === 1
+                      ? sources.find(s => s.id === selectedSources[0])?.title
+                      : `${selectedSources.length} sources selected`}
+                  </h2>
+                </div>
+                {selectedSources.length > 1 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {selectedSources.map(sourceId => {
+                      const source = sources.find(s => s.id === sourceId);
+                      return source ? (
+                        <Badge key={sourceId} variant="secondary" className="gap-1.5 py-1">
+                          {getSourceIcon(source.source_type)}
+                          <span className="text-xs font-medium">{source.title}</span>
+                        </Badge>
+                      ) : null;
+                    })}
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <MeetingChatPanel 
+                  meetingId={selectedSources[0]}
+                  sourceIds={selectedSources}
+                  sourceTitles={selectedSources.map(id => {
+                    const source = sources.find(s => s.id === id);
+                    return source ? { id: source.id, title: source.title, type: source.source_type } : null;
+                  }).filter(Boolean) as Array<{id: string; title: string; type: string}>}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Studio Panel */}
+        <div className="col-span-4 border-l flex flex-col bg-muted/20">
+          <div className="border-b px-4 py-4 bg-background/50">
+            <h2 className="font-semibold flex items-center gap-2 text-sm">
+              <Sparkles className="h-4 w-4 text-primary" />
+              AI Studio
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">
+              Generate summaries, guides, and more
+            </p>
+          </div>
+          
+          <ScrollArea className="flex-1">
+            {selectedSources.length === 0 ? (
+              <div className="flex items-center justify-center h-full p-8">
+                <div className="text-center space-y-4 max-w-sm">
+                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
+                    <Sparkles className="h-8 w-8 text-primary" />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">
+                      AI Studio Features
+                    </p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Select sources to generate audio overviews, study guides, executive briefings, FAQs, and timelines
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4">
+                <MeetingStudioPanel meetingId={selectedSources[0]} />
+              </div>
+            )}
+          </ScrollArea>
+        </div>
+      </div>
 
       <AddSourceDialog
         open={showAddSourceDialog}
