@@ -8,7 +8,7 @@ import { UrgentMessagesPanel } from "@/components/UrgentMessagesPanel";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
-  BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight, Brain
+  BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight, Brain, Search
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "date-fns";
@@ -33,6 +34,7 @@ export default function Index() {
   const [weekMeetings, setWeekMeetings] = useState<any[]>([]);
   const [showBriefing, setShowBriefing] = useState(false);
   const [isCEO, setIsCEO] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const openedRef = useRef(false);
   
   useNotificationDispatcher();
@@ -176,6 +178,16 @@ export default function Index() {
 
   const todayMeetingsCount = meetings.length;
   const pendingActionsCount = actions.length;
+  
+  // Filter meetings based on search query
+  const filteredMeetings = meetings.filter((meeting) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      meeting.title?.toLowerCase().includes(query) ||
+      meeting.location?.toLowerCase().includes(query)
+    );
+  });
   
   // Get meetings for selected calendar date
   const selectedDateMeetings = weekMeetings.filter(m => 
@@ -492,7 +504,7 @@ export default function Index() {
         {/* Upcoming Meetings with Enhanced Design */}
         {meetings.length > 0 && (
           <div className="space-y-4 lg:space-y-6 animate-fade-in">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
               <div>
                 <h2 className="text-xl lg:text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-2 lg:gap-3">
                   <Rocket className="h-5 w-5 lg:h-8 lg:w-8 text-purple-500" />
@@ -500,10 +512,21 @@ export default function Index() {
                 </h2>
                 <p className="text-xs lg:text-sm text-muted-foreground mt-1 lg:mt-2">Quick access to your scheduled meetings</p>
               </div>
+              
+              <div className="relative w-full lg:w-80">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search meetings..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10 bg-background/50 backdrop-blur-sm border-2"
+                />
+              </div>
             </div>
             
-            <div className="grid gap-3 lg:gap-4 grid-cols-1 lg:grid-cols-3">
-              {meetings.map((meeting, index) => {
+            {filteredMeetings.length > 0 ? (
+              <div className="grid gap-3 lg:gap-4 grid-cols-1 lg:grid-cols-3">
+                {filteredMeetings.map((meeting, index) => {
                 const startTime = new Date(meeting.start_time);
                 const endTime = new Date(meeting.end_time);
                 const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
@@ -528,7 +551,13 @@ export default function Index() {
                   </div>
                 );
               })}
-            </div>
+              </div>
+            ) : (
+              <Card className="p-8 text-center">
+                <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                <p className="text-muted-foreground">No meetings found matching "{searchQuery}"</p>
+              </Card>
+            )}
           </div>
         )}
 
