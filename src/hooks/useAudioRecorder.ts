@@ -80,6 +80,14 @@ export const useAudioRecorder = (meetingId: string) => {
       const options: MediaRecorderOptions | undefined = supported ? { mimeType: supported } : undefined;
       const mediaRecorder = new MediaRecorder(stream, options as any);
       
+      // Prevent recording from stopping when tab is hidden
+      mediaRecorder.addEventListener('pause', (e) => {
+        console.log('MediaRecorder pause event - keeping recording active');
+        if (mediaRecorderRef.current?.state === 'paused' && isRecording) {
+          mediaRecorderRef.current.resume();
+        }
+      });
+
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -247,18 +255,29 @@ export const useAudioRecorder = (meetingId: string) => {
       };
 
       mediaRecorder.onstop = () => {
+        console.log('MediaRecorder stopped - cleaning up all resources');
         try {
-          stream.getTracks().forEach(track => track.stop());
-        } catch {}
+          // Stop all tracks to clear the recording indicator
+          stream.getTracks().forEach(track => {
+            track.stop();
+            console.log('Stopped track:', track.kind);
+          });
+        } catch (e) {
+          console.error('Error stopping tracks:', e);
+        }
         try {
           processorRef.current?.disconnect();
           sourceRef.current?.disconnect();
           audioContextRef.current?.close();
-        } catch {}
+        } catch (e) {
+          console.error('Error cleaning up audio context:', e);
+        }
         processorRef.current = null;
         sourceRef.current = null;
         audioContextRef.current = null;
         pcmChunksRef.current = [];
+        mediaRecorderRef.current = null;
+        chunksRef.current = [];
       };
 
       mediaRecorder.start(5000); // Record in 5-second chunks
@@ -279,15 +298,26 @@ export const useAudioRecorder = (meetingId: string) => {
   }, [normalizedMeetingId, toast]);
 
   const stopRecording = useCallback(() => {
+    console.log('Stop recording called, isRecording:', isRecording);
     if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsPaused(false);
-      
-      toast({
-        title: 'Recording stopped',
-        description: 'Transcription complete',
-      });
+      try {
+        // Ensure proper cleanup
+        if (mediaRecorderRef.current.state !== 'inactive') {
+          mediaRecorderRef.current.stop();
+        }
+        setIsRecording(false);
+        setIsPaused(false);
+        
+        toast({
+          title: 'Recording stopped',
+          description: 'Transcription complete',
+        });
+      } catch (e) {
+        console.error('Error stopping recording:', e);
+        // Force state update even if stop fails
+        setIsRecording(false);
+        setIsPaused(false);
+      }
     }
   }, [isRecording, toast]);
 
