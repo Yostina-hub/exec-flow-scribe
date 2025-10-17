@@ -1384,6 +1384,51 @@ export type Database = {
           },
         ]
       }
+      meeting_chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          meeting_id: string
+          role: string
+          sources: Json | null
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          meeting_id: string
+          role: string
+          sources?: Json | null
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          meeting_id?: string
+          role?: string
+          sources?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_chat_messages_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_chat_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_exhibits: {
         Row: {
           created_at: string | null
@@ -1527,6 +1572,57 @@ export type Database = {
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_sources: {
+        Row: {
+          content: string | null
+          created_at: string | null
+          file_url: string | null
+          id: string
+          meeting_id: string
+          metadata: Json | null
+          source_type: string
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          meeting_id: string
+          metadata?: Json | null
+          source_type: string
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string | null
+          file_url?: string | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json | null
+          source_type?: string
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_sources_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_sources_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -2310,6 +2406,54 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      studio_outputs: {
+        Row: {
+          content: Json
+          created_at: string | null
+          file_url: string | null
+          generated_by: string | null
+          id: string
+          meeting_id: string
+          output_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          file_url?: string | null
+          generated_by?: string | null
+          id?: string
+          meeting_id: string
+          output_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          file_url?: string | null
+          generated_by?: string | null
+          id?: string
+          meeting_id?: string
+          output_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_outputs_generated_by_fkey"
+            columns: ["generated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "studio_outputs_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       transcript_versions: {
         Row: {

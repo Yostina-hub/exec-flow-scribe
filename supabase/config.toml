@@ -86,3 +86,9 @@ verify_jwt = true
 
 [functions.query-meetings-ai]
 verify_jwt = true
+
+[functions.meeting-chat]
+verify_jwt = true
+
+[functions.generate-audio-overview]
+verify_jwt = true

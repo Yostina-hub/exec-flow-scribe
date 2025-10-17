@@ -31,6 +31,8 @@ import { LiveTranscription } from "@/components/LiveTranscription";
 import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
+import MeetingChatPanel from "@/components/MeetingChatPanel";
+import MeetingStudioPanel from "@/components/MeetingStudioPanel";
 import { RescheduleMeetingDialog } from "@/components/RescheduleMeetingDialog";
 import { ManageAttendeesDialog } from "@/components/ManageAttendeesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
@@ -346,12 +348,13 @@ const MeetingDetail = () => {
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="transcription" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
-          <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
-          <TabsTrigger value="advanced-intelligence">Advanced Intelligence</TabsTrigger>
+                <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="studio">Studio</TabsTrigger>
               </TabsList>
 
               <TabsContent value="transcription" className="space-y-4">
@@ -437,10 +440,13 @@ const MeetingDetail = () => {
                 <AIIntelligencePanel meetingId={meetingId} />
               </TabsContent>
 
-              <TabsContent value="advanced-intelligence" className="space-y-4">
-                <AdvancedIntelligencePanel meetingId={meetingId} userId={userId} />
+              <TabsContent value="chat" className="space-y-4">
+                <MeetingChatPanel meetingId={meetingId} />
               </TabsContent>
 
+              <TabsContent value="studio" className="space-y-4">
+                <MeetingStudioPanel meetingId={meetingId} />
+              </TabsContent>
             </Tabs>
           </div>
 
