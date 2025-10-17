@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,9 +17,10 @@ import {
   ClipboardPaste,
   BookOpen,
   ChevronDown,
+  ArrowLeft,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MeetingChatPanel from "@/components/MeetingChatPanel";
@@ -51,6 +51,7 @@ interface Notebook {
 
 const Notebook = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const meetingIdFromUrl = searchParams.get("meeting");
   const notebookIdFromUrl = searchParams.get("notebook");
@@ -300,20 +301,26 @@ const Notebook = () => {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-screen">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="h-[calc(100vh-4rem)] flex flex-col">
-        {/* Header */}
-        <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center justify-between p-4">
+    <div className="h-screen flex flex-col bg-background">
+      {/* Full-width Header */}
+      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate("/")}
+              className="shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -576,7 +583,7 @@ const Notebook = () => {
           loadNotebooks();
         }}
       />
-    </Layout>
+    </div>
   );
 };
 
