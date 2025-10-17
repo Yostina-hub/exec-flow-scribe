@@ -37,7 +37,7 @@ const Notebook = () => {
   const [searchParams] = useSearchParams();
   const meetingIdFromUrl = searchParams.get("meeting");
   const [sources, setSources] = useState<NotebookSource[]>([]);
-  const [selectedSource, setSelectedSource] = useState<string | null>(null);
+  const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
 
@@ -66,8 +66,8 @@ const Notebook = () => {
       if (error) throw error;
 
       setSources(data || []);
-      if (data && data.length > 0 && !selectedSource) {
-        setSelectedSource(data[0].id);
+      if (data && data.length > 0 && selectedSources.length === 0) {
+        setSelectedSources([data[0].id]);
       }
     } catch (error) {
       console.error("Error loading sources:", error);
@@ -110,7 +110,19 @@ const Notebook = () => {
         description: "Meeting has been added to your notebook",
       });
 
-      loadSources();
+      await loadSources();
+      
+      // Auto-select the newly added meeting - just select the most recent
+      const { data: latestSources } = await supabase
+        .from("notebook_sources")
+        .select("id")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      
+      if (latestSources && latestSources.length > 0) {
+        setSelectedSources([latestSources[0].id]);
+      }
     } catch (error) {
       console.error("Error adding meeting:", error);
     }
@@ -126,9 +138,7 @@ const Notebook = () => {
       if (error) throw error;
 
       setSources(sources.filter((s) => s.id !== id));
-      if (selectedSource === id) {
-        setSelectedSource(sources[0]?.id || null);
-      }
+      setSelectedSources(selectedSources.filter((s) => s !== id));
 
       toast({
         title: "Source removed",
@@ -142,6 +152,15 @@ const Notebook = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const toggleSourceSelection = (id: string) => {
+    setSelectedSources((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((s) => s !== id);
+      }
+      return [...prev, id];
+    });
   };
 
   const getSourceIcon = (sourceType: string) => {
@@ -163,6 +182,21 @@ const Notebook = () => {
         return <FileText className="h-3 w-3 text-primary" />;
       default:
         return <FileText className="h-3 w-3" />;
+    }
+  };
+
+  const handleSourceAdded = async () => {
+    await loadSources();
+    // Auto-select the most recently added source
+    const { data } = await supabase
+      .from("notebook_sources")
+      .select("id")
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+    
+    if (data) {
+      setSelectedSources([data.id]);
     }
   };
 
@@ -195,7 +229,7 @@ const Notebook = () => {
             </div>
             <Badge variant="secondary" className="gap-1">
               <FileText className="h-3 w-3" />
-              {sources.length} {sources.length === 1 ? "source" : "sources"}
+              {selectedSources.length} {selectedSources.length === 1 ? "source" : "sources"} selected
             </Badge>
           </div>
         </div>
@@ -242,11 +276,11 @@ const Notebook = () => {
                       <Card
                         key={source.id}
                         className={`p-3 cursor-pointer transition-all hover:shadow-md ${
-                          selectedSource === source.id
+                          selectedSources.includes(source.id)
                             ? "border-primary bg-primary/5"
                             : ""
                         }`}
-                        onClick={() => setSelectedSource(source.id)}
+                        onClick={() => toggleSourceSelection(source.id)}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
@@ -282,7 +316,7 @@ const Notebook = () => {
 
           {/* Center Panel - Chat */}
           <div className="col-span-5 flex flex-col">
-            {!selectedSource ? (
+            {selectedSources.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md px-4">
                   <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
@@ -305,15 +339,29 @@ const Notebook = () => {
             ) : (
               <div className="flex-1 flex flex-col">
                 <div className="border-b p-4">
-                  <h2 className="font-semibold text-lg mb-1">
-                    {sources.find(s => s.id === selectedSource)?.title}
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    {sources.length} {sources.length === 1 ? 'source' : 'sources'} selected
-                  </p>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="font-semibold text-lg">
+                      {selectedSources.length === 1
+                        ? sources.find(s => s.id === selectedSources[0])?.title
+                        : `${selectedSources.length} sources selected`}
+                    </h2>
+                  </div>
+                  {selectedSources.length > 1 && (
+                    <div className="flex flex-wrap gap-2">
+                      {selectedSources.map(sourceId => {
+                        const source = sources.find(s => s.id === sourceId);
+                        return source ? (
+                          <Badge key={sourceId} variant="secondary" className="gap-1">
+                            {getSourceIcon(source.source_type)}
+                            <span className="text-xs">{source.title}</span>
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <MeetingChatPanel meetingId={selectedSource} />
+                  <MeetingChatPanel meetingId={selectedSources[0]} />
                 </div>
               </div>
             )}
@@ -331,7 +379,7 @@ const Notebook = () => {
               </p>
             </div>
             <ScrollArea className="flex-1">
-              {!selectedSource ? (
+              {selectedSources.length === 0 ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center space-y-4 max-w-sm px-4">
                     <Sparkles className="h-12 w-12 mx-auto text-muted-foreground" />
@@ -347,7 +395,7 @@ const Notebook = () => {
                 </div>
               ) : (
                 <div className="p-4">
-                  <MeetingStudioPanel meetingId={selectedSource} />
+                  <MeetingStudioPanel meetingId={selectedSources[0]} />
                 </div>
               )}
             </ScrollArea>
@@ -358,7 +406,7 @@ const Notebook = () => {
       <AddSourceDialog
         open={showAddSourceDialog}
         onOpenChange={setShowAddSourceDialog}
-        onSourceAdded={loadSources}
+        onSourceAdded={handleSourceAdded}
       />
     </Layout>
   );
