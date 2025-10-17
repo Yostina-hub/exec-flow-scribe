@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const { meetings } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
     // Prepare meeting data for AI analysis
@@ -37,87 +37,56 @@ ${JSON.stringify(meetingsSummary, null, 2)}
 
 Format your response as JSON with keys: summary, patterns (array), suggestions (array)`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an executive meeting analyst. Provide concise, actionable insights.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "provide_meeting_insights",
-              description: "Provide structured insights about meetings",
-              parameters: {
-                type: "object",
-                properties: {
-                  summary: {
-                    type: "string",
-                    description: "Brief executive summary of meeting patterns"
-                  },
-                  patterns: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Key patterns noticed in the meetings"
-                  },
-                  suggestions: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Actionable suggestions for improvement"
-                  }
-                },
-                required: ["summary", "patterns", "suggestions"],
-                additionalProperties: false
+        contents: [{
+          parts: [{
+            text: `You are an executive meeting analyst. Provide concise, actionable insights.\n\n${prompt}\n\nRespond with valid JSON only, no markdown formatting.`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.8,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              summary: {
+                type: "string",
+                description: "Brief executive summary of meeting patterns"
+              },
+              patterns: {
+                type: "array",
+                items: { type: "string" },
+                description: "Key patterns noticed in the meetings"
+              },
+              suggestions: {
+                type: "array",
+                items: { type: "string" },
+                description: "Actionable suggestions for improvement"
               }
-            }
+            },
+            required: ["summary", "patterns", "suggestions"]
           }
-        ],
-        tool_choice: { type: "function", function: { name: "provide_meeting_insights" } }
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ 
-            error: "payment_required",
-            message: "Not enough credits. Please add credits to your Lovable workspace to use AI features.",
-            summary: "Unable to analyze meetings due to insufficient credits.",
-            patterns: [],
-            suggestions: []
-          }), 
-          {
-            status: 402,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-      
-      throw new Error(`AI API request failed: ${response.status}`);
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    console.log('AI response:', JSON.stringify(data, null, 2));
+    console.log('Gemini response:', JSON.stringify(data, null, 2));
 
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const insights = toolCall?.function?.arguments 
-      ? JSON.parse(toolCall.function.arguments)
+    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const insights = textContent 
+      ? JSON.parse(textContent)
       : { 
           summary: "Unable to generate insights at this time.",
           patterns: [],

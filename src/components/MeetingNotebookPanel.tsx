@@ -56,18 +56,7 @@ export const MeetingNotebookPanel = ({ meetings }: MeetingNotebookPanelProps) =>
         body: { meetings: meetings.slice(0, 20) } // Limit to recent 20 meetings
       });
 
-      if (response.error) {
-        // Check if it's a payment required error
-        if (response.error.message?.includes('payment_required') || response.error.message?.includes('credits')) {
-          toast({
-            title: "Credits Required",
-            description: "You need to add credits to your Lovable workspace to use AI features. Go to Settings → Workspace → Usage.",
-            variant: "destructive"
-          });
-          return;
-        }
-        throw response.error;
-      }
+      if (response.error) throw response.error;
 
       const data = response.data;
 
@@ -127,18 +116,7 @@ export const MeetingNotebookPanel = ({ meetings }: MeetingNotebookPanelProps) =>
         }
       });
 
-      if (response.error) {
-        // Check if it's a payment required error
-        if (response.error.message?.includes('payment_required') || response.error.message?.includes('credits')) {
-          toast({
-            title: "Credits Required",
-            description: "You need to add credits to your Lovable workspace to use AI features. Go to Settings → Workspace → Usage.",
-            variant: "destructive"
-          });
-          return;
-        }
-        throw response.error;
-      }
+      if (response.error) throw response.error;
 
       const data = response.data;
 

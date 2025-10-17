@@ -12,10 +12,10 @@ serve(async (req) => {
 
   try {
     const { query, meetings } = await req.json();
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
 
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY not configured');
+    if (!GEMINI_API_KEY) {
+      throw new Error('GEMINI_API_KEY not configured');
     }
 
     // Prepare meeting context
@@ -37,35 +37,31 @@ User question: ${query}
 
 Provide a clear, direct answer in 2-4 sentences.`;
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful meeting assistant. Answer questions about meetings clearly and concisely.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ]
+        contents: [{
+          parts: [{
+            text: `You are a helpful meeting assistant. Answer questions about meetings clearly and concisely.\n\n${prompt}`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API request failed: ${response.status}`);
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API request failed: ${response.status}`);
     }
 
     const data = await response.json();
-    const answer = data.choices?.[0]?.message?.content || "I couldn't find relevant information for your query.";
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || "I couldn't find relevant information for your query.";
 
     return new Response(JSON.stringify({ answer }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
