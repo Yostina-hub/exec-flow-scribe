@@ -2,86 +2,78 @@ import { Layout } from "@/components/Layout";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
   Plus,
-  Search,
   FileText,
-  Volume2,
-  Brain,
-  BookOpen,
-  HelpCircle,
   MessageSquare,
   X,
-  Calendar,
   Loader2,
   Sparkles,
+  File,
+  Link as LinkIcon,
+  Music,
+  Globe,
+  Youtube,
+  ClipboardPaste,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import MeetingChatPanel from "@/components/MeetingChatPanel";
 import MeetingStudioPanel from "@/components/MeetingStudioPanel";
-import { Input } from "@/components/ui/input";
+import { AddSourceDialog } from "@/components/AddSourceDialog";
 
-interface MeetingSource {
+interface NotebookSource {
   id: string;
   title: string;
-  date: string;
-  status: string;
+  source_type: string;
+  created_at: string;
 }
 
 const Notebook = () => {
   const { toast } = useToast();
   const [searchParams] = useSearchParams();
   const meetingIdFromUrl = searchParams.get("meeting");
-  const [sources, setSources] = useState<MeetingSource[]>([]);
-  const [selectedMeeting, setSelectedMeeting] = useState<string | null>(null);
+  const [sources, setSources] = useState<NotebookSource[]>([]);
+  const [selectedSource, setSelectedSource] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [availableMeetings, setAvailableMeetings] = useState<MeetingSource[]>([]);
-  const [showAddMeeting, setShowAddMeeting] = useState(false);
+  const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
 
   useEffect(() => {
-    loadMeetings();
+    loadSources();
   }, []);
 
   useEffect(() => {
     // Auto-add meeting if URL parameter is present
-    if (meetingIdFromUrl && availableMeetings.length > 0) {
-      const meeting = availableMeetings.find(m => m.id === meetingIdFromUrl);
-      if (meeting && !sources.find(s => s.id === meeting.id)) {
-        addSource(meeting);
-      }
+    if (meetingIdFromUrl) {
+      addMeetingAsSource(meetingIdFromUrl);
     }
-  }, [meetingIdFromUrl, availableMeetings]);
+  }, [meetingIdFromUrl]);
 
-  const loadMeetings = async () => {
+  const loadSources = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
       const { data, error } = await supabase
-        .from("meetings")
-        .select("id, title, start_time, status")
-        .order("start_time", { ascending: false })
-        .limit(20);
+        .from("notebook_sources")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
 
       if (error) throw error;
 
-      const formatted = data?.map((m) => ({
-        id: m.id,
-        title: m.title,
-        date: new Date(m.start_time).toLocaleDateString(),
-        status: m.status,
-      })) || [];
-
-      setAvailableMeetings(formatted);
+      setSources(data || []);
+      if (data && data.length > 0 && !selectedSource) {
+        setSelectedSource(data[0].id);
+      }
     } catch (error) {
-      console.error("Error loading meetings:", error);
+      console.error("Error loading sources:", error);
       toast({
         title: "Error",
-        description: "Failed to load meetings",
+        description: "Failed to load sources",
         variant: "destructive",
       });
     } finally {
@@ -89,32 +81,90 @@ const Notebook = () => {
     }
   };
 
-  const addSource = (meeting: MeetingSource) => {
-    if (!sources.find((s) => s.id === meeting.id)) {
-      setSources([...sources, meeting]);
-      if (!selectedMeeting) {
-        setSelectedMeeting(meeting.id);
-      }
+  const addMeetingAsSource = async (meetingId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: meeting } = await supabase
+        .from("meetings")
+        .select("id, title")
+        .eq("id", meetingId)
+        .single();
+
+      if (!meeting) return;
+
+      const { error } = await supabase
+        .from("notebook_sources")
+        .insert({
+          user_id: user.id,
+          source_type: "meeting",
+          title: meeting.title,
+          metadata: { meeting_id: meetingId },
+        });
+
+      if (error) throw error;
+
       toast({
-        title: "Source Added",
-        description: `${meeting.title} has been added to your notebook`,
+        title: "Meeting added",
+        description: "Meeting has been added to your notebook",
+      });
+
+      loadSources();
+    } catch (error) {
+      console.error("Error adding meeting:", error);
+    }
+  };
+
+  const removeSource = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("notebook_sources")
+        .delete()
+        .eq("id", id);
+
+      if (error) throw error;
+
+      setSources(sources.filter((s) => s.id !== id));
+      if (selectedSource === id) {
+        setSelectedSource(sources[0]?.id || null);
+      }
+
+      toast({
+        title: "Source removed",
+        description: "Source has been removed from your notebook",
+      });
+    } catch (error) {
+      console.error("Error removing source:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove source",
+        variant: "destructive",
       });
     }
-    setShowAddMeeting(false);
   };
 
-  const removeSource = (id: string) => {
-    setSources(sources.filter((s) => s.id !== id));
-    if (selectedMeeting === id) {
-      setSelectedMeeting(sources[0]?.id || null);
+  const getSourceIcon = (sourceType: string) => {
+    switch (sourceType) {
+      case "pdf":
+        return <File className="h-3 w-3 text-red-500" />;
+      case "text":
+      case "markdown":
+        return <FileText className="h-3 w-3 text-blue-500" />;
+      case "audio":
+        return <Music className="h-3 w-3 text-purple-500" />;
+      case "website":
+        return <Globe className="h-3 w-3 text-green-500" />;
+      case "youtube":
+        return <Youtube className="h-3 w-3 text-red-600" />;
+      case "pasted_text":
+        return <ClipboardPaste className="h-3 w-3 text-orange-500" />;
+      case "meeting":
+        return <FileText className="h-3 w-3 text-primary" />;
+      default:
+        return <FileText className="h-3 w-3" />;
     }
   };
-
-  const filteredMeetings = availableMeetings.filter(
-    (m) =>
-      m.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !sources.find((s) => s.id === m.id)
-  );
 
   if (loading) {
     return (
@@ -159,72 +209,20 @@ const Notebook = () => {
                 <FileText className="h-4 w-4" />
                 Sources
               </h2>
-              <div className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  onClick={() => setShowAddMeeting(!showAddMeeting)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Add Meeting
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start gap-2"
-                  disabled
-                >
-                  <Search className="h-4 w-4" />
-                  Discover
-                </Button>
-              </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-2"
+                onClick={() => setShowAddSourceDialog(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Add
+              </Button>
+              <p className="text-xs text-muted-foreground mt-2">
+                {sources.length} / 50 sources
+              </p>
             </div>
 
             <ScrollArea className="flex-1">
-              {/* Add Meeting Search */}
-              {showAddMeeting && (
-                <div className="p-4 bg-background border-b space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium text-sm">Add Meeting Source</h3>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={() => setShowAddMeeting(false)}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <Input
-                    placeholder="Search meetings..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    {filteredMeetings.map((meeting) => (
-                      <Button
-                        key={meeting.id}
-                        variant="ghost"
-                        className="w-full justify-start text-left h-auto py-2"
-                        onClick={() => addSource(meeting)}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">
-                            {meeting.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {meeting.date}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
-                    {filteredMeetings.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        No meetings found
-                      </p>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Sources List */}
               <div className="p-4">
@@ -244,18 +242,18 @@ const Notebook = () => {
                       <Card
                         key={source.id}
                         className={`p-3 cursor-pointer transition-all hover:shadow-md ${
-                          selectedMeeting === source.id
+                          selectedSource === source.id
                             ? "border-primary bg-primary/5"
                             : ""
                         }`}
-                        onClick={() => setSelectedMeeting(source.id)}
+                        onClick={() => setSelectedSource(source.id)}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-                              <p className="text-xs text-muted-foreground">
-                                {source.date}
+                              {getSourceIcon(source.source_type)}
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {source.source_type.replace("_", " ")}
                               </p>
                             </div>
                             <p className="text-sm font-medium line-clamp-2">
@@ -284,7 +282,7 @@ const Notebook = () => {
 
           {/* Center Panel - Chat */}
           <div className="col-span-5 flex flex-col">
-            {!selectedMeeting ? (
+            {!selectedSource ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md px-4">
                   <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
@@ -295,12 +293,12 @@ const Notebook = () => {
                       Add a source to get started
                     </h2>
                     <p className="text-sm text-muted-foreground">
-                      Add meetings from the Sources panel to analyze them with AI
+                      Add documents, links, or text to analyze them with AI
                     </p>
                   </div>
-                  <Button onClick={() => setShowAddMeeting(true)}>
+                  <Button onClick={() => setShowAddSourceDialog(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add Meeting Source
+                    Add Source
                   </Button>
                 </div>
               </div>
@@ -308,14 +306,14 @@ const Notebook = () => {
               <div className="flex-1 flex flex-col">
                 <div className="border-b p-4">
                   <h2 className="font-semibold text-lg mb-1">
-                    {availableMeetings.find(m => m.id === selectedMeeting)?.title}
+                    {sources.find(s => s.id === selectedSource)?.title}
                   </h2>
                   <p className="text-xs text-muted-foreground">
                     {sources.length} {sources.length === 1 ? 'source' : 'sources'} selected
                   </p>
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <MeetingChatPanel meetingId={selectedMeeting} />
+                  <MeetingChatPanel meetingId={selectedSource} />
                 </div>
               </div>
             )}
@@ -333,48 +331,35 @@ const Notebook = () => {
               </p>
             </div>
             <ScrollArea className="flex-1">
-              {!selectedMeeting ? (
+              {!selectedSource ? (
                 <div className="flex items-center justify-center h-full">
                   <div className="text-center space-y-4 max-w-sm px-4">
-                    <Volume2 className="h-12 w-12 mx-auto text-muted-foreground" />
+                    <Sparkles className="h-12 w-12 mx-auto text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium mb-2">
                         Studio Features
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        After adding sources, generate audio overviews, mind
-                        maps, reports, and more
+                        After adding sources, generate audio overviews, study guides, briefings, and more
                       </p>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 pt-4">
-                      <div className="p-3 bg-background rounded-lg">
-                        <Volume2 className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-xs text-center">Audio Overview</p>
-                      </div>
-                      <div className="p-3 bg-background rounded-lg">
-                        <Brain className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-xs text-center">Mind Map</p>
-                      </div>
-                      <div className="p-3 bg-background rounded-lg">
-                        <FileText className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-xs text-center">Reports</p>
-                      </div>
-                      <div className="p-3 bg-background rounded-lg">
-                        <BookOpen className="h-6 w-6 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-xs text-center">Flashcards</p>
-                      </div>
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="p-4">
-                  <MeetingStudioPanel meetingId={selectedMeeting} />
+                  <MeetingStudioPanel meetingId={selectedSource} />
                 </div>
               )}
             </ScrollArea>
           </div>
         </div>
       </div>
+
+      <AddSourceDialog
+        open={showAddSourceDialog}
+        onOpenChange={setShowAddSourceDialog}
+        onSourceAdded={loadSources}
+      />
     </Layout>
   );
 };

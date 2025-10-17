@@ -1875,6 +1875,45 @@ export type Database = {
           },
         ]
       }
+      notebook_sources: {
+        Row: {
+          content: string | null
+          created_at: string
+          external_url: string | null
+          file_url: string | null
+          id: string
+          metadata: Json | null
+          source_type: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          metadata?: Json | null
+          source_type: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          external_url?: string | null
+          file_url?: string | null
+          id?: string
+          metadata?: Json | null
+          source_type?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_log: {
         Row: {
           action_id: string | null
