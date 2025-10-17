@@ -17,7 +17,16 @@ serve(async (req) => {
       throw new Error('OPENAI_API_KEY is not set');
     }
 
-    console.log('Creating OpenAI Realtime session...');
+    // Get language from request body
+    const { language = 'en' } = await req.json().catch(() => ({ language: 'en' }));
+    console.log('Creating OpenAI Realtime session for language:', language);
+
+    // Create language-specific instructions
+    const instructions = language === 'am'
+      ? "You are a meeting transcription assistant for AMHARIC language. CRITICAL RULES FOR AMHARIC:\n1. ALWAYS write in Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)\n2. NEVER use Latin letters (a-z)\n3. NEVER transliterate or romanize\n4. Example correct: 'ሰላም ነው' NOT 'selam new'\n5. Identify speakers as ተናጋሪ 1, ተናጋሪ 2, etc.\n6. Maintain speaker consistency throughout.\n7. Include proper Amharic punctuation (።፣፤፥፦)."
+      : language === 'ar'
+      ? "You are a meeting transcription assistant for ARABIC language. CRITICAL: Always write in Arabic script (ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي). Never use Latin letters. Identify speakers as متحدث 1, متحدث 2, etc."
+      : "You are a meeting transcription assistant. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. Maintain speaker consistency throughout. Include proper punctuation.";
 
     // Request an ephemeral token from OpenAI
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -38,7 +47,7 @@ serve(async (req) => {
           prefix_padding_ms: 300,
           silence_duration_ms: 500
         },
-        instructions: "You are a meeting transcription assistant. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. Maintain speaker consistency throughout. Include proper punctuation."
+        instructions
       }),
     });
 

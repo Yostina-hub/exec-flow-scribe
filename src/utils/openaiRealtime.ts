@@ -195,11 +195,13 @@ export class OpenAIRealtimeClient {
   constructor(
     onTranscript: (text: string, speaker?: string) => void,
     onError: (error: string) => void,
-    onProcessingChange?: (isProcessing: boolean) => void
+    onProcessingChange?: (isProcessing: boolean) => void,
+    language: string = 'en'
   ) {
     this.onTranscript = onTranscript;
     this.onError = onError;
     this.onProcessingChange = onProcessingChange;
+    this.sessionLanguage = language;
     this.audioEl = document.createElement("audio");
     this.audioEl.autoplay = true;
   }
@@ -207,10 +209,12 @@ export class OpenAIRealtimeClient {
   async connect(meetingId: string) {
     this.currentMeetingId = meetingId;
     try {
-      console.log('Getting ephemeral token...');
+      console.log('Getting ephemeral token for language:', this.sessionLanguage);
       
-      // Get ephemeral token from our edge function
-      const { data, error } = await supabase.functions.invoke('openai-realtime-token');
+      // Get ephemeral token from our edge function with language
+      const { data, error } = await supabase.functions.invoke('openai-realtime-token', {
+        body: { language: this.sessionLanguage }
+      });
       
       if (error || !data?.client_secret?.value) {
         throw new Error(error?.message || 'Failed to get ephemeral token');
@@ -252,11 +256,17 @@ export class OpenAIRealtimeClient {
           
           // Send session update to enable transcription
           if (this.dc && this.dc.readyState === 'open') {
+            const instructions = this.sessionLanguage === 'am'
+              ? "You are a silent meeting transcription system for AMHARIC language. CRITICAL RULES FOR AMHARIC:\n1. ALWAYS write in Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)\n2. NEVER use Latin letters (a-z)\n3. NEVER transliterate or romanize\n4. Example correct: 'ሰላም ነው' NOT 'selam new'\n5. Identify speakers as ተናጋሪ 1, ተናጋሪ 2, etc.\n6. Include proper Amharic punctuation (።፣፤፥፦)\n7. DO NOT respond or speak back. Only transcribe silently."
+              : this.sessionLanguage === 'ar'
+              ? "You are a silent meeting transcription system for ARABIC language. CRITICAL: Always write in Arabic script (ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي). Never use Latin letters. Identify speakers as متحدث 1, متحدث 2, etc. DO NOT respond or speak back. Only transcribe silently."
+              : "You are a silent meeting transcription system. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. DO NOT respond or speak back. Only transcribe silently.";
+            
             this.dc.send(JSON.stringify({
               type: "session.update",
               session: {
                 modalities: ["text"],
-                instructions: "You are a silent meeting transcription system. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. DO NOT respond or speak back. Only transcribe silently.",
+                instructions,
                 input_audio_format: "pcm16",
                 input_audio_transcription: {
                   model: "whisper-1"
@@ -270,7 +280,7 @@ export class OpenAIRealtimeClient {
                 }
               }
             }));
-            console.log('Session configuration sent with optimized VAD settings');
+            console.log('Session configuration sent with language:', this.sessionLanguage, 'instructions length:', instructions.length);
           }
         } else if (event.type === 'session.updated') {
           console.log('Session updated successfully');
