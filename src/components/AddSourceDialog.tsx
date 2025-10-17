@@ -21,9 +21,10 @@ interface AddSourceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSourceAdded: (ids: string[]) => void;
+  notebookId: string | null;
 }
 
-export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSourceDialogProps) => {
+export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded, notebookId }: AddSourceDialogProps) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [fileUploadProgress, setFileUploadProgress] = useState(0);
@@ -64,6 +65,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
             source_type: sourceType,
             title: file.name,
             content,
+            notebook_id: notebookId,
             metadata: {
               file_size: file.size,
               file_type: file.type,
@@ -114,6 +116,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
           source_type: sourceType,
           title: linkUrl,
           external_url: linkUrl,
+          notebook_id: notebookId,
           metadata: { url: linkUrl },
         })
         .select("id")
@@ -156,6 +159,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
           source_type: "pasted_text",
           title: pastedTitle,
           content: pastedText,
+          notebook_id: notebookId,
         })
         .select("id")
         .single();

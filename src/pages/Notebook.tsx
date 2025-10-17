@@ -16,6 +16,8 @@ import {
   Globe,
   Youtube,
   ClipboardPaste,
+  BookOpen,
+  ChevronDown,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -24,6 +26,14 @@ import { supabase } from "@/integrations/supabase/client";
 import MeetingChatPanel from "@/components/MeetingChatPanel";
 import MeetingStudioPanel from "@/components/MeetingStudioPanel";
 import { AddSourceDialog } from "@/components/AddSourceDialog";
+import { CreateNotebookDialog } from "@/components/CreateNotebookDialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface NotebookSource {
   id: string;
@@ -32,18 +42,36 @@ interface NotebookSource {
   created_at: string;
 }
 
+interface Notebook {
+  id: string;
+  title: string;
+  description: string | null;
+  created_at: string;
+}
+
 const Notebook = () => {
   const { toast } = useToast();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const meetingIdFromUrl = searchParams.get("meeting");
+  const notebookIdFromUrl = searchParams.get("notebook");
+  
+  const [notebooks, setNotebooks] = useState<Notebook[]>([]);
+  const [currentNotebook, setCurrentNotebook] = useState<string | null>(null);
   const [sources, setSources] = useState<NotebookSource[]>([]);
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
+  const [showCreateNotebookDialog, setShowCreateNotebookDialog] = useState(false);
 
   useEffect(() => {
-    loadSources();
+    loadNotebooks();
   }, []);
+
+  useEffect(() => {
+    if (currentNotebook) {
+      loadSources();
+    }
+  }, [currentNotebook]);
 
   useEffect(() => {
     // Auto-add meeting if URL parameter is present
@@ -52,7 +80,71 @@ const Notebook = () => {
     }
   }, [meetingIdFromUrl]);
 
+  const loadNotebooks = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const { data, error } = await supabase
+        .from("notebooks")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setNotebooks(data || []);
+      
+      // Set current notebook from URL or first notebook
+      if (notebookIdFromUrl && data?.some(n => n.id === notebookIdFromUrl)) {
+        setCurrentNotebook(notebookIdFromUrl);
+      } else if (data && data.length > 0) {
+        setCurrentNotebook(data[0].id);
+        setSearchParams({ notebook: data[0].id });
+      } else {
+        // No notebooks exist - create a default one
+        await createDefaultNotebook();
+      }
+    } catch (error) {
+      console.error("Error loading notebooks:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load notebooks",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const createDefaultNotebook = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("notebooks")
+        .insert({
+          user_id: user.id,
+          title: "My First Notebook",
+          description: "Getting started with Meeting Notebook",
+        })
+        .select("id")
+        .single();
+
+      if (error) throw error;
+
+      setCurrentNotebook(data.id);
+      setSearchParams({ notebook: data.id });
+      await loadNotebooks();
+    } catch (error) {
+      console.error("Error creating default notebook:", error);
+    }
+  };
+
   const loadSources = async () => {
+    if (!currentNotebook) return;
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -61,6 +153,7 @@ const Notebook = () => {
         .from("notebook_sources")
         .select("*")
         .eq("user_id", user.id)
+        .eq("notebook_id", currentNotebook)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -76,8 +169,6 @@ const Notebook = () => {
         description: "Failed to load sources",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -186,6 +277,8 @@ const Notebook = () => {
   };
 
   const handleSourceAdded = async (ids?: string[]) => {
+    if (!currentNotebook) return;
+    
     await loadSources();
     if (ids && ids.length > 0) {
       setSelectedSources(ids);
@@ -195,6 +288,7 @@ const Notebook = () => {
     const { data } = await supabase
       .from("notebook_sources")
       .select("id")
+      .eq("notebook_id", currentNotebook)
       .order("created_at", { ascending: false })
       .limit(1)
       .single();
@@ -221,15 +315,49 @@ const Notebook = () => {
         <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Meeting Notebook</h1>
-                <p className="text-sm text-muted-foreground">
-                  Analyze and explore your meetings with AI
-                </p>
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2">
+                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                      <BookOpen className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <h1 className="text-2xl font-bold">
+                        {notebooks.find(n => n.id === currentNotebook)?.title || "Meeting Notebook"}
+                      </h1>
+                      <p className="text-sm text-muted-foreground">
+                        Analyze and explore your meetings with AI
+                      </p>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-64">
+                  {notebooks.map((notebook) => (
+                    <DropdownMenuItem
+                      key={notebook.id}
+                      onClick={() => {
+                        setCurrentNotebook(notebook.id);
+                        setSearchParams({ notebook: notebook.id });
+                        setSelectedSources([]);
+                      }}
+                      className={currentNotebook === notebook.id ? "bg-accent" : ""}
+                    >
+                      <div className="flex-1">
+                        <div className="font-medium">{notebook.title}</div>
+                        {notebook.description && (
+                          <div className="text-xs text-muted-foreground">{notebook.description}</div>
+                        )}
+                      </div>
+                    </DropdownMenuItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Create New Notebook
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <Badge variant="secondary" className="gap-1">
               <FileText className="h-3 w-3" />
@@ -436,6 +564,17 @@ const Notebook = () => {
         open={showAddSourceDialog}
         onOpenChange={setShowAddSourceDialog}
         onSourceAdded={handleSourceAdded}
+        notebookId={currentNotebook}
+      />
+      
+      <CreateNotebookDialog
+        open={showCreateNotebookDialog}
+        onOpenChange={setShowCreateNotebookDialog}
+        onNotebookCreated={(notebookId) => {
+          setCurrentNotebook(notebookId);
+          setSearchParams({ notebook: notebookId });
+          loadNotebooks();
+        }}
       />
     </Layout>
   );

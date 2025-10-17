@@ -1883,6 +1883,7 @@ export type Database = {
           file_url: string | null
           id: string
           metadata: Json | null
+          notebook_id: string | null
           source_type: string
           title: string
           updated_at: string
@@ -1895,6 +1896,7 @@ export type Database = {
           file_url?: string | null
           id?: string
           metadata?: Json | null
+          notebook_id?: string | null
           source_type: string
           title: string
           updated_at?: string
@@ -1907,9 +1909,45 @@ export type Database = {
           file_url?: string | null
           id?: string
           metadata?: Json | null
+          notebook_id?: string | null
           source_type?: string
           title?: string
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_sources_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooks: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
