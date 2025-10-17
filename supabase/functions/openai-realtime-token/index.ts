@@ -21,12 +21,12 @@ serve(async (req) => {
     const { language = 'auto' } = await req.json().catch(() => ({ language: 'auto' }));
     console.log('Creating OpenAI Realtime session for language:', language);
 
-    // Create language-specific instructions
+    // Create language-specific instructions with explicit Amharic guidance
     const instructions = language === 'am'
-      ? "You are a meeting transcription assistant for AMHARIC. Always write in Ge'ez (አማርኛ). No Latin letters. No romanization. Identify speakers as ተናጋሪ 1, ተናጋሪ 2. Use proper punctuation (።፣፤፥፦)."
+      ? "CRITICAL: This is AMHARIC (አማርኛ) language, NOT ARABIC. You must transcribe using Ge'ez/Ethiopic script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ). NEVER use Arabic script (ا ب ت). Examples of Amharic: ሰላም, እንዴት ነህ, ጥሩ ነው. Use punctuation: ። Identify speakers as ተናጋሪ 1, ተናጋሪ 2."
       : language === 'ar'
       ? "You are a meeting transcription assistant for ARABIC. Always write in Arabic script. No romanization."
-      : "You are a meeting transcription assistant. Auto-detect language and SUPPORT CODE-SWITCHING between Amharic and English within the same utterance. Always use original scripts; for Amharic use Ge'ez, never Latin. Identify speakers (Speaker 1, Speaker 2). Do not answer, only transcribe.";
+      : "Auto-detect language. IMPORTANT: Distinguish Amharic (Ge'ez/Ethiopic script: ሀ ለ ሐ መ) from Arabic (Arabic script: ا ب ت). Use original scripts; for Amharic use Ge'ez, NOT Arabic. Support code-switching. Identify speakers (Speaker 1, Speaker 2). Only transcribe.";
 
     // Request an ephemeral token from OpenAI
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
@@ -40,7 +40,11 @@ serve(async (req) => {
         modalities: ["text"],
         instructions,
         input_audio_transcription: {
-          model: "whisper-1"
+          model: "whisper-1",
+          language: language && language !== 'auto' ? language : null,
+          prompt: language === 'am' 
+            ? "This is Amharic (አማርኛ) using Ge'ez/Ethiopic script, NOT Arabic. Common words: ሰላም እንዴት ጥሩ ነው"
+            : undefined
         },
         turn_detection: {
           type: "server_vad",
