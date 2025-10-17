@@ -119,12 +119,10 @@ export default function Index() {
 
       setWeekMeetings(allMeetingsData || []);
 
-      const { data: meetingsData } = await supabase
-        .from("meetings")
-        .select("*")
-        .eq("status", "scheduled")
-        .order("start_time", { ascending: true })
-        .limit(3);
+      // Derive today's meetings from the weekly dataset to avoid extra queries
+      const todaysMeetings = (allMeetingsData || [])
+        .filter((m: any) => isSameDay(new Date(m.start_time), new Date()))
+        .sort((a: any, b: any) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
       const { data: actionsData } = await supabase
         .from("action_items")
@@ -160,7 +158,7 @@ export default function Index() {
         };
       }));
 
-      setMeetings(meetingsData || []);
+      setMeetings(todaysMeetings || []);
       setActions(enrichedActions);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
@@ -176,7 +174,7 @@ export default function Index() {
     return format(date, "MMM d");
   };
 
-  const todayMeetingsCount = meetings.filter(m => isToday(new Date(m.start_time))).length;
+  const todayMeetingsCount = meetings.length;
   const pendingActionsCount = actions.length;
   
   // Get meetings for selected calendar date
