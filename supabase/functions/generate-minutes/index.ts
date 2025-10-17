@@ -119,6 +119,23 @@ serve(async (req) => {
       throw new Error("Failed to fetch decisions");
     }
 
+    // Detect language from transcriptions
+    const detectLanguage = (text: string): 'am' | 'ar' | 'en' | 'other' => {
+      if (!text) return 'en';
+      const ethiopicRegex = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]/;
+      const arabicRegex = /[\u0600-\u06FF]/;
+      
+      if (ethiopicRegex.test(text)) return 'am';
+      if (arabicRegex.test(text)) return 'ar';
+      return 'en';
+    };
+
+    const detectedLang = transcriptions && transcriptions.length > 0
+      ? detectLanguage(transcriptions.map(t => t.content).join(' ').substring(0, 500))
+      : 'en';
+    
+    console.log(`📍 Detected meeting language: ${detectedLang}`);
+
     // Combine all context
     const fullTranscript = transcriptions
       ?.map((t) => `${t.speaker_name || "Speaker"}: ${t.content}`)
@@ -131,6 +148,22 @@ serve(async (req) => {
     const decisionsList = decisions
       ?.map((d: any) => `- ${d.decision_text}`)
       .join("\n") || "";
+
+    // Create language-specific instructions
+    const languageInstruction = detectedLang === 'am'
+      ? `\n\nCRITICAL LANGUAGE REQUIREMENT - AMHARIC:
+You MUST generate the minutes in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ).
+NEVER use Latin letters (a-z) or romanization.
+Use proper Amharic punctuation (።፣፤፥፦).
+All headings, summaries, and content MUST be in Ge'ez script.
+Example heading: "## ስብሰባ ማጠቃለያ" NOT "## Meeting Summary"`
+      : detectedLang === 'ar'
+      ? `\n\nCRITICAL LANGUAGE REQUIREMENT - ARABIC:
+Generate the minutes in ARABIC using Arabic script.
+Never use Latin letters or romanization.`
+      : `\n\nGenerate the minutes in the SAME LANGUAGE as the transcript.
+If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
+Never romanize or transliterate non-Latin scripts.`;
 
     // Generate minutes using selected AI provider
     const prompt = `You are an executive assistant tasked with generating professional meeting minutes.
@@ -158,7 +191,7 @@ Please generate:
 3. Action items with assigned responsibilities (extract from transcript)
 4. Next steps and follow-up items
 
-Format the output as a professional meeting minutes document.`;
+Format the output as a professional meeting minutes document in markdown format.${languageInstruction}`;
 
     let minutes = "";
 
