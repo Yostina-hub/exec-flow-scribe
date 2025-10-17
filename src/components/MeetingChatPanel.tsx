@@ -80,8 +80,13 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
 
       if (error) throw error;
       setAutoSummary(data.summary);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating summary:", error);
+      toast({
+        title: "Unable to generate summary",
+        description: "Please add credits to your workspace to use AI features.",
+        variant: "destructive",
+      });
     } finally {
       setSummaryLoading(false);
     }
@@ -148,8 +153,9 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
       <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
         {messages.length === 0 ? (
           summaryLoading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Extracting summary from your sources...</p>
             </div>
           ) : autoSummary ? (
             <div className="space-y-4">
@@ -176,28 +182,17 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
                 <p className="text-sm whitespace-pre-wrap leading-relaxed">{autoSummary}</p>
               </div>
             </div>
+          ) : sourceIds && sourceIds.length > 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Processing your sources...</p>
+            </div>
           ) : (
             <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
               <MessageSquare className="h-12 w-12 text-muted-foreground" />
-              <div>
-                <p className="text-sm text-muted-foreground mb-4">
-                  Start a conversation about your meeting
-                </p>
-                <div className="space-y-2">
-                  <p className="text-xs font-medium">Try asking:</p>
-                  {suggestedQuestions.map((question, index) => (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      size="sm"
-                      className="w-full text-left justify-start"
-                      onClick={() => setQuery(question)}
-                    >
-                      {question}
-                    </Button>
-                  ))}
-                </div>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                Select sources to see an auto-generated summary
+              </p>
             </div>
           )
         ) : (
