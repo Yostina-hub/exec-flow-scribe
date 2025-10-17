@@ -52,11 +52,24 @@ export const MeetingNotebookPanel = ({ meetings }: MeetingNotebookPanelProps) =>
   const generateOverview = async () => {
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('generate-meeting-overview', {
+      const response = await supabase.functions.invoke('generate-meeting-overview', {
         body: { meetings: meetings.slice(0, 20) } // Limit to recent 20 meetings
       });
 
-      if (error) throw error;
+      if (response.error) {
+        // Check if it's a payment required error
+        if (response.error.message?.includes('payment_required') || response.error.message?.includes('credits')) {
+          toast({
+            title: "Credits Required",
+            description: "You need to add credits to your Lovable workspace to use AI features. Go to Settings → Workspace → Usage.",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw response.error;
+      }
+
+      const data = response.data;
 
       const newInsights: AIInsight[] = [
         {
@@ -107,14 +120,27 @@ export const MeetingNotebookPanel = ({ meetings }: MeetingNotebookPanelProps) =>
 
     setIsAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('query-meetings-ai', {
+      const response = await supabase.functions.invoke('query-meetings-ai', {
         body: { 
           query: query.trim(),
           meetings: meetings.slice(0, 20)
         }
       });
 
-      if (error) throw error;
+      if (response.error) {
+        // Check if it's a payment required error
+        if (response.error.message?.includes('payment_required') || response.error.message?.includes('credits')) {
+          toast({
+            title: "Credits Required",
+            description: "You need to add credits to your Lovable workspace to use AI features. Go to Settings → Workspace → Usage.",
+            variant: "destructive"
+          });
+          return;
+        }
+        throw response.error;
+      }
+
+      const data = response.data;
 
       setInsights(prev => [...prev, {
         type: "answer",
