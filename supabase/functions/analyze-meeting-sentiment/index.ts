@@ -62,7 +62,7 @@ serve(async (req) => {
       const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
+          Authorization: `Bearer ${geminiApiKey}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
