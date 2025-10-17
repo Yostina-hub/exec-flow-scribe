@@ -224,23 +224,48 @@ export const useAudioRecorder = (meetingId: string) => {
               reader.onloadend = async () => {
                 const base64Audio = (reader.result as string).split(',')[1];
                 
+                // Determine content type from the recorded blob
+                const contentType = event.data.type || 'audio/webm';
+                
+                console.log('Sending audio for transcription:', {
+                  language,
+                  contentType,
+                  size: event.data.size,
+                  meetingId: normalizedMeetingId
+                });
+                
                 try {
                   const { data, error } = await supabase.functions.invoke('transcribe-audio', {
                     body: { 
                       audioBase64: base64Audio, 
                       meetingId: normalizedMeetingId,
-                      language: language !== 'auto' ? language : undefined
+                      language: language || 'auto',
+                      contentType
                     }
                   });
 
-                  if (error) throw error;
+                  if (error) {
+                    console.error('Transcription error response:', error);
+                    throw error;
+                  }
                   
-                  console.log('Transcription:', data);
+                  console.log('Transcription successful:', {
+                    detectedLanguage: data?.detectedLanguage,
+                    confidenceScore: data?.confidenceScore,
+                    transcriptionLength: data?.transcription?.length
+                  });
+
+                  if (data?.transcription) {
+                    toast({
+                      title: 'Transcription received',
+                      description: `Language: ${data.detectedLanguage || 'auto'}`,
+                    });
+                  }
                 } catch (err: any) {
                   console.error('Transcription error:', err);
                   toast({
                     title: 'Transcription failed',
-                    description: 'Please ensure your transcription provider is configured correctly. ' + (err?.message || ''),
+                    description: err?.message || 'Please check your settings and try again',
                     variant: 'destructive',
                   });
                 }

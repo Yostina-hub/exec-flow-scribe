@@ -14,7 +14,15 @@ serve(async (req) => {
   }
 
     try {
-      const { audioBase64, meetingId, language, contentType } = await req.json();
+    const { audioBase64, meetingId, language, contentType } = await req.json();
+    
+    console.log('Transcription request received:', {
+      hasAudio: !!audioBase64,
+      meetingId,
+      language: language || 'auto',
+      contentType: contentType || 'audio/webm'
+    });
+    
     if (!audioBase64 || !meetingId) {
       throw new Error("Audio data and meeting ID are required");
     }
@@ -137,14 +145,26 @@ serve(async (req) => {
 
       // Prefer verbose output to read detected language and enforce script rules
       formData.append("response_format", "verbose_json");
-      formData.append(
-        "prompt",
-        "CRITICAL: Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only. Never romanize or use Arabic script for Amharic."
-      );
       
-      // Add language parameter if specified (not auto)
-      if (language && language !== "auto") {
+      // Special handling for Amharic
+      if (language === 'am') {
+        console.log('Amharic language specified - forcing Ge\'ez script');
+        formData.append("language", "am");
+        formData.append(
+          "prompt",
+          "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters for Amharic words."
+        );
+      } else if (language && language !== "auto") {
         formData.append("language", language);
+        formData.append(
+          "prompt",
+          "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
+        );
+      } else {
+        formData.append(
+          "prompt",
+          "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only. Never romanize or use Arabic script for Amharic."
+        );
       }
       
       const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -176,17 +196,28 @@ serve(async (req) => {
       // Handle both simple text and verbose_json formats
       transcriptText = transcriptionData.text || transcriptionData.transcript || "";
       detectedLanguage = transcriptionData.language || null;
+      
+      console.log('Initial transcription result:', {
+        detectedLanguage,
+        textLength: transcriptText.length,
+        firstChars: transcriptText.substring(0, 50)
+      });
+      
       const hasGeEz = /[\u1200-\u137F]/.test(transcriptText);
       const hasArabic = /[\u0600-\u06FF]/.test(transcriptText);
+      const hasLatin = /[a-zA-Z]/.test(transcriptText);
+      
+      console.log('Script detection:', { hasGeEz, hasArabic, hasLatin });
 
       // If detected Amharic but script isn't Ge'ez, force a retry in Amharic
-      if ((detectedLanguage === 'am' || hasArabic) && !hasGeEz) {
+      if ((detectedLanguage === 'am' || language === 'am' || hasArabic) && !hasGeEz) {
+        console.log('Amharic detected without Ge\'ez script - retrying with forced Amharic');
         const retryForm = new FormData();
         retryForm.append("file", audioBlob, filename);
         retryForm.append("model", "whisper-1");
         retryForm.append("language", "am");
         retryForm.append("response_format", "verbose_json");
-        retryForm.append("prompt", "Transcribe strictly in Amharic Ge'ez (Ethiopic) script (አማርኛ). Do not use Arabic or Latin characters.");
+        retryForm.append("prompt", "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters.");
 
         const retryResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
           method: "POST",
@@ -198,12 +229,21 @@ serve(async (req) => {
           const retryData = await retryResp.json();
           const retryText = retryData.text || retryData.transcript || "";
           const retryHasGeEz = /[\u1200-\u137F]/.test(retryText);
+          console.log('Retry result:', {
+            retryTextLength: retryText.length,
+            retryHasGeEz,
+            firstChars: retryText.substring(0, 50)
+          });
           if (retryHasGeEz && retryText) {
             transcriptText = retryText;
             detectedLanguage = 'am';
+            console.log('✅ Successfully retried with Ge\'ez script');
+          } else {
+            console.log('⚠️ Retry still did not produce Ge\'ez script');
           }
         } else {
-          console.warn("Amharic retry failed:", await retryResp.text());
+          const errorText = await retryResp.text();
+          console.error("Amharic retry failed:", retryResp.status, errorText);
         }
       }
     }
@@ -256,6 +296,7 @@ serve(async (req) => {
     }
 
     console.log(`✅ Transcription saved successfully (${detectedLanguage})`);
+    console.log('Final transcription preview:', transcriptText.substring(0, 100));
     
     return new Response(
       JSON.stringify({
