@@ -133,8 +133,8 @@ const Auth = () => {
 
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent hidden lg:block" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center lg:p-4">
-        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-0 lg:p-4">
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto">
           {/* Hero Section */}
           <div className="text-white space-y-8 animate-fade-in hidden lg:block">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-md border border-blue-400/40 shadow-lg shadow-blue-500/20">
@@ -172,35 +172,35 @@ const Auth = () => {
           </div>
 
           {/* Auth Card */}
-          <div className="animate-scale-in w-full lg:w-auto">
-            <Card className="border-cyan-200/50 bg-white/95 backdrop-blur-xl shadow-2xl shadow-cyan-500/20 lg:rounded-2xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center">
-              <CardHeader className="space-y-4 px-6 lg:px-6 pt-8 lg:pt-6">
-                <div className="flex items-center justify-center lg:justify-start gap-3">
-                  <div className="h-12 w-12 lg:h-14 lg:w-14 rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
-                    <Sparkles className="h-6 w-6 lg:h-7 lg:w-7 text-white" />
+          <div className="animate-scale-in w-full lg:w-auto h-full lg:h-auto">
+            <Card className="border-0 lg:border lg:border-cyan-200/50 bg-white/95 backdrop-blur-xl shadow-none lg:shadow-2xl lg:shadow-cyan-500/20 lg:rounded-2xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center py-8 lg:py-0">
+              <CardHeader className="space-y-3 lg:space-y-4 px-4 sm:px-6 pt-6 lg:pt-6 pb-4 lg:pb-6">
+                <div className="flex items-center justify-center lg:justify-start gap-2 lg:gap-3">
+                  <div className="h-10 w-10 lg:h-14 lg:w-14 rounded-lg lg:rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
+                    <Sparkles className="h-5 w-5 lg:h-7 lg:w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl lg:text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-gray-900 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
+                    <h1 className="text-xl lg:text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-gray-900 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
                       MeetingHub
                     </h1>
-                    <p className="text-xs lg:text-sm text-cyan-600 font-medium">Executive Suite</p>
+                    <p className="text-[10px] lg:text-sm text-cyan-600 font-medium">Executive Suite</p>
                   </div>
                 </div>
-                <CardDescription className="text-gray-600 font-medium text-center lg:text-left">
+                <CardDescription className="text-sm lg:text-base text-gray-600 font-medium text-center lg:text-left">
                   Access your AI-powered executive dashboard
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-6 lg:px-6 pb-8">
+              <CardContent className="px-4 sm:px-6 lg:px-6 pb-6 lg:pb-8">
                 <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200">
-                    <TabsTrigger value="signin" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-10 lg:h-auto">
+                    <TabsTrigger value="signin" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="signin" className="animate-fade-in">
-                    <form onSubmit={handleSignIn} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="text-gray-700 font-medium">Email</Label>
+                  <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
+                    <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
+                      <div className="space-y-1.5 lg:space-y-2">
+                        <Label htmlFor="email" className="text-sm lg:text-base text-gray-700 font-medium">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -208,23 +208,23 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
+                      <div className="space-y-1.5 lg:space-y-2">
+                        <Label htmlFor="password" className="text-sm lg:text-base text-gray-700 font-medium">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
+                        className="w-full h-11 lg:h-10 text-sm lg:text-base bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -233,10 +233,10 @@ const Auth = () => {
                     </form>
                   </TabsContent>
 
-                  <TabsContent value="signup" className="animate-fade-in">
-                    <form onSubmit={handleSignUp} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="fullname" className="text-gray-700 font-medium">Full Name</Label>
+                  <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
+                    <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
+                      <div className="space-y-1.5 lg:space-y-2">
+                        <Label htmlFor="fullname" className="text-sm lg:text-base text-gray-700 font-medium">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -244,22 +244,22 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="usertitle" className="text-gray-700 font-medium">Title</Label>
+                      <div className="space-y-1.5 lg:space-y-2">
+                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-gray-700 font-medium">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-email" className="text-gray-700 font-medium">Email</Label>
+                      <div className="space-y-1.5 lg:space-y-2">
+                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-gray-700 font-medium">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -267,23 +267,23 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="signup-password" className="text-gray-700 font-medium">Password</Label>
+                      <div className="space-y-1.5 lg:space-y-2">
+                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-gray-700 font-medium">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
+                        className="w-full h-11 lg:h-10 text-sm lg:text-base bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
