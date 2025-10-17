@@ -2,7 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Loader2, FileText } from "lucide-react";
+import { MessageSquare, Send, Loader2, FileText, Copy, Check } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +29,7 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
   const [loading, setLoading] = useState(false);
   const [autoSummary, setAutoSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -111,6 +112,16 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
     })) || []);
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(autoSummary || "");
+    setCopied(true);
+    toast({
+      title: "Copied to clipboard",
+      description: "Summary has been copied to your clipboard",
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim() || loading) return;
@@ -159,69 +170,69 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
               <p className="text-sm text-muted-foreground">Extracting summary from your sources...</p>
             </div>
           ) : autoSummary ? (
-            <div className="w-full max-w-5xl mx-auto space-y-4">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      {sourceTitles && sourceTitles.length === 1 
-                        ? sourceTitles[0].title 
-                        : `${sourceIds?.length || 0} sources`}
-                    </h3>
-                    {sourceTitles && sourceTitles.length > 1 && (
-                      <div className="flex gap-2 flex-wrap mt-1">
-                        {sourceTitles.map((source) => (
-                          <Badge key={source.id} variant="secondary" className="text-xs">
-                            {source.title}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
+            <div className="w-full max-w-5xl mx-auto space-y-6">
+              {/* Title Section */}
+              <div className="space-y-2">
+                <h2 className="text-2xl font-semibold text-foreground">
+                  Notebook guide
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <FileText className="h-4 w-4" />
+                  <span>{sourceIds?.length || 0} source{(sourceIds?.length || 0) !== 1 ? 's' : ''}</span>
+                </div>
+              </div>
+
+              {/* Sources Tags */}
+              {sourceTitles && sourceTitles.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {sourceTitles.map((source) => (
+                    <Badge 
+                      key={source.id} 
+                      variant="secondary" 
+                      className="text-xs px-3 py-1 hover:bg-secondary/80 transition-colors"
+                    >
+                      {source.title}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+
+              {/* Summary Card */}
+              <div className="relative group">
+                <div className="bg-muted/50 rounded-lg p-6 border hover:border-primary/50 transition-all duration-200">
+                  <div className="text-sm leading-relaxed text-foreground prose prose-sm max-w-none dark:prose-invert">
+                    <ReactMarkdown
+                      components={{
+                        strong: ({ children }) => (
+                          <strong className="font-semibold text-foreground">{children}</strong>
+                        ),
+                        p: ({ children }) => <p className="mb-0">{children}</p>,
+                      }}
+                    >
+                      {autoSummary}
+                    </ReactMarkdown>
                   </div>
                 </div>
+                
+                {/* Floating Copy Button */}
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(autoSummary);
-                    toast({
-                      title: "Copied to clipboard",
-                      description: "Summary has been copied to your clipboard",
-                    });
-                  }}
-                  className="flex items-center gap-2"
+                  onClick={handleCopy}
+                  className="absolute top-4 right-4 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background shadow-sm"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
-                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
-                  </svg>
-                  Copy
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" />
+                      Copied
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copy
+                    </>
+                  )}
                 </Button>
-              </div>
-              <div className="bg-muted/50 rounded-lg p-6 border">
-                <div className="text-sm leading-relaxed text-foreground prose prose-sm max-w-none dark:prose-invert">
-                  <ReactMarkdown
-                    components={{
-                      strong: ({ children }) => (
-                        <strong className="font-semibold text-foreground">{children}</strong>
-                      ),
-                      p: ({ children }) => <p className="mb-0">{children}</p>,
-                    }}
-                  >
-                    {autoSummary}
-                  </ReactMarkdown>
-                </div>
               </div>
             </div>
           ) : sourceIds && sourceIds.length > 0 ? (
