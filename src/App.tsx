@@ -21,6 +21,7 @@ import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
 import Notebook from "./pages/Notebook";
+import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
@@ -80,6 +81,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <MinutesEditor />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notebooks"
+            element={
+              <ProtectedRoute>
+                <NotebooksLibrary />
               </ProtectedRoute>
             }
           />
