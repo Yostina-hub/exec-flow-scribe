@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
-import { encode as b64encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,7 +45,7 @@ serve(async (req) => {
       .from("notebook_sources")
       .select("*")
       .eq("id", meetingId)
-      .single();
+      .maybeSingle();
 
     if (source) {
       // This is a notebook source
@@ -73,7 +72,7 @@ Make it conversational and engaging. Format as natural narration.`;
         .from("meetings")
         .select("*, agenda_items(*)")
         .eq("id", meetingId)
-        .single();
+        .maybeSingle();
 
       if (!meeting) {
         throw new Error("Meeting or source not found");
@@ -148,7 +147,14 @@ Format as natural dialogue.`;
     }
 
     const audioBuffer = await audioResponse.arrayBuffer();
-    const base64Audio = b64encode(audioBuffer);
+    const bytes = new Uint8Array(audioBuffer);
+    let binary = "";
+    const chunkSize = 0x8000; // avoid call stack overflow
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      const chunk = bytes.subarray(i, i + chunkSize);
+      binary += String.fromCharCode(...chunk);
+    }
+    const base64Audio = btoa(binary);
     // Save to database
     await supabase.from("studio_outputs").insert({
       meeting_id: entityId,
