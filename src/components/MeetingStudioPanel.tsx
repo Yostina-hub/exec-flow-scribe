@@ -1,14 +1,30 @@
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Volume2, BookOpen, FileText, HelpCircle, Play, Download, RefreshCw, Loader2, Clock, List } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+  Headphones,
+  FileText,
+  ArrowLeft,
+  Loader2,
+  BookOpen,
+  MessageSquare,
+  Clock,
+  List,
+  Video,
+  GitBranch,
+  BarChart3,
+  Layers,
+  Target,
+  Play,
+  Download,
+  Lock,
+} from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { useState, useRef } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { useState, useRef } from "react";
 
 interface MeetingStudioPanelProps {
   meetingId: string;
@@ -16,6 +32,7 @@ interface MeetingStudioPanelProps {
 
 const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
   const { toast } = useToast();
+  const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -34,6 +51,86 @@ const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
     timeline: false,
     toc: false,
   });
+
+  const studioFeatures = [
+    {
+      id: "audio",
+      title: "Audio Overview",
+      description: "AI-narrated podcast summary",
+      icon: Headphones,
+      available: true,
+    },
+    {
+      id: "video",
+      title: "Video Overview",
+      description: "Visual summary with narration",
+      icon: Video,
+      available: false,
+    },
+    {
+      id: "study",
+      title: "Study Guide",
+      description: "Key concepts and terms",
+      icon: BookOpen,
+      available: true,
+    },
+    {
+      id: "briefing",
+      title: "Briefing Document",
+      description: "Executive summary",
+      icon: FileText,
+      available: true,
+    },
+    {
+      id: "faq",
+      title: "FAQ",
+      description: "Questions and answers",
+      icon: MessageSquare,
+      available: true,
+    },
+    {
+      id: "timeline",
+      title: "Timeline",
+      description: "Chronological overview",
+      icon: Clock,
+      available: true,
+    },
+    {
+      id: "toc",
+      title: "Table of Contents",
+      description: "Document structure",
+      icon: List,
+      available: true,
+    },
+    {
+      id: "mindmap",
+      title: "Mind Map",
+      description: "Visual concept mapping",
+      icon: GitBranch,
+      available: false,
+    },
+    {
+      id: "reports",
+      title: "Reports",
+      description: "Detailed analysis",
+      icon: BarChart3,
+      available: false,
+    },
+    {
+      id: "flashcards",
+      title: "Flashcards",
+      description: "Study cards",
+      icon: Layers,
+      available: false,
+    },
+    {
+      id: "quiz",
+      title: "Quiz",
+      description: "Test your knowledge",
+      icon: Target,
+      available: false,
+    },
+  ];
 
   const generateAudioOverview = async () => {
     setIsGenerating(true);
@@ -128,7 +225,7 @@ const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
       });
       if (error) throw error;
       setTimeline(data.timeline);
-      toast({ title: "Timeline Generated", description: "Your meeting timeline is ready." });
+      toast({ title: "Timeline Generated", description: "Your timeline is ready." });
     } catch (error) {
       console.error("Error:", error);
       toast({ title: "Error", description: "Failed to generate timeline.", variant: "destructive" });
@@ -137,7 +234,7 @@ const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
     }
   };
 
-  const generateTableOfContents = async () => {
+  const generateTOC = async () => {
     setLoadingStates(prev => ({ ...prev, toc: true }));
     try {
       const { data, error } = await supabase.functions.invoke("generate-table-of-contents", {
@@ -145,13 +242,24 @@ const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
       });
       if (error) throw error;
       setToc(data.toc);
-      toast({ title: "Table of Contents Generated", description: "Your TOC is ready." });
+      toast({ title: "Table of Contents Generated", description: "Your table of contents is ready." });
     } catch (error) {
       console.error("Error:", error);
       toast({ title: "Error", description: "Failed to generate table of contents.", variant: "destructive" });
     } finally {
       setLoadingStates(prev => ({ ...prev, toc: false }));
     }
+  };
+
+  const handleFeatureClick = (featureId: string, available: boolean) => {
+    if (!available) {
+      toast({
+        title: "Coming Soon",
+        description: "This feature will be available in a future update.",
+      });
+      return;
+    }
+    setSelectedFeature(featureId);
   };
 
   const playAudio = () => {
@@ -168,392 +276,320 @@ const MeetingStudioPanel = ({ meetingId }: MeetingStudioPanelProps) => {
     }
   };
 
-  const studioFeatures = [
-    {
-      id: 'audio',
-      label: 'Audio Overview',
-      icon: Volume2,
-      description: 'AI-narrated podcast summary',
-      action: generateAudioOverview,
-      loading: isGenerating,
-      generated: !!audioUrl,
-      content: audioUrl,
-    },
-    {
-      id: 'study',
-      label: 'Study Guide',
-      icon: BookOpen,
-      description: 'Key concepts and terms',
-      action: generateStudyGuide,
-      loading: loadingStates.studyGuide,
-      generated: !!studyGuide,
-      content: studyGuide,
-    },
-    {
-      id: 'briefing',
-      label: 'Briefing Document',
-      icon: FileText,
-      description: 'Executive summary',
-      action: generateBriefing,
-      loading: loadingStates.briefing,
-      generated: !!briefing,
-      content: briefing,
-    },
-    {
-      id: 'faq',
-      label: 'FAQ',
-      icon: HelpCircle,
-      description: 'Questions and answers',
-      action: generateFAQ,
-      loading: loadingStates.faq,
-      generated: !!faq,
-      content: faq,
-    },
-    {
-      id: 'timeline',
-      label: 'Timeline',
-      icon: Clock,
-      description: 'Chronological events',
-      action: generateTimeline,
-      loading: loadingStates.timeline,
-      generated: !!timeline,
-      content: timeline,
-    },
-    {
-      id: 'toc',
-      label: 'Table of Contents',
-      icon: List,
-      description: 'Meeting structure',
-      action: generateTableOfContents,
-      loading: loadingStates.toc,
-      generated: !!toc,
-      content: toc,
-    },
-  ];
+  const downloadAudio = () => {
+    if (audioUrl) {
+      const a = document.createElement('a');
+      a.href = audioUrl;
+      a.download = `meeting-overview-${meetingId}.mp3`;
+      a.click();
+    }
+  };
 
-  const [selectedFeature, setSelectedFeature] = useState<string | null>(null);
+  if (selectedFeature) {
+    return (
+      <div className="p-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedFeature(null)}
+          className="mb-4"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Studio
+        </Button>
+
+        {/* Audio Overview Detail */}
+        {selectedFeature === "audio" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Audio Overview</h3>
+            {!audioUrl ? (
+              <Button
+                onClick={generateAudioOverview}
+                disabled={isGenerating}
+                className="w-full"
+              >
+                {isGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Audio Overview"
+                )}
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                <audio
+                  ref={audioRef}
+                  src={audioUrl}
+                  onEnded={() => setIsPlaying(false)}
+                  className="w-full"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    onClick={isPlaying ? pauseAudio : playAudio}
+                    className="flex-1"
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    {isPlaying ? "Pause" : "Play"}
+                  </Button>
+                  <Button onClick={downloadAudio} variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Study Guide Detail */}
+        {selectedFeature === "study" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Study Guide</h3>
+            {!studyGuide ? (
+              <Button
+                onClick={generateStudyGuide}
+                disabled={loadingStates.studyGuide}
+                className="w-full"
+              >
+                {loadingStates.studyGuide ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Study Guide"
+                )}
+              </Button>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-4">
+                  {studyGuide.sections?.map((section: any, idx: number) => (
+                    <div key={idx} className="space-y-2">
+                      <h4 className="font-semibold text-base">{section.title}</h4>
+                      <ul className="list-disc list-inside space-y-1">
+                        {section.items?.map((item: string, i: number) => (
+                          <li key={i} className="text-sm text-muted-foreground">{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
+
+        {/* Briefing Detail */}
+        {selectedFeature === "briefing" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Briefing Document</h3>
+            {!briefing ? (
+              <Button
+                onClick={generateBriefing}
+                disabled={loadingStates.briefing}
+                className="w-full"
+              >
+                {loadingStates.briefing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Briefing"
+                )}
+              </Button>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2">Summary</h4>
+                    <p className="text-sm text-muted-foreground">{briefing.summary}</p>
+                  </div>
+                  <Separator />
+                  <div>
+                    <h4 className="font-semibold mb-2">Key Points</h4>
+                    <ul className="list-disc list-inside space-y-1">
+                      {briefing.key_points?.map((point: string, i: number) => (
+                        <li key={i} className="text-sm text-muted-foreground">{point}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  {briefing.recommendations && (
+                    <>
+                      <Separator />
+                      <div>
+                        <h4 className="font-semibold mb-2">Recommendations</h4>
+                        <ul className="list-disc list-inside space-y-1">
+                          {briefing.recommendations?.map((rec: string, i: number) => (
+                            <li key={i} className="text-sm text-muted-foreground">{rec}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
+
+        {/* FAQ Detail */}
+        {selectedFeature === "faq" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">FAQ</h3>
+            {!faq ? (
+              <Button
+                onClick={generateFAQ}
+                disabled={loadingStates.faq}
+                className="w-full"
+              >
+                {loadingStates.faq ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate FAQ"
+                )}
+              </Button>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <Accordion type="single" collapsible className="w-full">
+                  {faq.questions?.map((item: any, idx: number) => (
+                    <AccordionItem key={idx} value={`item-${idx}`}>
+                      <AccordionTrigger className="text-left">
+                        {item.question}
+                      </AccordionTrigger>
+                      <AccordionContent className="text-muted-foreground">
+                        {item.answer}
+                      </AccordionContent>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              </ScrollArea>
+            )}
+          </div>
+        )}
+
+        {/* Timeline Detail */}
+        {selectedFeature === "timeline" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Timeline</h3>
+            {!timeline ? (
+              <Button
+                onClick={generateTimeline}
+                disabled={loadingStates.timeline}
+                className="w-full"
+              >
+                {loadingStates.timeline ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Timeline"
+                )}
+              </Button>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-4">
+                  {timeline.events?.map((event: any, idx: number) => (
+                    <div key={idx} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="w-3 h-3 rounded-full bg-primary" />
+                        {idx < timeline.events.length - 1 && (
+                          <div className="w-0.5 h-full bg-border mt-2" />
+                        )}
+                      </div>
+                      <div className="flex-1 pb-8">
+                        <Badge variant="secondary" className="mb-2">
+                          {event.time || event.timestamp}
+                        </Badge>
+                        <h4 className="font-semibold mb-1">{event.title || event.event}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {event.description || event.details}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
+
+        {/* Table of Contents Detail */}
+        {selectedFeature === "toc" && (
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold">Table of Contents</h3>
+            {!toc ? (
+              <Button
+                onClick={generateTOC}
+                disabled={loadingStates.toc}
+                className="w-full"
+              >
+                {loadingStates.toc ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Generate Table of Contents"
+                )}
+              </Button>
+            ) : (
+              <ScrollArea className="h-[600px]">
+                <div className="space-y-2">
+                  {toc.sections?.map((section: any, idx: number) => (
+                    <div key={idx} style={{ marginLeft: `${(section.level - 1) * 20}px` }}>
+                      <div className="flex items-center gap-2 py-2">
+                        <span className="text-xs text-muted-foreground">{section.page || idx + 1}</span>
+                        <span className="text-sm">{section.title}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
-    <div className="h-full flex flex-col bg-background">
-      {!selectedFeature ? (
-        // Grid view of all studio features
-        <ScrollArea className="flex-1">
-          <div className="p-6">
-            <div className="grid grid-cols-2 gap-4">
-              {studioFeatures.map((feature) => (
-                <Card
-                  key={feature.id}
-                  className="p-6 cursor-pointer hover:shadow-lg transition-all hover:scale-[1.02] relative"
-                  onClick={() => !feature.loading && setSelectedFeature(feature.id)}
-                >
-                  <div className="flex flex-col items-center text-center space-y-3">
-                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <feature.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-sm">{feature.label}</h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {feature.description}
-                      </p>
-                    </div>
-                    {feature.loading && (
-                      <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    )}
-                    {feature.generated && (
-                      <Badge variant="secondary" className="absolute top-2 right-2">
-                        ✓
-                      </Badge>
-                    )}
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </ScrollArea>
-      ) : (
-        // Detail view for selected feature
-        <div className="flex-1 flex flex-col">
-          <div className="p-4 border-b flex items-center justify-between">
-            <Button variant="ghost" size="sm" onClick={() => setSelectedFeature(null)}>
-              ← Back to Studio
-            </Button>
-            <h2 className="font-semibold">
-              {studioFeatures.find(f => f.id === selectedFeature)?.label}
-            </h2>
-            <div className="w-20" />
-          </div>
-          
-          <ScrollArea className="flex-1">
-            <div className="p-6">
-              {selectedFeature === 'audio' && (
-                audioUrl ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Meeting Overview</h3>
-                      <div className="flex gap-2">
-                        <Button variant="outline" size="sm" asChild>
-                          <a href={audioUrl} download="meeting-overview.mp3">
-                            <Download className="h-4 w-4" />
-                          </a>
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={generateAudioOverview} disabled={isGenerating}>
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    <audio ref={audioRef} controls className="w-full" src={audioUrl} onEnded={() => setIsPlaying(false)} />
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12">
-                    <Volume2 className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground text-center mb-6 max-w-md">
-                      Generate an AI-narrated podcast-style summary with key insights
-                    </p>
-                    <Button onClick={generateAudioOverview} disabled={isGenerating}>
-                      {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <>Generate Audio</>}
-                    </Button>
-                  </div>
-                )
-              )}
-
-              {selectedFeature === 'study' && (
-                studyGuide ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Study Guide</h3>
-                      <Button variant="outline" size="sm" onClick={generateStudyGuide} disabled={loadingStates.studyGuide}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {studyGuide.key_concepts && (
-                      <div>
-                        <h4 className="font-medium mb-3 flex items-center gap-2">
-                          <Badge variant="secondary">Key Concepts</Badge>
-                        </h4>
-                        <ul className="list-disc list-inside space-y-2 text-sm">
-                          {studyGuide.key_concepts.map((concept: string, i: number) => (
-                            <li key={i}>{concept}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {studyGuide.terms && (
-                      <div>
-                        <h4 className="font-medium mb-3 flex items-center gap-2">
-                          <Badge variant="secondary">Important Terms</Badge>
-                        </h4>
-                        <div className="space-y-3">
-                          {studyGuide.terms.map((term: any, i: number) => (
-                            <div key={i} className="text-sm">
-                              <span className="font-medium">{term.term}:</span> {term.definition}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    {studyGuide.discussion_questions && (
-                      <div>
-                        <h4 className="font-medium mb-3 flex items-center gap-2">
-                          <Badge variant="secondary">Discussion Questions</Badge>
-                        </h4>
-                        <ol className="list-decimal list-inside space-y-3 text-sm">
-                          {studyGuide.discussion_questions.map((q: string, i: number) => (
-                            <li key={i}>{q}</li>
-                          ))}
-                        </ol>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12">
-                    <BookOpen className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground text-center mb-6 max-w-md">
-                      Create a comprehensive study guide with key concepts, terms, and questions
-                    </p>
-                    <Button onClick={generateStudyGuide} disabled={loadingStates.studyGuide}>
-                      {loadingStates.studyGuide ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <>Generate Study Guide</>}
-                    </Button>
-                  </div>
-                )
-              )}
-
-              {selectedFeature === 'briefing' && (
-                briefing ? (
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Executive Briefing</h3>
-                      <Button variant="outline" size="sm" onClick={generateBriefing} disabled={loadingStates.briefing}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    {briefing.executive_summary && (
-                      <div className="p-4 bg-muted/50 rounded-lg">
-                        <h4 className="font-medium mb-2">Executive Summary</h4>
-                        <p className="text-sm">{briefing.executive_summary}</p>
-                      </div>
-                    )}
-                    {briefing.highlights && (
-                      <div>
-                        <h4 className="font-medium mb-3">Key Highlights</h4>
-                        <ul className="list-disc list-inside space-y-2 text-sm">
-                          {briefing.highlights.map((h: string, i: number) => (
-                            <li key={i}>{h}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    {briefing.action_items && (
-                      <div>
-                        <h4 className="font-medium mb-3">Action Items</h4>
-                        <ul className="space-y-2">
-                          {briefing.action_items.map((item: string, i: number) => (
-                            <li key={i} className="text-sm flex items-start gap-2">
-                              <Badge className="mt-0.5">→</Badge>
-                              {item}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12">
-                    <FileText className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground text-center mb-6 max-w-md">
-                      Generate an executive briefing with summary, highlights, and action items
-                    </p>
-                    <Button onClick={generateBriefing} disabled={loadingStates.briefing}>
-                      {loadingStates.briefing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <>Generate Briefing</>}
-                    </Button>
-                  </div>
-                )
-              )}
-
-              {selectedFeature === 'faq' && (
-                faq ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">FAQ</h3>
-                      <Button variant="outline" size="sm" onClick={generateFAQ} disabled={loadingStates.faq}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <Accordion type="single" collapsible className="w-full">
-                      {faq.faqs?.map((item: any, i: number) => (
-                        <AccordionItem key={i} value={`faq-${i}`}>
-                          <AccordionTrigger className="text-left text-sm">
-                            <div>
-                              <Badge variant="outline" className="mr-2 text-xs">
-                                {item.category}
-                              </Badge>
-                              {item.question}
-                            </div>
-                          </AccordionTrigger>
-                          <AccordionContent className="text-sm text-muted-foreground">
-                            {item.answer}
-                          </AccordionContent>
-                        </AccordionItem>
-                      ))}
-                    </Accordion>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12">
-                    <HelpCircle className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground text-center mb-6 max-w-md">
-                      Generate a comprehensive FAQ covering key topics and decisions
-                    </p>
-                    <Button onClick={generateFAQ} disabled={loadingStates.faq}>
-                      {loadingStates.faq ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <>Generate FAQ</>}
-                    </Button>
-                  </div>
-                )
-              )}
-
-              {selectedFeature === 'timeline' && (
-                timeline ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Timeline</h3>
-                      <Button variant="outline" size="sm" onClick={generateTimeline} disabled={loadingStates.timeline}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="relative space-y-6 pl-6">
-                      {timeline.events?.map((event: any, i: number) => (
-                        <div key={i} className="relative">
-                          <div className="absolute -left-6 mt-1.5 h-3 w-3 rounded-full border-2 border-primary bg-background" />
-                          {i < timeline.events.length - 1 && (
-                            <div className="absolute -left-5 top-6 bottom-0 w-0.5 bg-border" />
-                          )}
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant={event.type === 'decision' ? 'default' : 'secondary'}>
-                                {event.time}
-                              </Badge>
-                              <span className="font-medium text-sm">{event.title}</span>
-                            </div>
-                            <p className="text-sm text-muted-foreground">{event.description}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12">
-                    <Clock className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground text-center mb-6 max-w-md">
-                      Create a chronological timeline of meeting events and discussions
-                    </p>
-                    <Button onClick={generateTimeline} disabled={loadingStates.timeline}>
-                      {loadingStates.timeline ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <>Generate Timeline</>}
-                    </Button>
-                  </div>
-                )
-              )}
-
-              {selectedFeature === 'toc' && (
-                toc ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium">Table of Contents</h3>
-                      <Button variant="outline" size="sm" onClick={generateTableOfContents} disabled={loadingStates.toc}>
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="space-y-2">
-                      {toc.sections?.map((section: any, i: number) => (
-                        <div
-                          key={i}
-                          className={`text-sm ${
-                            section.level === 1 ? 'font-medium' : 
-                            section.level === 2 ? 'ml-4 text-muted-foreground' : 
-                            'ml-8 text-muted-foreground text-xs'
-                          }`}
-                        >
-                          <span className="text-primary mr-2">{section.page_number}</span>
-                          {section.title}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center p-12">
-                    <List className="h-16 w-16 text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground text-center mb-6 max-w-md">
-                      Generate a structured outline of meeting topics and discussions
-                    </p>
-                    <Button onClick={generateTableOfContents} disabled={loadingStates.toc}>
-                      {loadingStates.toc ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Generating...</> : <>Generate Contents</>}
-                    </Button>
-                  </div>
-                )
-              )}
-            </div>
-          </ScrollArea>
-        </div>
-      )}
+    <div className="p-4">
+      <div className="grid grid-cols-2 gap-3">
+        {studioFeatures.map((feature) => {
+          const Icon = feature.icon;
+          return (
+            <Card
+              key={feature.id}
+              className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+                !feature.available ? "opacity-60" : ""
+              }`}
+              onClick={() => handleFeatureClick(feature.id, feature.available)}
+            >
+              <div className="flex flex-col items-center text-center gap-2">
+                <div className="relative">
+                  <Icon className="h-8 w-8 text-primary" />
+                  {!feature.available && (
+                    <Lock className="h-3 w-3 absolute -top-1 -right-1 text-muted-foreground" />
+                  )}
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm">{feature.title}</h4>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+      </div>
     </div>
   );
 };

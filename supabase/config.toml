@@ -108,6 +108,9 @@ verify_jwt = true
 [functions.generate-table-of-contents]
 verify_jwt = true
 
+[functions.generate-source-summary]
+verify_jwt = true
+
 [functions.text-to-speech]
 verify_jwt = true
 

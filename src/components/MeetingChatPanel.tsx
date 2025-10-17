@@ -2,10 +2,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MessageSquare, Send, Loader2 } from "lucide-react";
+import { MessageSquare, Send, Loader2, FileText } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 interface Message {
   id: string;
@@ -16,17 +17,22 @@ interface Message {
 
 interface MeetingChatPanelProps {
   meetingId: string;
+  sourceIds?: string[];
+  sourceTitles?: Array<{id: string; title: string; type: string}>;
 }
 
-const MeetingChatPanel = ({ meetingId }: MeetingChatPanelProps) => {
+const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPanelProps) => {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [autoSummary, setAutoSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     loadChatHistory();
+    generateAutoSummary();
     
     // Subscribe to new messages
     const channel = supabase
@@ -48,7 +54,7 @@ const MeetingChatPanel = ({ meetingId }: MeetingChatPanelProps) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [meetingId]);
+  }, [meetingId, sourceIds]);
 
   useEffect(() => {
     // Auto-scroll to bottom
@@ -56,6 +62,24 @@ const MeetingChatPanel = ({ meetingId }: MeetingChatPanelProps) => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const generateAutoSummary = async () => {
+    if (!sourceIds || sourceIds.length === 0) return;
+    
+    setSummaryLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("generate-source-summary", {
+        body: { sourceIds },
+      });
+
+      if (error) throw error;
+      setAutoSummary(data.summary);
+    } catch (error) {
+      console.error("Error generating summary:", error);
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
 
   const loadChatHistory = async () => {
     const { data, error } = await supabase
@@ -116,7 +140,36 @@ const MeetingChatPanel = ({ meetingId }: MeetingChatPanelProps) => {
   return (
     <div className="flex flex-col h-full p-4">
       <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
-        {messages.length === 0 ? (
+        {summaryLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : autoSummary && messages.length === 0 ? (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 mb-4">
+              <FileText className="h-8 w-8 text-primary" />
+              <div>
+                <h3 className="font-semibold text-lg">
+                  {sourceTitles && sourceTitles.length === 1 
+                    ? sourceTitles[0].title 
+                    : `${sourceIds?.length || 0} sources`}
+                </h3>
+                {sourceTitles && sourceTitles.length > 1 && (
+                  <div className="flex gap-2 flex-wrap mt-1">
+                    {sourceTitles.map((source) => (
+                      <Badge key={source.id} variant="secondary" className="text-xs">
+                        {source.title}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="bg-muted rounded-lg p-4">
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{autoSummary}</p>
+            </div>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
             <MessageSquare className="h-12 w-12 text-muted-foreground" />
             <div>

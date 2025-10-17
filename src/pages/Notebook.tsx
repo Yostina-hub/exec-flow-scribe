@@ -247,14 +247,32 @@ const Notebook = () => {
                 <FileText className="h-4 w-4" />
                 Sources
               </h2>
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-2"
-                onClick={() => setShowAddSourceDialog(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  className="flex-1 justify-start gap-2"
+                  onClick={() => setShowAddSourceDialog(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add
+                </Button>
+              </div>
+              {sources.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full justify-start text-xs mt-2"
+                  onClick={() => {
+                    if (selectedSources.length === sources.length) {
+                      setSelectedSources([]);
+                    } else {
+                      setSelectedSources(sources.map(s => s.id));
+                    }
+                  }}
+                >
+                  {selectedSources.length === sources.length ? "Deselect all" : "Select all sources"}
+                </Button>
+              )}
               <p className="text-xs text-muted-foreground mt-2">
                 {sources.length} / 50 sources
               </p>
@@ -365,7 +383,14 @@ const Notebook = () => {
                   )}
                 </div>
                 <div className="flex-1 overflow-hidden">
-                  <MeetingChatPanel meetingId={selectedSources[0]} />
+                  <MeetingChatPanel 
+                    meetingId={selectedSources[0]}
+                    sourceIds={selectedSources}
+                    sourceTitles={selectedSources.map(id => {
+                      const source = sources.find(s => s.id === id);
+                      return source ? { id: source.id, title: source.title, type: source.source_type } : null;
+                    }).filter(Boolean) as Array<{id: string; title: string; type: string}>}
+                  />
                 </div>
               </div>
             )}
