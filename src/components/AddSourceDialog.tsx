@@ -20,7 +20,7 @@ import {
 interface AddSourceDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSourceAdded: () => void;
+  onSourceAdded: (ids: string[]) => void;
 }
 
 export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSourceDialogProps) => {
@@ -42,6 +42,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
+      const createdIds: string[] = [];
       for (const file of Array.from(files)) {
         const fileExt = file.name.split(".").pop()?.toLowerCase();
         let sourceType = "pdf";
@@ -51,12 +52,12 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
         else if (["mp3", "wav", "m4a"].includes(fileExt || "")) sourceType = "audio";
 
         // Read file content for text files
-        let content = null;
+        let content = null as string | null;
         if (["txt", "md"].includes(fileExt || "")) {
           content = await file.text();
         }
 
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from("notebook_sources")
           .insert({
             user_id: user.id,
@@ -67,9 +68,12 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
               file_size: file.size,
               file_type: file.type,
             },
-          });
+          })
+          .select("id")
+          .single();
 
         if (error) throw error;
+        if (data?.id) createdIds.push(data.id);
       }
 
       toast({
@@ -77,7 +81,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
         description: `${files.length} ${files.length === 1 ? "file" : "files"} uploaded successfully`,
       });
 
-      onSourceAdded();
+      onSourceAdded(createdIds);
       onOpenChange(false);
     } catch (error) {
       console.error("Upload error:", error);
@@ -103,7 +107,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
       const isYoutube = linkUrl.includes("youtube.com") || linkUrl.includes("youtu.be");
       const sourceType = isYoutube ? "youtube" : "website";
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("notebook_sources")
         .insert({
           user_id: user.id,
@@ -111,7 +115,9 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
           title: linkUrl,
           external_url: linkUrl,
           metadata: { url: linkUrl },
-        });
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
@@ -121,7 +127,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
       });
 
       setLinkUrl("");
-      onSourceAdded();
+      onSourceAdded(data?.id ? [data.id] : []);
       onOpenChange(false);
     } catch (error) {
       console.error("Link error:", error);
@@ -143,14 +149,16 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("notebook_sources")
         .insert({
           user_id: user.id,
           source_type: "pasted_text",
           title: pastedTitle,
           content: pastedText,
-        });
+        })
+        .select("id")
+        .single();
 
       if (error) throw error;
 
@@ -161,7 +169,7 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded }: AddSource
 
       setPastedText("");
       setPastedTitle("");
-      onSourceAdded();
+      onSourceAdded(data?.id ? [data.id] : []);
       onOpenChange(false);
     } catch (error) {
       console.error("Paste error:", error);

@@ -185,9 +185,13 @@ const Notebook = () => {
     }
   };
 
-  const handleSourceAdded = async () => {
+  const handleSourceAdded = async (ids?: string[]) => {
     await loadSources();
-    // Auto-select the most recently added source
+    if (ids && ids.length > 0) {
+      setSelectedSources(ids);
+      return;
+    }
+    // Fallback: select most recent
     const { data } = await supabase
       .from("notebook_sources")
       .select("id")
