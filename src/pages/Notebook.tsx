@@ -307,10 +307,12 @@ const Notebook = () => {
             ) : (
               <div className="flex-1 flex flex-col">
                 <div className="border-b p-4">
-                  <h2 className="font-semibold flex items-center gap-2">
-                    <MessageSquare className="h-5 w-5" />
-                    Chat
+                  <h2 className="font-semibold text-lg mb-1">
+                    {availableMeetings.find(m => m.id === selectedMeeting)?.title}
                   </h2>
+                  <p className="text-xs text-muted-foreground">
+                    {sources.length} {sources.length === 1 ? 'source' : 'sources'} selected
+                  </p>
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <MeetingChatPanel meetingId={selectedMeeting} />

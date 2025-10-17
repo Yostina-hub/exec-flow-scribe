@@ -114,17 +114,7 @@ const MeetingChatPanel = ({ meetingId }: MeetingChatPanelProps) => {
   ];
 
   return (
-    <Card className="p-6 flex flex-col h-[600px]">
-      <div className="mb-4">
-        <h2 className="text-2xl font-semibold flex items-center gap-2">
-          <MessageSquare className="h-6 w-6" />
-          Meeting Chat
-        </h2>
-        <p className="text-muted-foreground">
-          Ask questions about this meeting
-        </p>
-      </div>
-
+    <div className="flex flex-col h-full p-4">
       <ScrollArea className="flex-1 pr-4 mb-4" ref={scrollRef}>
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center space-y-4">
@@ -180,21 +170,45 @@ const MeetingChatPanel = ({ meetingId }: MeetingChatPanelProps) => {
         )}
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="space-y-2">
-        <Textarea
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask about decisions, action items, discussions..."
-          className="resize-none"
-          rows={3}
-          disabled={loading}
-        />
-        <Button type="submit" disabled={loading || !query.trim()} className="w-full">
-          <Send className="h-4 w-4 mr-2" />
-          {loading ? "Sending..." : "Send"}
-        </Button>
-      </form>
-    </Card>
+      <div className="space-y-3">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <Textarea
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Ask about decisions, action items, discussions..."
+            className="resize-none flex-1"
+            rows={2}
+            disabled={loading}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <Button type="submit" disabled={loading || !query.trim()} size="icon" className="h-auto">
+            <Send className="h-4 w-4" />
+          </Button>
+        </form>
+        
+        {/* Suggested questions at bottom */}
+        {messages.length > 0 && (
+          <div className="flex gap-2 flex-wrap pt-2 border-t">
+            {suggestedQuestions.slice(0, 3).map((question, index) => (
+              <Button
+                key={index}
+                variant="ghost"
+                size="sm"
+                className="text-xs"
+                onClick={() => setQuery(question)}
+              >
+                {question}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   );
 };
 
