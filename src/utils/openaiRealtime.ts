@@ -189,6 +189,8 @@ export class OpenAIRealtimeClient {
   private speakerCount: number = 0;
   private lastSpeaker: string = 'User';
   private sessionLanguage: string | null = null;
+  private pendingTranscriptionTimer: number | null = null;
+  private builtinTranscriptionReceived: boolean = false;
 
   constructor(
     onTranscript: (text: string, speaker?: string) => void,
@@ -281,18 +283,35 @@ export class OpenAIRealtimeClient {
           console.log('🎤 User started speaking');
           this.isCollectingAudio = true;
           this.audioChunks = [];
+          this.builtinTranscriptionReceived = false;
+          if (this.pendingTranscriptionTimer) {
+            clearTimeout(this.pendingTranscriptionTimer);
+            this.pendingTranscriptionTimer = null;
+          }
           this.onProcessingChange?.(true);
         } else if (event.type === 'input_audio_buffer.speech_stopped') {
-          console.log('🎤 User stopped speaking - processing...');
+          console.log('🎤 User stopped speaking - waiting for transcription...');
           this.isCollectingAudio = false;
-          // Transcribe collected audio with proper script preservation
-          if (this.audioChunks.length > 0 && this.currentMeetingId) {
-            this.transcribeCollectedAudio(this.currentMeetingId);
-          } else {
-            this.onProcessingChange?.(false);
-          }
+          
+          // Set a fallback timer in case built-in transcription doesn't arrive
+          this.pendingTranscriptionTimer = window.setTimeout(() => {
+            if (!this.builtinTranscriptionReceived && this.audioChunks.length > 0 && this.currentMeetingId) {
+              console.log('⚠️ Built-in transcription timeout, using fallback transcription');
+              this.transcribeCollectedAudio(this.currentMeetingId);
+            } else {
+              this.onProcessingChange?.(false);
+            }
+          }, 5000); // 5 second timeout
         } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
           // This is the built-in Whisper transcription from OpenAI
+          this.builtinTranscriptionReceived = true;
+          if (this.pendingTranscriptionTimer) {
+            clearTimeout(this.pendingTranscriptionTimer);
+            this.pendingTranscriptionTimer = null;
+          }
+          // Clear collected chunks now that built-in transcript arrived
+          this.audioChunks = [];
+          
           const transcript = event.transcript?.trim();
           if (transcript) {
             console.log('✅ Built-in transcription received:', transcript.substring(0, 100));
@@ -301,6 +320,9 @@ export class OpenAIRealtimeClient {
             if (this.currentMeetingId) {
               this.saveTranscription(this.currentMeetingId, transcript, 'User', 'auto');
             }
+            this.onProcessingChange?.(false);
+          } else {
+            console.warn('⚠️ Empty built-in transcription received');
             this.onProcessingChange?.(false);
           }
         } else if (event.type === 'response.audio_transcript.delta') {
@@ -386,6 +408,10 @@ export class OpenAIRealtimeClient {
     this.speakerCount = 0;
     this.lastSpeaker = 'User';
     this.sessionLanguage = null;
+    if (this.pendingTranscriptionTimer) {
+      clearTimeout(this.pendingTranscriptionTimer);
+      this.pendingTranscriptionTimer = null;
+    }
     this.recorder?.stop();
     this.recorder = null;
     
