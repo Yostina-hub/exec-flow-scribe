@@ -124,41 +124,16 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
         body: {}
       });
 
-      if (error) {
-        const status = (error as any)?.status;
-        if (status === 402 || /402/.test(error.message || '')) {
-          toast.error('AI credits exhausted. Add credits in Settings → Workspace → Usage, then retry.');
-        } else if (status === 429 || /429/.test(error.message || '')) {
-          toast.error('AI rate limit reached. Please wait a minute and retry.');
-        } else {
-          toast.error('Failed to generate executive briefing');
-        }
-        return;
-      }
+      if (error) throw error;
 
       if (data?.briefing) {
         setBriefing(data.briefing);
-      } else if (data?.error) {
-        if (data.error === 'payment_required') {
-          toast.error('AI credits exhausted. Add credits in Settings → Workspace → Usage, then retry.');
-        } else if (data.error === 'rate_limited') {
-          toast.error('AI rate limit reached. Please wait a minute and retry.');
-        } else {
-          toast.error('Failed to generate executive briefing');
-        }
       } else {
-        toast.error('No briefing data received');
+        throw new Error('No briefing data received');
       }
     } catch (error: any) {
       console.error('Failed to generate briefing:', error);
-      const msg = error?.message || '';
-      if (/402/.test(msg)) {
-        toast.error('AI credits exhausted. Add credits in Settings → Workspace → Usage, then retry.');
-      } else if (/429/.test(msg)) {
-        toast.error('AI rate limit reached. Please wait a minute and retry.');
-      } else {
-        toast.error('Failed to generate executive briefing');
-      }
+      toast.error('Failed to generate executive briefing')
     } finally {
       setLoading(false);
     }

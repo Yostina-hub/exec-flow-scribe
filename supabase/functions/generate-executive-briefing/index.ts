@@ -14,10 +14,10 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
+    const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
 
-    if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY is not configured');
+    if (!geminiApiKey) {
+      throw new Error('GEMINI_API_KEY is not configured');
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
@@ -264,21 +264,9 @@ serve(async (req) => {
       }))
     };
 
-    console.log('Context prepared, calling AI...');
+    console.log('Context prepared, calling Gemini AI...');
 
-    // Call Lovable AI for analysis
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${lovableApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          {
-            role: 'system',
-            content: `You are an advanced executive AI assistant with deep organizational intelligence, analyzing performance patterns, meeting activities, and strategic alignment for a CEO.
+    const systemPrompt = `You are an advanced executive AI assistant with deep organizational intelligence, analyzing performance patterns, meeting activities, and strategic alignment for a CEO.
 
 Your analysis should:
 1. Synthesize patterns across meeting activities, decisions, and action execution
@@ -308,49 +296,50 @@ Analysis Guidelines:
 - Consider action completion velocity and meeting outcome quality
 - Analyze agenda coverage patterns and meeting effectiveness
 
-Be precise, strategic, and evidence-based in every insight.`
-          },
-          {
-            role: 'user',
-            content: `Analyze this comprehensive organizational data spanning meetings, actions, decisions, sentiment, and historical patterns. Provide deep strategic insights:\n\n${JSON.stringify(context, null, 2)}`
+Be precise, strategic, and evidence-based in every insight.`;
+
+    const userPrompt = `Analyze this comprehensive organizational data spanning meetings, actions, decisions, sentiment, and historical patterns. Provide deep strategic insights:\n\n${JSON.stringify(context, null, 2)}`;
+
+    // Call Gemini API for analysis
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [{
+            text: `${systemPrompt}\n\n${userPrompt}\n\nRespond with valid JSON only, no markdown formatting.`
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "object",
+            properties: {
+              executive_summary: { type: "string" },
+              key_metrics: { type: "array", items: { type: "string" } },
+              strengths: { type: "array", items: { type: "string" } },
+              concerns: { type: "array", items: { type: "string" } },
+              priorities: { type: "array", items: { type: "string" } },
+              recommendations: { type: "array", items: { type: "string" } },
+              next_actions: { type: "array", items: { type: "string" } }
+            },
+            required: ["executive_summary", "key_metrics", "strengths", "concerns", "priorities", "recommendations", "next_actions"]
           }
-        ],
-        temperature: 0.7,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AI API error:', response.status, errorText);
-
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error: 'payment_required',
-            message: 'Not enough credits to generate briefing. Please add credits to your Lovable AI workspace and try again.'
-          }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({
-            error: 'rate_limited',
-            message: 'Rate limit reached. Please wait a moment and try again.'
-          }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(
-        JSON.stringify({ error: 'ai_gateway_error', message: 'AI gateway error', details: errorText }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      console.error('Gemini API error:', response.status, errorText);
+      throw new Error(`Gemini API request failed: ${response.status}`);
     }
 
     const aiData = await response.json();
-    const aiResponse = aiData.choices?.[0]?.message?.content;
+    const aiResponse = aiData.candidates?.[0]?.content?.parts?.[0]?.text;
 
     console.log('AI response received');
 
@@ -431,17 +420,10 @@ Be precise, strategic, and evidence-based in every insight.`
   } catch (error) {
     console.error('Error in generate-executive-briefing:', error);
     const msg = error instanceof Error ? error.message : 'Unknown error';
-    const status = msg.includes('402') ? 402 : msg.includes('429') ? 429 : 500;
-    const payload = status === 402
-      ? { error: 'payment_required', message: 'Not enough credits to generate briefing. Please add credits and retry.' }
-      : status === 429
-        ? { error: 'rate_limited', message: 'Rate limit reached. Please wait and retry.' }
-        : { error: 'server_error', message: msg };
-
     return new Response(
-      JSON.stringify(payload),
+      JSON.stringify({ error: 'server_error', message: msg }),
       {
-        status,
+        status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
