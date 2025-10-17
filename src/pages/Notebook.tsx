@@ -321,60 +321,59 @@ const Notebook = () => {
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2">
-                    <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-white" />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="gap-2">
+                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <BookOpen className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="text-left">
+                    <h1 className="text-2xl font-bold">
+                      {notebooks.find(n => n.id === currentNotebook)?.title || "Meeting Notebook"}
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                      Analyze and explore your meetings with AI
+                    </p>
+                  </div>
+                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-64">
+                {notebooks.map((notebook) => (
+                  <DropdownMenuItem
+                    key={notebook.id}
+                    onClick={() => {
+                      setCurrentNotebook(notebook.id);
+                      setSearchParams({ notebook: notebook.id });
+                      setSelectedSources([]);
+                    }}
+                    className={currentNotebook === notebook.id ? "bg-accent" : ""}
+                  >
+                    <div className="flex-1">
+                      <div className="font-medium">{notebook.title}</div>
+                      {notebook.description && (
+                        <div className="text-xs text-muted-foreground">{notebook.description}</div>
+                      )}
                     </div>
-                    <div className="text-left">
-                      <h1 className="text-2xl font-bold">
-                        {notebooks.find(n => n.id === currentNotebook)?.title || "Meeting Notebook"}
-                      </h1>
-                      <p className="text-sm text-muted-foreground">
-                        Analyze and explore your meetings with AI
-                      </p>
-                    </div>
-                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-64">
-                  {notebooks.map((notebook) => (
-                    <DropdownMenuItem
-                      key={notebook.id}
-                      onClick={() => {
-                        setCurrentNotebook(notebook.id);
-                        setSearchParams({ notebook: notebook.id });
-                        setSelectedSources([]);
-                      }}
-                      className={currentNotebook === notebook.id ? "bg-accent" : ""}
-                    >
-                      <div className="flex-1">
-                        <div className="font-medium">{notebook.title}</div>
-                        {notebook.description && (
-                          <div className="text-xs text-muted-foreground">{notebook.description}</div>
-                        )}
-                      </div>
-                    </DropdownMenuItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create New Notebook
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            <Badge variant="secondary" className="gap-1">
-              <FileText className="h-3 w-3" />
-              {selectedSources.length} {selectedSources.length === 1 ? "source" : "sources"} selected
-            </Badge>
+                ))}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create New Notebook
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
+          <Badge variant="secondary" className="gap-1">
+            <FileText className="h-3 w-3" />
+            {selectedSources.length} {selectedSources.length === 1 ? "source" : "sources"} selected
+          </Badge>
         </div>
+      </div>
 
-        {/* Three-panel layout */}
-        <div className="flex-1 grid grid-cols-12 overflow-hidden">
+      {/* Three-panel layout */}
+      <div className="flex-1 grid grid-cols-12 overflow-hidden">
           {/* Sources Panel */}
           <div className="col-span-3 border-r flex flex-col bg-muted/20">
             <div className="p-4 border-b">
@@ -565,7 +564,6 @@ const Notebook = () => {
             </ScrollArea>
           </div>
         </div>
-      </div>
 
       <AddSourceDialog
         open={showAddSourceDialog}
