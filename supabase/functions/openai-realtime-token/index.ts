@@ -37,7 +37,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
-        voice: "alloy",
+        modalities: ["text"],
+        instructions,
         input_audio_transcription: {
           model: "whisper-1"
         },
@@ -45,9 +46,9 @@ serve(async (req) => {
           type: "server_vad",
           threshold: 0.5,
           prefix_padding_ms: 300,
-          silence_duration_ms: 500
-        },
-        instructions
+          silence_duration_ms: 500,
+          create_response: false
+        }
       }),
     });
 

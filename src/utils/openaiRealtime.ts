@@ -344,13 +344,9 @@ export class OpenAIRealtimeClient {
             console.warn('⚠️ Empty built-in transcription received');
             this.onProcessingChange?.(false);
           }
-        } else if (event.type === 'response.audio_transcript.delta') {
-          if (event.delta) {
-            const cleaned = cleanTranscript(event.delta);
-            if (cleaned) {
-              this.onTranscript(cleaned, 'Assistant');
-            }
-          }
+        } else if (event.type === 'response.audio_transcript.delta' || event.type === 'response.audio.delta') {
+          // Ignore any AI responses - we only want transcription
+          console.log('Ignoring AI response event:', event.type);
         } else if (event.type === 'response.done') {
           try {
             const status = event?.response?.status;
@@ -472,7 +468,7 @@ export class OpenAIRealtimeClient {
     };
 
     this.dc.send(JSON.stringify(event));
-    this.dc.send(JSON.stringify({ type: 'response.create' }));
+    // DO NOT send response.create - we only want transcription, not AI responses
   }
 
   private async transcribeCollectedAudio(meetingId: string) {
