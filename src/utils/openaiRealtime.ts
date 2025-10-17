@@ -254,24 +254,26 @@ export class OpenAIRealtimeClient {
               type: "session.update",
               session: {
                 modalities: ["text", "audio"],
-                instructions: "You are a meeting transcription assistant. Auto-detect language, identify speakers as Speaker 1, Speaker 2, etc., and maintain speaker consistency.",
+                instructions: "You are a meeting transcription assistant. CRITICAL: Always transcribe speech in its ORIGINAL SCRIPT - never transliterate or romanize. For Amharic, use Ge'ez script (አማርኛ), not Latin letters. For Arabic, use Arabic script. For Chinese, use Chinese characters. Automatically detect language and identify different speakers as Speaker 1, Speaker 2, etc. Maintain speaker consistency throughout. Include proper punctuation.",
                 voice: "alloy",
                 input_audio_format: "pcm16",
                 output_audio_format: "pcm16",
-                input_audio_transcription: null, // Disable built-in transcription
+                input_audio_transcription: {
+                  model: "whisper-1"
+                },
                 turn_detection: {
                   type: "server_vad",
-                  threshold: 0.7,
+                  threshold: 0.5,
                   prefix_padding_ms: 300,
-                  silence_duration_ms: 2000,
+                  silence_duration_ms: 500,
                   idle_timeout_ms: null,
-                  create_response: false,
+                  create_response: true,
                   interrupt_response: true
                 },
                 temperature: 0.8
               }
             }));
-            console.log('Session configuration sent');
+            console.log('Session configuration sent with optimized VAD settings');
           }
         } else if (event.type === 'session.updated') {
           console.log('Session updated successfully');
@@ -279,12 +281,27 @@ export class OpenAIRealtimeClient {
           console.log('🎤 User started speaking');
           this.isCollectingAudio = true;
           this.audioChunks = [];
+          this.onProcessingChange?.(true);
         } else if (event.type === 'input_audio_buffer.speech_stopped') {
-          console.log('🎤 User stopped speaking');
+          console.log('🎤 User stopped speaking - processing...');
           this.isCollectingAudio = false;
-          // Transcribe collected audio with proper Amharic script preservation
+          // Transcribe collected audio with proper script preservation
           if (this.audioChunks.length > 0 && this.currentMeetingId) {
             this.transcribeCollectedAudio(this.currentMeetingId);
+          } else {
+            this.onProcessingChange?.(false);
+          }
+        } else if (event.type === 'conversation.item.input_audio_transcription.completed') {
+          // This is the built-in Whisper transcription from OpenAI
+          const transcript = event.transcript?.trim();
+          if (transcript) {
+            console.log('✅ Built-in transcription received:', transcript.substring(0, 100));
+            this.onTranscript(transcript, 'User');
+            // Save to database
+            if (this.currentMeetingId) {
+              this.saveTranscription(this.currentMeetingId, transcript, 'User', 'auto');
+            }
+            this.onProcessingChange?.(false);
           }
         } else if (event.type === 'response.audio_transcript.delta') {
           if (event.delta) {
@@ -434,20 +451,23 @@ export class OpenAIRealtimeClient {
       
       // Validate merged audio
       const duration = mergedAudio.length / 24000; // at 24kHz
-      console.log(`Audio duration: ${duration.toFixed(2)}s`);
+      console.log(`📊 Audio duration: ${duration.toFixed(2)}s (${this.audioChunks.length} chunks)`);
       
       if (duration < 0.1) {
-        console.warn('Audio too short to transcribe');
+        console.warn('⚠️ Audio too short to transcribe (<0.1s)');
+        this.onProcessingChange?.(false);
         return;
       }
       
-      // Limit to 15 seconds to prevent empty results from Whisper API
+      // Allow up to 30 seconds of audio (Whisper API limit)
       let finalAudio = mergedAudio;
-      if (duration > 15) {
-        console.warn(`⚠️ Audio too long (${duration.toFixed(2)}s), truncating to last 15 seconds`);
-        const maxSamples = 24000 * 15; // 15 seconds at 24kHz
-        finalAudio = mergedAudio.slice(-maxSamples); // Take last 15 seconds
+      if (duration > 30) {
+        console.warn(`⚠️ Audio too long (${duration.toFixed(2)}s), truncating to last 30 seconds`);
+        const maxSamples = 24000 * 30; // 30 seconds at 24kHz
+        finalAudio = mergedAudio.slice(-maxSamples); // Take last 30 seconds
       }
+      
+      this.onProcessingChange?.(true);
       
       // Convert collected PCM to WAV base64
       const audioBase64 = float32ToWavBase64(finalAudio, 24000);
