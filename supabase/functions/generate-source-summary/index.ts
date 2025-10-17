@@ -49,46 +49,51 @@ serve(async (req) => {
       }
     });
 
-    // Generate summary using Lovable AI
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
+    // Generate summary using Gemini API
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY not configured");
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert at analyzing and summarizing documents. Create a comprehensive yet concise overview that:
+    const systemPrompt = `You are an expert at analyzing and summarizing documents. Create a comprehensive yet concise overview that:
 - Identifies the main topics and themes
 - Highlights key information, decisions, and important details
 - Notes significant dates, people, or entities mentioned
 - Provides context about what these sources contain
-Keep the summary clear and well-structured.`
-          },
+Keep the summary clear and well-structured.`;
+
+    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        contents: [
           {
-            role: "user",
-            content: `Please analyze and summarize the following ${sources.length} source(s):\n${combinedContent}`
+            parts: [
+              {
+                text: `${systemPrompt}\n\nPlease analyze and summarize the following ${sources.length} source(s):\n${combinedContent}`
+              }
+            ]
           }
         ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 2048,
+        }
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("AI API Error:", aiResponse.status, errorText);
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      console.error("Gemini API Error:", aiResponse.status, errorText);
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const summary = aiData.choices[0].message.content;
+    const summary = aiData.candidates[0].content.parts[0].text;
 
     return new Response(
       JSON.stringify({ 
