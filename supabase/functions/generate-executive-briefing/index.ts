@@ -322,7 +322,31 @@ Be precise, strategic, and evidence-based in every insight.`
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI API error:', response.status, errorText);
-      throw new Error(`AI API returned ${response.status}`);
+
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            error: 'payment_required',
+            message: 'Not enough credits to generate briefing. Please add credits to your Lovable AI workspace and try again.'
+          }),
+          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({
+            error: 'rate_limited',
+            message: 'Rate limit reached. Please wait a moment and try again.'
+          }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ error: 'ai_gateway_error', message: 'AI gateway error', details: errorText }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const aiData = await response.json();
@@ -406,10 +430,18 @@ Be precise, strategic, and evidence-based in every insight.`
     );
   } catch (error) {
     console.error('Error in generate-executive-briefing:', error);
+    const msg = error instanceof Error ? error.message : 'Unknown error';
+    const status = msg.includes('402') ? 402 : msg.includes('429') ? 429 : 500;
+    const payload = status === 402
+      ? { error: 'payment_required', message: 'Not enough credits to generate briefing. Please add credits and retry.' }
+      : status === 429
+        ? { error: 'rate_limited', message: 'Rate limit reached. Please wait and retry.' }
+        : { error: 'server_error', message: msg };
+
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      JSON.stringify(payload),
       {
-        status: 500,
+        status,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
