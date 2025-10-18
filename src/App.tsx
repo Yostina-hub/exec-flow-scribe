@@ -5,9 +5,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequirePermission } from "@/components/RequirePermission";
-import { useSystemIntegration } from "@/hooks/useSystemIntegration";
-import { useCalendarActionSync } from "@/hooks/useCalendarActionSync";
-import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
 import Index from "./pages/Index";
 import CalendarView from "./pages/CalendarView";
 import Meetings from "./pages/Meetings";
@@ -29,9 +26,6 @@ import DocumentViewer from "./components/DocumentViewer";
 const queryClient = new QueryClient();
 
 const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
-  useSystemIntegration();
-  useCalendarActionSync();
-  useNotificationDispatcher();
   return <>{children}</>;
 };
 
