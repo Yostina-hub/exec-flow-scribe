@@ -42,6 +42,8 @@ export const BrowserSpeechRecognition = ({
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
   const [userId, setUserId] = useState<string | null>(null);
+  const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
+  const [savedAudios, setSavedAudios] = useState<Array<{ id: string; url: string; created_at: string; duration: number }>>([]);
   const { toast } = useToast();
   
   // Audio recording hook for archiving
@@ -59,7 +61,7 @@ export const BrowserSpeechRecognition = ({
   const prevExternalRef = useRef(externalIsRecording);
   const prevPausedRef = useRef(isPaused);
 
-  // Get current user info
+  // Get current user info and fetch saved audios
   useEffect(() => {
     const getUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -76,7 +78,41 @@ export const BrowserSpeechRecognition = ({
       }
     };
     getUserInfo();
-  }, []);
+    
+    // Fetch saved audio recordings
+    fetchSavedAudios();
+  }, [meetingId]);
+
+  const fetchSavedAudios = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('meeting_media')
+        .select('id, file_url, uploaded_at, duration_seconds')
+        .eq('meeting_id', meetingId)
+        .eq('media_type', 'audio')
+        .order('uploaded_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        const audiosWithUrls = data.map(audio => {
+          const { data: { publicUrl } } = supabase.storage
+            .from('meeting-audio')
+            .getPublicUrl(audio.file_url);
+          
+          return {
+            id: audio.id,
+            url: publicUrl,
+            created_at: audio.uploaded_at,
+            duration: audio.duration_seconds || 0
+          };
+        });
+        setSavedAudios(audiosWithUrls);
+      }
+    } catch (err) {
+      console.error('Error fetching saved audios:', err);
+    }
+  };
 
   // Sync with external recording and pause state
   useEffect(() => {
@@ -199,6 +235,9 @@ useEffect(() => {
 
         if (mediaError) {
           console.error('Media reference error:', mediaError);
+        } else {
+          // Refresh saved audios list
+          await fetchSavedAudios();
         }
       }
 
@@ -346,15 +385,28 @@ useEffect(() => {
           </div>
         )}
 
-        {audioBlob && (
-          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-            <Volume2 className="w-5 h-5 text-primary" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Audio recorded</p>
-              <p className="text-xs text-muted-foreground">
-                Size: {(audioBlob.size / 1024 / 1024).toFixed(2)} MB • Duration: {formatDuration(recordingDuration)}
-              </p>
+        {savedAudios.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Volume2 className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm font-medium">Recorded Audio ({savedAudios.length})</h3>
             </div>
+            {savedAudios.map((audio) => (
+              <div key={audio.id} className="p-4 bg-muted rounded-lg space-y-2">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Duration: {formatDuration(audio.duration)}</span>
+                  <span>{new Date(audio.created_at).toLocaleString()}</span>
+                </div>
+                <audio 
+                  controls 
+                  className="w-full h-10"
+                  src={audio.url}
+                  preload="metadata"
+                >
+                  Your browser does not support the audio element.
+                </audio>
+              </div>
+            ))}
           </div>
         )}
 
