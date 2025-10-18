@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { LiveTranscription } from "@/components/LiveTranscription";
+import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
 import { ContextPanel } from "@/components/ContextPanel";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
@@ -434,7 +435,7 @@ const MeetingDetail = () => {
               </TabsList>
 
               <TabsContent value="transcription" className="space-y-4">
-                <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+                <BrowserSpeechRecognition meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
