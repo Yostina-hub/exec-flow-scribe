@@ -18,6 +18,7 @@ import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
+import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -391,6 +392,7 @@ const Settings = () => {
             <TabsTrigger value="recording">Recording</TabsTrigger>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
+            <TabsTrigger value="google-api">Google API</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
             <TabsTrigger value="automation">Automation</TabsTrigger>
@@ -1065,6 +1067,11 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Google API Tab */}
+          <TabsContent value="google-api">
+            <GoogleAPISettings />
           </TabsContent>
         </Tabs>
       </div>
