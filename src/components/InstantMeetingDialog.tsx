@@ -45,6 +45,7 @@ export function InstantMeetingDialog() {
       const startTime = new Date();
       const endTime = new Date(startTime.getTime() + duration * 60000);
       let videoUrl = '';
+      let finalProvider = videoProvider; // Track the actual provider used
 
       // Handle Google Meet with OAuth
       if (videoProvider === 'google_meet') {
@@ -78,6 +79,7 @@ export function InstantMeetingDialog() {
             variant: 'destructive',
           });
           videoUrl = generateJitsiMeetLink(title, crypto.randomUUID());
+          finalProvider = 'jitsi_meet'; // Update to jitsi on fallback
         }
       } else {
         // Use Jitsi Meet
@@ -96,7 +98,7 @@ export function InstantMeetingDialog() {
           status: 'in_progress' as any,
           meeting_type: 'online' as any,
           video_conference_url: videoUrl,
-          video_provider: videoProvider as any,
+          video_provider: finalProvider as any,
           timezone: 'Africa/Addis_Ababa',
           is_recurring: false,
         } as any)
