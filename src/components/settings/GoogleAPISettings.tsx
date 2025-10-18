@@ -201,50 +201,327 @@ export function GoogleAPISettings() {
             </TabsContent>
 
             <TabsContent value="services" className="space-y-4">
-              <div className="space-y-3">
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-base">Google Calendar API</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Create and manage calendar events with Google Calendar
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={isConfigured ? "default" : "secondary"}>
-                        {isConfigured ? 'Active' : 'Inactive'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        • Free (1M requests/day)
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+              <Alert className="mb-4">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  All Google Cloud services share the same OAuth 2.0 credentials configured above.
+                </AlertDescription>
+              </Alert>
 
-                <Card>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Video className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-base">Google Meet</CardTitle>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Generate Meet links automatically with Calendar events
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={isConfigured ? "default" : "secondary"}>
-                        {isConfigured ? 'Active' : 'Inactive'}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        • Free (60 min meetings)
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
+              <div className="space-y-3">
+                {/* Communication & Collaboration */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Communication & Collaboration</h3>
+                  
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Google Calendar API</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Create and manage calendar events, sync schedules, and automate meeting workflows
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={isConfigured ? "default" : "secondary"}>
+                            {isConfigured ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 1,000,000 queries/day</div>
+                          <div>• <strong>Paid:</strong> No additional cost beyond quota</div>
+                          <div>• <strong>Features:</strong> Event management, reminders, attendees, recurring events</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Video className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Google Meet</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Generate Meet video conference links automatically with Calendar events
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={isConfigured ? "default" : "secondary"}>
+                            {isConfigured ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 60 min meetings, unlimited 1:1 calls</div>
+                          <div>• <strong>Business:</strong> $12/user/month (300 participants, recording)</div>
+                          <div>• <strong>Enterprise:</strong> $18/user/month (500 participants, advanced features)</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Gmail API</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Send emails, read inbox, manage labels, and automate email workflows
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 1 billion quota units/day</div>
+                          <div>• <strong>Paid:</strong> Additional quota at $0.50/1M units</div>
+                          <div>• <strong>Features:</strong> Send/receive, attachments, filters, threading</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* AI & Machine Learning */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">AI & Machine Learning</h3>
+                  
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <Key className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Google Gemini AI</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Advanced AI models for text generation, analysis, and multimodal understanding
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Gemini 2.0 Flash:</strong> Free (2 RPM) | Paid: $0.075/1M input, $0.30/1M output</div>
+                          <div>• <strong>Gemini 1.5 Flash:</strong> Free (15 RPM) | Paid: $0.075/1M input, $0.30/1M output</div>
+                          <div>• <strong>Gemini 1.5 Pro:</strong> Free (2 RPM) | Paid: $1.25/1M input, $5.00/1M output</div>
+                          <div>• <strong>Context:</strong> Up to 2M tokens | Multimodal: text, images, video, audio</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Cloud Speech-to-Text</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Convert audio to text with automatic speech recognition for meeting transcriptions
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 60 minutes/month</div>
+                          <div>• <strong>Standard:</strong> $0.006/15 seconds</div>
+                          <div>• <strong>Enhanced:</strong> $0.009/15 seconds (better accuracy)</div>
+                          <div>• <strong>Features:</strong> 125+ languages, timestamps, speaker diarization</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Cloud Text-to-Speech</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Generate natural-sounding speech from text for audio briefings and announcements
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 1M characters/month (Standard), 100K (WaveNet/Neural2)</div>
+                          <div>• <strong>Standard:</strong> $4.00/1M characters</div>
+                          <div>• <strong>WaveNet:</strong> $16.00/1M characters (premium quality)</div>
+                          <div>• <strong>Features:</strong> 380+ voices, 50+ languages, SSML support</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Cloud Translation</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Translate text between languages for international meetings and documentation
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 500,000 characters/month</div>
+                          <div>• <strong>Basic:</strong> $20/1M characters</div>
+                          <div>• <strong>Advanced:</strong> $20/1M characters (glossary, custom models)</div>
+                          <div>• <strong>Features:</strong> 100+ languages, auto-detect, document translation</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Storage & Documents */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Storage & Documents</h3>
+                  
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Google Drive API</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Store, access, and manage meeting documents, minutes, and files
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 15 GB storage per user</div>
+                          <div>• <strong>Business:</strong> $12/user/month (2 TB storage)</div>
+                          <div>• <strong>Enterprise:</strong> $18/user/month (5 TB storage)</div>
+                          <div>• <strong>API:</strong> 20,000 queries/100 seconds (free)</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Google Docs/Sheets API</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Create and edit documents and spreadsheets programmatically for automated reporting
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> Included with Workspace or free Google account</div>
+                          <div>• <strong>API Quota:</strong> 500 reads/100 sec, 500 writes/100 sec</div>
+                          <div>• <strong>Features:</strong> Rich formatting, formulas, charts, collaboration</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Cloud Storage</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Object storage for meeting recordings, audio files, and large documents
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 5 GB/month storage, 1 GB/month egress</div>
+                          <div>• <strong>Standard:</strong> $0.020/GB/month storage, $0.12/GB egress</div>
+                          <div>• <strong>Nearline:</strong> $0.010/GB/month (30-day archive)</div>
+                          <div>• <strong>Features:</strong> 99.95% availability, versioning, encryption</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Analytics & Monitoring */}
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Analytics & Monitoring</h3>
+                  
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Cloud Natural Language</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Analyze meeting sentiment, extract entities, and classify content
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 5,000 units/month</div>
+                          <div>• <strong>Paid:</strong> $1.00/1,000 units</div>
+                          <div>• <strong>Features:</strong> Sentiment analysis, entity recognition, syntax analysis</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-5 w-5 text-primary" />
+                        <CardTitle className="text-base">Cloud Vision</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        Analyze images from meetings, extract text (OCR), and detect objects
+                      </p>
+                      <div className="flex flex-col gap-2">
+                        <Badge variant="secondary">Available</Badge>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <div>• <strong>Free Tier:</strong> 1,000 units/month</div>
+                          <div>• <strong>Paid:</strong> $1.50-$3.00/1,000 features (varies by type)</div>
+                          <div>• <strong>Features:</strong> OCR, label detection, face detection, logo recognition</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <Alert className="mt-4">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Note:</strong> All pricing is current as of 2025. Visit the{' '}
+                    <a 
+                      href="https://cloud.google.com/pricing" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      Google Cloud Pricing Calculator <ExternalLink className="h-3 w-3" />
+                    </a>
+                    {' '}for the most up-to-date information and to estimate costs for your usage.
+                  </AlertDescription>
+                </Alert>
               </div>
             </TabsContent>
 
