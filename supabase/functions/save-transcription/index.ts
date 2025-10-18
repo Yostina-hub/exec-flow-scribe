@@ -72,16 +72,51 @@ serve(async (req) => {
 
     console.log(`💾 Saving transcription: speaker=${speaker}, lang=${detectedLanguage}`);
 
-    const { error } = await supabase.from("transcriptions").insert(insertPayload);
-    if (error) {
-      console.error("❌ save-transcription DB error:", error);
-      return new Response(JSON.stringify({ error: "Failed to save transcription to database" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Check if there's a recent transcription from the same speaker (within 30 seconds)
+    const { data: recentTranscriptions } = await supabase
+      .from("transcriptions")
+      .select("*")
+      .eq("meeting_id", normalizedMeetingId)
+      .eq("speaker_name", speaker?.trim() || "")
+      .order("timestamp", { ascending: false })
+      .limit(1);
 
-    console.log("✅ Transcription saved successfully");
+    const now = new Date(timestamp || new Date().toISOString());
+    const shouldConsolidate = recentTranscriptions && 
+      recentTranscriptions.length > 0 && 
+      recentTranscriptions[0].speaker_name === (speaker?.trim() || "") &&
+      (now.getTime() - new Date(recentTranscriptions[0].timestamp).getTime()) < 30000; // 30 seconds
+
+    if (shouldConsolidate && recentTranscriptions[0]) {
+      // Update the existing transcription by appending the new content
+      const { error: updateError } = await supabase
+        .from("transcriptions")
+        .update({
+          content: recentTranscriptions[0].content + " " + content.trim(),
+          timestamp: now.toISOString() // Update to latest timestamp
+        })
+        .eq("id", recentTranscriptions[0].id);
+
+      if (updateError) {
+        console.error("❌ save-transcription update error:", updateError);
+        return new Response(JSON.stringify({ error: "Failed to update transcription" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log("✅ Transcription consolidated with previous segment");
+    } else {
+      // Insert new transcription
+      const { error } = await supabase.from("transcriptions").insert(insertPayload);
+      if (error) {
+        console.error("❌ save-transcription DB error:", error);
+        return new Response(JSON.stringify({ error: "Failed to save transcription to database" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      console.log("✅ New transcription segment created");
+    }
     
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
