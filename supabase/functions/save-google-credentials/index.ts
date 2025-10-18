@@ -29,17 +29,46 @@ serve(async (req) => {
 
     // Store in a secure settings table
     const { data, error } = await supabase
+      .from('system_settings');
+
+    // Ensure we either update or insert without relying on onConflict (works even if no unique constraint)
+    const { data: existingSetting, error: fetchErr } = await supabase
       .from('system_settings')
-      .upsert({
-        key: 'google_oauth_credentials',
-        value: {
-          clientId,
-          clientSecret,
-          updatedAt: new Date().toISOString()
-        }
-      }, {
-        onConflict: 'key'
-      });
+      .select('key')
+      .eq('key', 'google_oauth_credentials')
+      .maybeSingle();
+
+    if (fetchErr && fetchErr.code !== 'PGRST116') throw fetchErr;
+
+    let upsertError: any = null;
+    if (existingSetting) {
+      const { error: updErr } = await supabase
+        .from('system_settings')
+        .update({
+          value: {
+            clientId,
+            clientSecret,
+            updatedAt: new Date().toISOString()
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('key', 'google_oauth_credentials');
+      if (updErr) upsertError = updErr;
+    } else {
+      const { error: insErr } = await supabase
+        .from('system_settings')
+        .insert({
+          key: 'google_oauth_credentials',
+          value: {
+            clientId,
+            clientSecret,
+            updatedAt: new Date().toISOString()
+          }
+        });
+      if (insErr) upsertError = insErr;
+    }
+
+    if (upsertError) throw upsertError;
 
     if (error) throw error;
 
