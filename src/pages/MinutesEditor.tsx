@@ -8,13 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2 } from 'lucide-react';
-import { WaveformViewer } from '@/components/minutes/WaveformViewer';
-import { ConfidenceHeatmap } from '@/components/minutes/ConfidenceHeatmap';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
 import { Badge } from '@/components/ui/badge';
-import { AudioPlayer } from '@/components/minutes/AudioPlayer';
 
 interface TranscriptSegment {
   id: string;
@@ -38,8 +35,6 @@ export default function MinutesEditor() {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
-  const [recordingUrl, setRecordingUrl] = useState<string | null>(null);
-  const [audioSeekTime, setAudioSeekTime] = useState<number | undefined>(undefined);
   const [sensitiveSections, setSensitiveSections] = useState<any[]>([]);
   const [isSubmittingForSignOff, setIsSubmittingForSignOff] = useState(false);
   const [latestMinutesVersionId, setLatestMinutesVersionId] = useState<string | null>(null);
@@ -97,13 +92,12 @@ export default function MinutesEditor() {
 
       const { data: meeting } = await supabase
         .from('meetings')
-        .select('title, recording_url')
+        .select('title')
         .eq('id', meetingId)
         .single();
 
       if (meeting) {
         setMeetingTitle(meeting.title);
-        setRecordingUrl(meeting.recording_url);
         document.title = `Minutes Editor - ${meeting.title}`;
       }
 
@@ -283,8 +277,6 @@ export default function MinutesEditor() {
 
   const handleSegmentClick = (segment: TranscriptSegment) => {
     setSelectedSegment(segment);
-    // Seek audio to this segment's start time
-    setAudioSeekTime(segment.startTime);
   };
 
   const handleSubmitForSignOff = async () => {
@@ -497,31 +489,6 @@ export default function MinutesEditor() {
               </TabsList>
               
               <TabsContent value="transcript" className="flex-1 flex flex-col m-0">
-                {/* Audio Player */}
-                <div className="p-4 border-b bg-background/80 backdrop-blur">
-                  <AudioPlayer 
-                    audioUrl={recordingUrl || undefined}
-                    seekTo={audioSeekTime}
-                    onTimeUpdate={(time) => {
-                      // You can use this to highlight current transcript segment
-                      console.log('Audio time:', time);
-                    }}
-                  />
-                </div>
-
-                {/* Waveform */}
-                <div className="p-4 border-b bg-background/80 backdrop-blur">
-                  <WaveformViewer 
-                    meetingId={meetingId!}
-                    onSeek={(time) => setAudioSeekTime(time)}
-                  />
-                </div>
-
-                {/* Confidence Heatmap */}
-                <div className="p-4 border-b bg-background/50">
-                  <ConfidenceHeatmap segments={transcript} />
-                </div>
-
                 {/* Transcript Segments */}
                 <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                   {transcript.length === 0 ? (
