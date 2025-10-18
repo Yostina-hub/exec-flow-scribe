@@ -159,8 +159,8 @@ export function InstantMeetingDialog() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="google_meet">Google Meet</SelectItem>
-                  <SelectItem value="jitsi_meet">Jitsi Meet (Recommended)</SelectItem>
+                  <SelectItem value="jitsi_meet">Jitsi Meet (Recommended - Works Instantly)</SelectItem>
+                  <SelectItem value="google_meet" disabled>Google Meet (Requires API Setup)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
