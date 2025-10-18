@@ -433,7 +433,12 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
 
                       {selectedAudio === audio.file_url && (
                         <div className="mt-4 pt-4 border-t">
-                          <AudioPlayer audioUrl={audio.file_url} />
+                          <AudioPlayer audioUrl={(() => {
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('meeting-audio')
+                              .getPublicUrl(audio.file_url);
+                            return publicUrl;
+                          })()} />
                         </div>
                       )}
                     </CardContent>
