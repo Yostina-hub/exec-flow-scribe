@@ -116,50 +116,52 @@ export const BrowserSpeechRecognition = ({
 
   // Sync with external recording and pause state
   useEffect(() => {
-    const prevExternal = prevExternalRef.current;
-    const prevPaused = prevPausedRef.current;
-
-    if (!externalIsRecording) {
-      // Meeting recording stopped: save once on transition
-      if (prevExternal && isListening) {
-        stopListening();
-        stopAudioRecording();
-        // Save and clear immediately to prevent re-saves
-        if (transcript.trim()) {
-          handleSave().then(() => {
+    const sync = async () => {
+      const prevExternal = prevExternalRef.current;
+      const prevPaused = prevPausedRef.current;
+  
+      if (!externalIsRecording) {
+        // Recording stopped → save once on falling edge
+        if (prevExternal) {
+          if (isListening) stopListening();
+          const audioFile = await stopAudioRecording();
+          if (transcript.trim() || audioFile) {
+            await handleSave(audioFile);
             resetTranscript();
-          });
-        }
-      }
-    } else {
-      // Recording is active
-      if (isPaused) {
-        // Pause listening and audio without clearing
-        if (isListening) {
-          stopListening();
-          pauseAudioRecording();
+          }
         }
       } else {
-        // Active and not paused → ensure listening
-        if (!isListening) {
-          // New session start (rising edge) → clear and start
-          if (!prevExternal) {
-            resetTranscript();
-            setRecordingDuration(0);
-            clearAudioRecording();
-            startAudioRecording();
-          } else {
-            // Resuming from pause
-            resumeAudioRecording();
+        // Recording is active
+        if (isPaused) {
+          // Pause listening and audio without clearing
+          if (isListening) {
+            stopListening();
+            pauseAudioRecording();
           }
-          startListening(selectedLanguage);
+        } else {
+          // Active and not paused → ensure listening
+          if (!isListening) {
+            // New session start (rising edge) → clear and start
+            if (!prevExternal) {
+              resetTranscript();
+              setRecordingDuration(0);
+              clearAudioRecording();
+              await startAudioRecording();
+            } else {
+              // Resuming from pause
+              resumeAudioRecording();
+            }
+            startListening(selectedLanguage);
+          }
         }
       }
-    }
+  
+      // Update previous flags
+      prevExternalRef.current = externalIsRecording;
+      prevPausedRef.current = isPaused;
+    };
 
-    // Update previous flags
-    prevExternalRef.current = externalIsRecording;
-    prevPausedRef.current = isPaused;
+    void sync();
   }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
 
 useEffect(() => {

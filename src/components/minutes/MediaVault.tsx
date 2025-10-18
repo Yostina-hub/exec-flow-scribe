@@ -36,6 +36,20 @@ export function MediaVault({ meetingId }: MediaVaultProps) {
 
   useEffect(() => {
     fetchMediaFiles();
+
+    // Realtime updates for new media
+    const channel = supabase
+      .channel(`meeting-media-vault-${meetingId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'meeting_media', filter: `meeting_id=eq.${meetingId}` },
+        () => fetchMediaFiles()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [meetingId]);
 
   const fetchMediaFiles = async () => {
