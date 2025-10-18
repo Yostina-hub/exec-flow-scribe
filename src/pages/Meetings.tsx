@@ -192,29 +192,6 @@ export default function Meetings() {
       videoConferenceUrl: meeting.video_conference_url,
     };
   };
-    
-    // Determine status: in-progress if current time is between start and end
-    let status: "completed" | "upcoming" | "in-progress" = "upcoming";
-    if (meeting.status === "completed") {
-      status = "completed";
-    } else if (now >= startTime && now <= endTime) {
-      status = "in-progress";
-    }
-    
-    return {
-      id: meeting.id,
-      title: meeting.title,
-      date: format(startTime, "MMM d"),
-      time: format(startTime, "h:mm a"),
-      duration: `${duration} min`,
-      location: meeting.location || "TBD",
-      attendees: meeting.attendee_count || 0,
-      status,
-      agendaItems: meeting.agenda_count || 0,
-      meetingType: meeting.meeting_type || undefined,
-      videoConferenceUrl: meeting.video_conference_url,
-    };
-  };
 
   const filterMeetings = (meetings: FormattedMeeting[]) => {
     let filtered = meetings;
