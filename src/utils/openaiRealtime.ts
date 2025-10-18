@@ -269,14 +269,16 @@ export class OpenAIRealtimeClient {
                 modalities: ["text"],
                 instructions,
                 input_audio_format: "pcm16",
-                input_audio_transcription: {
-                  model: "whisper-1",
-                  // Don't set language for Amharic since OpenAI doesn't support 'am' code
-                  language: (this.sessionLanguage === 'ar') ? 'ar' : null,
-                  prompt: this.sessionLanguage === 'am' 
-                    ? "አማርኛ ጌዝ። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። Ethiopic NOT Arabic ا ب ت"
-                    : undefined
-                },
+                input_audio_transcription: (() => {
+                  const tx: Record<string, any> = { model: "whisper-1" };
+                  if (this.sessionLanguage === 'ar') {
+                    tx.language = 'ar';
+                  }
+                  if (this.sessionLanguage === 'am') {
+                    tx.prompt = "አማርኛ ጌዝ። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። Ethiopic NOT Arabic ا ب ت";
+                  }
+                  return tx;
+                })(),
                 turn_detection: {
                   type: "server_vad",
                   threshold: 0.5,

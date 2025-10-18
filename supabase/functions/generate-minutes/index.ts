@@ -92,22 +92,44 @@ serve(async (req) => {
 
     // Fetch transcriptions
     console.log("📝 Fetching transcriptions...");
-    const { data: transcriptions, error: transcError } = await supabase
+    // Try primary table
+    let transcriptions: any[] = [];
+    let tr1 = await supabase
       .from("transcriptions")
       .select("*")
       .eq("meeting_id", meetingId)
       .order("timestamp", { ascending: true });
 
-    if (transcError) {
-      console.error("Transcription fetch error:", transcError);
+    if (tr1.error) {
+      console.error("Transcription fetch error (transcriptions):", tr1.error);
     }
-    
-    if (!transcriptions || transcriptions.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "No transcriptions found for this meeting. Please record the meeting first." }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    transcriptions = tr1.data || [];
+
+    // Fallback to alternate table name used elsewhere in app
+    if (!transcriptions.length) {
+      console.log("🔎 No rows in 'transcriptions'. Trying 'transcription_segments'...");
+      const tr2 = await supabase
+        .from("transcription_segments")
+        .select("*")
+        .eq("meeting_id", meetingId)
+        .order("created_at", { ascending: true });
+      if (tr2.error) {
+        console.warn("Transcription fetch error (transcription_segments):", tr2.error);
+      }
+      if (tr2.data?.length) {
+        // Normalize shape -> { content, timestamp, speaker_name }
+        transcriptions = tr2.data
+          .map((r: any) => ({
+            content: r.content || r.text || "",
+            timestamp: r.created_at || r.timestamp || new Date().toISOString(),
+            speaker_name: r.speaker || r.speaker_name || null,
+          }))
+          .filter((t: any) => (t.content || '').trim());
+      }
     }
+
+    const noTranscript = transcriptions.length === 0;
+
 
     // Fetch decisions
     const { data: decisions, error: decisionsError } = await supabase
@@ -192,16 +214,18 @@ ${agendaList}
 Full Transcript:
 ${fullTranscript}
 
-Decisions Made:
-${decisionsList}
-
-Please generate:
-1. A concise executive summary (2-3 sentences)
-2. Key discussion points organized by agenda item
-3. Action items with assigned responsibilities (extract from transcript)
-4. Next steps and follow-up items
-
-Format the output as a professional meeting minutes document in markdown format.${languageInstruction}`;
+    Decisions Made:
+    ${decisionsList}
+    
+    ${noTranscript ? `NOTE: Transcript not available. Generate a clear draft based on agenda, meeting metadata, and any decisions. Add a disclaimer at the top: "Note: Transcript not available — draft minutes."` : ``}
+    
+    Please generate:
+    1. A concise executive summary (2-3 sentences)
+    2. Key discussion points organized by agenda item
+    3. Action items with assigned responsibilities (extract from transcript where available)
+    4. Next steps and follow-up items
+    
+    Format the output as a professional meeting minutes document in markdown format.${languageInstruction}`;
 
     let minutes = "";
 

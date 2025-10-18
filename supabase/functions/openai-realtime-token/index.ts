@@ -39,15 +39,17 @@ serve(async (req) => {
         model: "gpt-4o-realtime-preview-2024-12-17",
         modalities: ["text"],
         instructions,
-        input_audio_transcription: {
-          model: "whisper-1",
-          // Don't set language for Amharic since OpenAI doesn't support 'am' code
-          // Whisper will auto-detect based on the prompt
-          language: (language && language !== 'auto' && language !== 'am') ? language : null,
-          prompt: language === 'am' 
-            ? "አማርኛ ጌዝ ስክሪፕት። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። አማርኛ ብቻ NOT Arabic script ا ب ت ث"
-            : undefined
-        },
+        // Build transcription config dynamically to avoid invalid null fields
+        input_audio_transcription: (() => {
+          const tx: Record<string, any> = { model: "whisper-1" };
+          if (language && language !== 'auto' && language !== 'am') {
+            tx.language = language;
+          }
+          if (language === 'am') {
+            tx.prompt = "አማርኛ ጌዝ ስክሪፕት። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። አማርኛ ብቻ NOT Arabic script ا ب ت ث";
+          }
+          return tx;
+        })(),
         turn_detection: {
           type: "server_vad",
           threshold: 0.5,
