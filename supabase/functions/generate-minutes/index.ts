@@ -1,3 +1,4 @@
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
 
@@ -74,6 +75,8 @@ try {
 
     const provider = preference?.provider || "lovable_ai";
     console.log(`Using AI provider: ${provider}`);
+    
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
     // Fetch meeting details
     console.log("📋 Fetching meeting details...");
@@ -266,11 +269,68 @@ Format as a professional markdown document.${languageInstruction}`;
     let minutes = "";
     let providerError = "";
 
-    // Use OpenAI if available
+    // Try Lovable AI first (best for Amharic multilingual support)
+    if (lovableApiKey && !minutes) {
+      try {
+        console.log("🤖 Using Lovable AI Gateway with gemini-2.5-pro (optimized for Amharic)");
+        const lovableResponse = await fetch(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-pro", // Best for multilingual + complex reasoning
+              messages: [
+                { 
+                  role: "system", 
+                  content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
+
+${detectedLang === 'am' ? `AMHARIC EXPERTISE:
+• You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
+• You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
+• Every sentence MUST end with ።
+• Use Subject-Object-Verb (SOV) word order
+• Use professional honorifics and business terminology
+• Write in Ge'ez script exclusively - NEVER use Latin script or romanization
+• Maintain formal tone and proper grammatical structure` : 'Preserve the transcript language and script exactly. Never romanize or transliterate.'}` 
+                },
+                { role: "user", content: prompt },
+              ],
+            }),
+          }
+        );
+
+        if (lovableResponse.ok) {
+          const lovableData = await lovableResponse.json();
+          minutes = lovableData.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with Lovable AI (gemini-2.5-pro)");
+        } else {
+          const statusCode = lovableResponse.status;
+          const errorText = await lovableResponse.text();
+          console.error(`Lovable AI error (${statusCode}):`, errorText);
+          
+          if (statusCode === 429) {
+            providerError = "Rate limit exceeded. Please try again in a moment.";
+          } else if (statusCode === 402) {
+            providerError = "AI credits exhausted. Please add credits to continue.";
+          } else {
+            providerError = `Lovable AI: ${errorText}`;
+          }
+        }
+      } catch (e) {
+        console.error("Lovable AI provider failed:", e);
+        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
+
+    // Fallback to OpenAI if available and Lovable AI failed
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (openaiKey && !minutes) {
       try {
-        console.log("🤖 Using OpenAI API");
+        console.log("🤖 Fallback to OpenAI API");
         const openaiResponse = await fetch(
           "https://api.openai.com/v1/chat/completions",
           {
@@ -299,15 +359,15 @@ ${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing.
         } else {
           const error = await openaiResponse.text();
           console.error("OpenAI error:", error);
-          providerError = `OpenAI: ${error}`;
+          providerError += (providerError ? "; " : "") + `OpenAI: ${error}`;
         }
       } catch (e) {
         console.error("OpenAI provider failed:", e);
-        providerError = `OpenAI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        providerError += (providerError ? "; " : "") + `OpenAI: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
 
-    // Try Gemini if OpenAI didn't work and provider is gemini
+    // Try Gemini as last resort
     if (!minutes && provider === "gemini") {
       try {
         const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
@@ -345,7 +405,7 @@ ${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing.
       console.error("All AI providers failed:", providerError);
       return new Response(
         JSON.stringify({ 
-          error: "Failed to generate minutes with available providers. " + providerError
+          error: "Failed to generate minutes. " + (providerError || "Please try again later.")
         }), 
         { 
           status: 500, 
