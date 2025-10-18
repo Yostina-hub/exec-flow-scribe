@@ -84,13 +84,16 @@ export const BrowserSpeechRecognition = ({
     const prevPaused = prevPausedRef.current;
 
     if (!externalIsRecording) {
-      // Meeting recording stopped: ensure we stop and save once
-      if (isListening) {
+      // Meeting recording stopped: save once on transition
+      if (prevExternal && isListening) {
         stopListening();
         stopAudioRecording();
-      }
-      if (transcript.trim()) {
-        handleSave();
+        // Save and clear immediately to prevent re-saves
+        if (transcript.trim()) {
+          handleSave().then(() => {
+            resetTranscript();
+          });
+        }
       }
     } else {
       // Recording is active
@@ -121,7 +124,7 @@ export const BrowserSpeechRecognition = ({
     // Update previous flags
     prevExternalRef.current = externalIsRecording;
     prevPausedRef.current = isPaused;
-  }, [externalIsRecording, isPaused, isListening, selectedLanguage, transcript]);
+  }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
 
 useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -140,6 +143,7 @@ useEffect(() => {
 
   const handleSave = async (audioFile?: Blob | null) => {
     if (!transcript.trim() && !audioFile) return;
+    if (isSaving) return; // Prevent duplicate saves
 
     setIsSaving(true);
     try {
