@@ -12,9 +12,10 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
+try {
     const body = await req.json();
     const meetingId = body.meetingId || body.meeting_id;
+    const recordingSeconds = typeof body.recordingSeconds === 'number' ? body.recordingSeconds : null;
 
     if (!meetingId) {
       console.error("Request body:", body);
@@ -197,16 +198,17 @@ Never use Latin letters or romanization.`
 If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
 Never romanize or transliterate non-Latin scripts.`;
 
-    // Generate minutes using selected AI provider
+// Generate minutes using selected AI provider
     const prompt = `You are an executive assistant tasked with generating professional meeting minutes.
 
 Meeting Title: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
-Duration: ${Math.round(
+Duration (scheduled): ${Math.round(
       (new Date(meeting.end_time).getTime() -
         new Date(meeting.start_time).getTime()) /
         60000
     )} minutes
+${recordingSeconds !== null ? `Recording Time: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
 
 Agenda Items:
 ${agendaList}

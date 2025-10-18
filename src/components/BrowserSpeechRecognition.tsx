@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,13 +11,16 @@ import { useToast } from '@/hooks/use-toast';
 interface BrowserSpeechRecognitionProps {
   meetingId: string;
   externalIsRecording?: boolean;
+  isPaused?: boolean;
   onRecordingStart?: () => void;
-  onRecordingStop?: () => void;
+  onRecordingStop?: (durationSeconds?: number) => void;
+  onDurationChange?: (seconds: number) => void;
 }
 
 export const BrowserSpeechRecognition = ({ 
   meetingId, 
   externalIsRecording = false,
+  isPaused = false,
   onRecordingStart,
   onRecordingStop 
 }: BrowserSpeechRecognitionProps) => {
@@ -36,7 +39,11 @@ export const BrowserSpeechRecognition = ({
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
-  const { toast } = useToast();
+const { toast } = useToast();
+
+  // Track previous external recording and pause states
+  const prevExternalRef = useRef(externalIsRecording);
+  const prevPausedRef = useRef(isPaused);
 
   // Get current user name for speaker identification
   useEffect(() => {
@@ -56,34 +63,63 @@ export const BrowserSpeechRecognition = ({
     getUserName();
   }, []);
 
-  // Sync with external recording state
+// Sync with external recording and pause state
   useEffect(() => {
-    if (externalIsRecording && !isListening) {
-      resetTranscript();
-      setRecordingDuration(0);
-      startListening(selectedLanguage);
-    } else if (!externalIsRecording && isListening) {
-      stopListening();
+    const prevExternal = prevExternalRef.current;
+    const prevPaused = prevPausedRef.current;
+
+    if (!externalIsRecording) {
+      // Meeting recording stopped: ensure we stop and save once
+      if (isListening) {
+        stopListening();
+      }
       if (transcript.trim()) {
+        // fire-and-forget; effect can't be async
         handleSave();
       }
+    } else {
+      // Recording is active
+      if (isPaused) {
+        // Pause listening without clearing transcript or saving
+        if (isListening) {
+          stopListening();
+        }
+      } else {
+        // Active and not paused → ensure listening
+        if (!isListening) {
+          // New session start (rising edge) → clear
+          if (!prevExternal) {
+            resetTranscript();
+            setRecordingDuration(0);
+          }
+          startListening(selectedLanguage);
+        }
+      }
     }
-  }, [externalIsRecording]);
 
-  useEffect(() => {
+    // Update previous flags
+    prevExternalRef.current = externalIsRecording;
+    prevPausedRef.current = isPaused;
+  }, [externalIsRecording, isPaused, isListening, selectedLanguage, transcript]);
+
+useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isListening) {
       interval = setInterval(() => {
-        setRecordingDuration(prev => prev + 1);
+        setRecordingDuration(prev => {
+          const next = prev + 1;
+          onDurationChange?.(next);
+          return next;
+        });
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isListening]);
+  }, [isListening, onDurationChange]);
 
-  const handleStartStop = async () => {
+const handleStartStop = async () => {
     if (isListening) {
       stopListening();
-      onRecordingStop?.();
+      onRecordingStop?.(recordingDuration);
       // Auto-save when stopping if there's content
       if (transcript.trim()) {
         await handleSave();
@@ -91,6 +127,7 @@ export const BrowserSpeechRecognition = ({
     } else {
       resetTranscript();
       setRecordingDuration(0);
+      onDurationChange?.(0);
       startListening(selectedLanguage);
       onRecordingStart?.();
     }
@@ -214,11 +251,26 @@ export const BrowserSpeechRecognition = ({
             )}
           </Button>
 
-          {isListening && (
+{isListening && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                 Recording
+              </Badge>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="w-5 h-5" />
+                <span className="text-3xl font-mono font-bold">
+                  {formatDuration(recordingDuration)}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {!isListening && externalIsRecording && isPaused && (
+            <div className="flex flex-col items-center gap-2">
+              <Badge variant="warning" className="gap-2 text-base px-4 py-2">
+                <span className="h-2 w-2 rounded-full bg-white" />
+                Paused
               </Badge>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="w-5 h-5" />

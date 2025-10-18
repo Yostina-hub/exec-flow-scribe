@@ -121,8 +121,9 @@ const MeetingDetail = () => {
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const [loading, setLoading] = useState(true);
-  const [wasRecording, setWasRecording] = useState(false);
+const [wasRecording, setWasRecording] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   
   const meetingId = id || "demo-meeting-id";
   const { 
@@ -174,9 +175,9 @@ const MeetingDetail = () => {
               .eq('id', id);
           }
 
-          // Generate minutes automatically
+// Generate minutes automatically
           const { data, error } = await supabase.functions.invoke('generate-minutes', {
-            body: { meetingId },
+            body: { meetingId, recordingSeconds },
           });
 
           if (error) throw error;
@@ -362,7 +363,7 @@ const MeetingDetail = () => {
         </div>
 
         {/* Enhanced Meeting Controls */}
-        <Card className="border-0 bg-gradient-to-br from-background via-muted/20 to-background backdrop-blur-xl overflow-hidden">
+<Card className="border-0 bg-gradient-to-br from-background via-muted/20 to-background backdrop-blur-xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 animate-pulse" />
           <CardContent className="pt-6 relative z-10">
             <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -382,7 +383,7 @@ const MeetingDetail = () => {
               <div className="flex gap-3">
                 {!isRecording ? (
                   <Button 
-                    onClick={startRecording} 
+                    onClick={() => { setRecordingSeconds(0); startRecording(); }} 
                     className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
                   >
                     <Mic className="h-4 w-4" />
@@ -434,12 +435,14 @@ const MeetingDetail = () => {
                 <TabsTrigger value="studio">Studio</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="transcription" className="space-y-4">
+<TabsContent value="transcription" className="space-y-4">
                 <BrowserSpeechRecognition 
                   meetingId={meetingId}
                   externalIsRecording={isRecording}
+                  isPaused={isPaused}
                   onRecordingStart={startRecording}
-                  onRecordingStop={stopRecording}
+                  onRecordingStop={() => stopRecording()}
+                  onDurationChange={(s) => setRecordingSeconds(s)}
                 />
               </TabsContent>
 
