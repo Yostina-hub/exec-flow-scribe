@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Plus, Repeat } from "lucide-react";
+import { CalendarIcon, Plus, Repeat, Globe } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -40,6 +40,8 @@ export const CreateMeetingDialog = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
+  const [meetingType, setMeetingType] = useState<string>('in_person');
+  const [showVideoFields, setShowVideoFields] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -76,6 +78,9 @@ export const CreateMeetingDialog = () => {
       const timezone = formData.get("timezone") as string;
       const recurrenceFreq = formData.get("recurrence_freq") as string;
       const recurrenceInterval = parseInt(formData.get("recurrence_interval") as string || "1");
+      const meetingType = formData.get("meeting_type") as string;
+      const videoUrl = formData.get("video_url") as string;
+      const videoProvider = formData.get("video_provider") as string;
 
       if (!date) {
         toast.error("Please select a date");
@@ -118,6 +123,10 @@ export const CreateMeetingDialog = () => {
           category_id: categoryId || null,
           timezone,
           is_recurring: isRecurring,
+          meeting_type: meetingType,
+          video_conference_url: videoUrl || null,
+          video_provider: videoProvider || null,
+          requires_offline_support: meetingType === 'in_person',
         })
         .select()
         .single();
@@ -224,26 +233,72 @@ export const CreateMeetingDialog = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Select defaultValue="60" name="duration">
-                  <SelectTrigger id="duration">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="45">45 minutes</SelectItem>
-                    <SelectItem value="60">60 minutes</SelectItem>
-                    <SelectItem value="90">90 minutes</SelectItem>
-                    <SelectItem value="120">120 minutes</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input id="location" name="location" placeholder="Board Room" required />
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="meeting_type">Meeting Type</Label>
+                <Select 
+                  defaultValue="in_person" 
+                  name="meeting_type"
+                  onValueChange={(value) => {
+                    setMeetingType(value);
+                    setShowVideoFields(value === 'online' || value === 'hybrid');
+                  }}
+                >
+                  <SelectTrigger id="meeting_type">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="in_person">In-Person</SelectItem>
+                    <SelectItem value="online">Online</SelectItem>
+                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
+            {showVideoFields && (
+              <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Globe className="h-4 w-4 text-primary" />
+                  <Label className="text-base font-semibold">Video Conference</Label>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="video_provider">Provider</Label>
+                    <Select name="video_provider" defaultValue="jitsi_meet">
+                      <SelectTrigger id="video_provider">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="google_meet">Google Meet</SelectItem>
+                        <SelectItem value="jitsi_meet">Jitsi Meet</SelectItem>
+                        <SelectItem value="zoom">Zoom</SelectItem>
+                        <SelectItem value="teams">Microsoft Teams</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="video_url">Meeting Link (Optional)</Label>
+                    <Input 
+                      id="video_url" 
+                      name="video_url" 
+                      placeholder="https://meet.jit.si/..." 
+                      type="url"
+                    />
+                  </div>
+                </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  Leave link empty to auto-generate a Jitsi Meet room
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">

@@ -1694,15 +1694,19 @@ export type Database = {
           id: string
           is_recurring: boolean | null
           location: string | null
+          meeting_type: Database["public"]["Enums"]["meeting_type"] | null
           minutes_url: string | null
           organizer_notes: string | null
           recording_url: string | null
+          requires_offline_support: boolean | null
           start_time: string
           status: Database["public"]["Enums"]["meeting_status"]
           timezone: string | null
           title: string
           transcript_url: string | null
           updated_at: string
+          video_conference_url: string | null
+          video_provider: Database["public"]["Enums"]["video_provider"] | null
           visibility: string | null
         }
         Insert: {
@@ -1715,15 +1719,19 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           location?: string | null
+          meeting_type?: Database["public"]["Enums"]["meeting_type"] | null
           minutes_url?: string | null
           organizer_notes?: string | null
           recording_url?: string | null
+          requires_offline_support?: boolean | null
           start_time: string
           status?: Database["public"]["Enums"]["meeting_status"]
           timezone?: string | null
           title: string
           transcript_url?: string | null
           updated_at?: string
+          video_conference_url?: string | null
+          video_provider?: Database["public"]["Enums"]["video_provider"] | null
           visibility?: string | null
         }
         Update: {
@@ -1736,15 +1744,19 @@ export type Database = {
           id?: string
           is_recurring?: boolean | null
           location?: string | null
+          meeting_type?: Database["public"]["Enums"]["meeting_type"] | null
           minutes_url?: string | null
           organizer_notes?: string | null
           recording_url?: string | null
+          requires_offline_support?: boolean | null
           start_time?: string
           status?: Database["public"]["Enums"]["meeting_status"]
           timezone?: string | null
           title?: string
           transcript_url?: string | null
           updated_at?: string
+          video_conference_url?: string | null
+          video_provider?: Database["public"]["Enums"]["video_provider"] | null
           visibility?: string | null
         }
         Relationships: [
@@ -2755,6 +2767,7 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
+      meeting_type: "online" | "in_person" | "hybrid"
       permission_action: "create" | "read" | "update" | "delete" | "manage"
       permission_resource:
         | "users"
@@ -2763,6 +2776,7 @@ export type Database = {
         | "actions"
         | "transcriptions"
         | "settings"
+      video_provider: "google_meet" | "jitsi_meet" | "zoom" | "teams" | "other"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2900,6 +2914,7 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
+      meeting_type: ["online", "in_person", "hybrid"],
       permission_action: ["create", "read", "update", "delete", "manage"],
       permission_resource: [
         "users",
@@ -2909,6 +2924,7 @@ export const Constants = {
         "transcriptions",
         "settings",
       ],
+      video_provider: ["google_meet", "jitsi_meet", "zoom", "teams", "other"],
     },
   },
 } as const

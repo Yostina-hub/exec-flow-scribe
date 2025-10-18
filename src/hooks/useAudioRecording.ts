@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react';
 
 export interface AudioRecordingHook {
   isRecording: boolean;
+  isPaused: boolean;
   audioBlob: Blob | null;
   audioDuration: number;
   startRecording: () => Promise<void>;
@@ -14,6 +15,7 @@ export interface AudioRecordingHook {
 
 export const useAudioRecording = (): AudioRecordingHook => {
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioDuration, setAudioDuration] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -123,6 +125,7 @@ export const useAudioRecording = (): AudioRecordingHook => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       pauseTimeRef.current = Date.now();
       mediaRecorderRef.current.pause();
+      setIsPaused(true);
     }
   }, []);
 
@@ -131,6 +134,7 @@ export const useAudioRecording = (): AudioRecordingHook => {
       const pauseDuration = Date.now() - pauseTimeRef.current;
       pauseTimeRef.current = pauseDuration;
       mediaRecorderRef.current.resume();
+      setIsPaused(false);
     }
   }, []);
 
@@ -149,6 +153,7 @@ export const useAudioRecording = (): AudioRecordingHook => {
 
   return {
     isRecording,
+    isPaused,
     audioBlob,
     audioDuration,
     startRecording,
