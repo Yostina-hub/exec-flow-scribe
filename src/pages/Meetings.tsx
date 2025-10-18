@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Search, Filter, Loader2, Calendar, Clock, Users, TrendingUp, Download, SortAsc } from "lucide-react";
-import { useState, useEffect, useMemo } from "react";
+import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isFuture, startOfDay, startOfWeek, endOfWeek } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -63,14 +63,14 @@ interface MeetingStats {
 
 export default function Meetings() {
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [meetings, setMeetings] = useState<Meeting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState<MeetingStats>({ total: 0, upcoming: 0, completed: 0, thisWeek: 0 });
-  const [filterLocation, setFilterLocation] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"date" | "title" | "attendees">("date");
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [meetings, setMeetings] = React.useState<Meeting[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState<MeetingStats>({ total: 0, upcoming: 0, completed: 0, thisWeek: 0 });
+  const [filterLocation, setFilterLocation] = React.useState<string>("all");
+  const [sortBy, setSortBy] = React.useState<"date" | "title" | "attendees">("date");
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchMeetings();
     
     // Set up realtime subscription for meetings and agenda items
@@ -233,7 +233,7 @@ export default function Meetings() {
   };
 
   // Get unique locations for filter
-  const uniqueLocations = useMemo(() => {
+  const uniqueLocations = React.useMemo(() => {
     const locations = meetings
       .map(m => m.location)
       .filter((loc): loc is string => loc !== null && loc !== "");
