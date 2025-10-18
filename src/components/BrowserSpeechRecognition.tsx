@@ -22,7 +22,8 @@ export const BrowserSpeechRecognition = ({
   externalIsRecording = false,
   isPaused = false,
   onRecordingStart,
-  onRecordingStop 
+  onRecordingStop,
+  onDurationChange
 }: BrowserSpeechRecognitionProps) => {
   const {
     transcript,
