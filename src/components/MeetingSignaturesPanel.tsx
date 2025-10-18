@@ -54,7 +54,7 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
         .from('signature_requests')
         .select(`
           *,
-          pdf_generations(pdf_url, generated_at),
+          minutes_versions(pdf_url, generated_at),
           countersignatures(status, required_role, assigned_to),
           delegation_records(delegated_to, reason_code)
         `)
@@ -301,11 +301,11 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
                                 </Button>
                               )}
                               
-                              {sig.pdf_generations?.[0]?.pdf_url && (
+                              {sig.minutes_versions?.[0]?.pdf_url && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleDownloadPDF(sig.pdf_generations[0].pdf_url)}
+                                  onClick={() => handleDownloadPDF(sig.minutes_versions[0].pdf_url)}
                                 >
                                   <Download className="h-4 w-4 mr-2" />
                                   Download PDF
