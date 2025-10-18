@@ -50,11 +50,6 @@ serve(async (req) => {
     }
     const normalizedMeetingId = uuidRegex.test(String(meetingId)) ? String(meetingId) : stringToUUID(String(meetingId));
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY not configured");
-    }
-
     // Create Supabase client
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -105,45 +100,97 @@ serve(async (req) => {
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audioBase64);
     
-    // Determine provider and API key
-    let openaiApiKey: string | null = null;
-    const serverOpenAI = Deno.env.get("OPENAI_API_KEY") || null;
-
-    // Default to server key
-    openaiApiKey = serverOpenAI;
-
-    // If user has a preference with their own key, prefer it
-    if (userData?.user?.id) {
-      const { data: prefs, error: prefsErr } = await supabase
-        .from("transcription_preferences")
-        .select("provider, openai_api_key")
-        .eq("user_id", userData.user.id)
-        .maybeSingle();
-      if (!prefsErr && prefs) {
-        if (prefs.provider === "openai" && prefs.openai_api_key) {
-          openaiApiKey = prefs.openai_api_key;
-        }
-      }
-    }
-
-    if (!openaiApiKey) {
-      throw new Error("OPENAI_API_KEY is not configured on the server");
-    }
+    // Determine provider
+    const googleCloudApiKey = Deno.env.get("GOOGLE_CLOUD_API_KEY");
+    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
     
-    // Create FormData for file upload
-    const formData = new FormData();
-    const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
-    const filename = type === 'audio/wav' ? 'audio.wav' : 'audio.webm';
-    const audioBlob = new Blob([binaryAudio], { type });
-    formData.append("file", audioBlob, filename);
-
+    console.log('Available transcription providers:', {
+      hasGoogleCloud: !!googleCloudApiKey,
+      hasOpenAI: !!openaiApiKey
+    });
+    
     let transcriptText = "";
     let detectedLanguage: string | null = null;
 
-    if (openaiApiKey) {
-      formData.append("model", "whisper-1");
+    // Try Google Cloud Speech-to-Text first (better for Amharic)
+    if (googleCloudApiKey) {
+      console.log('Using Google Cloud Speech-to-Text API');
+      
+      try {
+        // Convert audio to base64 for Google Cloud API
+        const audioContent = btoa(String.fromCharCode(...binaryAudio));
+        
+        // Determine language code for Google Cloud
+        let languageCode = "am-ET"; // Default to Amharic (Ethiopia)
+        if (language === 'ar') {
+          languageCode = "ar-SA"; // Arabic (Saudi Arabia)
+        } else if (language && language !== 'auto' && language !== 'am') {
+          languageCode = language;
+        }
+        
+        console.log('Google Cloud language code:', languageCode);
+        
+        const response = await fetch(
+          `https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              config: {
+                encoding: "WEBM_OPUS",
+                sampleRateHertz: 48000,
+                languageCode: languageCode,
+                alternativeLanguageCodes: language === 'auto' ? ["ar-SA", "en-US"] : [],
+                enableAutomaticPunctuation: true,
+                model: "default",
+              },
+              audio: {
+                content: audioContent,
+              },
+            }),
+          }
+        );
 
-      // Prefer verbose output to read detected language and enforce script rules
+        if (!response.ok) {
+          const errText = await response.text();
+          console.error("Google Cloud API error:", response.status, errText);
+          throw new Error(`Google Cloud API failed: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Google Cloud API response:', JSON.stringify(result).substring(0, 200));
+        
+        if (result.results && result.results.length > 0) {
+          transcriptText = result.results
+            .map((r: any) => r.alternatives[0]?.transcript || "")
+            .join(" ")
+            .trim();
+          detectedLanguage = languageCode.split('-')[0]; // Extract language from code
+          
+          console.log('Google Cloud transcription successful:', {
+            textLength: transcriptText.length,
+            detectedLanguage,
+            preview: transcriptText.substring(0, 100)
+          });
+        } else {
+          console.log('No transcription results from Google Cloud');
+        }
+      } catch (gcError) {
+        console.error("Google Cloud transcription failed:", gcError);
+        // Fall through to OpenAI fallback
+      }
+    }
+    
+    // Fallback to OpenAI if Google Cloud failed or not available
+    if (!transcriptText && openaiApiKey) {
+      console.log('Using OpenAI Whisper as fallback');
+      
+      const formData = new FormData();
+      const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
+      const filename = type === 'audio/wav' ? 'audio.wav' : 'audio.webm';
+      const audioBlob = new Blob([binaryAudio], { type });
+      formData.append("file", audioBlob, filename);
+      formData.append("model", "whisper-1");
       formData.append("response_format", "verbose_json");
       
       // Special handling for Amharic
@@ -176,7 +223,6 @@ serve(async (req) => {
       if (!response.ok) {
         const errText = await response.text();
         console.error("OpenAI transcription error:", errText);
-        // Map common errors explicitly
         if (response.status === 429) {
           return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
             status: 429,
@@ -193,59 +239,19 @@ serve(async (req) => {
       }
 
       const transcriptionData = await response.json();
-      // Handle both simple text and verbose_json formats
       transcriptText = transcriptionData.text || transcriptionData.transcript || "";
       detectedLanguage = transcriptionData.language || null;
       
-      console.log('Initial transcription result:', {
+      console.log('OpenAI transcription result:', {
         detectedLanguage,
         textLength: transcriptText.length,
         firstChars: transcriptText.substring(0, 50)
       });
-      
-      const hasGeEz = /[\u1200-\u137F]/.test(transcriptText);
-      const hasArabic = /[\u0600-\u06FF]/.test(transcriptText);
-      const hasLatin = /[a-zA-Z]/.test(transcriptText);
-      
-      console.log('Script detection:', { hasGeEz, hasArabic, hasLatin });
-
-      // If detected Amharic but script isn't Ge'ez, force a retry in Amharic
-      if ((detectedLanguage === 'am' || language === 'am' || hasArabic) && !hasGeEz) {
-        console.log('Amharic detected without Ge\'ez script - retrying with forced Amharic');
-        const retryForm = new FormData();
-        retryForm.append("file", audioBlob, filename);
-        retryForm.append("model", "whisper-1");
-        retryForm.append("language", "am");
-        retryForm.append("response_format", "verbose_json");
-        retryForm.append("prompt", "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters.");
-
-        const retryResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-          method: "POST",
-          headers: { Authorization: `Bearer ${openaiApiKey}` },
-          body: retryForm,
-        });
-
-        if (retryResp.ok) {
-          const retryData = await retryResp.json();
-          const retryText = retryData.text || retryData.transcript || "";
-          const retryHasGeEz = /[\u1200-\u137F]/.test(retryText);
-          console.log('Retry result:', {
-            retryTextLength: retryText.length,
-            retryHasGeEz,
-            firstChars: retryText.substring(0, 50)
-          });
-          if (retryHasGeEz && retryText) {
-            transcriptText = retryText;
-            detectedLanguage = 'am';
-            console.log('✅ Successfully retried with Ge\'ez script');
-          } else {
-            console.log('⚠️ Retry still did not produce Ge\'ez script');
-          }
-        } else {
-          const errorText = await retryResp.text();
-          console.error("Amharic retry failed:", retryResp.status, errorText);
-        }
-      }
+    }
+    
+    // If no transcription provider available
+    if (!transcriptText && !googleCloudApiKey && !openaiApiKey) {
+      throw new Error("No transcription provider configured. Please add GOOGLE_CLOUD_API_KEY or OPENAI_API_KEY.");
     }
 
     // Validate and save transcription
