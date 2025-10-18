@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
-import { useOpenAIRealtime } from '@/hooks/useOpenAIRealtime';
-import { Mic, Square, Pause, Play, Trash2, Upload, Clock, Star, Loader2 } from 'lucide-react';
+import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+import { Mic, Square, Pause, Play, Trash2, Upload, Clock, Star, Languages } from 'lucide-react';
 
 interface Transcription {
   id: string;
@@ -75,8 +76,10 @@ export function UnifiedRecordingPanel({
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
-  const [useRealtime, setUseRealtime] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [selectedLanguage, setSelectedLanguage] = useState('am-ET');
+  const [userName, setUserName] = useState('Speaker');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const {
     audioBlob,
@@ -89,12 +92,37 @@ export function UnifiedRecordingPanel({
     clearRecording,
   } = useAudioRecording();
 
+  const {
+    transcript,
+    isListening,
+    isSupported,
+    startListening,
+    stopListening,
+    resetTranscript,
+    error: speechError,
+    setLanguage,
+  } = useSpeechRecognition();
+
   const normalizedId = normalizeMeetingId(meetingId);
-  
-  const { isConnected, transcripts: realtimeTranscripts, rateLimited, isProcessing } = useOpenAIRealtime(
-    normalizedId,
-    useRealtime && isRecording
-  );
+
+  // Get user info
+  useEffect(() => {
+    const getUserInfo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.full_name) {
+          setUserName(profile.full_name);
+        }
+      }
+    };
+    getUserInfo();
+  }, []);
 
   // Sync recording duration
   useEffect(() => {
@@ -112,21 +140,6 @@ export function UnifiedRecordingPanel({
   }, [isRecording, isPaused, onDurationChange]);
 
   useEffect(() => {
-    const checkRealtimeMode = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data } = await supabase
-        .from('transcription_preferences')
-        .select('provider')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      const p = data?.provider as string | undefined;
-      setUseRealtime(p === 'openai_realtime' || p === 'lovable_ai' || !p);
-    };
-
-    checkRealtimeMode();
 
     const fetchTranscriptions = async () => {
       const { data, error } = await supabase.functions.invoke('list-transcriptions', {
@@ -180,21 +193,45 @@ export function UnifiedRecordingPanel({
 
   const handleStart = async () => {
     setRecordingSeconds(0);
+    resetTranscript();
     await startAudioRecording();
+    startListening(selectedLanguage);
     onStartRecording();
   };
 
   const handleStop = async () => {
+    stopListening();
     await stopAudioRecording();
+    
+    // Save transcription
+    if (transcript.trim()) {
+      try {
+        const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
+          body: {
+            meetingId,
+            content: transcript,
+            timestamp: new Date().toISOString(),
+            speaker: userName,
+            detectedLanguage: selectedLanguage,
+          },
+        });
+        if (saveErr) throw saveErr;
+      } catch (err) {
+        console.error('Failed to save transcription:', err);
+      }
+    }
+    
     onStopRecording();
   };
 
   const handlePause = async () => {
+    stopListening();
     await pauseAudioRecording();
     onPauseRecording();
   };
 
   const handleResume = async () => {
+    startListening(selectedLanguage);
     await resumeAudioRecording();
     onResumeRecording();
   };
@@ -287,7 +324,7 @@ export function UnifiedRecordingPanel({
     }
   };
 
-  const hasContent = transcriptions.length > 0 || realtimeTranscripts.length > 0;
+  const hasContent = transcriptions.length > 0 || transcript.trim().length > 0;
 
   return (
     <Card>
@@ -296,23 +333,11 @@ export function UnifiedRecordingPanel({
           <div>
             <CardTitle>Live Recording & Transcription</CardTitle>
             <CardDescription>
-              Record audio and capture real-time transcription simultaneously
+              Record audio and capture real-time transcription using Web Speech API
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            {useRealtime && isConnected && (
-              <Badge variant="secondary" className="gap-2">
-                <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                AI Mode
-              </Badge>
-            )}
-            {isProcessing && (
-              <Badge variant="outline" className="gap-2 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20">
-                <Loader2 className="h-3 w-3 animate-spin" />
-                Processing
-              </Badge>
-            )}
-            {isRecording && (
+            {isListening && (
               <Badge variant="destructive" className="gap-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
                 {isPaused ? 'Paused' : 'Recording'}
@@ -322,6 +347,42 @@ export function UnifiedRecordingPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Language Selection */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Languages className="w-4 h-4" />
+            Transcription Language
+          </label>
+          <Select
+            value={selectedLanguage}
+            onValueChange={(value) => {
+              setSelectedLanguage(value);
+              setLanguage(value);
+            }}
+            disabled={isRecording}
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
+              <SelectItem value="en-US">English (US)</SelectItem>
+              <SelectItem value="en-GB">English (UK)</SelectItem>
+              <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
+              <SelectItem value="es-ES">Spanish (Español)</SelectItem>
+              <SelectItem value="fr-FR">French (Français)</SelectItem>
+              <SelectItem value="de-DE">German (Deutsch)</SelectItem>
+              <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
+              <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
+              <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
+              <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
+              <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
+              <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
+              <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Recording Controls */}
         <div className="p-4 rounded-lg border bg-muted/50">
           <div className="flex items-center justify-between">
@@ -384,9 +445,15 @@ export function UnifiedRecordingPanel({
             </div>
           </div>
 
-          {recordingError && (
+          {(recordingError || speechError) && (
             <div className="mt-3 p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-              {recordingError}
+              {recordingError || speechError}
+            </div>
+          )}
+          
+          {!isSupported && (
+            <div className="mt-3 p-3 bg-amber-500/10 text-amber-700 dark:text-amber-300 rounded-md text-sm">
+              Web Speech API not supported. Please use Chrome, Edge, or Safari.
             </div>
           )}
 
@@ -420,24 +487,19 @@ export function UnifiedRecordingPanel({
           ) : (
             <ScrollArea className="h-[400px] pr-4">
               <div className="space-y-4">
-                {useRealtime && realtimeTranscripts.length > 0 && (
+                {transcript && isListening && (
                   <>
-                    {realtimeTranscripts.map((rt) => (
-                      <div key={rt.id} className="animate-fade-in">
-                        <div className="p-4 rounded-lg bg-muted/50 border-l-4" style={{ borderLeftColor: rt.speaker === 'User' ? '#3b82f6' : '#a855f7' }}>
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge 
-                              variant="outline" 
-                              className={`text-xs ${SPEAKER_COLORS[rt.speaker] || SPEAKER_COLORS['Speaker']}`}
-                            >
-                              {rt.speaker}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">Live</span>
-                          </div>
-                          <p className="text-sm leading-relaxed">{rt.text}</p>
+                    <div className="animate-fade-in">
+                      <div className="p-4 rounded-lg bg-primary/10 border-l-4 border-primary">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {userName}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Live transcription</span>
                         </div>
+                        <p className="text-sm leading-relaxed">{transcript}</p>
                       </div>
-                    ))}
+                    </div>
                     {transcriptions.length > 0 && <Separator className="my-4" />}
                   </>
                 )}
