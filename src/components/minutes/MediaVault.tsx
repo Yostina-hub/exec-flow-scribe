@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Film, Music, Image as ImageIcon, Download, Lock, Upload } from 'lucide-react';
+import { Film, Music, Image as ImageIcon, Download, Lock, Upload, PlayCircle } from 'lucide-react';
 
 interface MediaVaultProps {
   meetingId: string;
@@ -31,6 +31,7 @@ interface MediaFile {
 export function MediaVault({ meetingId }: MediaVaultProps) {
   const [mediaFiles, setMediaFiles] = useState<MediaFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedAudio, setSelectedAudio] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -159,6 +160,38 @@ export function MediaVault({ meetingId }: MediaVaultProps) {
                   <div className="text-xs bg-muted p-2 rounded font-mono">
                     <span className="text-muted-foreground">Checksum:</span> {file.checksum}
                   </div>
+
+                  {file.media_type === 'audio' && (
+                    <div className="space-y-2">
+                      <Button 
+                        size="sm" 
+                        variant={selectedAudio === file.file_url ? 'default' : 'outline'}
+                        className="w-full"
+                        onClick={() => setSelectedAudio(selectedAudio === file.file_url ? null : file.file_url)}
+                      >
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        {selectedAudio === file.file_url ? 'Hide Player' : 'Play Audio'}
+                      </Button>
+                      
+                      {selectedAudio === file.file_url && (
+                        <div className="pt-2">
+                          <audio 
+                            controls 
+                            className="w-full h-10"
+                            src={(() => {
+                              const { data: { publicUrl } } = supabase.storage
+                                .from('meeting-audio')
+                                .getPublicUrl(file.file_url);
+                              return publicUrl;
+                            })()}
+                            preload="metadata"
+                          >
+                            Your browser does not support the audio element.
+                          </audio>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" className="flex-1">
