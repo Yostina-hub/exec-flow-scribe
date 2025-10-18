@@ -10,9 +10,17 @@ import { useToast } from '@/hooks/use-toast';
 
 interface BrowserSpeechRecognitionProps {
   meetingId: string;
+  externalIsRecording?: boolean;
+  onRecordingStart?: () => void;
+  onRecordingStop?: () => void;
 }
 
-export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognitionProps) => {
+export const BrowserSpeechRecognition = ({ 
+  meetingId, 
+  externalIsRecording = false,
+  onRecordingStart,
+  onRecordingStop 
+}: BrowserSpeechRecognitionProps) => {
   const {
     transcript,
     isListening,
@@ -27,7 +35,40 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
   const [selectedLanguage, setSelectedLanguage] = useState('am-ET');
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
+  const [userName, setUserName] = useState('User');
   const { toast } = useToast();
+
+  // Get current user name for speaker identification
+  useEffect(() => {
+    const getUserName = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        if (profile?.full_name) {
+          setUserName(profile.full_name);
+        }
+      }
+    };
+    getUserName();
+  }, []);
+
+  // Sync with external recording state
+  useEffect(() => {
+    if (externalIsRecording && !isListening) {
+      resetTranscript();
+      setRecordingDuration(0);
+      startListening(selectedLanguage);
+    } else if (!externalIsRecording && isListening) {
+      stopListening();
+      if (transcript.trim()) {
+        handleSave();
+      }
+    }
+  }, [externalIsRecording]);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -42,6 +83,7 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
   const handleStartStop = async () => {
     if (isListening) {
       stopListening();
+      onRecordingStop?.();
       // Auto-save when stopping if there's content
       if (transcript.trim()) {
         await handleSave();
@@ -50,6 +92,7 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
       resetTranscript();
       setRecordingDuration(0);
       startListening(selectedLanguage);
+      onRecordingStart?.();
     }
   };
 
@@ -63,7 +106,7 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
           meetingId,
           content: transcript,
           timestamp: new Date().toISOString(),
-          speaker: 'User',
+          speaker: userName,
           detectedLanguage: selectedLanguage,
         },
       });
@@ -190,7 +233,12 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
 
         <div className="min-h-[200px] max-h-[400px] overflow-y-auto bg-muted rounded-lg p-4">
           {transcript ? (
-            <p className="text-lg leading-relaxed">{transcript}</p>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Badge variant="secondary" className="mt-1">{userName}</Badge>
+                <p className="text-lg leading-relaxed flex-1">{transcript}</p>
+              </div>
+            </div>
           ) : (
             <p className="text-muted-foreground text-center italic">
               Your transcription will appear here...

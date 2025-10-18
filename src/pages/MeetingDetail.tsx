@@ -435,7 +435,12 @@ const MeetingDetail = () => {
               </TabsList>
 
               <TabsContent value="transcription" className="space-y-4">
-                <BrowserSpeechRecognition meetingId={meetingId} />
+                <BrowserSpeechRecognition 
+                  meetingId={meetingId}
+                  externalIsRecording={isRecording}
+                  onRecordingStart={startRecording}
+                  onRecordingStop={stopRecording}
+                />
               </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
