@@ -3,8 +3,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, MicOff, Save, Trash2, Clock, Languages } from 'lucide-react';
+import { Mic, MicOff, Save, Trash2, Clock, Languages, Volume2 } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
+import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,17 +41,30 @@ export const BrowserSpeechRecognition = ({
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
-const { toast } = useToast();
+  const [userId, setUserId] = useState<string | null>(null);
+  const { toast } = useToast();
+  
+  // Audio recording hook for archiving
+  const {
+    startRecording: startAudioRecording,
+    stopRecording: stopAudioRecording,
+    pauseRecording: pauseAudioRecording,
+    resumeRecording: resumeAudioRecording,
+    clearRecording: clearAudioRecording,
+    audioBlob,
+    error: audioError
+  } = useAudioRecording();
 
   // Track previous external recording and pause states
   const prevExternalRef = useRef(externalIsRecording);
   const prevPausedRef = useRef(isPaused);
 
-  // Get current user name for speaker identification
+  // Get current user info
   useEffect(() => {
-    const getUserName = async () => {
+    const getUserInfo = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        setUserId(user.id);
         const { data: profile } = await supabase
           .from('profiles')
           .select('full_name')
@@ -61,10 +75,10 @@ const { toast } = useToast();
         }
       }
     };
-    getUserName();
+    getUserInfo();
   }, []);
 
-// Sync with external recording and pause state
+  // Sync with external recording and pause state
   useEffect(() => {
     const prevExternal = prevExternalRef.current;
     const prevPaused = prevPausedRef.current;
@@ -73,25 +87,31 @@ const { toast } = useToast();
       // Meeting recording stopped: ensure we stop and save once
       if (isListening) {
         stopListening();
+        stopAudioRecording();
       }
       if (transcript.trim()) {
-        // fire-and-forget; effect can't be async
         handleSave();
       }
     } else {
       // Recording is active
       if (isPaused) {
-        // Pause listening without clearing transcript or saving
+        // Pause listening and audio without clearing
         if (isListening) {
           stopListening();
+          pauseAudioRecording();
         }
       } else {
         // Active and not paused → ensure listening
         if (!isListening) {
-          // New session start (rising edge) → clear
+          // New session start (rising edge) → clear and start
           if (!prevExternal) {
             resetTranscript();
             setRecordingDuration(0);
+            clearAudioRecording();
+            startAudioRecording();
+          } else {
+            // Resuming from pause
+            resumeAudioRecording();
           }
           startListening(selectedLanguage);
         }
@@ -117,46 +137,92 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [isListening, onDurationChange]);
 
-const handleStartStop = async () => {
+  const handleStartStop = async () => {
     if (isListening) {
       stopListening();
+      const audioFile = await stopAudioRecording();
       onRecordingStop?.(recordingDuration);
-      // Auto-save when stopping if there's content
-      if (transcript.trim()) {
-        await handleSave();
+      
+      // Auto-save transcription and audio
+      if (transcript.trim() || audioFile) {
+        await handleSave(audioFile);
       }
     } else {
       resetTranscript();
       setRecordingDuration(0);
       onDurationChange?.(0);
+      clearAudioRecording();
+      await startAudioRecording();
       startListening(selectedLanguage);
       onRecordingStart?.();
     }
   };
 
-  const handleSave = async () => {
-    if (!transcript.trim()) return;
+  const handleSave = async (audioFile?: Blob | null) => {
+    if (!transcript.trim() && !audioFile) return;
 
     setIsSaving(true);
     try {
-      const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
-        body: {
-          meetingId,
-          content: transcript,
-          timestamp: new Date().toISOString(),
-          speaker: userName,
-          detectedLanguage: selectedLanguage,
-        },
-      });
+      // Save transcription
+      if (transcript.trim()) {
+        const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
+          body: {
+            meetingId,
+            content: transcript,
+            timestamp: new Date().toISOString(),
+            speaker: userName,
+            detectedLanguage: selectedLanguage,
+          },
+        });
 
-      if (saveErr) throw saveErr;
+        if (saveErr) throw saveErr;
+      }
+
+      // Upload audio file to storage
+      if (audioFile && userId) {
+        const timestamp = Date.now();
+        const fileName = `${userId}/${meetingId}/${timestamp}.webm`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('meeting-audio')
+          .upload(fileName, audioFile, {
+            contentType: audioFile.type,
+            cacheControl: '3600',
+          });
+
+        if (uploadError) {
+          console.error('Audio upload error:', uploadError);
+          throw new Error('Failed to upload audio');
+        }
+
+        // Save audio reference in meeting_media table
+        const { data: { publicUrl } } = supabase.storage
+          .from('meeting-audio')
+          .getPublicUrl(fileName);
+
+        const { error: mediaError } = await supabase
+          .from('meeting_media')
+          .insert({
+            meeting_id: meetingId,
+            media_type: 'audio',
+            file_url: fileName,
+            format: audioFile.type.split('/')[1],
+            file_size: audioFile.size,
+            duration_seconds: recordingDuration,
+            uploaded_by: userId,
+            checksum: `audio-${timestamp}`,
+          });
+
+        if (mediaError) {
+          console.error('Media reference error:', mediaError);
+        }
+      }
 
       toast({
         title: 'Saved successfully',
-        description: 'Transcription saved to meeting',
+        description: audioFile ? 'Transcription and audio saved' : 'Transcription saved',
       });
 
-      // Don't reset transcript - keep it visible after saving
     } catch (err: any) {
       toast({
         title: 'Save failed',
@@ -171,6 +237,7 @@ const handleStartStop = async () => {
   const handleClear = () => {
     resetTranscript();
     setRecordingDuration(0);
+    clearAudioRecording();
   };
 
   const formatDuration = (seconds: number) => {
@@ -298,9 +365,21 @@ const handleStartStop = async () => {
           )}
         </div>
 
-        {error && (
+        {(error || audioError) && (
           <div className="p-3 bg-destructive/10 border border-destructive rounded-lg">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">{error || audioError}</p>
+          </div>
+        )}
+
+        {audioBlob && (
+          <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+            <Volume2 className="w-5 h-5 text-primary" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Audio recorded</p>
+              <p className="text-xs text-muted-foreground">
+                Size: {(audioBlob.size / 1024 / 1024).toFixed(2)} MB • Duration: {formatDuration(recordingDuration)}
+              </p>
+            </div>
           </div>
         )}
 
