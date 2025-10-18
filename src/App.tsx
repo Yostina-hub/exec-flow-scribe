@@ -23,6 +23,7 @@ import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +37,8 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <BrowserRouter>
+      <TooltipProvider>
+        <BrowserRouter>
         <IntegrationProvider>
         <Routes>
           <Route path="/auth" element={<Auth />} />
@@ -159,7 +161,8 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
         </IntegrationProvider>
-      </BrowserRouter>
+        </BrowserRouter>
+      </TooltipProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );
