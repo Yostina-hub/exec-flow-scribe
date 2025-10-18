@@ -2577,8 +2577,11 @@ export type Database = {
           language: string | null
           openai_api_key: string | null
           provider: string
+          realtime_api_key: string | null
           updated_at: string
+          use_same_key: boolean | null
           user_id: string
+          whisper_api_key: string | null
         }
         Insert: {
           created_at?: string
@@ -2586,8 +2589,11 @@ export type Database = {
           language?: string | null
           openai_api_key?: string | null
           provider?: string
+          realtime_api_key?: string | null
           updated_at?: string
+          use_same_key?: boolean | null
           user_id: string
+          whisper_api_key?: string | null
         }
         Update: {
           created_at?: string
@@ -2595,8 +2601,11 @@ export type Database = {
           language?: string | null
           openai_api_key?: string | null
           provider?: string
+          realtime_api_key?: string | null
           updated_at?: string
+          use_same_key?: boolean | null
           user_id?: string
+          whisper_api_key?: string | null
         }
         Relationships: []
       }

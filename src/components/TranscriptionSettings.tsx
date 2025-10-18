@@ -6,11 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 
 export const TranscriptionSettings = () => {
   const [provider, setProvider] = useState<"lovable_ai" | "openai" | "browser" | "openai_realtime">("lovable_ai");
   const [openaiApiKey, setOpenaiApiKey] = useState("");
+  const [whisperApiKey, setWhisperApiKey] = useState("");
+  const [realtimeApiKey, setRealtimeApiKey] = useState("");
+  const [useSameKey, setUseSameKey] = useState(true);
   const [language, setLanguage] = useState("auto");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -38,6 +42,9 @@ export const TranscriptionSettings = () => {
       if (data) {
         setProvider(data.provider as "lovable_ai" | "openai" | "browser" | "openai_realtime");
         setOpenaiApiKey(data.openai_api_key || "");
+        setWhisperApiKey(data.whisper_api_key || "");
+        setRealtimeApiKey(data.realtime_api_key || "");
+        setUseSameKey(data.use_same_key !== false); // default to true
         setLanguage(data.language || "auto");
       }
     } catch (error) {
@@ -65,6 +72,13 @@ export const TranscriptionSettings = () => {
         provider,
         language,
         openai_api_key: (provider === "openai" || provider === "openai_realtime") ? openaiApiKey : null,
+        whisper_api_key: (provider === "openai" || provider === "openai_realtime") 
+          ? (useSameKey ? openaiApiKey : whisperApiKey) 
+          : null,
+        realtime_api_key: (provider === "openai" || provider === "openai_realtime") 
+          ? (useSameKey ? openaiApiKey : realtimeApiKey) 
+          : null,
+        use_same_key: useSameKey,
       };
 
       const { data: existing } = await supabase
@@ -152,7 +166,7 @@ export const TranscriptionSettings = () => {
               <div>
                 <p className="font-medium">OpenAI Realtime ⚡</p>
                 <p className="text-sm text-muted-foreground">
-                  Advanced: Server VAD, noise suppression, color-coded speakers (uses same API key)
+                  Advanced: Server VAD, noise suppression, color-coded speakers. Requires OpenAI API key (configured below).
                 </p>
               </div>
             </Label>
@@ -163,7 +177,7 @@ export const TranscriptionSettings = () => {
               <div>
                 <p className="font-medium">OpenAI Whisper</p>
                 <p className="text-sm text-muted-foreground">
-                  Standard transcription (uses same API key)
+                  Standard transcription. Requires OpenAI API key (configured below).
                 </p>
               </div>
             </Label>
@@ -179,7 +193,7 @@ export const TranscriptionSettings = () => {
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="auto">Auto-detect (Recommended - includes speaker identification)</option>
-              <option value="am">Amharic (አማርኛ)</option>
+              <option value="am">Amharic (አማርኛ) - Best with OpenAI Realtime</option>
               <option value="en">English</option>
               <option value="ar">Arabic (العربية)</option>
               <option value="fr">French (Français)</option>
@@ -201,17 +215,66 @@ export const TranscriptionSettings = () => {
           </div>
 
         {(provider === "openai" || provider === "openai_realtime") && (
-          <div className="space-y-2">
-            <Label htmlFor="openai-key">OpenAI API Key</Label>
-            <Input
-              id="openai-key"
-              type="password"
-              placeholder="sk-..."
-              value={openaiApiKey}
-              onChange={(e) => setOpenaiApiKey(e.target.value)}
-            />
+          <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="use-same-key"
+                checked={useSameKey}
+                onChange={(e) => setUseSameKey(e.target.checked)}
+                className="rounded border-input"
+              />
+              <Label htmlFor="use-same-key" className="cursor-pointer">
+                Use same API key for both Whisper and Realtime
+              </Label>
+            </div>
+
+            {useSameKey ? (
+              <div className="space-y-2">
+                <Label htmlFor="openai-key">OpenAI API Key (Both Services)</Label>
+                <Input
+                  id="openai-key"
+                  type="password"
+                  placeholder="sk-..."
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  This key will be used for both Whisper transcription and OpenAI Realtime API.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="whisper-key">Whisper API Key</Label>
+                  <Input
+                    id="whisper-key"
+                    type="password"
+                    placeholder="sk-..."
+                    value={whisperApiKey}
+                    onChange={(e) => setWhisperApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For browser-based and standard OpenAI Whisper transcription
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="realtime-key">OpenAI Realtime API Key</Label>
+                  <Input
+                    id="realtime-key"
+                    type="password"
+                    placeholder="sk-..."
+                    value={realtimeApiKey}
+                    onChange={(e) => setRealtimeApiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    For OpenAI Realtime API with server VAD and speaker detection
+                  </p>
+                </div>
+              </div>
+            )}
             <p className="text-xs text-muted-foreground">
-              Same key works for both Whisper and Realtime API. Your API key is stored securely and encrypted.
+              Your API keys are stored securely and encrypted in the database.
             </p>
           </div>
         )}

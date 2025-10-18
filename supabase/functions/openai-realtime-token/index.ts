@@ -12,8 +12,35 @@ serve(async (req) => {
   }
 
   try {
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
+    // Get user preferences for API key
+    const authHeader = req.headers.get('authorization');
+    let apiKey = Deno.env.get('OPENAI_API_KEY');
+    
+    if (authHeader) {
+      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2.75.0');
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const jwt = authHeader.replace('Bearer ', '');
+      const { data: { user } } = await supabase.auth.getUser(jwt);
+      
+      if (user) {
+        const { data: prefs } = await supabase
+          .from('transcription_preferences')
+          .select('realtime_api_key, whisper_api_key, openai_api_key, use_same_key')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        if (prefs) {
+          // Use realtime_api_key if set, otherwise fallback to openai_api_key or whisper_api_key
+          apiKey = prefs.realtime_api_key || prefs.openai_api_key || prefs.whisper_api_key || apiKey;
+          console.log('Using user-specific API key for Realtime API');
+        }
+      }
+    }
+    
+    if (!apiKey) {
       throw new Error('OPENAI_API_KEY is not set');
     }
 
@@ -32,7 +59,7 @@ serve(async (req) => {
     const response = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
