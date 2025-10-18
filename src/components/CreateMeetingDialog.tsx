@@ -27,6 +27,8 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
+import { ShareMeetingDialog } from "./ShareMeetingDialog";
+import { generateGoogleMeetLink, generateJitsiMeetLink } from "@/utils/videoConference";
 
 interface Category {
   id: string;
@@ -42,6 +44,8 @@ export const CreateMeetingDialog = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [meetingType, setMeetingType] = useState<string>('in_person');
   const [showVideoFields, setShowVideoFields] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [createdMeeting, setCreatedMeeting] = useState<any>(null);
 
   useEffect(() => {
     if (open) {
@@ -79,8 +83,8 @@ export const CreateMeetingDialog = () => {
       const recurrenceFreq = formData.get("recurrence_freq") as string;
       const recurrenceInterval = parseInt(formData.get("recurrence_interval") as string || "1");
       const meetingType = formData.get("meeting_type") as string;
-      const videoUrl = formData.get("video_url") as string;
       const videoProvider = formData.get("video_provider") as string;
+      let videoUrl = formData.get("video_url") as string;
 
       if (!date) {
         toast.error("Please select a date");
@@ -126,6 +130,16 @@ export const CreateMeetingDialog = () => {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
+
+      // Generate video link if not provided
+      if ((meetingType === 'online' || meetingType === 'hybrid') && !videoUrl) {
+        const tempId = crypto.randomUUID();
+        if (videoProvider === 'google_meet') {
+          videoUrl = generateGoogleMeetLink(tempId);
+        } else if (videoProvider === 'jitsi_meet') {
+          videoUrl = generateJitsiMeetLink(title, tempId);
+        }
+      }
 
       // Insert meeting
       const { data: meeting, error: meetingError } = await supabase
@@ -177,7 +191,15 @@ export const CreateMeetingDialog = () => {
       if (attendeeError) throw attendeeError;
 
       toast.success("Meeting created successfully");
+      
+      // Store meeting details and show share dialog
+      setCreatedMeeting({
+        ...meeting,
+        formattedDate: format(startTime, 'PPP'),
+        formattedTime: format(startTime, 'p'),
+      });
       setOpen(false);
+      setShowShareDialog(true);
       setDate(undefined);
       setIsRecurring(false);
       // Meeting will appear automatically via realtime subscription
@@ -189,7 +211,8 @@ export const CreateMeetingDialog = () => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
+      <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="gap-2">
           <Plus className="h-4 w-4" />
@@ -444,5 +467,18 @@ export const CreateMeetingDialog = () => {
         </form>
       </DialogContent>
     </Dialog>
+
+    {createdMeeting && (
+      <ShareMeetingDialog
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        meetingId={createdMeeting.id}
+        meetingTitle={createdMeeting.title}
+        meetingDate={createdMeeting.formattedDate}
+        meetingTime={createdMeeting.formattedTime}
+        videoConferenceUrl={createdMeeting.video_conference_url}
+      />
+    )}
+  </>
   );
 };

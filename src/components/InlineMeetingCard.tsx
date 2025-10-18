@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil
+  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil, Video
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -19,6 +19,8 @@ interface InlineMeetingCardProps {
   attendees: number;
   status: 'upcoming' | 'in-progress' | 'completed';
   agendaItems: number;
+  meetingType?: string;
+  videoConferenceUrl?: string | null;
 }
 
 const statusConfig = {
@@ -52,9 +54,13 @@ export function InlineMeetingCard({
   attendees,
   status,
   agendaItems,
+  meetingType,
+  videoConferenceUrl,
 }: InlineMeetingCardProps) {
   const navigate = useNavigate();
   const config = statusConfig[status];
+  const isOnlineMeeting = meetingType === 'online' || meetingType === 'hybrid';
+  const hasVideoLink = !!videoConferenceUrl;
 
   return (
     <Card 
@@ -121,21 +127,35 @@ export function InlineMeetingCard({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            className={cn(
-              "flex-1 gap-2 bg-gradient-to-r",
-              config.gradient,
-              "hover:opacity-90 transition-opacity"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/meetings/${id}`);
-            }}
-          >
-            <Play className="h-4 w-4" />
-            Join Meeting
-          </Button>
+          {isOnlineMeeting && hasVideoLink ? (
+            <Button
+              size="sm"
+              className="flex-1 gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(videoConferenceUrl, '_blank');
+              }}
+            >
+              <Video className="h-4 w-4" />
+              Join Video
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              className={cn(
+                "flex-1 gap-2 bg-gradient-to-r",
+                config.gradient,
+                "hover:opacity-90 transition-opacity"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/meetings/${id}`);
+              }}
+            >
+              <Play className="h-4 w-4" />
+              View Meeting
+            </Button>
+          )}
           <EditMeetingDialog 
             meetingId={id}
             trigger={

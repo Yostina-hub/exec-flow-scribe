@@ -46,9 +46,11 @@ import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
+import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
 
 interface AgendaItem {
   id: string;
@@ -122,6 +124,7 @@ const MeetingDetail = () => {
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
   const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
@@ -318,6 +321,8 @@ const [wasRecording, setWasRecording] = useState(false);
 
   const meetingTitle = meeting?.title || "Executive Strategy Review";
   const meetingLocation = meeting?.location || "Board Room";
+  const isOnlineMeeting = meeting?.meeting_type === 'online' || meeting?.meeting_type === 'hybrid';
+  const hasVideoLink = !!meeting?.video_conference_url;
 
   return (
     <Layout>
@@ -352,6 +357,23 @@ const [wasRecording, setWasRecording] = useState(false);
                 </div>
               </div>
               <div className="flex gap-2">
+                {isOnlineMeeting && hasVideoLink && (
+                  <Button
+                    className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                    onClick={() => window.open(meeting.video_conference_url, '_blank')}
+                  >
+                    <Video className="h-4 w-4" />
+                    Join Video Call
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  className="gap-2"
+                  onClick={() => setShowShareDialog(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Share Meeting
+                </Button>
                 <Button
                   variant="outline"
                   className="gap-2"
@@ -414,10 +436,15 @@ const [wasRecording, setWasRecording] = useState(false);
                     </Button>
                   </>
                 )}
-                <Button variant="outline" className="gap-2 hover:scale-105 transition-all duration-300">
-                  <Video className="h-4 w-4" />
-                  Join Video
-                </Button>
+                {isOnlineMeeting && hasVideoLink && (
+                  <Button 
+                    className="gap-2 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-500"
+                    onClick={() => window.open(meeting.video_conference_url, '_blank')}
+                  >
+                    <Video className="h-4 w-4" />
+                    Join Video
+                  </Button>
+                )}
               </div>
             </div>
             <div className="mt-4 relative">
@@ -694,6 +721,18 @@ const [wasRecording, setWasRecording] = useState(false);
             });
           }}
         />
+
+        {meeting && (
+          <ShareMeetingDialog
+            open={showShareDialog}
+            onOpenChange={setShowShareDialog}
+            meetingId={meeting.id}
+            meetingTitle={meeting.title}
+            meetingDate={meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}
+            meetingTime={meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
+            videoConferenceUrl={meeting.video_conference_url}
+          />
+        )}
       </div>
     </Layout>
   );

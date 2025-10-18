@@ -1,6 +1,7 @@
 import { Layout } from "@/components/Layout";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
+import { InstantMeetingDialog } from "@/components/InstantMeetingDialog";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { ImportScheduleButton } from "@/components/ImportScheduleButton";
 import { CleanupDuplicatesButton } from "@/components/CleanupDuplicatesButton";
@@ -170,6 +171,28 @@ export default function Meetings() {
     const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
     const now = new Date();
     
+    let status: "completed" | "upcoming" | "in-progress" = "upcoming";
+    if (meeting.status === "completed") {
+      status = "completed";
+    } else if (now >= startTime && now <= endTime) {
+      status = "in-progress";
+    }
+    
+    return {
+      id: meeting.id,
+      title: meeting.title,
+      date: format(startTime, "MMM d"),
+      time: format(startTime, "h:mm a"),
+      duration: `${duration} min`,
+      location: meeting.location || "TBD",
+      attendees: meeting.attendee_count || 0,
+      status,
+      agendaItems: meeting.agenda_count || 0,
+      meetingType: meeting.meeting_type || undefined,
+      videoConferenceUrl: meeting.video_conference_url,
+    };
+  };
+    
     // Determine status: in-progress if current time is between start and end
     let status: "completed" | "upcoming" | "in-progress" = "upcoming";
     if (meeting.status === "completed") {
@@ -188,6 +211,8 @@ export default function Meetings() {
       attendees: meeting.attendee_count || 0,
       status,
       agendaItems: meeting.agenda_count || 0,
+      meetingType: meeting.meeting_type || undefined,
+      videoConferenceUrl: meeting.video_conference_url,
     };
   };
 
@@ -333,6 +358,7 @@ export default function Meetings() {
             <div className="flex gap-3">
               <DeleteCEOScheduleButton />
               <ImportScheduleButton />
+              <InstantMeetingDialog />
               <CreateMeetingDialog />
             </div>
           </div>
