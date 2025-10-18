@@ -5,5 +5,5 @@ import { registerServiceWorker } from "./utils/registerServiceWorker";
 
 createRoot(document.getElementById("root")!).render(<App />);
 
-// Register service worker for offline support
+// Register service worker only in production and clean up in dev
 registerServiceWorker();

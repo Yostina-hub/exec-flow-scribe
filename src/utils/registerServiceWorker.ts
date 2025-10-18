@@ -1,7 +1,21 @@
-/**
- * Register service worker for offline support
- */
 export const registerServiceWorker = async (): Promise<void> => {
+  // Only enable SW in production builds. In dev it can cache Vite modules and cause stale bundles.
+  if (!import.meta.env.PROD) {
+    // Proactively unregister any existing workers from previous sessions
+    if ("serviceWorker" in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+      try {
+        // Also clear caches created by the SW to avoid stale assets
+        const keys = await caches.keys();
+        await Promise.all(keys.map((k) => caches.delete(k)));
+      } catch (e) {
+        // ignore cache cleanup errors in dev
+      }
+    }
+    return;
+  }
+
   if ('serviceWorker' in navigator) {
     try {
       const registration = await navigator.serviceWorker.register('/service-worker.js', {

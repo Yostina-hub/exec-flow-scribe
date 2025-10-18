@@ -1,5 +1,5 @@
 // Service Worker for offline support
-const CACHE_NAME = 'exec-flow-scribe-v2';
+const CACHE_NAME = 'exec-flow-scribe-v3';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -31,28 +31,39 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((response) => {
-        // Return cached version or fetch new
-        return response || fetch(event.request).then((fetchResponse) => {
-          // Cache new responses
-          return caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, fetchResponse.clone());
-            return fetchResponse;
-          });
-        });
-      })
-      .catch(() => {
-        // Return offline page if available
-        return caches.match('/offline.html');
-      })
-  );
+  const url = new URL(event.request.url);
+  const isDevAsset = url.pathname.includes('/@vite') || url.pathname.includes('/node_modules/.vite');
+  const isStaticAsset = /\.(js|css|map|png|jpg|jpeg|svg|webp|ico|json)$/.test(url.pathname);
+  const isHTMLNavigation = event.request.mode === 'navigate';
+
+  // Never cache Vite/dev assets; always go network-first
+  if (isDevAsset || isStaticAsset) {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  if (isHTMLNavigation) {
+    // Network-first for navigations
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          return response;
+        })
+        .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/offline.html')))
+    );
+    return;
+  }
+
+  // Default: pass-through
+  event.respondWith(fetch(event.request));
 });
 
 // Background sync for meeting data
