@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -43,9 +43,6 @@ export const CreateMeetingDialog = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [meetingType, setMeetingType] = useState<string>('in_person');
   const [showVideoFields, setShowVideoFields] = useState(false);
-  const [videoProviderState, setVideoProviderState] = useState<string>("jitsi_meet");
-  const [videoUrlState, setVideoUrlState] = useState<string>("");
-  const titleRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (open) {
@@ -112,15 +109,15 @@ export const CreateMeetingDialog = () => {
 
       // Combine date and time with validation
       const timeParts = time.split(":");
-      if (timeParts.length < 2) {
+      if (timeParts.length !== 2) {
         toast.error("Invalid time format");
         return;
       }
-
-      const hours = parseInt(timeParts[0], 10);
-      const minutes = parseInt(timeParts[1], 10);
-
-      if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+      
+      const hours = parseInt(timeParts[0]);
+      const minutes = parseInt(timeParts[1]);
+      
+      if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
         toast.error("Invalid time value");
         return;
       }
@@ -234,7 +231,6 @@ export const CreateMeetingDialog = () => {
                 name="title"
                 placeholder="e.g., Executive Strategy Review"
                 required
-                ref={titleRef}
               />
             </div>
 
@@ -272,20 +268,7 @@ export const CreateMeetingDialog = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration (minutes)</Label>
-                <Input 
-                  id="duration" 
-                  name="duration" 
-                  type="number" 
-                  defaultValue="60" 
-                  min="15"
-                  step="15"
-                  required 
-                />
-              </div>
-
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input id="location" name="location" placeholder="Board Room" required />
@@ -299,10 +282,6 @@ export const CreateMeetingDialog = () => {
                   onValueChange={(value) => {
                     setMeetingType(value);
                     setShowVideoFields(value === 'online' || value === 'hybrid');
-                    if (value === 'online') {
-                      // For online meetings, pre-select a provider for convenience
-                      setVideoProviderState('jitsi_meet');
-                    }
                   }}
                 >
                   <SelectTrigger id="meeting_type">
@@ -327,8 +306,7 @@ export const CreateMeetingDialog = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="video_provider">Provider</Label>
-                    <input type="hidden" name="video_provider" value={videoProviderState} />
-                    <Select value={videoProviderState} onValueChange={setVideoProviderState}>
+                    <Select name="video_provider" defaultValue="jitsi_meet">
                       <SelectTrigger id="video_provider">
                         <SelectValue />
                       </SelectTrigger>
@@ -344,45 +322,12 @@ export const CreateMeetingDialog = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="video_url">Meeting Link (Optional)</Label>
-                    <div className="flex gap-2">
-                      <Input 
-                        id="video_url" 
-                        name="video_url" 
-                        placeholder="https://meet.jit.si/..." 
-                        type="url"
-                        value={videoUrlState}
-                        onChange={(e) => setVideoUrlState(e.target.value)}
-                      />
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          const t = titleRef.current?.value || "Meeting";
-                          const tempId = (typeof crypto !== "undefined" && 'randomUUID' in crypto) ? crypto.randomUUID() : Math.random().toString(36).slice(2);
-                          const link = getVideoConferenceLink(videoProviderState, null, t, tempId);
-                          if (link) {
-                            setVideoUrlState(link);
-                            toast.success(`${videoProviderState === 'google_meet' ? 'Google Meet' : 'Jitsi'} link generated`);
-                          } else {
-                            toast.error("Provider does not support auto-generation");
-                          }
-                        }}
-                      >
-                        Generate
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          if (!videoUrlState) return;
-                          navigator.clipboard.writeText(videoUrlState);
-                          toast.success("Link copied");
-                        }}
-                        disabled={!videoUrlState}
-                      >
-                        Copy
-                      </Button>
-                    </div>
+                    <Input 
+                      id="video_url" 
+                      name="video_url" 
+                      placeholder="https://meet.jit.si/..." 
+                      type="url"
+                    />
                   </div>
                 </div>
                 

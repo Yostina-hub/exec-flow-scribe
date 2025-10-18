@@ -1,8 +1,13 @@
-
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequirePermission } from "@/components/RequirePermission";
+import { useSystemIntegration } from "@/hooks/useSystemIntegration";
+import { useCalendarActionSync } from "@/hooks/useCalendarActionSync";
+import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
 import Index from "./pages/Index";
 import CalendarView from "./pages/CalendarView";
 import Meetings from "./pages/Meetings";
@@ -24,11 +29,17 @@ import DocumentViewer from "./components/DocumentViewer";
 const queryClient = new QueryClient();
 
 const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
+  useSystemIntegration();
+  useCalendarActionSync();
+  useNotificationDispatcher();
   return <>{children}</>;
 };
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
       <BrowserRouter>
         <IntegrationProvider>
         <Routes>
@@ -153,7 +164,7 @@ const App = () => (
         </Routes>
         </IntegrationProvider>
       </BrowserRouter>
-    
+    </TooltipProvider>
   </QueryClientProvider>
 );
 

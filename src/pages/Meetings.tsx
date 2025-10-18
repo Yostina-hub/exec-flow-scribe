@@ -14,7 +14,7 @@ import { Search, Filter, Loader2, Calendar, Clock, Users, TrendingUp, Download, 
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isPast, isFuture, startOfDay, startOfWeek, endOfWeek } from "date-fns";
-import { toast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -63,7 +63,7 @@ interface MeetingStats {
 }
 
 export default function Meetings() {
-  // toast imported directly; no hook needed
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
