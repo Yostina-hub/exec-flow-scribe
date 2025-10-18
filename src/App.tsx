@@ -22,8 +22,7 @@ import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
-// Removed TooltipProvider to avoid runtime error
-import { Toaster } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/toaster";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -34,10 +33,9 @@ const queryClient = new QueryClient({
 });
 
 const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
-  // Temporarily disable integration hooks to resolve runtime hooks error
-  // useSystemIntegration();
-  // useCalendarActionSync();
-  // useNotificationDispatcher();
+  useSystemIntegration();
+  useCalendarActionSync();
+  useNotificationDispatcher();
   return <>{children}</>;
 };
 
