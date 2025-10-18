@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserRoleDialog } from "@/components/UserRoleDialog";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Shield, UserPlus } from "lucide-react";
 
 interface UserWithRoles {

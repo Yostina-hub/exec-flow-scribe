@@ -134,34 +134,42 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, "id">;
 
-function toast({ ...props }: Toast) {
-  const id = genId();
+function createToast() {
+  const base = ({ ...props }: Toast) => {
+    const id = genId();
 
-  const update = (props: ToasterToast) =>
+    const update = (props: ToasterToast) =>
+      dispatch({
+        type: "UPDATE_TOAST",
+        toast: { ...props, id },
+      });
+    const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
+
     dispatch({
-      type: "UPDATE_TOAST",
-      toast: { ...props, id },
-    });
-  const dismiss = () => dispatch({ type: "DISMISS_TOAST", toastId: id });
-
-  dispatch({
-    type: "ADD_TOAST",
-    toast: {
-      ...props,
-      id,
-      open: true,
-      onOpenChange: (open) => {
-        if (!open) dismiss();
+      type: "ADD_TOAST",
+      toast: {
+        ...props,
+        id,
+        open: true,
+        onOpenChange: (open) => {
+          if (!open) dismiss();
+        },
       },
-    },
-  });
+    });
 
-  return {
-    id: id,
-    dismiss,
-    update,
+    return { id, dismiss, update };
   };
+
+  // Convenience helpers to match sonner API used in codebase
+  const success = (message: string | React.ReactNode, opts?: Partial<Toast>) =>
+    base({ title: typeof message === "string" ? "Success" : undefined, description: message as any, variant: "default", ...opts });
+  const error = (message: string | React.ReactNode, opts?: Partial<Toast>) =>
+    base({ title: typeof message === "string" ? "Error" : undefined, description: message as any, variant: "destructive", ...opts });
+
+  return Object.assign(base, { success, error });
 }
+
+const toast = createToast();
 
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { CreateRoleDialog } from "@/components/CreateRoleDialog";
 import { EditRoleDialog } from "@/components/EditRoleDialog";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import {
   AlertDialog,

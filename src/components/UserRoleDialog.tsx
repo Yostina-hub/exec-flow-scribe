@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { toast } from "@/hooks/use-toast";
 
 interface Role {
   id: string;
