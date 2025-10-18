@@ -19,11 +19,22 @@ async function getGoogleCredentials() {
 
   if (error || !data) {
     // Fallback to environment variables
+    // Note: GOOGLE_CLIENT_ID should be like: 123456789-xxx.apps.googleusercontent.com
+    // NOT a GOCSPX- secret! That's the client secret, not client ID.
+    const clientId = Deno.env.get('GOOGLE_CLIENT_ID');
+    const clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET');
+    
+    console.log('Using Google OAuth credentials from env vars');
+    console.log('Client ID format check:', clientId?.includes('apps.googleusercontent.com') ? 'Valid' : 'Invalid - should end with .apps.googleusercontent.com');
+    
     return {
-      clientId: Deno.env.get('GOOGLE_CLIENT_ID'),
-      clientSecret: Deno.env.get('GOOGLE_CLIENT_SECRET')
+      clientId,
+      clientSecret
     };
   }
+
+  console.log('Using Google OAuth credentials from database');
+  console.log('Client ID format check:', data.value.clientId?.includes('apps.googleusercontent.com') ? 'Valid' : 'Invalid');
 
   return {
     clientId: data.value.clientId,
@@ -47,7 +58,17 @@ serve(async (req) => {
     const REDIRECT_URI = `${appUrl}/google-oauth-callback`;
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
-      throw new Error('Google OAuth credentials not configured');
+      console.error('Missing OAuth credentials:', { 
+        hasClientId: !!GOOGLE_CLIENT_ID, 
+        hasClientSecret: !!GOOGLE_CLIENT_SECRET 
+      });
+      throw new Error('Google OAuth credentials not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in the Google API Settings.');
+    }
+
+    // Validate client ID format
+    if (!GOOGLE_CLIENT_ID.includes('apps.googleusercontent.com')) {
+      console.error('Invalid client ID format:', GOOGLE_CLIENT_ID);
+      throw new Error('Invalid Google Client ID format. It should end with .apps.googleusercontent.com');
     }
 
     // Get authorization URL
