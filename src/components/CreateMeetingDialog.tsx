@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
-import { getVideoConferenceLink } from "@/utils/videoConference";
 
 interface Category {
   id: string;
@@ -72,10 +71,7 @@ export const CreateMeetingDialog = () => {
       const formData = new FormData(e.target as HTMLFormElement);
       const title = formData.get("title") as string;
       const time = formData.get("time") as string;
-      let duration = parseInt(formData.get("duration") as string);
-      if (!Number.isFinite(duration) || duration <= 0) {
-        duration = 60; // default to 60 minutes if missing
-      }
+      const duration = parseInt(formData.get("duration") as string);
       const location = formData.get("location") as string;
       const description = formData.get("description") as string;
       const categoryId = formData.get("category") as string;
@@ -154,21 +150,6 @@ export const CreateMeetingDialog = () => {
         .single();
 
       if (meetingError) throw meetingError;
-
-      // Auto-generate video link if needed (Google Meet or Jitsi)
-      try {
-        if ((meetingType === "online" || meetingType === "hybrid") && (!videoUrl || videoUrl.trim() === "") && (videoProvider === "google_meet" || videoProvider === "jitsi_meet")) {
-          const generatedUrl = getVideoConferenceLink(videoProvider, null, title, meeting.id);
-          if (generatedUrl) {
-            await supabase
-              .from("meetings")
-              .update({ video_conference_url: generatedUrl })
-              .eq("id", meeting.id);
-          }
-        }
-      } catch (genErr) {
-        console.warn("Failed to auto-generate video link:", genErr);
-      }
 
       // If recurring, create recurrence rule
       if (isRecurring && recurrenceFreq && recurrenceFreq !== "none") {
@@ -332,7 +313,7 @@ export const CreateMeetingDialog = () => {
                 </div>
                 
                 <p className="text-xs text-muted-foreground">
-                  Leave link empty to auto-generate a Google Meet or Jitsi Meet link (based on provider)
+                  Leave link empty to auto-generate a Jitsi Meet room
                 </p>
               </div>
             )}
