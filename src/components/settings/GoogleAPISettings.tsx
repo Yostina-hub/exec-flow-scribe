@@ -34,15 +34,36 @@ export function GoogleAPISettings() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!clientId.trim() || !clientSecret.trim()) {
       toast.error('Please fill in all fields');
       return;
     }
 
-    toast.info('Google API credentials are managed as environment secrets. Please contact your administrator to update them.');
-    setClientId('');
-    setClientSecret('');
+    setLoading(true);
+    try {
+      // Save credentials as Supabase secrets
+      const { data, error } = await supabase.functions.invoke('save-google-credentials', {
+        body: { 
+          clientId: clientId.trim(),
+          clientSecret: clientSecret.trim()
+        }
+      });
+
+      if (error) throw error;
+
+      toast.success('Google API credentials saved successfully!');
+      setClientId('');
+      setClientSecret('');
+      setIsConfigured(true);
+      
+      // Recheck configuration
+      await checkConfiguration();
+    } catch (error: any) {
+      toast.error('Failed to save credentials: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleTestConnection = async () => {
@@ -103,6 +124,58 @@ export function GoogleAPISettings() {
               </Alert>
 
               <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">OAuth 2.0 Credentials</CardTitle>
+                    <CardDescription>
+                      Enter your Google Cloud Console credentials below
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="clientId">Client ID</Label>
+                      <Input
+                        id="clientId"
+                        type="text"
+                        placeholder="Enter your Google Client ID"
+                        value={clientId}
+                        onChange={(e) => setClientId(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Your OAuth 2.0 Client ID from Google Cloud Console
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="clientSecret">Client Secret</Label>
+                      <Input
+                        id="clientSecret"
+                        type="password"
+                        placeholder="Enter your Google Client Secret"
+                        value={clientSecret}
+                        onChange={(e) => setClientSecret(e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Your OAuth 2.0 Client Secret (kept secure)
+                      </p>
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={handleSave} 
+                        disabled={loading || !clientId.trim() || !clientSecret.trim()}
+                      >
+                        {loading ? 'Saving...' : 'Save Credentials'}
+                      </Button>
+                      {isConfigured && (
+                        <Button variant="outline" onClick={handleTestConnection} disabled={testing}>
+                          {testing ? 'Testing...' : 'Test Connection'}
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="bg-muted/50">
                   <CardContent className="pt-6">
                     <div className="space-y-3">
@@ -110,42 +183,20 @@ export function GoogleAPISettings() {
                         <div>
                           <h4 className="font-semibold">Configuration Status</h4>
                           <p className="text-sm text-muted-foreground">
-                            OAuth 2.0 credentials for Google services
+                            Current status of Google API integration
                           </p>
                         </div>
                         <Badge variant={isConfigured ? "default" : "secondary"} className="ml-2">
                           {isConfigured ? (
                             <><CheckCircle2 className="h-3 w-3 mr-1" /> Active</>
                           ) : (
-                            <><XCircle className="h-3 w-3 mr-1" /> Inactive</>
+                            <><XCircle className="h-3 w-3 mr-1" /> Not Configured</>
                           )}
                         </Badge>
                       </div>
-                      
-                      {isConfigured && (
-                        <div className="pt-2">
-                          <Button variant="outline" onClick={handleTestConnection} disabled={testing} size="sm">
-                            {testing ? 'Testing...' : 'Test Connection'}
-                          </Button>
-                        </div>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
-
-                {!isConfigured && (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription>
-                      <strong>To enable Google Meet integration:</strong>
-                      <ol className="list-decimal list-inside mt-2 space-y-1 text-sm">
-                        <li>Follow the setup guide in the "Setup Guide" tab</li>
-                        <li>Get your Client ID and Client Secret from Google Cloud Console</li>
-                        <li>Contact your system administrator to configure the credentials</li>
-                      </ol>
-                    </AlertDescription>
-                  </Alert>
-                )}
               </div>
             </TabsContent>
 

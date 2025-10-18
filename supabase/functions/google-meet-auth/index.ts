@@ -1,9 +1,35 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+async function getGoogleCredentials() {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  const { data, error } = await supabase
+    .from('system_settings')
+    .select('value')
+    .eq('key', 'google_oauth_credentials')
+    .single();
+
+  if (error || !data) {
+    // Fallback to environment variables
+    return {
+      clientId: Deno.env.get('GOOGLE_CLIENT_ID'),
+      clientSecret: Deno.env.get('GOOGLE_CLIENT_SECRET')
+    };
+  }
+
+  return {
+    clientId: data.value.clientId,
+    clientSecret: data.value.clientSecret
+  };
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,8 +38,9 @@ serve(async (req) => {
 
   try {
     const { action, code, meetingData } = await req.json();
-    const GOOGLE_CLIENT_ID = Deno.env.get('GOOGLE_CLIENT_ID');
-    const GOOGLE_CLIENT_SECRET = Deno.env.get('GOOGLE_CLIENT_SECRET');
+    const credentials = await getGoogleCredentials();
+    const GOOGLE_CLIENT_ID = credentials.clientId;
+    const GOOGLE_CLIENT_SECRET = credentials.clientSecret;
     const REDIRECT_URI = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-meet-auth`;
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
