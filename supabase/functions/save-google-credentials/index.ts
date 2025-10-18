@@ -28,9 +28,6 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Store in a secure settings table
-    const { data, error } = await supabase
-      .from('system_settings');
-
     // Ensure we either update or insert without relying on onConflict (works even if no unique constraint)
     const { data: existingSetting, error: fetchErr } = await supabase
       .from('system_settings')
@@ -69,8 +66,6 @@ serve(async (req) => {
     }
 
     if (upsertError) throw upsertError;
-
-    if (error) throw error;
 
     return new Response(
       JSON.stringify({ success: true, message: 'Credentials saved successfully' }),

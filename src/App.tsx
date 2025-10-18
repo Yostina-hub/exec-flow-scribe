@@ -21,6 +21,7 @@ import Notebook from "./pages/Notebook";
 import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import DocumentViewer from "./components/DocumentViewer";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -45,7 +46,14 @@ const App = () => (
         <IntegrationProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            {/* ... keep existing code (all routes remain unchanged) */}
+            <Route 
+              path="/google-oauth-callback" 
+              element={
+                <ProtectedRoute>
+                  <GoogleOAuthCallback />
+                </ProtectedRoute>
+              } 
+            />
             <Route
               path="/"
               element={

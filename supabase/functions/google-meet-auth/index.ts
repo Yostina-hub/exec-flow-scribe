@@ -41,7 +41,10 @@ serve(async (req) => {
     const credentials = await getGoogleCredentials();
     const GOOGLE_CLIENT_ID = credentials.clientId;
     const GOOGLE_CLIENT_SECRET = credentials.clientSecret;
-    const REDIRECT_URI = `${Deno.env.get('SUPABASE_URL')}/functions/v1/google-meet-auth`;
+    
+    // Use the app URL for redirect, not the edge function URL
+    const appUrl = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/');
+    const REDIRECT_URI = `${appUrl}/google-oauth-callback`;
 
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       throw new Error('Google OAuth credentials not configured');

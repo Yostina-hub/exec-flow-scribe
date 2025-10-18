@@ -49,7 +49,17 @@ export function InstantMeetingDialog() {
       // Handle Google Meet with OAuth
       if (videoProvider === 'google_meet') {
         try {
-          // Get authorization URL
+          // Store meeting data in sessionStorage for callback
+          const tempMeetingData = {
+            title,
+            duration,
+            startTime: startTime.toISOString(),
+            endTime: endTime.toISOString(),
+            userId: user.id,
+          };
+          sessionStorage.setItem('pendingInstantMeeting', JSON.stringify(tempMeetingData));
+
+          // Get authorization URL and redirect
           const { data: authData, error: authError } = await supabase.functions.invoke(
             'google-meet-auth',
             { body: { action: 'getAuthUrl' } }
@@ -57,77 +67,16 @@ export function InstantMeetingDialog() {
 
           if (authError) throw authError;
 
-          // Open OAuth popup
-          const authWindow = window.open(
-            authData.authUrl,
-            'Google OAuth',
-            'width=500,height=600'
-          );
-
-          if (!authWindow) {
-            throw new Error('Popup blocked. Please allow popups for this site.');
-          }
-
-          // Wait for OAuth completion
-          const code = await new Promise<string>((resolve, reject) => {
-            const checkInterval = setInterval(() => {
-              if (authWindow.closed) {
-                clearInterval(checkInterval);
-                reject(new Error('Authentication cancelled'));
-              }
-              try {
-                const url = new URL(authWindow.location.href);
-                if (url.searchParams.get('code')) {
-                  const authCode = url.searchParams.get('code');
-                  authWindow.close();
-                  clearInterval(checkInterval);
-                  if (authCode) resolve(authCode);
-                  else reject(new Error('No code received'));
-                }
-              } catch {
-                // Cross-origin error - still loading
-              }
-            }, 500);
-
-            setTimeout(() => {
-              clearInterval(checkInterval);
-              if (!authWindow.closed) authWindow.close();
-              reject(new Error('Authentication timeout'));
-            }, 120000); // 2 minute timeout
-          });
-
-          // Exchange code for token
-          const { data: tokenData, error: tokenError } = await supabase.functions.invoke(
-            'google-meet-auth',
-            { body: { action: 'exchangeCode', code } }
-          );
-
-          if (tokenError) throw tokenError;
-
-          // Create Meeting with Google Calendar
-          const { data: meetData, error: meetError } = await supabase.functions.invoke(
-            'google-meet-auth',
-            {
-              body: {
-                action: 'createMeeting',
-                meetingData: {
-                  accessToken: tokenData.accessToken,
-                  title,
-                  startTime: startTime.toISOString(),
-                  endTime: endTime.toISOString(),
-                  description: 'Instant meeting',
-                }
-              }
-            }
-          );
-
-          if (meetError) throw meetError;
-          videoUrl = meetData.meetLink;
-          
-          toast.success('Google Meet link created!');
+          // Redirect to Google OAuth
+          window.location.href = authData.authUrl;
+          return; // Don't continue, we're redirecting
         } catch (error: any) {
           console.error('Google Meet error:', error);
-          toast.error('Google Meet setup failed. Using Jitsi instead.');
+          toast({
+            title: 'Google Meet setup failed',
+            description: 'Using Jitsi Meet instead.',
+            variant: 'destructive',
+          });
           videoUrl = generateJitsiMeetLink(title, crypto.randomUUID());
         }
       } else {
@@ -165,13 +114,12 @@ export function InstantMeetingDialog() {
           attendance_confirmed: true,
         });
 
-      toast.success('Instant meeting created!');
+      toast({
+        title: 'Instant meeting created!',
+        description: 'Meeting is ready to join',
+      });
       setOpen(false);
       navigate(`/meetings/${meeting.id}`);
-      
-      if (videoUrl) {
-        window.open(videoUrl, '_blank');
-      }
     } catch (error: any) {
       console.error('Error creating instant meeting:', error);
       toast.error('Failed to create instant meeting: ' + error.message);

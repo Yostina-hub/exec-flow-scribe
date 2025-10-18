@@ -458,8 +458,11 @@ const [wasRecording, setWasRecording] = useState(false);
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="transcription" className="w-full">
-              <TabsList className="grid w-full grid-cols-7">
+            <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
+              <TabsList className="grid w-full grid-cols-8">
+                {isOnlineMeeting && hasVideoLink && (
+                  <TabsTrigger value="video">Video Call</TabsTrigger>
+                )}
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
@@ -469,7 +472,41 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
 
-<TabsContent value="transcription" className="space-y-4">
+              {isOnlineMeeting && hasVideoLink && (
+                <TabsContent value="video" className="space-y-4">
+                  {meeting.video_provider === 'jitsi_meet' ? (
+                    <JitsiMeetEmbed
+                      roomName={meeting.video_conference_url.split('/').pop() || meetingId}
+                      displayName={userId || 'Guest'}
+                      width="100%"
+                      height="600px"
+                    />
+                  ) : (
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="text-center space-y-4">
+                          <Video className="h-12 w-12 mx-auto text-muted-foreground" />
+                          <div>
+                            <h3 className="font-semibold text-lg mb-2">Google Meet Session</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Google Meet cannot be embedded. Click below to join in a new tab.
+                            </p>
+                            <Button
+                              className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
+                              onClick={() => window.open(meeting.video_conference_url, '_blank')}
+                            >
+                              <Video className="h-4 w-4" />
+                              Join Google Meet
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              )}
+
+              <TabsContent value="transcription" className="space-y-4">
                 <BrowserSpeechRecognition 
                   meetingId={meetingId}
                   externalIsRecording={isRecording}
