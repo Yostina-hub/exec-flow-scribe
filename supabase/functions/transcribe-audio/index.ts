@@ -130,24 +130,45 @@ serve(async (req) => {
         
         console.log('Google Cloud language code:', languageCode);
         
+        // Build Google Cloud request body dynamically
+        const ct = (contentType && typeof contentType === 'string') ? contentType.toLowerCase() : 'audio/webm';
+        const determineGcpEncoding = (ct: string) => {
+          if (ct.includes('webm')) return 'WEBM_OPUS';
+          if (ct.includes('ogg')) return 'OGG_OPUS';
+          if (ct.includes('wav')) return 'LINEAR16';
+          if (ct.includes('mp3')) return 'MP3';
+          return 'ENCODING_UNSPECIFIED';
+        };
+        const encoding = determineGcpEncoding(ct);
+
+        const gcpConfig: Record<string, any> = {
+          languageCode,
+          enableAutomaticPunctuation: true,
+          encoding,
+        };
+        if (encoding === 'LINEAR16') {
+          gcpConfig.sampleRateHertz = 24000;
+        }
+        if (language === 'auto') {
+          gcpConfig.alternativeLanguageCodes = ['am-ET', 'ar-SA', 'en-US'];
+        }
+        if (languageCode === 'am-ET') {
+          gcpConfig.speechContexts = [
+            { phrases: ['እንዴት', 'ነው', 'እሺ', 'ስለዚህ', 'እባክህ', 'በጣም'], boost: 15.0 },
+          ];
+        }
+
+        const requestBody = {
+          config: gcpConfig,
+          audio: { content: audioContent },
+        };
+        
         const response = await fetch(
           `https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              config: {
-                encoding: "WEBM_OPUS",
-                sampleRateHertz: 48000,
-                languageCode: languageCode,
-                alternativeLanguageCodes: language === 'auto' ? ["ar-SA", "en-US"] : [],
-                enableAutomaticPunctuation: true,
-                model: "default",
-              },
-              audio: {
-                content: audioContent,
-              },
-            }),
+            body: JSON.stringify(requestBody),
           }
         );
 
@@ -172,9 +193,47 @@ serve(async (req) => {
             detectedLanguage,
             preview: transcriptText.substring(0, 100)
           });
-        } else {
-          console.log('No transcription results from Google Cloud');
-        }
+
+          // Ensure Amharic output uses Ge'ez script; if not, retry with stronger bias
+          const hasGeEz = /[\u1200-\u137F]/.test(transcriptText);
+          const hasArabic = /[\u0600-\u06FF]/.test(transcriptText);
+          const hasLatin = /[A-Za-z]/.test(transcriptText);
+          console.log('GCP script detection:', { hasGeEz, hasArabic, hasLatin });
+
+          if (languageCode === 'am-ET' && !hasGeEz) {
+            console.log('Retrying GCP with stronger Amharic bias and no alternatives');
+            const forcedBody: any = {
+              config: {
+                languageCode: 'am-ET',
+                encoding: gcpConfig.encoding,
+                enableAutomaticPunctuation: true,
+                speechContexts: [
+                  { phrases: ['እንዴት', 'ነው', 'እሺ', 'እባክህ', 'ስለዚህ', 'ዛሬ', 'ሰላም'], boost: 20.0 },
+                ],
+              },
+              audio: { content: audioContent },
+            };
+            if (gcpConfig.encoding === 'LINEAR16') forcedBody.config.sampleRateHertz = 24000;
+
+            const retryResp = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(forcedBody),
+            });
+
+            if (retryResp.ok) {
+              const retryData = await retryResp.json();
+              const retryText = (retryData.results || []).map((r: any) => r.alternatives?.[0]?.transcript || '').join(' ').trim();
+              const retryHasGeEz = /[\u1200-\u137F]/.test(retryText);
+              console.log('GCP retry result:', { retryHasGeEz, retryPreview: retryText.substring(0, 100) });
+              if (retryHasGeEz && retryText) {
+                transcriptText = retryText;
+                detectedLanguage = 'am';
+              }
+            } else {
+              console.warn('GCP retry failed:', await retryResp.text());
+            }
+          }
       } catch (gcError) {
         console.error("Google Cloud transcription failed:", gcError);
         // Fall through to OpenAI fallback
