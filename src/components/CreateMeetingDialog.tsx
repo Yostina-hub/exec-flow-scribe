@@ -119,15 +119,15 @@ export const CreateMeetingDialog = () => {
           location,
           description,
           created_by: user.id,
-          status: "scheduled",
+          status: "scheduled" as any,
           category_id: categoryId || null,
           timezone,
           is_recurring: isRecurring,
-          meeting_type: meetingType,
+          meeting_type: meetingType as any,
           video_conference_url: videoUrl || null,
-          video_provider: videoProvider || null,
+          video_provider: videoProvider as any,
           requires_offline_support: meetingType === 'in_person',
-        })
+        } as any)
         .select()
         .single();
 
