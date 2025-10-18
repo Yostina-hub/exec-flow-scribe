@@ -35,9 +35,10 @@ const queryClient = new QueryClient({
 });
 
 const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
-  useSystemIntegration();
-  useCalendarActionSync();
-  useNotificationDispatcher();
+  // Temporarily disable integration hooks to resolve runtime hooks error
+  // useSystemIntegration();
+  // useCalendarActionSync();
+  // useNotificationDispatcher();
   return <>{children}</>;
 };
 
