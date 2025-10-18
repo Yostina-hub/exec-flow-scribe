@@ -118,8 +118,7 @@ export const BrowserSpeechRecognition = ({
         description: 'Transcription saved to meeting',
       });
 
-      resetTranscript();
-      setRecordingDuration(0);
+      // Don't reset transcript - keep it visible after saving
     } catch (err: any) {
       toast({
         title: 'Save failed',
