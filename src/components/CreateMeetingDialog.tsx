@@ -268,7 +268,20 @@ export const CreateMeetingDialog = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="duration">Duration (minutes)</Label>
+                <Input 
+                  id="duration" 
+                  name="duration" 
+                  type="number" 
+                  defaultValue="60" 
+                  min="15"
+                  step="15"
+                  required 
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="location">Location</Label>
                 <Input id="location" name="location" placeholder="Board Room" required />
