@@ -2573,6 +2573,7 @@ export type Database = {
       transcription_preferences: {
         Row: {
           created_at: string
+          elevenlabs_api_key: string | null
           id: string
           language: string | null
           openai_api_key: string | null
@@ -2585,6 +2586,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          elevenlabs_api_key?: string | null
           id?: string
           language?: string | null
           openai_api_key?: string | null
@@ -2597,6 +2599,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          elevenlabs_api_key?: string | null
           id?: string
           language?: string | null
           openai_api_key?: string | null

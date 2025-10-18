@@ -14,6 +14,7 @@ export const TranscriptionSettings = () => {
   const [openaiApiKey, setOpenaiApiKey] = useState("");
   const [whisperApiKey, setWhisperApiKey] = useState("");
   const [realtimeApiKey, setRealtimeApiKey] = useState("");
+  const [elevenlabsApiKey, setElevenlabsApiKey] = useState("");
   const [useSameKey, setUseSameKey] = useState(true);
   const [language, setLanguage] = useState("auto");
   const [loading, setLoading] = useState(true);
@@ -44,6 +45,7 @@ export const TranscriptionSettings = () => {
         setOpenaiApiKey(data.openai_api_key || "");
         setWhisperApiKey(data.whisper_api_key || "");
         setRealtimeApiKey(data.realtime_api_key || "");
+        setElevenlabsApiKey(data.elevenlabs_api_key || "");
         setUseSameKey(data.use_same_key !== false); // default to true
         setLanguage(data.language || "auto");
       }
@@ -78,6 +80,7 @@ export const TranscriptionSettings = () => {
         realtime_api_key: (provider === "openai" || provider === "openai_realtime") 
           ? (useSameKey ? openaiApiKey : realtimeApiKey) 
           : null,
+        elevenlabs_api_key: elevenlabsApiKey || null,
         use_same_key: useSameKey,
       };
 
@@ -278,6 +281,20 @@ export const TranscriptionSettings = () => {
             </p>
           </div>
         )}
+
+        <div className="space-y-2">
+          <Label htmlFor="elevenlabs-key">ElevenLabs API Key (Optional)</Label>
+          <Input
+            id="elevenlabs-key"
+            type="password"
+            placeholder="Enter your ElevenLabs API key..."
+            value={elevenlabsApiKey}
+            onChange={(e) => setElevenlabsApiKey(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground">
+            Used for text-to-speech and audio generation features. Get your key from elevenlabs.io
+          </p>
+        </div>
 
         <Button onClick={handleSave} disabled={saving}>
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
