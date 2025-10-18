@@ -369,7 +369,8 @@ export class OpenAIRealtimeClient {
           }
         } else if (event.type === 'error') {
           console.error('Realtime API error:', event);
-          this.onError(event.message || 'Unknown error');
+          const msg = event?.error?.message || event?.message || (typeof event === 'string' ? event : '') || 'Unknown error';
+          this.onError(msg);
         }
       });
 
@@ -599,13 +600,16 @@ export class OpenAIRealtimeClient {
           modalities: ['text'],
           instructions,
           input_audio_format: 'pcm16',
-          input_audio_transcription: {
-            model: 'whisper-1',
-            language: useLang === 'am' ? 'am' : (useLang === 'ar' ? 'ar' : null),
-            prompt: useLang === 'am' 
-              ? "Amharic (አማርኛ) using Ge'ez script, NOT Arabic. Examples: ሰላም እንዴት ነህ ጥሩ"
-              : undefined
-          },
+                input_audio_transcription: (() => {
+                  const tx: Record<string, any> = { model: 'whisper-1' };
+                  if (useLang === 'am') {
+                    tx.language = 'am';
+                    tx.prompt = "Amharic (አማርኛ) using Ge'ez script, NOT Arabic. Examples: ሰላም እንዴት ነህ ጥሩ";
+                  } else if (useLang === 'ar') {
+                    tx.language = 'ar';
+                  }
+                  return tx;
+                })(),
           turn_detection: {
             type: 'server_vad',
             threshold: 0.5,
