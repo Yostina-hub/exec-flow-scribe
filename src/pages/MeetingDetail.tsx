@@ -174,6 +174,13 @@ const [wasRecording, setWasRecording] = useState(false);
         });
 
         try {
+          // Get auth session
+          const { data: { session } } = await supabase.auth.getSession();
+          if (!session) throw new Error('Not authenticated');
+
+          // Add a delay to ensure all transcriptions are saved
+          await new Promise(resolve => setTimeout(resolve, 2000));
+
           // Auto-save meeting status
           if (id) {
             await supabase
@@ -185,12 +192,23 @@ const [wasRecording, setWasRecording] = useState(false);
               .eq('id', id);
           }
 
-// Generate minutes automatically
+          // Generate minutes automatically
           const { data, error } = await supabase.functions.invoke('generate-minutes', {
             body: { meetingId, recordingSeconds },
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            }
           });
 
-          if (error) throw error;
+          if (error) {
+            console.error('Edge function invoke error:', error);
+            throw error;
+          }
+
+          if (data?.error) {
+            console.error('Edge function data error:', data.error);
+            throw new Error(data.error);
+          }
 
           toast({
             title: 'Minutes generated',
@@ -210,7 +228,7 @@ const [wasRecording, setWasRecording] = useState(false);
               ? 'Please add AI credits in Settings → Workspace → Usage and try again.'
               : is429
               ? 'Too many requests right now. Please wait a minute and retry.'
-              : 'You can manually generate minutes from the Actions menu',
+              : msg || 'You can manually generate minutes from the Actions menu',
             variant: 'destructive',
           });
         } finally {
@@ -221,7 +239,7 @@ const [wasRecording, setWasRecording] = useState(false);
 
     autoGenerateMinutes();
     setWasRecording(isRecording);
-  }, [isRecording, wasRecording, meetingId, id, toast, isAutoGenerating]);
+  }, [isRecording, wasRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds]);
 
   const fetchMeetingDetails = async () => {
     try {
@@ -460,7 +478,7 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
-              <TabsList className="grid w-full grid-cols-8">
+              <TabsList className="grid w-full grid-cols-7">
                 {isOnlineMeeting && hasVideoLink && (
                   <TabsTrigger value="video">Video Call</TabsTrigger>
                 )}
@@ -469,7 +487,6 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
-                <TabsTrigger value="studio">Studio</TabsTrigger>
                 <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
 
@@ -599,10 +616,6 @@ const [wasRecording, setWasRecording] = useState(false);
 
               <TabsContent value="chat" className="space-y-4">
                 <MeetingChatPanel meetingId={meetingId} />
-              </TabsContent>
-
-              <TabsContent value="studio" className="space-y-4">
-                <MeetingStudioPanel meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="signatures" className="space-y-4">
