@@ -68,12 +68,12 @@ serve(async (req) => {
         instructions,
         // Build transcription config dynamically to avoid invalid null fields
         input_audio_transcription: (() => {
-          const tx: Record<string, any> = { model: "whisper-1" };
-          if (language && language !== 'auto' && language !== 'am') {
-            tx.language = language;
-          }
+          const tx: Record<string, any> = { model: 'whisper-1' };
           if (language === 'am') {
-            tx.prompt = "አማርኛ ጌዝ ስክሪፕት። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። አማርኛ ብቻ NOT Arabic script ا ب ت ث";
+            tx.language = 'am';
+            tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic script only; never Latin/Arabic.";
+          } else if (language && language !== 'auto') {
+            tx.language = language;
           }
           return tx;
         })(),

@@ -189,9 +189,16 @@ const MeetingDetail = () => {
           setShowViewMinutesDialog(true);
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
+          const msg = typeof (error?.message) === 'string' ? error.message : (typeof error === 'string' ? error : '');
+          const is402 = /Payment required|402/i.test(msg);
+          const is429 = /Rate limit|Too Many Requests|429/i.test(msg);
           toast({
-            title: 'Auto-generation failed',
-            description: 'You can manually generate minutes from the Actions menu',
+            title: is402 ? 'AI credits required' : is429 ? 'Rate limit reached' : 'Auto-generation failed',
+            description: is402
+              ? 'Please add AI credits in Settings → Workspace → Usage and try again.'
+              : is429
+              ? 'Too many requests right now. Please wait a minute and retry.'
+              : 'You can manually generate minutes from the Actions menu',
             variant: 'destructive',
           });
         } finally {
