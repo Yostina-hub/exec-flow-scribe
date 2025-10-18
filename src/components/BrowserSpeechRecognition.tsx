@@ -115,20 +115,10 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle>Browser Speech Recognition</CardTitle>
-            <CardDescription>Real-time speech-to-text using your browser</CardDescription>
-          </div>
-          {isListening && (
-            <Badge variant="destructive" className="gap-2">
-              <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-              Recording
-            </Badge>
-          )}
-        </div>
+        <CardTitle>Speech to Text</CardTitle>
+        <CardDescription>Click the microphone to start recording</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         <div className="space-y-2">
           <label className="flex items-center gap-2 text-sm text-muted-foreground">
             <Languages className="w-4 h-4" />
@@ -164,34 +154,41 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
           </Select>
         </div>
 
-        <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-          <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 text-muted-foreground" />
-            <span className="text-2xl font-mono font-semibold">
-              {formatDuration(recordingDuration)}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-6">
           <Button
             onClick={handleStartStop}
             size="lg"
-            className={`w-20 h-20 rounded-full ${
+            disabled={isSaving}
+            className={`w-24 h-24 rounded-full transition-all ${
               isListening
-                ? 'bg-destructive hover:bg-destructive/90'
+                ? 'bg-destructive hover:bg-destructive/90 animate-pulse'
                 : 'bg-primary hover:bg-primary/90'
             }`}
           >
             {isListening ? (
-              <MicOff className="w-8 h-8" />
+              <MicOff className="w-10 h-10" />
             ) : (
-              <Mic className="w-8 h-8" />
+              <Mic className="w-10 h-10" />
             )}
           </Button>
+
+          {isListening && (
+            <div className="flex flex-col items-center gap-2">
+              <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
+                <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+                Recording
+              </Badge>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="w-5 h-5" />
+                <span className="text-3xl font-mono font-bold">
+                  {formatDuration(recordingDuration)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div className="min-h-[200px] max-h-[300px] overflow-y-auto bg-muted rounded-lg p-4">
+        <div className="min-h-[200px] max-h-[400px] overflow-y-auto bg-muted rounded-lg p-4">
           {transcript ? (
             <p className="text-lg leading-relaxed">{transcript}</p>
           ) : (
@@ -207,25 +204,16 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
           </div>
         )}
 
-        <div className="flex gap-3">
-          <Button
-            onClick={handleSave}
-            disabled={!transcript.trim() || isSaving}
-            className="flex-1 gap-2"
-          >
-            <Save className="w-4 h-4" />
-            {isSaving ? 'Saving...' : 'Save'}
-          </Button>
+        {transcript && !isListening && (
           <Button
             onClick={handleClear}
-            disabled={!transcript}
             variant="outline"
-            className="flex-1 gap-2"
+            className="w-full gap-2"
           >
             <Trash2 className="w-4 h-4" />
-            Clear
+            Clear & Start New
           </Button>
-        </div>
+        )}
       </CardContent>
     </Card>
   );
