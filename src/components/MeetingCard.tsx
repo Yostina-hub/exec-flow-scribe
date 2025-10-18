@@ -1,4 +1,4 @@
-import { Calendar, Clock, Users, MapPin, FileText } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, FileText, Video } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,9 @@ interface MeetingCardProps {
   attendees: number;
   status: "upcoming" | "in-progress" | "completed";
   agendaItems: number;
+  meetingType?: string;
+  videoConferenceUrl?: string | null;
+  videoProvider?: string | null;
 }
 
 const statusConfig = {
@@ -41,8 +44,13 @@ export const MeetingCard = ({
   attendees,
   status,
   agendaItems,
+  meetingType,
+  videoConferenceUrl,
+  videoProvider,
 }: MeetingCardProps) => {
   const statusInfo = statusConfig[status];
+  const isOnlineMeeting = meetingType === 'online' || meetingType === 'hybrid';
+  const hasVideoLink = !!videoConferenceUrl;
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-scale-in">
@@ -77,10 +85,22 @@ export const MeetingCard = ({
           </div>
         </div>
         <div className="flex gap-2 mt-4">
-          <Button size="sm" className="flex-1" asChild>
+          {isOnlineMeeting && hasVideoLink && (
+            <Button 
+              size="sm" 
+              className="flex-1 gap-2" 
+              onClick={() => window.open(videoConferenceUrl, '_blank')}
+            >
+              <Video className="h-4 w-4" />
+              Join Meeting
+            </Button>
+          )}
+          <Button size="sm" className={cn(isOnlineMeeting && hasVideoLink ? "flex-1" : "flex-1")} asChild>
             <a href={`/meetings/${id}`}>View Details</a>
           </Button>
-          <Button size="sm" variant="outline">Agenda</Button>
+          {(!isOnlineMeeting || !hasVideoLink) && (
+            <Button size="sm" variant="outline">Agenda</Button>
+          )}
         </div>
       </CardContent>
     </Card>

@@ -33,6 +33,8 @@ import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { LiveTranscription } from "@/components/LiveTranscription";
 import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
 import { ContextPanel } from "@/components/ContextPanel";
+import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
+import { JitsiMeetEmbed } from "@/components/JitsiMeetEmbed";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
 import MeetingChatPanel from "@/components/MeetingChatPanel";
@@ -539,7 +541,18 @@ const [wasRecording, setWasRecording] = useState(false);
               </TabsContent>
 
               <TabsContent value="signatures" className="space-y-4">
-                <MeetingSignaturesPanel meetingId={meetingId} />
+                <div className="space-y-4">
+                  <LiveAudioRecorder 
+                    meetingId={meetingId}
+                    onUploadComplete={() => {
+                      toast({
+                        title: "Success",
+                        description: "Audio recording uploaded successfully",
+                      });
+                    }}
+                  />
+                  <MeetingSignaturesPanel meetingId={meetingId} />
+                </div>
               </TabsContent>
             </Tabs>
           </div>

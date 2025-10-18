@@ -33,6 +33,9 @@ interface Meeting {
   end_time: string;
   location: string | null;
   status: string;
+  meeting_type?: string | null;
+  video_conference_url?: string | null;
+  video_provider?: string | null;
   attendee_count?: number;
   agenda_count?: number;
 }
@@ -47,6 +50,9 @@ interface FormattedMeeting {
   attendees: number;
   status: "completed" | "upcoming" | "in-progress";
   agendaItems: number;
+  meetingType?: string;
+  videoConferenceUrl?: string | null;
+  videoProvider?: string | null;
 }
 
 interface MeetingStats {
