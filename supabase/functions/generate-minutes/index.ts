@@ -228,13 +228,55 @@ ${fullTranscript}
     Format the output as a professional meeting minutes document in markdown format.${languageInstruction}`;
 
     let minutes = "";
+    let providerError = "";
 
-    // Try provider-specific first (Gemini), then fallback to Lovable AI
-    if (provider === "gemini") {
+    // Use OpenAI if available
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (openaiKey && !minutes) {
+      try {
+        console.log("🤖 Using OpenAI API");
+        const openaiResponse = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${openaiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages: [
+                { role: "system", content: "You are a professional minutes generator. Preserve the transcript language and script. For Amharic, use Ge'ez (no Latin)." },
+                { role: "user", content: prompt },
+              ],
+              temperature: 0.7,
+              max_tokens: 2000,
+            }),
+          }
+        );
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json();
+          minutes = openaiData.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with OpenAI");
+        } else {
+          const error = await openaiResponse.text();
+          console.error("OpenAI error:", error);
+          providerError = `OpenAI: ${error}`;
+        }
+      } catch (e) {
+        console.error("OpenAI provider failed:", e);
+        providerError = `OpenAI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
+
+    // Try Gemini if OpenAI didn't work and provider is gemini
+    if (!minutes && provider === "gemini") {
       try {
         const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
         if (!geminiKey) throw new Error("Gemini API key not configured");
 
+        console.log("🤖 Using Gemini API");
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
           {
@@ -250,54 +292,29 @@ ${fullTranscript}
         if (geminiResponse.ok) {
           const geminiData = await geminiResponse.json();
           minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          console.log("✅ Minutes generated with Gemini");
         } else {
-          const error = await geminiResponse.text();
-          console.error("Gemini generation error:", error);
+          const errorText = await geminiResponse.text();
+          console.error("Gemini error:", errorText);
+          providerError += (providerError ? "; " : "") + `Gemini: ${errorText}`;
         }
       } catch (e) {
         console.error("Gemini provider failed:", e);
+        providerError += (providerError ? "; " : "") + `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
 
     if (!minutes) {
-      // Lovable AI fallback/default
-      const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-      if (!LOVABLE_API_KEY) {
-        throw new Error("LOVABLE_API_KEY not configured");
-      }
-
-      const aiResponse = await fetch(
-        "https://ai.gateway.lovable.dev/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${LOVABLE_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "google/gemini-2.5-flash",
-            messages: [
-              { role: "system", content: "You are a professional minutes generator. Preserve the transcript language and script. For Amharic, use Ge'ez (no Latin)." },
-              { role: "user", content: prompt },
-            ]
-          }),
+      console.error("All AI providers failed:", providerError);
+      return new Response(
+        JSON.stringify({ 
+          error: "Failed to generate minutes with available providers. " + providerError
+        }), 
+        { 
+          status: 500, 
+          headers: { ...corsHeaders, "Content-Type": "application/json" } 
         }
       );
-
-      if (!aiResponse.ok) {
-        if (aiResponse.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        if (aiResponse.status === 402) {
-          return new Response(JSON.stringify({ error: "Payment required, please add AI credits." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-        }
-        const error = await aiResponse.text();
-        console.error("Lovable AI generation error:", error);
-        throw new Error("Failed to generate minutes");
-      }
-
-      const aiData = await aiResponse.json();
-      minutes = aiData.choices?.[0]?.message?.content || "";
     }
 
     // Update meeting with generated minutes
