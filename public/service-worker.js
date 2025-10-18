@@ -1,5 +1,5 @@
 // Service Worker for offline support
-const CACHE_NAME = 'exec-flow-scribe-v1';
+const CACHE_NAME = 'exec-flow-scribe-v2';
 const urlsToCache = [
   '/',
   '/index.html',
