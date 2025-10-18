@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mic, MicOff, Save, Trash2, Clock, Languages, Volume2 } from 'lucide-react';
+import { Trash2, Clock, Languages, Volume2 } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
@@ -137,26 +137,6 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [isListening, onDurationChange]);
 
-  const handleStartStop = async () => {
-    if (isListening) {
-      stopListening();
-      const audioFile = await stopAudioRecording();
-      onRecordingStop?.(recordingDuration);
-      
-      // Auto-save transcription and audio
-      if (transcript.trim() || audioFile) {
-        await handleSave(audioFile);
-      }
-    } else {
-      resetTranscript();
-      setRecordingDuration(0);
-      onDurationChange?.(0);
-      clearAudioRecording();
-      await startAudioRecording();
-      startListening(selectedLanguage);
-      onRecordingStart?.();
-    }
-  };
 
   const handleSave = async (audioFile?: Blob | null) => {
     if (!transcript.trim() && !audioFile) return;
@@ -302,24 +282,7 @@ useEffect(() => {
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          <Button
-            onClick={handleStartStop}
-            size="lg"
-            disabled={isSaving}
-            className={`w-24 h-24 rounded-full transition-all ${
-              isListening
-                ? 'bg-destructive hover:bg-destructive/90 animate-pulse'
-                : 'bg-primary hover:bg-primary/90'
-            }`}
-          >
-            {isListening ? (
-              <MicOff className="w-10 h-10" />
-            ) : (
-              <Mic className="w-10 h-10" />
-            )}
-          </Button>
-
-{isListening && (
+          {isListening && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
@@ -346,6 +309,14 @@ useEffect(() => {
                   {formatDuration(recordingDuration)}
                 </span>
               </div>
+            </div>
+          )}
+
+          {!isListening && !externalIsRecording && (
+            <div className="text-center py-4">
+              <p className="text-muted-foreground">
+                Use the <strong>"Start Recording"</strong> button above to begin transcription
+              </p>
             </div>
           )}
         </div>
