@@ -8,6 +8,7 @@ import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
 import Index from "./pages/Index";
 import CalendarView from "./pages/CalendarView";
 import Meetings from "./pages/Meetings";
+import DriveIntegration from "./pages/DriveIntegration";
 import Actions from "./pages/Actions";
 import Analytics from "./pages/Analytics";
 import Reports from "./pages/Reports";
@@ -91,6 +92,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <MinutesEditor />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/drive"
+              element={
+                <ProtectedRoute>
+                  <DriveIntegration />
                 </ProtectedRoute>
               }
             />

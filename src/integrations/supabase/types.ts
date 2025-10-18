@@ -792,6 +792,50 @@ export type Database = {
           },
         ]
       }
+      drive_sync_settings: {
+        Row: {
+          auto_backup_enabled: boolean | null
+          auto_save_minutes_as_docs: boolean | null
+          auto_upload_recordings: boolean | null
+          backup_folder_id: string | null
+          created_at: string
+          default_folder_id: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_backup_enabled?: boolean | null
+          auto_save_minutes_as_docs?: boolean | null
+          auto_upload_recordings?: boolean | null
+          backup_folder_id?: string | null
+          created_at?: string
+          default_folder_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_backup_enabled?: boolean | null
+          auto_save_minutes_as_docs?: boolean | null
+          auto_upload_recordings?: boolean | null
+          backup_folder_id?: string | null
+          created_at?: string
+          default_folder_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "drive_sync_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_distributions: {
         Row: {
           distribution_profile_id: string | null
@@ -1423,6 +1467,72 @@ export type Database = {
           {
             foreignKeyName: "meeting_chat_messages_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_drive_files: {
+        Row: {
+          auto_generated: boolean | null
+          created_at: string
+          drive_file_id: string
+          drive_file_name: string
+          drive_file_type: string
+          drive_file_url: string
+          file_category: string | null
+          file_size: number | null
+          id: string
+          meeting_id: string
+          metadata: Json | null
+          mime_type: string | null
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          auto_generated?: boolean | null
+          created_at?: string
+          drive_file_id: string
+          drive_file_name: string
+          drive_file_type: string
+          drive_file_url: string
+          file_category?: string | null
+          file_size?: number | null
+          id?: string
+          meeting_id: string
+          metadata?: Json | null
+          mime_type?: string | null
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          auto_generated?: boolean | null
+          created_at?: string
+          drive_file_id?: string
+          drive_file_name?: string
+          drive_file_type?: string
+          drive_file_url?: string
+          file_category?: string | null
+          file_size?: number | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json | null
+          mime_type?: string | null
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_drive_files_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_drive_files_uploaded_by_fkey"
+            columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
