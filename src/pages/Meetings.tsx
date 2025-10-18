@@ -575,9 +575,10 @@ export default function Meetings() {
             )}
           </TabsContent>
         </Tabs>
-      </div>
 
-      <QuickActionFAB />
+        <QuickActionFAB />
+      </div>
     </Layout>
   );
 }
+
