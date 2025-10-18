@@ -269,7 +269,60 @@ Format as a professional markdown document.${languageInstruction}`;
     let minutes = "";
     let providerError = "";
 
-    // Try Lovable AI first (best for Amharic multilingual support)
+    // Try user's Gemini API key first (gemini-2.5-flash for multilingual)
+    const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
+    if (geminiKey && !minutes) {
+      try {
+        console.log("🤖 Using Gemini 2.5 Flash (user API key)");
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  parts: [
+                    {
+                      text: detectedLang === 'am' 
+                        ? `You are a professional meeting minutes generator with expert-level proficiency in Amharic business writing. You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon). Every sentence MUST end with ። Use Subject-Object-Verb (SOV) word order. Write in Geez script exclusively - NEVER use Latin script.\n\n${prompt}`
+                        : `You are a professional meeting minutes generator. Preserve the transcript language and script exactly.\n\n${prompt}`
+                    }
+                  ]
+                }
+              ],
+              generationConfig: { 
+                temperature: 0.7, 
+                maxOutputTokens: 2500,
+                topP: 0.95,
+                topK: 40
+              },
+            }),
+          }
+        );
+
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          console.log("✅ Minutes generated with Gemini 2.5 Flash");
+        } else {
+          const statusCode = geminiResponse.status;
+          const errorText = await geminiResponse.text();
+          console.error(`Gemini API error (${statusCode}):`, errorText);
+          
+          if (statusCode === 429) {
+            providerError = "Gemini rate limit exceeded. Try again in a moment.";
+          } else {
+            providerError = `Gemini: ${errorText}`;
+          }
+        }
+      } catch (e) {
+        console.error("Gemini provider failed:", e);
+        providerError = `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
+
+    // Fallback to Lovable AI if Gemini fails
     if (lovableApiKey && !minutes) {
       try {
         console.log("🤖 Using Lovable AI Gateway with gemini-2.5-pro (optimized for Amharic)");
@@ -367,39 +420,6 @@ ${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing.
       }
     }
 
-    // Try Gemini as last resort
-    if (!minutes && provider === "gemini") {
-      try {
-        const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
-        if (!geminiKey) throw new Error("Gemini API key not configured");
-
-        console.log("🤖 Using Gemini API");
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: prompt }] }],
-              generationConfig: { temperature: 0.7, maxOutputTokens: 2000 },
-            }),
-          }
-        );
-
-        if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
-          minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          console.log("✅ Minutes generated with Gemini");
-        } else {
-          const errorText = await geminiResponse.text();
-          console.error("Gemini error:", errorText);
-          providerError += (providerError ? "; " : "") + `Gemini: ${errorText}`;
-        }
-      } catch (e) {
-        console.error("Gemini provider failed:", e);
-        providerError += (providerError ? "; " : "") + `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
-      }
-    }
 
     if (!minutes) {
       console.error("All AI providers failed:", providerError);
