@@ -24,6 +24,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import DocumentViewer from "./components/DocumentViewer";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
 
 const queryClient = new QueryClient();
 
@@ -37,132 +38,133 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-      <TooltipProvider>
-        <BrowserRouter>
-        <IntegrationProvider>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Index />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/calendar"
-            element={
-              <ProtectedRoute>
-                <CalendarView />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/meetings"
-            element={
-              <ProtectedRoute>
-                <Meetings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/meetings/:id"
-            element={
-              <ProtectedRoute>
-                <MeetingDetail />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/meetings/:meetingId/minutes"
-            element={
-              <ProtectedRoute>
-                <MinutesEditor />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notebooks"
-            element={
-              <ProtectedRoute>
-                <NotebooksLibrary />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/notebook"
-            element={
-              <ProtectedRoute>
-                <Notebook />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/signature/:requestId"
-            element={
-              <ProtectedRoute>
-                <SignatureApproval />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/actions"
-            element={
-              <ProtectedRoute>
-                <Actions />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/analytics"
-            element={
-              <ProtectedRoute>
-                <Analytics />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <Reports />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <RequirePermission resource="users" action="manage">
-                  <Administration />
-                </RequirePermission>
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/integration-test"
-            element={
-              <ProtectedRoute>
-                <IntegrationTest />
-              </ProtectedRoute>
-            }
-          />
-           <Route path="/document" element={<DocumentViewer />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        </IntegrationProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+      <BrowserRouter>
+        <TooltipProvider>
+          <IntegrationProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <Index />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/calendar"
+                element={
+                  <ProtectedRoute>
+                    <CalendarView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meetings"
+                element={
+                  <ProtectedRoute>
+                    <Meetings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meetings/:id"
+                element={
+                  <ProtectedRoute>
+                    <MeetingDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/meetings/:meetingId/minutes"
+                element={
+                  <ProtectedRoute>
+                    <MinutesEditor />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notebooks"
+                element={
+                  <ProtectedRoute>
+                    <NotebooksLibrary />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/notebook"
+                element={
+                  <ProtectedRoute>
+                    <Notebook />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/signature/:requestId"
+                element={
+                  <ProtectedRoute>
+                    <SignatureApproval />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/actions"
+                element={
+                  <ProtectedRoute>
+                    <Actions />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/analytics"
+                element={
+                  <ProtectedRoute>
+                    <Analytics />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <RequirePermission resource="users" action="manage">
+                      <Administration />
+                    </RequirePermission>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/integration-test"
+                element={
+                  <ProtectedRoute>
+                    <IntegrationTest />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="/document" element={<DocumentViewer />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </IntegrationProvider>
+          <Toaster />
+        </TooltipProvider>
+      </BrowserRouter>
     </ThemeProvider>
   </QueryClientProvider>
 );
