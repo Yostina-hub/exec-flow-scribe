@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { ThemeProvider } from "next-themes";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequirePermission } from "@/components/RequirePermission";
 import { useSystemIntegration } from "@/hooks/useSystemIntegration";
@@ -37,12 +38,13 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <IntegrationProvider>
-        <Routes>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <IntegrationProvider>
+          <Routes>
           <Route path="/auth" element={<Auth />} />
           <Route
             path="/"
@@ -161,10 +163,11 @@ const App = () => (
            <Route path="/document" element={<DocumentViewer />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
-        </Routes>
-        </IntegrationProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+          </Routes>
+          </IntegrationProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
