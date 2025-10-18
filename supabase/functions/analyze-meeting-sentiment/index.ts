@@ -65,6 +65,7 @@ serve(async (req) => {
       // Try OpenAI first
       if (openaiKey) {
         try {
+          console.log("Attempting OpenAI for sentiment analysis");
           const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -99,7 +100,12 @@ Return format:
 
           if (aiResponse.ok) {
             const result = await aiResponse.json();
+            console.log("OpenAI response:", JSON.stringify(result).substring(0, 500));
             analysis = JSON.parse(result.choices[0].message.content);
+            console.log("OpenAI analysis successful");
+          } else {
+            const errorText = await aiResponse.text();
+            console.error("OpenAI API error:", aiResponse.status, errorText);
           }
         } catch (e) {
           console.error("OpenAI failed:", e);
@@ -109,6 +115,7 @@ Return format:
       // Fallback to Gemini
       if (!analysis && geminiApiKey) {
         try {
+          console.log("Attempting Gemini for sentiment analysis");
           const aiResponse = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
             {
@@ -143,8 +150,13 @@ Return format:
 
           if (aiResponse.ok) {
             const result = await aiResponse.json();
+            console.log("Gemini response:", JSON.stringify(result).substring(0, 500));
             const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
             analysis = JSON.parse(text);
+            console.log("Gemini analysis successful");
+          } else {
+            const errorText = await aiResponse.text();
+            console.error("Gemini API error:", aiResponse.status, errorText);
           }
         } catch (e) {
           console.error("Gemini failed:", e);
