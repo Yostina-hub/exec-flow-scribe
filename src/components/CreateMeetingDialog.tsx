@@ -87,6 +87,11 @@ export const CreateMeetingDialog = () => {
         return;
       }
 
+      if (!time) {
+        toast.error("Please select a start time");
+        return;
+      }
+
       // Validate that date is not in the past
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -98,10 +103,23 @@ export const CreateMeetingDialog = () => {
         return;
       }
 
-      // Combine date and time
-      const [hours, minutes] = time.split(":");
+      // Combine date and time with validation
+      const timeParts = time.split(":");
+      if (timeParts.length !== 2) {
+        toast.error("Invalid time format");
+        return;
+      }
+      
+      const hours = parseInt(timeParts[0]);
+      const minutes = parseInt(timeParts[1]);
+      
+      if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+        toast.error("Invalid time value");
+        return;
+      }
+      
       const startTime = new Date(date);
-      startTime.setHours(parseInt(hours), parseInt(minutes), 0);
+      startTime.setHours(hours, minutes, 0, 0);
       
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + duration);

@@ -1,8 +1,9 @@
-import { Calendar, Clock, Users, MapPin, FileText, Video } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, FileText, Video, Link2, Copy } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 interface MeetingCardProps {
   id: string;
@@ -48,9 +49,19 @@ export const MeetingCard = ({
   videoConferenceUrl,
   videoProvider,
 }: MeetingCardProps) => {
+  const { toast } = useToast();
   const statusInfo = statusConfig[status];
   const isOnlineMeeting = meetingType === 'online' || meetingType === 'hybrid';
   const hasVideoLink = !!videoConferenceUrl;
+
+  const handleCopyLink = () => {
+    const meetingUrl = `${window.location.origin}/meetings/${id}`;
+    navigator.clipboard.writeText(meetingUrl);
+    toast({
+      title: "Link copied",
+      description: "Meeting link copied to clipboard",
+    });
+  };
 
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-scale-in">
@@ -95,12 +106,18 @@ export const MeetingCard = ({
               Join Meeting
             </Button>
           )}
-          <Button size="sm" className={cn(isOnlineMeeting && hasVideoLink ? "flex-1" : "flex-1")} asChild>
+          <Button size="sm" className="flex-1" asChild>
             <a href={`/meetings/${id}`}>View Details</a>
           </Button>
-          {(!isOnlineMeeting || !hasVideoLink) && (
-            <Button size="sm" variant="outline">Agenda</Button>
-          )}
+          <Button 
+            size="sm" 
+            variant="outline"
+            onClick={handleCopyLink}
+            className="gap-2"
+          >
+            <Copy className="h-4 w-4" />
+            Copy Link
+          </Button>
         </div>
       </CardContent>
     </Card>
