@@ -17,10 +17,12 @@ import {
   PlayCircle,
   FileAudio,
   AlertCircle,
-  Send
+  Send,
+  Eye
 } from 'lucide-react';
 import { SignOffDialog } from '@/components/signoff/SignOffDialog';
 import { AudioPlayer } from '@/components/minutes/AudioPlayer';
+import { PDFPreviewDialog } from '@/components/PDFPreviewDialog';
 
 interface MeetingSignaturesPanelProps {
   meetingId: string;
@@ -35,6 +37,8 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
   const [selectedSignature, setSelectedSignature] = useState<string | null>(null);
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -61,7 +65,36 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
         .order('created_at', { ascending: false });
 
       if (sigError) throw sigError;
-      setSignatures(sigData || []);
+
+      // Enrich with latest PDF (if available)
+      const sigs = sigData || [];
+      const minutesIds = Array.from(new Set(
+        sigs.map((s: any) => s.minutes_version_id).filter(Boolean)
+      ));
+
+      if (minutesIds.length > 0) {
+        const { data: pdfs, error: pdfError } = await supabase
+          .from('pdf_generations')
+          .select('minutes_version_id, pdf_url, generated_at')
+          .in('minutes_version_id', minutesIds)
+          .order('generated_at', { ascending: false });
+        if (pdfError) {
+          console.warn('PDF fetch error:', pdfError);
+        }
+        const latestByMinutesId = new Map<string, any>();
+        (pdfs || []).forEach((p: any) => {
+          if (!latestByMinutesId.has(p.minutes_version_id)) {
+            latestByMinutesId.set(p.minutes_version_id, p);
+          }
+        });
+        const enriched = sigs.map((s: any) => ({
+          ...s,
+          pdf_url: s.minutes_version_id ? latestByMinutesId.get(s.minutes_version_id)?.pdf_url : undefined,
+        }));
+        setSignatures(enriched);
+      } else {
+        setSignatures(sigs);
+      }
 
       // Fetch audio recordings for this meeting
       const { data: audioData, error: audioError } = await supabase
@@ -234,7 +267,8 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
                     {signatures.map((sig) => {
                       const assignedToMe = isAssignedToMe(sig);
                       const canSign = assignedToMe && (sig.status === 'pending' || sig.status === 'delegated');
-                      const pdfUrl = sig.minutes_versions?.[0]?.pdf_generations?.[0]?.pdf_url ||
+                      const pdfUrl = sig.pdf_url ||
+                        sig.minutes_versions?.[0]?.pdf_generations?.[0]?.pdf_url ||
                         sig.minutes_versions?.[0]?.pdf_url ||
                         sig.pdf_generations?.[0]?.pdf_url;
                     return (
@@ -303,14 +337,27 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
                               )}
                               
                               {pdfUrl && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDownloadPDF(pdfUrl)}
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  Download PDF
-                                </Button>
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => {
+                                      setPreviewUrl(pdfUrl);
+                                      setPreviewOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    View PDF
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleDownloadPDF(pdfUrl)}
+                                  >
+                                    <Download className="h-4 w-4 mr-2" />
+                                    Download PDF
+                                  </Button>
+                                </>
                               )}
 
                               {sig.status === 'pending' && !assignedToMe && (
@@ -410,6 +457,12 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
           }}
         />
       )}
+
+      <PDFPreviewDialog
+        open={previewOpen}
+        url={previewUrl || ''}
+        onOpenChange={setPreviewOpen}
+      />
     </>
   );
 }
