@@ -14,7 +14,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { meeting_id } = await req.json();
@@ -59,17 +60,25 @@ serve(async (req) => {
     for (const segment of segments) {
       const text = segment.texts.join(" ");
       
-      const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${geminiApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{
-            role: "user",
-            content: `Analyze this meeting segment for sentiment, risks, and compliance concerns. Return JSON only:
+      let analysis;
+      
+      // Try OpenAI first
+      if (openaiKey) {
+        try {
+          const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${openaiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-4o-mini",
+              messages: [{
+                role: "system",
+                content: "You are a meeting sentiment analyzer. Return only valid JSON."
+              }, {
+                role: "user",
+                content: `Analyze this meeting segment for sentiment, risks, and compliance concerns. Return JSON only:
 
 Text: "${text}"
 
@@ -83,33 +92,68 @@ Return format:
   "risk_indicators": ["risk1", "risk2"],
   "compliance_concerns": ["concern1", "concern2"]
 }`
-          }],
-          tools: [{
-            type: "function",
-            function: {
-              name: "analyze_sentiment",
-              parameters: {
-                type: "object",
-                properties: {
-                  topic: { type: "string" },
-                  sentiment_score: { type: "number" },
-                  sentiment_label: { type: "string" },
-                  confidence: { type: "number" },
-                  key_phrases: { type: "array", items: { type: "string" } },
-                  risk_indicators: { type: "array", items: { type: "string" } },
-                  compliance_concerns: { type: "array", items: { type: "string" } }
-                },
-                required: ["topic", "sentiment_score", "sentiment_label", "confidence"]
-              }
-            }
-          }],
-          tool_choice: { type: "function", function: { name: "analyze_sentiment" } }
-        }),
-      });
+              }],
+              response_format: { type: "json_object" }
+            }),
+          });
 
-      const result = await aiResponse.json();
-      const analysisText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      const analysis = JSON.parse(analysisText);
+          if (aiResponse.ok) {
+            const result = await aiResponse.json();
+            analysis = JSON.parse(result.choices[0].message.content);
+          }
+        } catch (e) {
+          console.error("OpenAI failed:", e);
+        }
+      }
+
+      // Fallback to Gemini
+      if (!analysis && geminiApiKey) {
+        try {
+          const aiResponse = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [{
+                    text: `Analyze this meeting segment for sentiment, risks, and compliance concerns. Return JSON only:
+
+Text: "${text}"
+
+Return format:
+{
+  "topic": "main topic discussed",
+  "sentiment_score": -1 to 1,
+  "sentiment_label": "positive|neutral|negative|tension|optimistic|hesitant",
+  "confidence": 0 to 1,
+  "key_phrases": ["phrase1", "phrase2"],
+  "risk_indicators": ["risk1", "risk2"],
+  "compliance_concerns": ["concern1", "concern2"]
+}`
+                  }]
+                }],
+                generationConfig: {
+                  temperature: 0.7,
+                  responseMimeType: "application/json"
+                }
+              }),
+            }
+          );
+
+          if (aiResponse.ok) {
+            const result = await aiResponse.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            analysis = JSON.parse(text);
+          }
+        } catch (e) {
+          console.error("Gemini failed:", e);
+        }
+      }
+
+      if (!analysis) {
+        throw new Error("All AI providers failed");
+      }
 
       sentiments.push({
         meeting_id,

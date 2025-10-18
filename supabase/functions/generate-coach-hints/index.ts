@@ -14,7 +14,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { meeting_id, user_id } = await req.json();
@@ -58,17 +59,25 @@ serve(async (req) => {
     const remaining = endTime.getTime() - now.getTime();
     
     // Generate hints with AI
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${geminiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{
-          role: "user",
-          content: `Generate executive coach hints for a meeting in progress:
+    let coaching;
+    
+    // Try OpenAI first
+    if (openaiKey) {
+      try {
+        const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{
+              role: "system",
+              content: "You are an executive meeting coach. Return only valid JSON."
+            }, {
+              role: "user",
+              content: `Generate executive coach hints for a meeting in progress:
 
 Meeting time remaining: ${Math.round(remaining / 60000)} minutes
 Total agenda items: ${agenda?.length || 0}
@@ -93,37 +102,72 @@ Examples:
 - "Finance has not spoken on Item 2"
 - "Consider asking for a clear owner"
 - "Agenda running 15 mins behind"`
-        }],
-        tools: [{
-          type: "function",
-          function: {
-            name: "generate_hints",
-            parameters: {
-              type: "object",
-              properties: {
-                hints: {
-                  type: "array",
-                  items: {
-                    type: "object",
-                    properties: {
-                      hint_type: { type: "string" },
-                      hint_message: { type: "string" },
-                      priority: { type: "number" }
-                    },
-                    required: ["hint_type", "hint_message", "priority"]
-                  }
-                }
-              },
-              required: ["hints"]
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "generate_hints" } }
-      }),
-    });
+            }],
+            response_format: { type: "json_object" }
+          }),
+        });
 
-    const result = await aiResponse.json();
-    const coaching = JSON.parse(result.choices[0].message.tool_calls[0].function.arguments);
+        if (aiResponse.ok) {
+          const result = await aiResponse.json();
+          coaching = JSON.parse(result.choices[0].message.content);
+        }
+      } catch (e) {
+        console.error("OpenAI failed:", e);
+      }
+    }
+
+    // Fallback to Gemini
+    if (!coaching && geminiApiKey) {
+      try {
+        const aiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `Generate executive coach hints for a meeting in progress:
+
+Meeting time remaining: ${Math.round(remaining / 60000)} minutes
+Total agenda items: ${agenda?.length || 0}
+Completed items: ${agenda?.filter(a => a.status === 'completed').length || 0}
+Decisions made: ${decisions?.length || 0}
+Attendees: ${JSON.stringify(attendees?.map(a => ({ name: a.profiles?.full_name })))}
+
+Return JSON:
+{
+  "hints": [
+    {
+      "hint_type": "time|participation|progress|decision",
+      "hint_message": "actionable coaching message",
+      "priority": 0-10
+    }
+  ]
+}`
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.7,
+                responseMimeType: "application/json"
+              }
+            }),
+          }
+        );
+
+        if (aiResponse.ok) {
+          const result = await aiResponse.json();
+          const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+          coaching = JSON.parse(text);
+        }
+      } catch (e) {
+        console.error("Gemini failed:", e);
+      }
+    }
+
+    if (!coaching) {
+      throw new Error("All AI providers failed");
+    }
 
     // Save hints
     const hintsToInsert = coaching.hints.map((hint: any) => ({

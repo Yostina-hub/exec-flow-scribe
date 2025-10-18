@@ -14,7 +14,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { meeting_id, user_id } = await req.json();
@@ -44,17 +45,25 @@ serve(async (req) => {
       .select("*")
       .eq("meeting_id", meeting_id);
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${geminiApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{
-          role: "user",
-          content: `Generate a 1-page executive brief for upcoming meeting:
+    let brief;
+    
+    // Try OpenAI first
+    if (openaiKey) {
+      try {
+        const aiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${openaiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [{
+              role: "system",
+              content: "You are an executive briefing generator. Return only valid JSON."
+            }, {
+              role: "user",
+              content: `Generate a 1-page executive brief for upcoming meeting:
 
 Meeting: "${meeting.title}"
 Date: ${meeting.start_time}
@@ -79,39 +88,76 @@ Return JSON with:
   "recommended_focus": ["focus1", "focus2", "focus3"],
   "one_page_brief": "markdown formatted executive summary"
 }`
-        }],
-        tools: [{
-          type: "function",
-          function: {
-            name: "generate_brief",
-            parameters: {
-              type: "object",
-              properties: {
-                key_insights: { type: "array", items: { type: "string" } },
-                action_status_summary: {
-                  type: "object",
-                  properties: {
-                    total: { type: "number" },
-                    completed: { type: "number" },
-                    at_risk: { type: "number" },
-                    blocked: { type: "number" }
-                  }
-                },
-                risk_alerts: { type: "array", items: { type: "string" } },
-                recommended_focus: { type: "array", items: { type: "string" } },
-                one_page_brief: { type: "string" }
-              },
-              required: ["key_insights", "action_status_summary", "recommended_focus", "one_page_brief"]
-            }
-          }
-        }],
-        tool_choice: { type: "function", function: { name: "generate_brief" } }
-      }),
-    });
+            }],
+            response_format: { type: "json_object" }
+          }),
+        });
 
-    const result = await aiResponse.json();
-    const briefText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    const brief = JSON.parse(briefText);
+        if (aiResponse.ok) {
+          const result = await aiResponse.json();
+          brief = JSON.parse(result.choices[0].message.content);
+        }
+      } catch (e) {
+        console.error("OpenAI failed:", e);
+      }
+    }
+
+    // Fallback to Gemini
+    if (!brief && geminiApiKey) {
+      try {
+        const aiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                parts: [{
+                  text: `Generate a 1-page executive brief for upcoming meeting:
+
+Meeting: "${meeting.title}"
+Date: ${meeting.start_time}
+
+Context:
+- Actions: ${actions?.length || 0} total
+- Decisions: ${decisions?.length || 0}
+
+Return JSON:
+{
+  "key_insights": ["insight1", "insight2"],
+  "action_status_summary": {
+    "total": ${actions?.length || 0},
+    "completed": ${actions?.filter(a => a.status === 'completed').length || 0},
+    "at_risk": 0,
+    "blocked": 0
+  },
+  "risk_alerts": [],
+  "recommended_focus": ["focus1", "focus2"],
+  "one_page_brief": "markdown summary"
+}`
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.7,
+                responseMimeType: "application/json"
+              }
+            }),
+          }
+        );
+
+        if (aiResponse.ok) {
+          const result = await aiResponse.json();
+          const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+          brief = JSON.parse(text);
+        }
+      } catch (e) {
+        console.error("Gemini failed:", e);
+      }
+    }
+
+    if (!brief) {
+      throw new Error("All AI providers failed");
+    }
 
     // Save brief
     const { data: savedBrief } = await supabase
