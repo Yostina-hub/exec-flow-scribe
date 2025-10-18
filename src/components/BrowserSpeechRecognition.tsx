@@ -120,9 +120,12 @@ export const BrowserSpeechRecognition = ({
       const prevExternal = prevExternalRef.current;
       const prevPaused = prevPausedRef.current;
   
+      console.log('Sync state:', { externalIsRecording, isPaused, isListening, prevExternal, prevPaused });
+  
       if (!externalIsRecording) {
         // Recording stopped → save once on falling edge
         if (prevExternal) {
+          console.log('Stopping recording and saving...');
           if (isListening) stopListening();
           const audioFile = await stopAudioRecording();
           if (transcript.trim() || audioFile) {
@@ -134,23 +137,40 @@ export const BrowserSpeechRecognition = ({
         // Recording is active
         if (isPaused) {
           // Pause listening and audio without clearing
+          console.log('Pausing recording...');
           if (isListening) {
             stopListening();
             pauseAudioRecording();
           }
         } else {
           // Active and not paused → ensure listening
-          if (!isListening) {
+          if (!isListening || !prevExternal) {
+            console.log('Starting/resuming recording...', { isListening, prevExternal });
             // New session start (rising edge) → clear and start
             if (!prevExternal) {
+              console.log('New recording session - clearing and starting fresh');
               resetTranscript();
               setRecordingDuration(0);
               clearAudioRecording();
-              await startAudioRecording();
+              try {
+                await startAudioRecording();
+                console.log('Audio recording started');
+              } catch (err) {
+                console.error('Failed to start audio recording:', err);
+                toast({
+                  title: 'Microphone Error',
+                  description: 'Failed to access microphone. Please check permissions.',
+                  variant: 'destructive',
+                });
+              }
             } else {
               // Resuming from pause
+              console.log('Resuming from pause');
               resumeAudioRecording();
             }
+            
+            // Always try to start listening when recording is active and not paused
+            console.log('Starting speech recognition with language:', selectedLanguage);
             startListening(selectedLanguage);
           }
         }
@@ -327,7 +347,7 @@ useEffect(() => {
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          {isListening && (
+          {externalIsRecording && !isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
@@ -339,10 +359,15 @@ useEffect(() => {
                   {formatDuration(recordingDuration)}
                 </span>
               </div>
+              {!isListening && (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Starting speech recognition...
+                </p>
+              )}
             </div>
           )}
 
-          {!isListening && externalIsRecording && isPaused && (
+          {externalIsRecording && isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="warning" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white" />
@@ -357,7 +382,7 @@ useEffect(() => {
             </div>
           )}
 
-          {!isListening && !externalIsRecording && (
+          {!externalIsRecording && (
             <div className="text-center py-4">
               <p className="text-muted-foreground">
                 Use the <strong>"Start Recording"</strong> button above to begin transcription

@@ -115,14 +115,26 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       setLanguage(lang);
     }
 
+    console.log('startListening called with language:', lang || language);
     setShouldBeListening(true);
     try {
-      recognitionRef.current?.start();
-    } catch (err) {
+      if (recognitionRef.current) {
+        console.log('Starting speech recognition...');
+        recognitionRef.current.start();
+      } else {
+        console.error('Recognition ref is null');
+        setError('Speech recognition not initialized');
+      }
+    } catch (err: any) {
       console.error('Error starting recognition:', err);
-      setError('Failed to start speech recognition.');
+      // If already started, ignore the error
+      if (err.message?.includes('already started')) {
+        console.log('Recognition already started, continuing...');
+      } else {
+        setError(`Failed to start speech recognition: ${err.message || 'Unknown error'}`);
+      }
     }
-  }, [isSupported]);
+  }, [isSupported, language]);
 
   const stopListening = useCallback(() => {
     setShouldBeListening(false);
