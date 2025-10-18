@@ -54,7 +54,6 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
         .from('signature_requests')
         .select(`
           *,
-          minutes_versions(pdf_url, generated_at),
           countersignatures(status, required_role, assigned_to),
           delegation_records(delegated_to, reason_code)
         `)
@@ -232,10 +231,12 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
             ) : (
               <ScrollArea className="h-[400px]">
                 <div className="space-y-4">
-                  {signatures.map((sig) => {
-                    const assignedToMe = isAssignedToMe(sig);
-                    const canSign = assignedToMe && (sig.status === 'pending' || sig.status === 'delegated');
-                    
+                    {signatures.map((sig) => {
+                      const assignedToMe = isAssignedToMe(sig);
+                      const canSign = assignedToMe && (sig.status === 'pending' || sig.status === 'delegated');
+                      const pdfUrl = sig.minutes_versions?.[0]?.pdf_generations?.[0]?.pdf_url ||
+                        sig.minutes_versions?.[0]?.pdf_url ||
+                        sig.pdf_generations?.[0]?.pdf_url;
                     return (
                       <Card key={sig.id} className={assignedToMe ? 'border-primary' : ''}>
                         <CardContent className="pt-6">
@@ -301,11 +302,11 @@ export function MeetingSignaturesPanel({ meetingId }: MeetingSignaturesPanelProp
                                 </Button>
                               )}
                               
-                              {sig.minutes_versions?.[0]?.pdf_url && (
+                              {pdfUrl && (
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleDownloadPDF(sig.minutes_versions[0].pdf_url)}
+                                  onClick={() => handleDownloadPDF(pdfUrl)}
                                 >
                                   <Download className="h-4 w-4 mr-2" />
                                   Download PDF
