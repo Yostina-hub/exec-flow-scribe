@@ -39,9 +39,13 @@ export const BrowserSpeechRecognition = ({ meetingId }: BrowserSpeechRecognition
     return () => clearInterval(interval);
   }, [isListening]);
 
-  const handleStartStop = () => {
+  const handleStartStop = async () => {
     if (isListening) {
       stopListening();
+      // Auto-save when stopping if there's content
+      if (transcript.trim()) {
+        await handleSave();
+      }
     } else {
       resetTranscript();
       setRecordingDuration(0);
