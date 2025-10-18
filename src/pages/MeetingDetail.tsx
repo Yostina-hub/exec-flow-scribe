@@ -26,6 +26,7 @@ import {
   Loader2,
   Sparkles,
   ListChecks,
+  FileSignature,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -41,6 +42,8 @@ import { ManageAttendeesDialog } from "@/components/ManageAttendeesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
+import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
+import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -116,6 +119,7 @@ const MeetingDetail = () => {
   const [showViewMinutesDialog, setShowViewMinutesDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
+  const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
@@ -426,13 +430,14 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue="transcription" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="studio">Studio</TabsTrigger>
+                <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
 
 <TabsContent value="transcription" className="space-y-4">
@@ -532,6 +537,10 @@ const [wasRecording, setWasRecording] = useState(false);
               <TabsContent value="studio" className="space-y-4">
                 <MeetingStudioPanel meetingId={meetingId} />
               </TabsContent>
+
+              <TabsContent value="signatures" className="space-y-4">
+                <MeetingSignaturesPanel meetingId={meetingId} />
+              </TabsContent>
             </Tabs>
           </div>
 
@@ -622,6 +631,14 @@ const [wasRecording, setWasRecording] = useState(false);
                   <Users className="h-4 w-4" />
                   Manage Attendees
                 </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start gap-2"
+                  onClick={() => setShowCreateSignatureDialog(true)}
+                >
+                  <FileSignature className="h-4 w-4" />
+                  Request Sign-Off
+                </Button>
               </CardContent>
             </Card>
           </div>
@@ -651,6 +668,18 @@ const [wasRecording, setWasRecording] = useState(false);
           open={showManageAttendeesDialog}
           onOpenChange={setShowManageAttendeesDialog}
           onSuccess={fetchMeetingDetails}
+        />
+
+        <CreateSignatureRequestDialog
+          meetingId={meetingId}
+          open={showCreateSignatureDialog}
+          onOpenChange={setShowCreateSignatureDialog}
+          onSuccess={() => {
+            toast({
+              title: 'Success',
+              description: 'Signature request created successfully',
+            });
+          }}
         />
       </div>
     </Layout>
