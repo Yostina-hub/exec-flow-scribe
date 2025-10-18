@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 interface SendNotificationParams {
   to: string;
@@ -14,7 +14,6 @@ interface SendNotificationParams {
  * Handles all app notifications based on user preferences and email delivery
  */
 export const useNotificationDispatcher = () => {
-  const { toast } = useToast();
 
   const sendEmail = async (params: SendNotificationParams) => {
     try {
@@ -305,7 +304,7 @@ export const useNotificationDispatcher = () => {
     };
 
     setupNotifications();
-  }, [toast]);
+  }, []);
 
   const handleNotification = async (notification: any) => {
     try {

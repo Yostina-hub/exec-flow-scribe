@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { OpenAIRealtimeClient } from '@/utils/openaiRealtime';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
@@ -10,7 +10,7 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [language, setLanguage] = useState<string>('en');
   const clientRef = useRef<OpenAIRealtimeClient | null>(null);
-  const { toast } = useToast();
+  
 
   useEffect(() => {
     if (!enabled || !meetingId) return;
@@ -110,7 +110,7 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
       }
       setIsConnected(false);
     };
-  }, [meetingId, enabled, toast]);
+  }, [meetingId, enabled]);
 
   const sendText = (text: string) => {
     clientRef.current?.sendText(text);

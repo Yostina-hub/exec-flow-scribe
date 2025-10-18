@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { initBrowserWhisper } from '@/utils/browserWhisper';
 
 // Normalize meeting IDs deterministically so client/server match without localStorage
@@ -61,7 +61,6 @@ export const useAudioRecorder = (meetingId: string) => {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const pcmChunksRef = useRef<Float32Array[]>([]);
-  const { toast } = useToast();
   const normalizedMeetingId = normalizeMeetingId(meetingId);
 
   const startRecording = useCallback(async () => {

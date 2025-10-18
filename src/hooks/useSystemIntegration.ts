@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Central integration hook that connects all systems
  * Handles real-time events and triggers automated workflows
  */
 export const useSystemIntegration = () => {
-  const { toast } = useToast();
 
   useEffect(() => {
     const setupIntegrations = async () => {
@@ -88,7 +87,7 @@ export const useSystemIntegration = () => {
     };
 
     setupIntegrations();
-  }, [toast]);
+  }, []);
 };
 
 /**
