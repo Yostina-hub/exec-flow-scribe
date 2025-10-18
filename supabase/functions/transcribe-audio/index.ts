@@ -234,6 +234,9 @@ serve(async (req) => {
               console.warn('GCP retry failed:', await retryResp.text());
             }
           }
+        } else {
+          console.log('No transcription results from Google Cloud');
+        }
       } catch (gcError) {
         console.error("Google Cloud transcription failed:", gcError);
         // Fall through to OpenAI fallback
