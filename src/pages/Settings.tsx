@@ -385,7 +385,7 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="inline-flex w-full justify-start overflow-x-auto">
+          <TabsList className="flex flex-wrap w-full justify-start h-auto gap-1">
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
