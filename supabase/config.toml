@@ -119,3 +119,6 @@ verify_jwt = false
 
 [functions.generate-executive-briefing]
 verify_jwt = false
+
+[functions.google-meet-auth]
+verify_jwt = true

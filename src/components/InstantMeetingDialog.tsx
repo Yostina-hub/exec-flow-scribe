@@ -42,19 +42,97 @@ export function InstantMeetingDialog() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Create instant meeting starting now
       const startTime = new Date();
       const endTime = new Date(startTime.getTime() + duration * 60000);
-
-      // Generate temporary meeting ID for video link generation
-      const tempId = crypto.randomUUID();
-      
-      // Generate video conference link
       let videoUrl = '';
+
+      // Handle Google Meet with OAuth
       if (videoProvider === 'google_meet') {
-        videoUrl = generateGoogleMeetLink(tempId);
-      } else if (videoProvider === 'jitsi_meet') {
-        videoUrl = generateJitsiMeetLink(title, tempId);
+        try {
+          // Get authorization URL
+          const { data: authData, error: authError } = await supabase.functions.invoke(
+            'google-meet-auth',
+            { body: { action: 'getAuthUrl' } }
+          );
+
+          if (authError) throw authError;
+
+          // Open OAuth popup
+          const authWindow = window.open(
+            authData.authUrl,
+            'Google OAuth',
+            'width=500,height=600'
+          );
+
+          if (!authWindow) {
+            throw new Error('Popup blocked. Please allow popups for this site.');
+          }
+
+          // Wait for OAuth completion
+          const code = await new Promise<string>((resolve, reject) => {
+            const checkInterval = setInterval(() => {
+              if (authWindow.closed) {
+                clearInterval(checkInterval);
+                reject(new Error('Authentication cancelled'));
+              }
+              try {
+                const url = new URL(authWindow.location.href);
+                if (url.searchParams.get('code')) {
+                  const authCode = url.searchParams.get('code');
+                  authWindow.close();
+                  clearInterval(checkInterval);
+                  if (authCode) resolve(authCode);
+                  else reject(new Error('No code received'));
+                }
+              } catch {
+                // Cross-origin error - still loading
+              }
+            }, 500);
+
+            setTimeout(() => {
+              clearInterval(checkInterval);
+              if (!authWindow.closed) authWindow.close();
+              reject(new Error('Authentication timeout'));
+            }, 120000); // 2 minute timeout
+          });
+
+          // Exchange code for token
+          const { data: tokenData, error: tokenError } = await supabase.functions.invoke(
+            'google-meet-auth',
+            { body: { action: 'exchangeCode', code } }
+          );
+
+          if (tokenError) throw tokenError;
+
+          // Create Meeting with Google Calendar
+          const { data: meetData, error: meetError } = await supabase.functions.invoke(
+            'google-meet-auth',
+            {
+              body: {
+                action: 'createMeeting',
+                meetingData: {
+                  accessToken: tokenData.accessToken,
+                  title,
+                  startTime: startTime.toISOString(),
+                  endTime: endTime.toISOString(),
+                  description: 'Instant meeting',
+                }
+              }
+            }
+          );
+
+          if (meetError) throw meetError;
+          videoUrl = meetData.meetLink;
+          
+          toast.success('Google Meet link created!');
+        } catch (error: any) {
+          console.error('Google Meet error:', error);
+          toast.error('Google Meet setup failed. Using Jitsi instead.');
+          videoUrl = generateJitsiMeetLink(title, crypto.randomUUID());
+        }
+      } else {
+        // Use Jitsi Meet
+        videoUrl = generateJitsiMeetLink(title, crypto.randomUUID());
       }
 
       const { data: meeting, error: meetingError } = await supabase
@@ -64,7 +142,7 @@ export function InstantMeetingDialog() {
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
           location: 'Virtual',
-          description: 'Instant meeting created for immediate collaboration',
+          description: 'Instant meeting',
           created_by: user.id,
           status: 'in_progress' as any,
           meeting_type: 'online' as any,
@@ -78,7 +156,6 @@ export function InstantMeetingDialog() {
 
       if (meetingError) throw meetingError;
 
-      // Add creator as attendee
       await supabase
         .from('meeting_attendees')
         .insert({
@@ -90,11 +167,8 @@ export function InstantMeetingDialog() {
 
       toast.success('Instant meeting created!');
       setOpen(false);
-      
-      // Navigate to meeting detail page
       navigate(`/meetings/${meeting.id}`);
       
-      // Open video conference in new tab
       if (videoUrl) {
         window.open(videoUrl, '_blank');
       }
@@ -159,8 +233,8 @@ export function InstantMeetingDialog() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="jitsi_meet">Jitsi Meet (Recommended - Works Instantly)</SelectItem>
-                  <SelectItem value="google_meet" disabled>Google Meet (Requires API Setup)</SelectItem>
+                  <SelectItem value="jitsi_meet">Jitsi Meet (Instant)</SelectItem>
+                  <SelectItem value="google_meet">Google Meet (with OAuth)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
