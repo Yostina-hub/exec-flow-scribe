@@ -269,19 +269,16 @@ export class OpenAIRealtimeClient {
                 modalities: ["text"],
                 instructions,
                 input_audio_format: "pcm16",
-                input_audio_transcription: (() => {
-                  const tx: Record<string, any> = { model: 'whisper-1' };
-                  if (this.sessionLanguage === 'am') {
-                    tx.language = 'am';
-                    tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic only; never Latin/Arabic.";
-                  } else if (this.sessionLanguage === 'ar') {
-                    tx.language = 'ar';
-                  } else {
-                    // Auto-detect with a light Amharic bias to avoid romanization
-                    tx.prompt = "Auto-detect. If Amharic, use Ge'ez/Ethiopic (ሀ ለ ሐ መ …), never Latin/Arabic.";
-                  }
-                  return tx;
-                })(),
+                 input_audio_transcription: (() => {
+                   const tx: Record<string, any> = { model: 'whisper-1' };
+                   if (this.sessionLanguage === 'am') {
+                     // Do NOT set language for Amharic (unsupported in Realtime param); bias with prompt only
+                     tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic only; never Latin/Arabic.";
+                   } else if (this.sessionLanguage === 'ar') {
+                     tx.language = 'ar';
+                   }
+                   return tx;
+                 })(),
                 turn_detection: {
                   type: "server_vad",
                   threshold: 0.5,
@@ -603,16 +600,16 @@ export class OpenAIRealtimeClient {
           modalities: ['text'],
           instructions,
           input_audio_format: 'pcm16',
-          input_audio_transcription: (() => {
-            const tx: Record<string, any> = { model: 'whisper-1' };
-            if (useLang === 'am') {
-              tx.language = 'am';
-              tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic only; never Latin/Arabic.";
-            } else if (useLang === 'ar') {
-              tx.language = 'ar';
-            }
-            return tx;
-          })(),
+           input_audio_transcription: (() => {
+             const tx: Record<string, any> = { model: 'whisper-1' };
+             if (useLang === 'am') {
+               // Do NOT set language 'am' (unsupported for this param); bias with prompt only
+               tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic only; never Latin/Arabic.";
+             } else if (useLang === 'ar') {
+               tx.language = 'ar';
+             }
+             return tx;
+           })(),
           turn_detection: {
             type: 'server_vad',
             threshold: 0.5,

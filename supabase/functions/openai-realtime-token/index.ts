@@ -70,8 +70,10 @@ serve(async (req) => {
         input_audio_transcription: (() => {
           const tx: Record<string, any> = { model: 'whisper-1' };
           if (language === 'am') {
-            tx.language = 'am';
+            // Do NOT set language for Amharic (not supported for Realtime param). Bias with prompt only.
             tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic script only; never Latin/Arabic.";
+          } else if (language === 'ar') {
+            tx.language = 'ar';
           } else if (language && language !== 'auto') {
             tx.language = language;
           }
