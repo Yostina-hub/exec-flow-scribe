@@ -26,7 +26,13 @@ import DocumentViewer from "./components/DocumentViewer";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes
+    },
+  },
+});
 
 const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
   useSystemIntegration();
