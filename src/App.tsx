@@ -37,7 +37,7 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <Toaster />
       <Sonner />
       <BrowserRouter>
