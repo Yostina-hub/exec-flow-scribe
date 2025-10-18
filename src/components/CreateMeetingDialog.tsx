@@ -251,30 +251,48 @@ export const CreateMeetingDialog = () => {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" name="location" placeholder="Board Room" required />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="meeting_type">Meeting Type</Label>
-                <Select 
-                  defaultValue="in_person" 
-                  name="meeting_type"
-                  onValueChange={(value) => {
-                    setMeetingType(value);
-                    setShowVideoFields(value === 'online' || value === 'hybrid');
-                  }}
-                >
-                  <SelectTrigger id="meeting_type">
+                <Label htmlFor="duration">Duration</Label>
+                <Select defaultValue="60" name="duration">
+                  <SelectTrigger id="duration">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="in_person">In-Person</SelectItem>
-                    <SelectItem value="online">Online</SelectItem>
-                    <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectItem value="15">15 minutes</SelectItem>
+                    <SelectItem value="30">30 minutes</SelectItem>
+                    <SelectItem value="45">45 minutes</SelectItem>
+                    <SelectItem value="60">1 hour</SelectItem>
+                    <SelectItem value="90">1.5 hours</SelectItem>
+                    <SelectItem value="120">2 hours</SelectItem>
+                    <SelectItem value="180">3 hours</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input id="location" name="location" placeholder="Board Room" required />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meeting_type">Meeting Type</Label>
+              <Select 
+                defaultValue="in_person" 
+                name="meeting_type"
+                onValueChange={(value) => {
+                  setMeetingType(value);
+                  setShowVideoFields(value === 'online' || value === 'hybrid');
+                }}
+              >
+                <SelectTrigger id="meeting_type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="in_person">In-Person</SelectItem>
+                  <SelectItem value="online">Online</SelectItem>
+                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {showVideoFields && (
