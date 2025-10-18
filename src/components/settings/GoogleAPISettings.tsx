@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import * as React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,13 +11,13 @@ import { toast } from 'sonner';
 import { CheckCircle2, XCircle, Key, Calendar, Video, ExternalLink, Info } from 'lucide-react';
 
 export function GoogleAPISettings() {
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isConfigured, setIsConfigured] = useState(false);
-  const [testing, setTesting] = useState(false);
+  const [clientId, setClientId] = React.useState('');
+  const [clientSecret, setClientSecret] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
+  const [isConfigured, setIsConfigured] = React.useState(false);
+  const [testing, setTesting] = React.useState(false);
 
-  useEffect(() => {
+  React.useEffect(() => {
     checkConfiguration();
   }, []);
 
