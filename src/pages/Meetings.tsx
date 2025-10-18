@@ -33,6 +33,7 @@ interface Meeting {
   end_time: string;
   location: string | null;
   status: string;
+  created_at: string;
   meeting_type?: string | null;
   video_conference_url?: string | null;
   video_provider?: string | null;
@@ -108,7 +109,7 @@ export default function Meetings() {
 
   const fetchMeetings = async () => {
     try {
-      // Fetch meetings with attendee and agenda counts
+      // Fetch meetings with attendee and agenda counts - order by created_at descending so newest meetings appear first
       const { data: meetingsData, error: meetingsError } = await supabase
         .from("meetings")
         .select(`
@@ -116,7 +117,7 @@ export default function Meetings() {
           meeting_attendees(count),
           agenda_items(count)
         `)
-        .order("start_time", { ascending: true });
+        .order("created_at", { ascending: false });
 
       if (meetingsError) throw meetingsError;
 
@@ -221,12 +222,13 @@ export default function Meetings() {
         return sorted.sort((a, b) => b.attendees - a.attendees);
       case "date":
       default:
+        // Sort by created_at descending by default (newest first)
         return sorted.sort((a, b) => {
           const meetingA = originalMeetings.find(m => m.id === a.id);
           const meetingB = originalMeetings.find(m => m.id === b.id);
           if (!meetingA || !meetingB) return 0;
-          return new Date(meetingA.start_time).getTime() - 
-                 new Date(meetingB.start_time).getTime();
+          return new Date(meetingB.created_at).getTime() - 
+                 new Date(meetingA.created_at).getTime();
         });
     }
   };
