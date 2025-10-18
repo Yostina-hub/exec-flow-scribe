@@ -184,12 +184,43 @@ try {
 
     // Create language-specific instructions
     const languageInstruction = detectedLang === 'am'
-      ? `\n\nCRITICAL LANGUAGE REQUIREMENT - AMHARIC:
-You MUST generate the minutes in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ).
-NEVER use Latin letters (a-z) or romanization.
-Use proper Amharic punctuation (።፣፤፥፦).
-All headings, summaries, and content MUST be in Ge'ez script.
-Example heading: "## ስብሰባ ማጠቃለያ" NOT "## Meeting Summary"`
+      ? `\n\n═══ CRITICAL AMHARIC WRITING REQUIREMENTS ═══
+
+LANGUAGE & SCRIPT:
+• Write ENTIRELY in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
+• NEVER use Latin letters (a-z) or romanization
+• ALL headings, titles, content MUST be Ge'ez script
+
+ETHIOPIAN PUNCTUATION (MANDATORY):
+• ። = Full stop (end of sentence) - USE CONSISTENTLY
+• ፣ = Comma (separating items in lists)
+• ፤ = Semicolon (separating related clauses)
+• ፦ = Colon (before lists or explanations)
+• ፥ = Section separator
+
+SENTENCE STRUCTURE:
+• Use Subject-Object-Verb (SOV) word order
+• Start each sentence with proper context
+• End EVERY sentence with ። 
+• Separate items in lists with ፣
+• Use ፦ before introducing lists or points
+
+PROFESSIONAL VOCABULARY:
+• Use formal business Amharic (ኦፊሴላዊ አማርኛ)
+• Use proper honorifics: አቶ (Mr.), ወ/ሮ (Mrs.), ዶ/ር (Dr.), ኢንጅነር (Eng.)
+• Use professional terms: ስብሰባ (meeting), ውሳኔ (decision), ተግባር (action), ድርጅት (organization)
+
+FORMATTING:
+• Use clear paragraph breaks (double line breaks)
+• Format headings: ## የስብሰባ ማጠቃለያ
+• Use bullet points: • or - for lists
+• Maintain consistent verb tenses
+
+Example heading structure:
+## የስብሰባ ማጠቃለያ
+## ዋና ዋና የውይይት ነጥቦች
+## የተወሰኑ ውሳኔዎች
+## የተግባር እቅዶች`
       : detectedLang === 'ar'
       ? `\n\nCRITICAL LANGUAGE REQUIREMENT - ARABIC:
 Generate the minutes in ARABIC using Arabic script.
@@ -206,7 +237,7 @@ Date: ${new Date(meeting.start_time).toLocaleDateString()}
 Duration (scheduled): ${Math.round(
       (new Date(meeting.end_time).getTime() -
         new Date(meeting.start_time).getTime()) /
-        60000
+         60000
     )} minutes
 ${recordingSeconds !== null ? `Recording Time: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
 
@@ -216,18 +247,21 @@ ${agendaList}
 Full Transcript:
 ${fullTranscript}
 
-    Decisions Made:
-    ${decisionsList}
-    
-    ${noTranscript ? `NOTE: Transcript not available. Generate a clear draft based on agenda, meeting metadata, and any decisions. Add a disclaimer at the top: "Note: Transcript not available — draft minutes."` : ``}
-    
-    Please generate:
-    1. A concise executive summary (2-3 sentences)
-    2. Key discussion points organized by agenda item
-    3. Action items with assigned responsibilities (extract from transcript where available)
-    4. Next steps and follow-up items
-    
-    Format the output as a professional meeting minutes document in markdown format.${languageInstruction}`;
+Decisions Made:
+${decisionsList}
+
+${noTranscript ? `NOTE: Transcript not available. Generate a clear draft based on agenda, meeting metadata, and any decisions. Add a disclaimer at the top.` : ``}
+
+Please generate comprehensive meeting minutes with these sections:
+1. የስብሰባ ማጠቃለያ (Executive Summary) - 2-3 well-formed sentences
+2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - organized by agenda item
+3. የተወሰኑ ውሳኔዎች (Decisions Made) - clear, actionable decisions
+4. የተግባር እቅዶች (Action Items) - with assigned responsibilities
+5. ቀጣይ እርምጃዎች (Next Steps) - follow-up items
+
+${detectedLang === 'am' ? 'CRITICAL: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas. Use ፦ before lists.' : ''}
+
+Format as a professional markdown document.${languageInstruction}`;
 
     let minutes = "";
     let providerError = "";
@@ -248,7 +282,8 @@ ${fullTranscript}
             body: JSON.stringify({
               model: "gpt-4o-mini",
               messages: [
-                { role: "system", content: "You are a professional minutes generator. Preserve the transcript language and script. For Amharic, use Ge'ez (no Latin)." },
+                { role: "system", content: `You are a professional meeting minutes generator specializing in multilingual documentation. 
+${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing. You MUST use proper Ethiopian punctuation (። ፣ ፤ ፦) consistently. End every sentence with ። Use formal vocabulary and proper SOV sentence structure. Never use Latin script or romanization.' : 'Preserve the transcript language and script exactly. Never romanize or transliterate.'}` },
                 { role: "user", content: prompt },
               ],
               temperature: 0.7,
