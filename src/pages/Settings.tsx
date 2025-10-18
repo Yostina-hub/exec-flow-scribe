@@ -19,47 +19,47 @@ import { DistributionManager } from "@/components/pdf/DistributionManager";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
-import { useState, useEffect } from "react";
+import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Settings = () => {
   const { toast } = useToast();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [profile, setProfile] = useState({
+  const [loading, setLoading] = React.useState(true);
+  const [saving, setSaving] = React.useState(false);
+  const [profile, setProfile] = React.useState({
     full_name: "",
     email: "",
     title: "",
   });
-  const [notificationSettings, setNotificationSettings] = useState({
+  const [notificationSettings, setNotificationSettings] = React.useState({
     meeting_reminders: true,
     action_item_updates: true,
     minutes_ready: true,
     daily_digest: false,
     reminder_timing: 15,
   });
-  const [meetingSettings, setMeetingSettings] = useState({
+  const [meetingSettings, setMeetingSettings] = React.useState({
     default_duration: 60,
     default_location: "Board Room",
     calendar_sync: "google",
     auto_schedule_followup: false,
     enable_virtual_links: true,
   });
-  const [recordingSettings, setRecordingSettings] = useState({
+  const [recordingSettings, setRecordingSettings] = React.useState({
     audio_quality: "high",
     transcription_language: "en",
     auto_start_recording: false,
     speaker_diarization: true,
     auto_generate_summary: true,
   });
-  const [securitySettings, setSecuritySettings] = useState({
+  const [securitySettings, setSecuritySettings] = React.useState({
     data_retention_period: "1year",
     two_factor_enabled: false,
     encrypt_recordings: true,
     activity_logging: true,
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     fetchProfile();
     fetchNotificationSettings();
     fetchMeetingSettings();
