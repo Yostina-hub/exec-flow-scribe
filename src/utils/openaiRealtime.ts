@@ -271,9 +271,10 @@ export class OpenAIRealtimeClient {
                 input_audio_format: "pcm16",
                 input_audio_transcription: {
                   model: "whisper-1",
-                  language: this.sessionLanguage === 'am' ? 'am' : (this.sessionLanguage === 'ar' ? 'ar' : null),
+                  // Don't set language for Amharic since OpenAI doesn't support 'am' code
+                  language: (this.sessionLanguage === 'ar') ? 'ar' : null,
                   prompt: this.sessionLanguage === 'am' 
-                    ? "This is Amharic (አማርኛ) language using Ge'ez/Ethiopic script, not Arabic. Examples: ሰላም, እንዴት ነህ, ጥሩ ነው"
+                    ? "አማርኛ ጌዝ። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። Ethiopic NOT Arabic ا ب ت"
                     : undefined
                 },
                 turn_detection: {

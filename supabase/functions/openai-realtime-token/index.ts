@@ -41,9 +41,11 @@ serve(async (req) => {
         instructions,
         input_audio_transcription: {
           model: "whisper-1",
-          language: language && language !== 'auto' ? language : null,
+          // Don't set language for Amharic since OpenAI doesn't support 'am' code
+          // Whisper will auto-detect based on the prompt
+          language: (language && language !== 'auto' && language !== 'am') ? language : null,
           prompt: language === 'am' 
-            ? "This is Amharic (አማርኛ) using Ge'ez/Ethiopic script, NOT Arabic. Common words: ሰላም እንዴት ጥሩ ነው"
+            ? "አማርኛ ጌዝ ስክሪፕት። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። አማርኛ ብቻ NOT Arabic script ا ب ت ث"
             : undefined
         },
         turn_detection: {
