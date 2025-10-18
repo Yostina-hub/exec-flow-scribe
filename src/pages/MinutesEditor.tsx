@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2 } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2, Copy } from 'lucide-react';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
@@ -279,6 +279,15 @@ export default function MinutesEditor() {
     setSelectedSegment(segment);
   };
 
+  const handleCopySegment = (content: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content);
+    toast({
+      title: 'Copied',
+      description: 'Transcript segment copied to clipboard',
+    });
+  };
+
   const handleSubmitForSignOff = async () => {
     try {
       setIsSubmittingForSignOff(true);
@@ -514,16 +523,26 @@ export default function MinutesEditor() {
                       >
                         <div className="flex items-start gap-3">
                           <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge variant="secondary" className="text-xs font-semibold">
-                                {segment.speaker}
-                              </Badge>
-                              <span className="text-xs text-muted-foreground">{segment.timestamp}</span>
-                              {segment.confidence < 0.7 && (
-                                <AlertTriangle className="w-4 h-4 text-destructive animate-pulse" />
-                              )}
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <div className="flex items-center gap-2">
+                                <Badge variant="secondary" className="text-xs font-semibold">
+                                  {segment.speaker}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">{segment.timestamp}</span>
+                                {segment.confidence < 0.7 && (
+                                  <AlertTriangle className="w-4 h-4 text-destructive animate-pulse" />
+                                )}
+                              </div>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-7 w-7 hover:bg-primary/10"
+                                onClick={(e) => handleCopySegment(segment.content, e)}
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </Button>
                             </div>
-                            <p className="text-sm leading-relaxed">{segment.content}</p>
+                            <p className="text-sm leading-relaxed select-text">{segment.content}</p>
                             <div className="mt-2 flex items-center gap-2">
                               <div className={`text-xs px-2 py-1 rounded-full ${
                                 segment.confidence >= 0.9 ? 'bg-success/10 text-success' :
