@@ -333,8 +333,6 @@ export default function Meetings() {
               <p className="text-white/90 text-lg">Your complete meeting management hub</p>
             </div>
             <div className="flex gap-3">
-              <DeleteCEOScheduleButton />
-              <ImportScheduleButton />
               <InstantMeetingDialog />
               <CreateMeetingDialog />
             </div>
