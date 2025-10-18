@@ -2,6 +2,7 @@ import { Layout } from "@/components/Layout";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
 import { InstantMeetingDialog } from "@/components/InstantMeetingDialog";
+import { SmartMeetingCreation } from "@/components/SmartMeetingCreation";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { MeetingNotebookPanel } from "@/components/MeetingNotebookPanel";
 import { Button } from "@/components/ui/button";
@@ -120,6 +121,7 @@ export default function Meetings() {
   const [sortBy, setSortBy] = React.useState<"date" | "title" | "attendees">("date");
   const [aiInsights, setAiInsights] = React.useState<AIInsights | null>(null);
   const [preparations, setPreparations] = React.useState<Record<string, MeetingPreparation>>({});
+  const [showSmartCreate, setShowSmartCreate] = React.useState(false);
 
   React.useEffect(() => {
     fetchMeetings();
@@ -473,10 +475,13 @@ export default function Meetings() {
             </div>
             <div className="flex gap-3">
               <InstantMeetingDialog />
-              <CreateMeetingDialog />
+              <Button onClick={() => setShowSmartCreate(true)} size="lg" className="gap-2">
+                <Brain className="h-4 w-4" />
+                AI Create
+              </Button>
               <Button onClick={generateAISuggestion} variant="outline" size="lg" className="gap-2">
                 <Wand2 className="h-4 w-4" />
-                AI Suggest
+                Suggest
               </Button>
             </div>
           </div>
@@ -781,6 +786,16 @@ export default function Meetings() {
         </Tabs>
       </div>
 
+      <SmartMeetingCreation 
+        open={showSmartCreate}
+        onOpenChange={(open) => {
+          setShowSmartCreate(open);
+          if (!open) {
+            fetchMeetings();
+            loadAIInsights();
+          }
+        }}
+      />
       <QuickActionFAB />
     </Layout>
   );

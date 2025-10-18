@@ -7,10 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2, Copy } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2, Copy, Brain } from 'lucide-react';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
+import { AIMinutesEnhancer } from '@/components/AIMinutesEnhancer';
 import { Badge } from '@/components/ui/badge';
 
 interface TranscriptSegment {
@@ -574,6 +575,10 @@ export default function MinutesEditor() {
                   <FileText className="w-4 h-4 mr-2" />
                   Polished Minutes
                 </TabsTrigger>
+                <TabsTrigger value="ai-tools" className="data-[state=active]:bg-primary/10">
+                  <Brain className="w-4 h-4 mr-2" />
+                  AI Tools
+                </TabsTrigger>
                 <TabsTrigger value="factcheck" className="data-[state=active]:bg-primary/10">
                   <CheckCircle className="w-4 h-4 mr-2" />
                   Fact Checks
@@ -603,6 +608,14 @@ The AI assistant can help generate a professional structure for you."
                     </p>
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="ai-tools" className="flex-1 m-0 p-6 overflow-auto">
+                <AIMinutesEnhancer
+                  minutes={minutes}
+                  meetingId={meetingId!}
+                  onMinutesUpdate={setMinutes}
+                />
               </TabsContent>
 
               <TabsContent value="factcheck" className="flex-1 m-0 p-6">

@@ -47,6 +47,7 @@ import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePane
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
+import { AIPreparationAssistant } from "@/components/AIPreparationAssistant";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -651,6 +652,13 @@ const [wasRecording, setWasRecording] = useState(false);
                 </div>
               </CardContent>
             </Card>
+
+            <AIPreparationAssistant
+              meetingId={meetingId}
+              agendaCount={agendaData.length}
+              attendeeCount={attendeesData.length}
+              startTime={meeting?.start_time || new Date().toISOString()}
+            />
 
             <Card>
               <CardHeader>
