@@ -2,7 +2,7 @@ import { format, startOfDay, addHours } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Users, Clock, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface CalendarEvent {
   id: string;
@@ -92,7 +92,6 @@ export function CalendarDayView({
   };
 
   return (
-    <TooltipProvider>
       <div className="space-y-4">
         <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -236,6 +235,5 @@ export function CalendarDayView({
         </div>
       </div>
     </div>
-    </TooltipProvider>
   );
 }
