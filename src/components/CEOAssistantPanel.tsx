@@ -6,7 +6,7 @@ import { ScrollArea } from './ui/scroll-area';
 import { Mic, MicOff, Send, X, Minimize2, Maximize2, Loader2 } from 'lucide-react';
 import { Badge } from './ui/badge';
 import { RealtimeAssistant, ConversationMessage } from '@/utils/RealtimeAssistant';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 
 interface CEOAssistantPanelProps {
   briefingData: any;

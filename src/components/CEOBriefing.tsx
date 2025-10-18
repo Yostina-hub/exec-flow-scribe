@@ -33,7 +33,7 @@ import {
   TimerOff,
   MessageCircle
 } from 'lucide-react';
-import { toast } from 'sonner';
+import { toast } from '@/hooks/use-toast';
 import { CEOAssistantPanel } from './CEOAssistantPanel';
 
 interface BriefingData {
