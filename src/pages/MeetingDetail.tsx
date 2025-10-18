@@ -26,14 +26,11 @@ import {
   Loader2,
   Sparkles,
   ListChecks,
-  FileSignature,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { LiveTranscription } from "@/components/LiveTranscription";
-import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
+import { UnifiedRecordingPanel } from "@/components/UnifiedRecordingPanel";
 import { ContextPanel } from "@/components/ContextPanel";
-import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
 import { JitsiMeetEmbed } from "@/components/JitsiMeetEmbed";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
@@ -44,8 +41,6 @@ import { ManageAttendeesDialog } from "@/components/ManageAttendeesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
-import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
-import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -121,7 +116,6 @@ const MeetingDetail = () => {
   const [showViewMinutesDialog, setShowViewMinutesDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
-  const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
@@ -431,24 +425,25 @@ const [wasRecording, setWasRecording] = useState(false);
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue="transcription" className="w-full">
-              <TabsList className="grid w-full grid-cols-7">
-                <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
+            <Tabs defaultValue="recording" className="w-full">
+              <TabsList className="grid w-full grid-cols-6">
+                <TabsTrigger value="recording">Recording & Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="studio">Studio</TabsTrigger>
-                <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
 
-<TabsContent value="transcription" className="space-y-4">
-                <BrowserSpeechRecognition 
+              <TabsContent value="recording" className="space-y-4">
+                <UnifiedRecordingPanel
                   meetingId={meetingId}
-                  externalIsRecording={isRecording}
+                  isRecording={isRecording}
                   isPaused={isPaused}
-                  onRecordingStart={startRecording}
-                  onRecordingStop={() => stopRecording()}
+                  onStartRecording={startRecording}
+                  onStopRecording={stopRecording}
+                  onPauseRecording={pauseRecording}
+                  onResumeRecording={resumeRecording}
                   onDurationChange={(s) => setRecordingSeconds(s)}
                 />
               </TabsContent>
@@ -540,20 +535,6 @@ const [wasRecording, setWasRecording] = useState(false);
                 <MeetingStudioPanel meetingId={meetingId} />
               </TabsContent>
 
-              <TabsContent value="signatures" className="space-y-4">
-                <div className="space-y-4">
-                  <LiveAudioRecorder 
-                    meetingId={meetingId}
-                    onUploadComplete={() => {
-                      toast({
-                        title: "Success",
-                        description: "Audio recording uploaded successfully",
-                      });
-                    }}
-                  />
-                  <MeetingSignaturesPanel meetingId={meetingId} />
-                </div>
-              </TabsContent>
             </Tabs>
           </div>
 
@@ -644,14 +625,6 @@ const [wasRecording, setWasRecording] = useState(false);
                   <Users className="h-4 w-4" />
                   Manage Attendees
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start gap-2"
-                  onClick={() => setShowCreateSignatureDialog(true)}
-                >
-                  <FileSignature className="h-4 w-4" />
-                  Request Sign-Off
-                </Button>
               </CardContent>
             </Card>
           </div>
@@ -681,18 +654,6 @@ const [wasRecording, setWasRecording] = useState(false);
           open={showManageAttendeesDialog}
           onOpenChange={setShowManageAttendeesDialog}
           onSuccess={fetchMeetingDetails}
-        />
-
-        <CreateSignatureRequestDialog
-          meetingId={meetingId}
-          open={showCreateSignatureDialog}
-          onOpenChange={setShowCreateSignatureDialog}
-          onSuccess={() => {
-            toast({
-              title: 'Success',
-              description: 'Signature request created successfully',
-            });
-          }}
         />
       </div>
     </Layout>
