@@ -279,9 +279,7 @@ ${fullTranscript}
             messages: [
               { role: "system", content: "You are a professional minutes generator. Preserve the transcript language and script. For Amharic, use Ge'ez (no Latin)." },
               { role: "user", content: prompt },
-            ],
-            temperature: 0.7,
-            max_tokens: 2000,
+            ]
           }),
         }
       );

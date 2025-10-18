@@ -273,9 +273,12 @@ export class OpenAIRealtimeClient {
                   const tx: Record<string, any> = { model: "whisper-1" };
                   if (this.sessionLanguage === 'ar') {
                     tx.language = 'ar';
-                  }
-                  if (this.sessionLanguage === 'am') {
-                    tx.prompt = "አማርኛ ጌዝ። ሰላም እንዴት ነህ እንደምን ዋላችሁ ጤና ይስጥልኝ አመሰግናለሁ በጣም ደስ ይላል መልካም ቀን ደህና ይሁኑ እናመሰግናለን ቡና ውሃ እንጀራ ጫት እንኳን ደህና መጣችሁ እንኳን አደረሳችሁ ምን አለ ምንድነው እሺ እርግጠኛ ነኝ እንገናኝ። Ethiopic NOT Arabic ا ب ت";
+                  } else if (this.sessionLanguage === 'am') {
+                    // OpenAI does not accept 'am' as a language code; bias via prompt instead
+                    tx.prompt = "አማርኛ ጌዝ። Ge'ez/Ethiopic script only. Examples: ሰላም እንዴት ነህ ጥሩ ነው እባክህ አመሰግናለሁ መልካም ቀን. NOT Arabic script.";
+                  } else {
+                    // Auto-detect with a light Amharic bias to avoid romanization
+                    tx.prompt = "Auto-detect. If Amharic, use Ge'ez/Ethiopic (ሀ ለ ሐ መ …), never Latin/Arabic. Common words: ሰላም እንዴት ነህ እባክህ አመሰግናለሁ";
                   }
                   return tx;
                 })(),
@@ -600,16 +603,16 @@ export class OpenAIRealtimeClient {
           modalities: ['text'],
           instructions,
           input_audio_format: 'pcm16',
-                input_audio_transcription: (() => {
-                  const tx: Record<string, any> = { model: 'whisper-1' };
-                  if (useLang === 'am') {
-                    tx.language = 'am';
-                    tx.prompt = "Amharic (አማርኛ) using Ge'ez script, NOT Arabic. Examples: ሰላም እንዴት ነህ ጥሩ";
-                  } else if (useLang === 'ar') {
-                    tx.language = 'ar';
-                  }
-                  return tx;
-                })(),
+          input_audio_transcription: (() => {
+            const tx: Record<string, any> = { model: 'whisper-1' };
+            if (useLang === 'am') {
+              // Do NOT set language to 'am' (unsupported); bias via prompt only
+              tx.prompt = "አማርኛ ጌዝ። Ge'ez/Ethiopic script only. Examples: ሰላም እንዴት ነህ ጥሩ ነው. No Latin/Arabic.";
+            } else if (useLang === 'ar') {
+              tx.language = 'ar';
+            }
+            return tx;
+          })(),
           turn_detection: {
             type: 'server_vad',
             threshold: 0.5,
