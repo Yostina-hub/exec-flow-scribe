@@ -125,17 +125,19 @@ export default function DriveIntegration() {
 
   const connectGoogleDrive = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('google-meet-auth', {
+      const { data, error } = await supabase.functions.invoke('google-drive-auth', {
         body: { action: 'getAuthUrl' }
       });
 
       if (error) throw error;
       if (data?.authUrl) {
+        // Store that we're doing Drive auth
+        sessionStorage.setItem('oauth_flow', 'drive');
         window.location.href = data.authUrl;
       }
     } catch (error: any) {
       toast({
-        title: "Error connecting to Google",
+        title: "Error connecting to Google Drive",
         description: error.message,
         variant: "destructive",
       });

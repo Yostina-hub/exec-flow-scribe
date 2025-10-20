@@ -122,3 +122,18 @@ verify_jwt = false
 
 [functions.google-meet-auth]
 verify_jwt = true
+
+[functions.google-drive-auth]
+verify_jwt = false
+
+[functions.google-drive-upload]
+verify_jwt = true
+
+[functions.google-drive-list]
+verify_jwt = true
+
+[functions.google-drive-create-doc]
+verify_jwt = true
+
+[functions.save-google-credentials]
+verify_jwt = true
