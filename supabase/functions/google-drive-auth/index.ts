@@ -18,19 +18,27 @@ serve(async (req) => {
 
     const { action, code } = await req.json();
 
-    // Get stored Google credentials
+    // Get stored Google credentials (try database first, then env vars)
     const { data: credentials } = await supabase
       .from('system_settings')
-      .select('setting_value')
-      .eq('setting_key', 'google_oauth_credentials')
+      .select('value')
+      .eq('key', 'google_oauth_credentials')
       .single();
 
-    if (!credentials?.setting_value) {
-      throw new Error('Google OAuth credentials not configured');
+    let clientId: string;
+    let clientSecret: string;
+
+    if (!credentials?.value) {
+      // Fallback to environment variables
+      clientId = Deno.env.get('GOOGLE_CLIENT_ID')!;
+      clientSecret = Deno.env.get('GOOGLE_CLIENT_SECRET')!;
+      console.log('Using Google OAuth credentials from env vars');
+    } else {
+      clientId = credentials.value.clientId;
+      clientSecret = credentials.value.clientSecret;
+      console.log('Using Google OAuth credentials from database');
     }
 
-    const { clientId, clientSecret } = credentials.setting_value;
-    console.log('Using Google OAuth credentials from database');
     console.log('Client ID format check:', clientId?.includes('.apps.googleusercontent.com') ? 'Valid' : 'Invalid');
 
     if (action === 'getAuthUrl') {
