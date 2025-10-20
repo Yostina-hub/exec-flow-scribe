@@ -47,7 +47,32 @@ export default function GoogleOAuthCallback() {
       try {
         setStatus('Exchanging authorization code...');
         
-        // Exchange code for token
+        // Check which OAuth flow this is (Meet or Drive)
+        const oauthFlow = sessionStorage.getItem('oauth_flow') || 'meet';
+        
+        if (oauthFlow === 'drive') {
+          // Handle Drive OAuth
+          const { data: tokenData, error: tokenError } = await supabase.functions.invoke(
+            'google-drive-auth',
+            { body: { action: 'exchangeCode', code } }
+          );
+
+          if (tokenError) throw tokenError;
+
+          // Store the access token for Drive operations
+          sessionStorage.setItem('google_drive_token', tokenData.tokens.access_token);
+          sessionStorage.removeItem('oauth_flow');
+
+          toast({
+            title: 'Google Drive Connected',
+            description: 'You can now sync files with Google Drive',
+          });
+
+          navigate('/drive-integration');
+          return;
+        }
+        
+        // Handle Google Meet OAuth (existing flow)
         const { data: tokenData, error: tokenError } = await supabase.functions.invoke(
           'google-meet-auth',
           { body: { action: 'exchangeCode', code } }

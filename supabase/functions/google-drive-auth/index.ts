@@ -41,6 +41,10 @@ serve(async (req) => {
 
     console.log('Client ID format check:', clientId?.includes('.apps.googleusercontent.com') ? 'Valid' : 'Invalid');
 
+    // Use the app URL for redirect, not the Supabase URL
+    const appUrl = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/');
+    const redirectUri = `${appUrl}/google-oauth-callback`;
+
     if (action === 'getAuthUrl') {
       // Build OAuth URL with Drive scopes
       const scopes = [
@@ -51,8 +55,6 @@ serve(async (req) => {
         'profile',
         'email'
       ];
-
-      const redirectUri = `${supabaseUrl.replace('.supabase.co', '')}.supabase.co/auth/v1/callback`;
       
       const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
         `client_id=${encodeURIComponent(clientId)}&` +
@@ -63,7 +65,8 @@ serve(async (req) => {
         `prompt=consent&` +
         `state=drive_auth`;
 
-      console.log('Generated Drive auth URL with scopes:', scopes.join(', '));
+      console.log('Generated Drive auth URL with redirect:', redirectUri);
+      console.log('Scopes:', scopes.join(', '));
 
       return new Response(
         JSON.stringify({ authUrl }),
@@ -72,8 +75,6 @@ serve(async (req) => {
     }
 
     if (action === 'exchangeCode') {
-      const redirectUri = `${supabaseUrl.replace('.supabase.co', '')}.supabase.co/auth/v1/callback`;
-      
       const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
