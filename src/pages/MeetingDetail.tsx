@@ -15,6 +15,7 @@ import {
   Mic,
   MicOff,
   Video,
+  ExternalLink,
   Play,
   Pause,
   Square,
@@ -493,12 +494,25 @@ const [wasRecording, setWasRecording] = useState(false);
               {isOnlineMeeting && hasVideoLink && (
                 <TabsContent value="video" className="space-y-4">
                   {meeting.video_provider === 'jitsi_meet' ? (
-                    <JitsiMeetEmbed
-                      roomName={meeting.video_conference_url.split('/').pop() || meetingId}
-                      displayName={userId || 'Guest'}
-                      width="100%"
-                      height="600px"
-                    />
+                    <>
+                      <div className="flex justify-end mb-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={() => window.open(meeting.video_conference_url, '_blank')}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                          Open in Jitsi (to login as moderator)
+                        </Button>
+                      </div>
+                      <JitsiMeetEmbed
+                        roomName={meeting.video_conference_url.split('/').pop() || meetingId}
+                        displayName={userId || 'Guest'}
+                        width="100%"
+                        height="600px"
+                      />
+                    </>
                   ) : (
                     <Card>
                       <CardContent className="p-6">
