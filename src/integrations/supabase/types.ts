@@ -3940,6 +3940,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       seed_sample_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
