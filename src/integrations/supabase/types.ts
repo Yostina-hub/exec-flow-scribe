@@ -1774,6 +1774,56 @@ export type Database = {
           },
         ]
       }
+      meeting_insights: {
+        Row: {
+          created_at: string | null
+          description: string
+          id: string
+          insight_type: string
+          is_resolved: boolean | null
+          meeting_id: string
+          related_attendees: string[] | null
+          resolved_at: string | null
+          severity: string | null
+          timestamp: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          id?: string
+          insight_type: string
+          is_resolved?: boolean | null
+          meeting_id: string
+          related_attendees?: string[] | null
+          resolved_at?: string | null
+          severity?: string | null
+          timestamp?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          id?: string
+          insight_type?: string
+          is_resolved?: boolean | null
+          meeting_id?: string
+          related_attendees?: string[] | null
+          resolved_at?: string | null
+          severity?: string | null
+          timestamp?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_insights_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_media: {
         Row: {
           checksum: string
@@ -2130,6 +2180,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "meeting_suggestions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_summaries: {
+        Row: {
+          confidence_score: number | null
+          content: string
+          created_at: string | null
+          generated_at: string | null
+          generated_by: string
+          id: string
+          meeting_id: string
+          model_used: string | null
+          summary_type: string
+        }
+        Insert: {
+          confidence_score?: number | null
+          content: string
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string
+          id?: string
+          meeting_id: string
+          model_used?: string | null
+          summary_type: string
+        }
+        Update: {
+          confidence_score?: number | null
+          content?: string
+          created_at?: string | null
+          generated_at?: string | null
+          generated_by?: string
+          id?: string
+          meeting_id?: string
+          model_used?: string | null
+          summary_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_summaries_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
@@ -3206,6 +3300,60 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      speaker_analytics: {
+        Row: {
+          created_at: string | null
+          engagement_score: number | null
+          id: string
+          interruptions_count: number | null
+          last_updated: string | null
+          meeting_id: string
+          questions_asked: number | null
+          sentiment_score: number | null
+          speaking_time_seconds: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          engagement_score?: number | null
+          id?: string
+          interruptions_count?: number | null
+          last_updated?: string | null
+          meeting_id: string
+          questions_asked?: number | null
+          sentiment_score?: number | null
+          speaking_time_seconds?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          engagement_score?: number | null
+          id?: string
+          interruptions_count?: number | null
+          last_updated?: string | null
+          meeting_id?: string
+          questions_asked?: number | null
+          sentiment_score?: number | null
+          speaking_time_seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_analytics_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "speaker_analytics_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       speaker_queue: {
         Row: {

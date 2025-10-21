@@ -45,6 +45,7 @@ import { ManageAttendeesDialog } from "@/components/ManageAttendeesDialog";
 import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
+import { AIMinutesGenerator } from "@/components/AIMinutesGenerator";
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
@@ -715,6 +716,7 @@ const [wasRecording, setWasRecording] = useState(false);
               </TabsContent>
 
               <TabsContent value="ai-insights" className="space-y-4">
+                <AIMinutesGenerator meetingId={meetingId} />
                 <AIIntelligencePanel meetingId={meetingId} />
               </TabsContent>
 
