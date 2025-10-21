@@ -1578,6 +1578,47 @@ export type Database = {
           },
         ]
       }
+      meeting_bookmarks: {
+        Row: {
+          bookmark_type: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          meeting_id: string
+          timestamp_seconds: number
+          title: string
+        }
+        Insert: {
+          bookmark_type?: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          meeting_id: string
+          timestamp_seconds: number
+          title: string
+        }
+        Update: {
+          bookmark_type?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          meeting_id?: string
+          timestamp_seconds?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_bookmarks_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_chat_messages: {
         Row: {
           content: string
@@ -1776,6 +1817,109 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "meeting_media_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_notes: {
+        Row: {
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          is_pinned: boolean | null
+          meeting_id: string
+          note_type: string
+          tags: string[] | null
+          timestamp_reference: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_pinned?: boolean | null
+          meeting_id: string
+          note_type?: string
+          tags?: string[] | null
+          timestamp_reference?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_pinned?: boolean | null
+          meeting_id?: string
+          note_type?: string
+          tags?: string[] | null
+          timestamp_reference?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_polls: {
+        Row: {
+          allow_multiple: boolean | null
+          anonymous: boolean | null
+          created_at: string
+          created_by: string
+          ended_at: string | null
+          id: string
+          meeting_id: string
+          options: Json
+          poll_type: string
+          question: string
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          allow_multiple?: boolean | null
+          anonymous?: boolean | null
+          created_at?: string
+          created_by: string
+          ended_at?: string | null
+          id?: string
+          meeting_id: string
+          options?: Json
+          poll_type?: string
+          question: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          allow_multiple?: boolean | null
+          anonymous?: boolean | null
+          created_at?: string
+          created_by?: string
+          ended_at?: string | null
+          id?: string
+          meeting_id?: string
+          options?: Json
+          poll_type?: string
+          question?: string
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_polls_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
@@ -2245,6 +2389,38 @@ export type Database = {
           },
         ]
       }
+      note_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          note_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          note_id: string
+          reaction_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          note_id?: string
+          reaction_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "note_reactions_note_id_fkey"
+            columns: ["note_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_notes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebook_sources: {
         Row: {
           content: string | null
@@ -2609,6 +2785,41 @@ export type Database = {
           resource?: Database["public"]["Enums"]["permission_resource"]
         }
         Relationships: []
+      }
+      poll_responses: {
+        Row: {
+          created_at: string
+          id: string
+          poll_id: string
+          response_text: string | null
+          selected_options: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          poll_id: string
+          response_text?: string | null
+          selected_options?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          poll_id?: string
+          response_text?: string | null
+          selected_options?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "poll_responses_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_polls"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

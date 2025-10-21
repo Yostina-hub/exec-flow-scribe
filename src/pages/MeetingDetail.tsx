@@ -59,6 +59,9 @@ import { AuditLogViewer } from "@/components/AuditLogViewer";
 import { BreakoutRoomsManager } from "@/components/BreakoutRoomsManager";
 import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
 import { NotificationPreferences } from "@/components/NotificationPreferences";
+import { LivePolling } from "@/components/LivePolling";
+import { CollaborativeNotes } from "@/components/CollaborativeNotes";
+import { MeetingBookmarks } from "@/components/MeetingBookmarks";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -542,11 +545,10 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
+                <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="audit">Audit Log</TabsTrigger>
-                <TabsTrigger value="chat">Chat</TabsTrigger>
-                <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
 
               {isOnlineMeeting && hasVideoLink && (
@@ -714,6 +716,17 @@ const [wasRecording, setWasRecording] = useState(false);
 
               <TabsContent value="ai-insights" className="space-y-4">
                 <AIIntelligencePanel meetingId={meetingId} />
+              </TabsContent>
+
+              <TabsContent value="collaboration" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <LivePolling 
+                    meetingId={meetingId} 
+                    isHost={meeting?.created_by === userId} 
+                  />
+                  <CollaborativeNotes meetingId={meetingId} />
+                </div>
+                <MeetingBookmarks meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="analytics" className="space-y-4">
