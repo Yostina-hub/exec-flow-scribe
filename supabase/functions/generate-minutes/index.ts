@@ -294,11 +294,83 @@ Format as a professional markdown document.${languageInstruction}`;
     let providerError = "";
     let providerStatus: number | null = null;
 
-    // Try user's Gemini API key first (gemini-2.5-flash for multilingual)
+    // Try OpenAI first (best for multilingual summaries)
+    const openaiKey = preference?.openai_api_key || Deno.env.get("OPENAI_API_KEY");
+    if (openaiKey && !minutes) {
+      try {
+        console.log("🤖 Using OpenAI GPT-4o");
+        const openaiResponse = await fetch(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${openaiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "gpt-4o",
+              messages: [
+                { 
+                  role: "system", 
+                  content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
+
+🚫 CRITICAL FIDELITY REQUIREMENT:
+Your PRIMARY obligation is ACCURACY and FIDELITY to source material. You MUST:
+• ONLY include information EXPLICITLY stated in the provided transcript
+• NEVER add assumptions, external knowledge, or fabricated content
+• NEVER invent discussions, decisions, or action items not in the transcript
+• If information is unclear or missing, acknowledge it honestly
+• Every point in your summary must trace back to specific text in the transcript
+• When in doubt: OMIT rather than FABRICATE
+
+${detectedLang === 'am' ? `AMHARIC EXPERTISE:
+• You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
+• You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
+• Every sentence MUST end with ።
+• Use Subject-Object-Verb (SOV) word order
+• Use professional honorifics and business terminology
+• Write in Ge'ez script exclusively - NEVER use Latin script or romanization
+• Maintain formal tone and proper grammatical structure
+• BUT MOST IMPORTANTLY: Only summarize what was actually said in Amharic in the transcript` : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is explicitly in the transcript.'}` 
+                },
+                { role: "user", content: prompt },
+              ],
+              temperature: 0.7,
+              max_tokens: 2500,
+            }),
+          }
+        );
+
+        if (openaiResponse.ok) {
+          const openaiData = await openaiResponse.json();
+          minutes = openaiData.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with OpenAI GPT-4o");
+        } else {
+          const statusCode = openaiResponse.status;
+          const errorText = await openaiResponse.text();
+          console.error(`OpenAI API error (${statusCode}):`, errorText);
+          
+          if (statusCode === 429) {
+            providerStatus = 429;
+            providerError = "OpenAI rate limit exceeded. Falling back to Gemini...";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "OpenAI: Payment required. Falling back to Gemini...";
+          } else {
+            providerError = `OpenAI: ${errorText}`;
+          }
+        }
+      } catch (e) {
+        console.error("OpenAI provider failed:", e);
+        providerError = `OpenAI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
+
+    // Fallback to Gemini if OpenAI fails
     const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
     if (geminiKey && !minutes) {
       try {
-        console.log("🤖 Using Gemini 2.5 Flash (user API key)");
+        console.log("🤖 Using Gemini 2.5 Flash (fallback)");
         const geminiResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
           {
@@ -352,10 +424,10 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
           
           if (statusCode === 429) {
             providerStatus = 429;
-            providerError = "Gemini rate limit exceeded. Try again in a moment.";
+            providerError = "Gemini rate limit exceeded.";
           } else if (statusCode === 402) {
             providerStatus = 402;
-            providerError = "Payment required: Please add AI credits and retry.";
+            providerError = "Gemini: Payment required.";
           } else {
             providerError = `Gemini: ${errorText}`;
           }
@@ -365,78 +437,6 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
         providerError = `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
-
-    // Fallback to Lovable AI if Gemini fails
-    if (lovableApiKey && !minutes) {
-      try {
-        console.log("🤖 Using Lovable AI Gateway with gemini-2.5-flash (optimized for Amharic)");
-        const lovableResponse = await fetch(
-          "https://ai.gateway.lovable.dev/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${lovableApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-flash", // Default, fast and multilingual
-              messages: [
-                { 
-                  role: "system", 
-                  content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
-
-🚫 CRITICAL FIDELITY REQUIREMENT:
-Your PRIMARY obligation is ACCURACY and FIDELITY to source material. You MUST:
-• ONLY include information EXPLICITLY stated in the provided transcript
-• NEVER add assumptions, external knowledge, or fabricated content
-• NEVER invent discussions, decisions, or action items not in the transcript
-• If information is unclear or missing, acknowledge it honestly
-• Every point in your summary must trace back to specific text in the transcript
-• When in doubt: OMIT rather than FABRICATE
-
-${detectedLang === 'am' ? `AMHARIC EXPERTISE:
-• You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
-• You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
-• Every sentence MUST end with ።
-• Use Subject-Object-Verb (SOV) word order
-• Use professional honorifics and business terminology
-• Write in Ge'ez script exclusively - NEVER use Latin script or romanization
-• Maintain formal tone and proper grammatical structure
-• BUT MOST IMPORTANTLY: Only summarize what was actually said in Amharic in the transcript` : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is explicitly in the transcript.'}` 
-                },
-                { role: "user", content: prompt },
-              ],
-            }),
-          }
-        );
-
-        if (lovableResponse.ok) {
-          const lovableData = await lovableResponse.json();
-          minutes = lovableData.choices?.[0]?.message?.content || "";
-          console.log("✅ Minutes generated with Lovable AI (gemini-2.5-pro)");
-        } else {
-          const statusCode = lovableResponse.status;
-          const errorText = await lovableResponse.text();
-          console.error(`Lovable AI error (${statusCode}):`, errorText);
-          
-          if (statusCode === 429) {
-            providerStatus = 429;
-            providerError = "Rate limit exceeded. Please try again in a moment.";
-          } else if (statusCode === 402) {
-            providerStatus = 402;
-            providerError = "Payment required. Please add credits to your Lovable AI workspace.";
-          } else {
-            providerError = `Lovable AI: ${errorText}`;
-          }
-        }
-      } catch (e) {
-        console.error("Lovable AI provider failed:", e);
-        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
-      }
-    }
-
-    // OpenAI fallback disabled to honor Gemini-only request
-    // Keeping this block intentionally removed to avoid provider mixing.
 
 
 
