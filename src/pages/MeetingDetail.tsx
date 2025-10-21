@@ -70,6 +70,9 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useMeetingAccess } from "@/hooks/useMeetingAccess";
+import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
+import { ProtectedElement } from "@/components/ProtectedElement";
 
 interface AgendaItem {
   id: string;
@@ -151,11 +154,12 @@ const MeetingDetail = () => {
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const [loading, setLoading] = useState(true);
-const [wasRecording, setWasRecording] = useState(false);
+  const [wasRecording, setWasRecording] = useState(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   
   const meetingId = id || "demo-meeting-id";
+  const meetingAccess = useMeetingAccess(id);
   const { 
     isRecording, 
     isPaused, 
@@ -408,7 +412,8 @@ const [wasRecording, setWasRecording] = useState(false);
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <TimeBasedAccessGuard meetingId={meetingId}>
+        <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-start gap-4">
           <Button variant="ghost" size="icon" asChild>
@@ -541,7 +546,8 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
-              <TabsList className="grid w-full grid-cols-11">
+              <div className="w-full overflow-x-auto pb-2">
+                <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
                 {isOnlineMeeting && hasVideoLink && (
                   <TabsTrigger value="video">Video Call</TabsTrigger>
                 )}
@@ -555,6 +561,7 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="audit">Audit Log</TabsTrigger>
               </TabsList>
+              </div>
 
               {isOnlineMeeting && hasVideoLink && (
                 <TabsContent value="video" className="space-y-4">
@@ -634,14 +641,17 @@ const [wasRecording, setWasRecording] = useState(false);
               </TabsContent>
 
               <TabsContent value="transcription" className="space-y-4">
-                <BrowserSpeechRecognition 
-                  meetingId={meetingId}
-                  externalIsRecording={isRecording}
-                  isPaused={isPaused}
-                  onRecordingStart={startRecording}
-                  onRecordingStop={() => stopRecording()}
-                  onDurationChange={(s) => setRecordingSeconds(s)}
-                />
+                <ProtectedElement meetingId={meetingId} elementType="transcriptions">
+                  <BrowserSpeechRecognition 
+                    meetingId={meetingId}
+                    externalIsRecording={isRecording}
+                    isPaused={isPaused}
+                    onRecordingStart={startRecording}
+                    onRecordingStop={() => stopRecording()}
+                    onDurationChange={(s) => setRecordingSeconds(s)}
+                  />
+                  <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+                </ProtectedElement>
               </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
@@ -720,8 +730,10 @@ const [wasRecording, setWasRecording] = useState(false);
               </TabsContent>
 
               <TabsContent value="ai-insights" className="space-y-4">
-                <AIMinutesGenerator meetingId={meetingId} />
-                <AIIntelligencePanel meetingId={meetingId} />
+                <ProtectedElement meetingId={meetingId} elementType="ai_tools">
+                  <AIMinutesGenerator meetingId={meetingId} />
+                  <AIIntelligencePanel meetingId={meetingId} />
+                </ProtectedElement>
               </TabsContent>
 
               <TabsContent value="collaboration" className="space-y-6">
@@ -736,7 +748,9 @@ const [wasRecording, setWasRecording] = useState(false);
               </TabsContent>
 
               <TabsContent value="analytics" className="space-y-4">
-                <MeetingAnalytics meetingId={meetingId} />
+                <ProtectedElement meetingId={meetingId} elementType="analytics">
+                  <MeetingAnalytics meetingId={meetingId} />
+                </ProtectedElement>
               </TabsContent>
 
               <TabsContent value="advanced" className="space-y-6">
@@ -753,13 +767,15 @@ const [wasRecording, setWasRecording] = useState(false);
               </TabsContent>
 
               <TabsContent value="documents" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-6">
-                    <DocumentVersionControl meetingId={meetingId} />
-                    <MultiChannelDistribution meetingId={meetingId} />
+                <ProtectedElement meetingId={meetingId} elementType="documents">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                      <DocumentVersionControl meetingId={meetingId} />
+                      <MultiChannelDistribution meetingId={meetingId} />
+                    </div>
+                    <IntegrationManager meetingId={meetingId} />
                   </div>
-                  <IntegrationManager meetingId={meetingId} />
-                </div>
+                </ProtectedElement>
               </TabsContent>
 
               <TabsContent value="audit" className="space-y-4">
@@ -953,6 +969,7 @@ const [wasRecording, setWasRecording] = useState(false);
           />
         )}
       </div>
+      </TimeBasedAccessGuard>
     </Layout>
   );
 };
