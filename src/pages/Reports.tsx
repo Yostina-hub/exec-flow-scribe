@@ -19,12 +19,14 @@ import {
   Clock,
   Users,
   CheckCircle2,
+  BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
+import { AnalyticsDashboard } from "@/components/reports/AnalyticsDashboard";
 
 const reportTypes = [
   {
@@ -214,12 +216,22 @@ const Reports = () => {
         </Card>
 
         {/* Report Types */}
-        <Tabs defaultValue="quick" className="w-full">
-          <TabsList>
-            <TabsTrigger value="quick">Quick Reports</TabsTrigger>
-            <TabsTrigger value="custom">Custom Reports</TabsTrigger>
-            <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="analytics" className="w-full">
+          <div className="w-full overflow-x-auto pb-2">
+            <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
+              <TabsTrigger value="analytics">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Analytics
+              </TabsTrigger>
+              <TabsTrigger value="quick">Quick Reports</TabsTrigger>
+              <TabsTrigger value="custom">Custom Reports</TabsTrigger>
+              <TabsTrigger value="scheduled">Scheduled Reports</TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="analytics" className="space-y-4 mt-6">
+            <AnalyticsDashboard />
+          </TabsContent>
 
           <TabsContent value="quick" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
