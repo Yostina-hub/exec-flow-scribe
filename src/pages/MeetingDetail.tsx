@@ -463,7 +463,7 @@ const MeetingDetail = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  className="gap-2"
+                  className="gap-2 hover-scale transition-all"
                   onClick={() => window.location.href = `/notebook?meeting=${id}`}
                 >
                   <Sparkles className="h-4 w-4" />

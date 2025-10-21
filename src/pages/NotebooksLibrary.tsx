@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Grid3x3, List, ChevronDown, FileText } from "lucide-react";
+import { Plus, Grid3x3, List, ChevronDown, FileText, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CreateNotebookDialog } from "@/components/CreateNotebookDialog";
@@ -113,17 +113,22 @@ const NotebooksLibrary = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background animate-fade-in">
         {/* Header */}
-        <div className="border-b bg-card/50">
-          <div className="container mx-auto px-6 py-6">
+        <div className="border-b bg-gradient-to-r from-card/80 via-card/50 to-card/80 backdrop-blur-sm">
+          <div className="container mx-auto px-6 py-8">
             <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <FileText className="h-8 w-8" />
-                <h1 className="text-2xl font-bold">NotebookLM</h1>
+              <div className="flex items-center gap-4">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight">NotebookLM</h1>
+                  <p className="text-sm text-muted-foreground mt-0.5">AI-powered research workspace</p>
+                </div>
               </div>
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setShowCreateDialog(true)} size="lg" className="gap-2 shadow-md hover:shadow-lg transition-all hover-scale">
+                <Plus className="h-5 w-5" />
                 Create new
               </Button>
             </div>
@@ -186,18 +191,24 @@ const NotebooksLibrary = () => {
         {/* Content */}
         <div className="container mx-auto px-6 py-8">
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <p className="text-muted-foreground">Loading notebooks...</p>
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <div className="relative">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
+              </div>
+              <p className="text-muted-foreground animate-pulse">Loading notebooks...</p>
             </div>
           ) : notebooks.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <FileText className="h-16 w-16 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No notebooks yet</h3>
-              <p className="text-muted-foreground mb-4">
-                Create your first notebook to get started
+            <div className="flex flex-col items-center justify-center py-20 text-center animate-scale-in">
+              <div className="h-24 w-24 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center mb-6">
+                <FileText className="h-12 w-12 text-muted-foreground/50" />
+              </div>
+              <h3 className="text-2xl font-semibold mb-3">No notebooks yet</h3>
+              <p className="text-muted-foreground mb-6 max-w-md leading-relaxed">
+                Create your first notebook to start organizing and analyzing your content with AI
               </p>
-              <Button onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setShowCreateDialog(true)} size="lg" className="gap-2 shadow-md hover-scale">
+                <Plus className="h-5 w-5" />
                 Create new notebook
               </Button>
             </div>
@@ -207,21 +218,21 @@ const NotebooksLibrary = () => {
               {activeTab !== "my" && featuredNotebooks.length > 0 && (
                 <div className="mb-12">
                   <h2 className="text-xl font-semibold mb-4">Featured notebooks</h2>
-                  <div className="rounded-lg border bg-card overflow-hidden">
+                  <div className="rounded-lg border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                     <Table>
                       <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[40%]">Title</TableHead>
-                          <TableHead>Sources</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Role</TableHead>
+                        <TableRow className="bg-muted/50">
+                          <TableHead className="w-[40%] font-semibold">Title</TableHead>
+                          <TableHead className="font-semibold">Sources</TableHead>
+                          <TableHead className="font-semibold">Created</TableHead>
+                          <TableHead className="font-semibold">Role</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {featuredNotebooks.map((notebook) => (
                           <TableRow
                             key={notebook.id}
-                            className="cursor-pointer hover:bg-muted/50"
+                            className="cursor-pointer hover:bg-accent/50 transition-colors animate-fade-in"
                             onClick={() => handleNotebookClick(notebook.id)}
                           >
                             <TableCell className="font-medium">
@@ -254,21 +265,21 @@ const NotebooksLibrary = () => {
                 <h2 className="text-xl font-semibold mb-4">
                   {activeTab === "my" ? "My notebooks" : "Recent notebooks"}
                 </h2>
-                <div className="rounded-lg border bg-card overflow-hidden">
+                <div className="rounded-lg border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-[40%]">Title</TableHead>
-                        <TableHead>Sources</TableHead>
-                        <TableHead>Created</TableHead>
-                        <TableHead>Role</TableHead>
+                      <TableRow className="bg-muted/50">
+                        <TableHead className="w-[40%] font-semibold">Title</TableHead>
+                        <TableHead className="font-semibold">Sources</TableHead>
+                        <TableHead className="font-semibold">Created</TableHead>
+                        <TableHead className="font-semibold">Role</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {recentNotebooks.map((notebook) => (
                         <TableRow
                           key={notebook.id}
-                          className="cursor-pointer hover:bg-muted/50"
+                          className="cursor-pointer hover:bg-accent/50 transition-colors animate-fade-in"
                           onClick={() => handleNotebookClick(notebook.id)}
                         >
                           <TableCell className="font-medium">

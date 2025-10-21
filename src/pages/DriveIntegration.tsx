@@ -165,22 +165,27 @@ export default function DriveIntegration() {
 
   return (
     <Layout>
-      <div className="space-y-6">
+      <div className="space-y-8 animate-fade-in">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/20 via-primary/10 to-background p-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold flex items-center gap-2">
-                <Cloud className="h-8 w-8" />
-                Smart Drive Hub
-              </h1>
-              <p className="text-muted-foreground mt-2">
-                AI-powered meeting material organization with never-before-seen automation
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background p-10 shadow-xl border">
+          <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,transparent,black)]" />
+          <div className="relative flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                  <Cloud className="h-7 w-7 text-white" />
+                </div>
+                <h1 className="text-4xl font-bold tracking-tight">
+                  Smart Drive Hub
+                </h1>
+              </div>
+              <p className="text-muted-foreground text-lg max-w-2xl">
+                AI-powered meeting material organization with intelligent automation
               </p>
             </div>
             {!accessToken && (
-              <Button onClick={connectGoogleDrive} size="lg" className="gap-2">
-                <Cloud className="h-4 w-4" />
+              <Button onClick={connectGoogleDrive} size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all hover-scale">
+                <Cloud className="h-5 w-5" />
                 Connect Google Drive
               </Button>
             )}
@@ -188,56 +193,64 @@ export default function DriveIntegration() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card>
+        <div className="grid gap-6 md:grid-cols-4">
+          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Files</CardTitle>
-              <FolderOpen className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Total Files</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <FolderOpen className="h-5 w-5 text-blue-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{meetingFiles.length}</div>
-              <p className="text-xs text-muted-foreground">Across all meetings</p>
+              <div className="text-3xl font-bold">{meetingFiles.length}</div>
+              <p className="text-xs text-muted-foreground mt-1">Across all meetings</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Auto-Generated</CardTitle>
-              <Sparkles className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Auto-Generated</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <Sparkles className="h-5 w-5 text-purple-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold">
                 {meetingFiles.filter(f => f.auto_generated).length}
               </div>
-              <p className="text-xs text-muted-foreground">AI-created documents</p>
+              <p className="text-xs text-muted-foreground mt-1">AI-created documents</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">This Week</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">This Week</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
+                <TrendingUp className="h-5 w-5 text-green-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">
+              <div className="text-3xl font-bold">
                 {meetingFiles.filter(f => {
                   const weekAgo = new Date();
                   weekAgo.setDate(weekAgo.getDate() - 7);
                   return new Date(f.created_at) > weekAgo;
                 }).length}
               </div>
-              <p className="text-xs text-muted-foreground">New files uploaded</p>
+              <p className="text-xs text-muted-foreground mt-1">New files uploaded</p>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Smart Sync</CardTitle>
-              <Zap className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-semibold">Smart Sync</CardTitle>
+              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Zap className="h-5 w-5 text-amber-500" />
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">Active</div>
-              <p className="text-xs text-muted-foreground">Automation enabled</p>
+              <div className="text-3xl font-bold">Active</div>
+              <p className="text-xs text-muted-foreground mt-1">Automation enabled</p>
             </CardContent>
           </Card>
         </div>
@@ -250,13 +263,13 @@ export default function DriveIntegration() {
             <TabsTrigger value="browse">Browse Drive</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="files" className="space-y-4">
-            <Card>
+          <TabsContent value="files" className="space-y-4 animate-fade-in">
+            <Card className="shadow-md border-2">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>Meeting Files</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-xl">Meeting Files</CardTitle>
+                    <CardDescription className="text-base mt-1">
                       All files automatically synced from your meetings
                     </CardDescription>
                   </div>
@@ -275,8 +288,14 @@ export default function DriveIntegration() {
                 {loading ? (
                   <div className="text-center py-8">Loading files...</div>
                 ) : meetingFiles.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No files yet. Files will appear here automatically when you record meetings.
+                  <div className="text-center py-16 animate-scale-in">
+                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center mx-auto mb-6">
+                      <Cloud className="h-10 w-10 text-muted-foreground/50" />
+                    </div>
+                    <p className="text-base font-semibold mb-2">No files yet</p>
+                    <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                      Files will appear here automatically when you record meetings and enable sync
+                    </p>
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -287,7 +306,7 @@ export default function DriveIntegration() {
                       .map((file) => (
                         <div
                           key={file.id}
-                          className="flex items-center justify-between p-4 rounded-lg border hover:bg-accent/50 transition-colors"
+                          className="flex items-center justify-between p-4 rounded-xl border-2 hover:border-primary/30 hover:bg-accent/50 hover:shadow-md transition-all hover-scale animate-fade-in"
                         >
                           <div className="flex items-center gap-4">
                             <div className="p-2 rounded-lg bg-accent">
@@ -327,14 +346,16 @@ export default function DriveIntegration() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-4">
-            <Card>
+          <TabsContent value="settings" className="space-y-4 animate-fade-in">
+            <Card className="shadow-md border-2">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
                   Smart Automation Settings
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-base mt-2">
                   Configure how MeetingHub automatically manages your Drive files
                 </CardDescription>
               </CardHeader>

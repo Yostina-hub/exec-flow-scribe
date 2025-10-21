@@ -308,14 +308,14 @@ const Notebook = () => {
   return (
     <div className="h-screen flex flex-col bg-background">
       {/* Header */}
-      <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <div className="border-b bg-gradient-to-r from-background/95 via-card/50 to-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-4">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/")}
-              className="shrink-0 hover:bg-accent"
+              className="shrink-0 hover:bg-accent hover-scale transition-all"
               title="Back to dashboard"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -323,15 +323,15 @@ const Notebook = () => {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-3 h-auto py-2 px-3 hover:bg-accent">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0">
-                    <BookOpen className="h-5 w-5 text-white" />
+                <Button variant="ghost" className="gap-3 h-auto py-2 px-3 hover:bg-accent hover-scale transition-all rounded-xl">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md">
+                    <BookOpen className="h-6 w-6 text-white" />
                   </div>
                   <div className="text-left">
-                    <h1 className="text-lg font-semibold leading-none mb-1">
+                    <h1 className="text-xl font-bold leading-none mb-1.5">
                       {notebooks.find(n => n.id === currentNotebook)?.title || "Meeting Notebook"}
                     </h1>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Analyze and explore with AI
                     </p>
                   </div>
@@ -381,22 +381,22 @@ const Notebook = () => {
       {/* Three-panel layout */}
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
         {/* Sources Panel */}
-        <div className="col-span-3 border-r flex flex-col bg-muted/30">
-          <div className="px-4 py-4 border-b bg-background/50">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4" />
+        <div className="col-span-3 border-r flex flex-col bg-gradient-to-b from-muted/40 to-muted/20">
+          <div className="px-4 py-5 border-b bg-card/80 backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-bold flex items-center gap-2 text-base">
+                <FileText className="h-5 w-5 text-primary" />
                 Sources
               </h2>
-              <p className="text-xs text-muted-foreground">
+              <Badge variant="secondary" className="text-xs font-medium">
                 {sources.length} / 50
-              </p>
+              </Badge>
             </div>
             
             <Button
               variant="default"
-              size="sm"
-              className="w-full justify-center gap-2"
+              size="default"
+              className="w-full justify-center gap-2 shadow-md hover:shadow-lg transition-all hover-scale"
               onClick={() => setShowAddSourceDialog(true)}
             >
               <Plus className="h-4 w-4" />
@@ -424,14 +424,14 @@ const Notebook = () => {
           <ScrollArea className="flex-1">
             <div className="p-3">
               {sources.length === 0 ? (
-                <div className="text-center py-16 px-4">
-                  <div className="h-14 w-14 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
-                    <FileText className="h-7 w-7 text-muted-foreground" />
+                <div className="text-center py-20 px-4 animate-scale-in">
+                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center mx-auto mb-6">
+                    <FileText className="h-10 w-10 text-muted-foreground/50" />
                   </div>
-                  <p className="text-sm font-medium mb-2">
+                  <p className="text-base font-semibold mb-3">
                     No sources yet
                   </p>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
                     Add documents, websites, or meetings to get started with AI analysis
                   </p>
                 </div>
@@ -440,10 +440,10 @@ const Notebook = () => {
                   {sources.map((source) => (
                     <Card
                       key={source.id}
-                      className={`p-3 cursor-pointer transition-all hover:shadow-sm border ${
+                      className={`p-3 cursor-pointer transition-all hover:shadow-md hover-scale border-2 animate-fade-in ${
                         selectedSources.includes(source.id)
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "hover:border-border/60"
+                          ? "border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-md"
+                          : "hover:border-primary/30 hover:bg-accent/30"
                       }`}
                       onClick={() => toggleSourceSelection(source.id)}
                     >
