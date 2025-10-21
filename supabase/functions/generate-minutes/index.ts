@@ -298,7 +298,7 @@ Format as a professional markdown document.${languageInstruction}`;
     const openaiKey = preference?.openai_api_key || Deno.env.get("OPENAI_API_KEY");
     if (openaiKey && !minutes) {
       try {
-        console.log("🤖 Using OpenAI GPT-4o");
+        console.log("🤖 Using OpenAI GPT-5");
         const openaiResponse = await fetch(
           "https://api.openai.com/v1/chat/completions",
           {
@@ -308,7 +308,7 @@ Format as a professional markdown document.${languageInstruction}`;
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "gpt-4o",
+              model: "gpt-5-2025-08-07",
               messages: [
                 { 
                   role: "system", 
@@ -335,8 +335,7 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
                 },
                 { role: "user", content: prompt },
               ],
-              temperature: 0.7,
-              max_tokens: 2500,
+              max_completion_tokens: 2500,
             }),
           }
         );
@@ -344,7 +343,7 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
         if (openaiResponse.ok) {
           const openaiData = await openaiResponse.json();
           minutes = openaiData.choices?.[0]?.message?.content || "";
-          console.log("✅ Minutes generated with OpenAI GPT-4o");
+          console.log("✅ Minutes generated with OpenAI GPT-5");
         } else {
           const statusCode = openaiResponse.status;
           const errorText = await openaiResponse.text();
