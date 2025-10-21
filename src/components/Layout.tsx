@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud } from "lucide-react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
+import { NotificationBell } from "@/components/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import {
@@ -31,6 +32,7 @@ const navigation = [
   { name: "Smart Drive", href: "/drive", icon: Cloud },
   { name: "Notebooks", href: "/notebooks", icon: Sparkles },
   { name: "Actions", href: "/actions", icon: CheckSquare },
+  { name: "Notifications", href: "/notifications", icon: Bell },
   { name: "Analytics", href: "/analytics", icon: BarChart3 },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Administration", href: "/admin", icon: Shield },
@@ -109,6 +111,7 @@ export const Layout = ({ children }: LayoutProps) => {
             <div className="flex h-14 lg:h-14 items-center gap-2 lg:gap-4 px-3 lg:px-4">
               <SidebarTrigger />
               <div className="flex-1" />
+              <NotificationBell />
               <QuickSearch />
             </div>
           </header>

@@ -20,6 +20,7 @@ import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
 import Notebook from "./pages/Notebook";
 import NotebooksLibrary from "./pages/NotebooksLibrary";
+import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
@@ -156,6 +157,14 @@ const App = () => (
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               }
             />
