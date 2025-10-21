@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface MeetingAccessResult {
   hasAccess: boolean;
   isSeniorRole: boolean;
+  isHost: boolean;
   canAccessRecordings: boolean;
   canAccessTranscriptions: boolean;
   canUseAITools: boolean;
@@ -20,6 +21,7 @@ export function useMeetingAccess(meetingId: string | undefined): MeetingAccessRe
   const [accessData, setAccessData] = useState<MeetingAccessResult>({
     hasAccess: false,
     isSeniorRole: false,
+    isHost: false,
     canAccessRecordings: false,
     canAccessTranscriptions: false,
     canUseAITools: false,
@@ -84,14 +86,23 @@ export function useMeetingAccess(meetingId: string | undefined): MeetingAccessRe
           _element_type: "documents",
         }) as { data: boolean | null };
 
+        // Determine if current user is the meeting host (creator)
+        const { data: meetingRow } = await supabase
+          .from('meetings')
+          .select('created_by')
+          .eq('id', meetingId)
+          .single();
+        const isHost = meetingRow?.created_by === user.id;
+
         setAccessData({
-          hasAccess: hasTimeAccess || false,
-          isSeniorRole: isSenior || false,
-          canAccessRecordings: canRecordings || false,
-          canAccessTranscriptions: canTranscriptions || false,
-          canUseAITools: canAI || false,
-          canViewAnalytics: canAnalytics || false,
-          canManageDocuments: canDocs || false,
+          hasAccess: Boolean(hasTimeAccess) || Boolean(isHost),
+          isSeniorRole: Boolean(isSenior),
+          isHost: Boolean(isHost),
+          canAccessRecordings: Boolean(canRecordings),
+          canAccessTranscriptions: Boolean(canTranscriptions),
+          canUseAITools: Boolean(canAI),
+          canViewAnalytics: Boolean(canAnalytics),
+          canManageDocuments: Boolean(canDocs),
           loading: false,
         });
       } catch (error) {

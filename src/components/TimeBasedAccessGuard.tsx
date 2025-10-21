@@ -28,7 +28,7 @@ export function TimeBasedAccessGuard({
     );
   }
 
-  if (!access.hasAccess && !access.isSeniorRole) {
+  if (!access.hasAccess && !access.isSeniorRole && !access.isHost) {
     return (
       <div className="container mx-auto p-6 max-w-2xl">
         <Alert variant="destructive">
