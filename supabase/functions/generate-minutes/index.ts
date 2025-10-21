@@ -292,6 +292,7 @@ Format as a professional markdown document.${languageInstruction}`;
 
     let minutes = "";
     let providerError = "";
+    let providerStatus: number | null = null;
 
     // Try user's Gemini API key first (gemini-2.5-flash for multilingual)
     const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
@@ -350,7 +351,11 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
           console.error(`Gemini API error (${statusCode}):`, errorText);
           
           if (statusCode === 429) {
+            providerStatus = 429;
             providerError = "Gemini rate limit exceeded. Try again in a moment.";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "Payment required: Please add AI credits and retry.";
           } else {
             providerError = `Gemini: ${errorText}`;
           }
@@ -364,7 +369,7 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
     // Fallback to Lovable AI if Gemini fails
     if (lovableApiKey && !minutes) {
       try {
-        console.log("🤖 Using Lovable AI Gateway with gemini-2.5-pro (optimized for Amharic)");
+        console.log("🤖 Using Lovable AI Gateway with gemini-2.5-flash (optimized for Amharic)");
         const lovableResponse = await fetch(
           "https://ai.gateway.lovable.dev/v1/chat/completions",
           {
@@ -374,7 +379,7 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-pro", // Best for multilingual + complex reasoning
+              model: "google/gemini-2.5-flash", // Default, fast and multilingual
               messages: [
                 { 
                   role: "system", 
@@ -415,9 +420,11 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
           console.error(`Lovable AI error (${statusCode}):`, errorText);
           
           if (statusCode === 429) {
+            providerStatus = 429;
             providerError = "Rate limit exceeded. Please try again in a moment.";
           } else if (statusCode === 402) {
-            providerError = "AI credits exhausted. Please add credits to continue.";
+            providerStatus = 402;
+            providerError = "Payment required. Please add credits to your Lovable AI workspace.";
           } else {
             providerError = `Lovable AI: ${errorText}`;
           }
@@ -428,59 +435,21 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       }
     }
 
-    // Fallback to OpenAI if available and Lovable AI failed
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (openaiKey && !minutes) {
-      try {
-        console.log("🤖 Fallback to OpenAI API");
-        const openaiResponse = await fetch(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${openaiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "gpt-4o-mini",
-              messages: [
-                { role: "system", content: `You are a professional meeting minutes generator specializing in multilingual documentation.
+    // OpenAI fallback disabled to honor Gemini-only request
+    // Keeping this block intentionally removed to avoid provider mixing.
 
-🚫 CRITICAL: You MUST ONLY summarize information EXPLICITLY in the transcript. DO NOT add assumptions, external knowledge, or fabricated content. Every point must trace back to the source.
-
-${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing. You MUST use proper Ethiopian punctuation (። ፣ ፤ ፦) consistently. End every sentence with ። Use formal vocabulary and proper SOV sentence structure. Never use Latin script or romanization. ONLY summarize what is actually in the Amharic transcript.' : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is in the transcript.'}` },
-                { role: "user", content: prompt },
-              ],
-              temperature: 0.7,
-              max_tokens: 2000,
-            }),
-          }
-        );
-
-        if (openaiResponse.ok) {
-          const openaiData = await openaiResponse.json();
-          minutes = openaiData.choices?.[0]?.message?.content || "";
-          console.log("✅ Minutes generated with OpenAI");
-        } else {
-          const error = await openaiResponse.text();
-          console.error("OpenAI error:", error);
-          providerError += (providerError ? "; " : "") + `OpenAI: ${error}`;
-        }
-      } catch (e) {
-        console.error("OpenAI provider failed:", e);
-        providerError += (providerError ? "; " : "") + `OpenAI: ${e instanceof Error ? e.message : 'Unknown error'}`;
-      }
-    }
 
 
     if (!minutes) {
-      console.error("All AI providers failed:", providerError);
+      const errMsg = providerError || "Please try again later.";
+      const errorStatusCode = providerStatus || 500;
+      console.error("All AI providers failed:", errMsg);
       return new Response(
         JSON.stringify({ 
-          error: "Failed to generate minutes. " + (providerError || "Please try again later.")
+          error: "Failed to generate minutes. " + errMsg
         }), 
         { 
-          status: 500, 
+          status: errorStatusCode, 
           headers: { ...corsHeaders, "Content-Type": "application/json" } 
         }
       );
