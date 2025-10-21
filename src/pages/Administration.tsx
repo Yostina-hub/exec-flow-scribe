@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Settings, Zap, UserCog } from "lucide-react";
+import { Shield, Settings, Zap, UserCog, Activity, Database, History } from "lucide-react";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { RoleManagementTab } from "@/components/admin/RoleManagementTab";
 import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
+import { SystemHealthDashboard } from "@/components/admin/SystemHealthDashboard";
+import { BulkOperationsManager } from "@/components/admin/BulkOperationsManager";
+import { UserActivityMonitor } from "@/components/admin/UserActivityMonitor";
 
 export default function Administration() {
   const [activeTab, setActiveTab] = useState("users");
@@ -26,24 +29,42 @@ export default function Administration() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="users">
-              <Shield className="h-4 w-4 mr-2" />
-              Users
-            </TabsTrigger>
-            <TabsTrigger value="roles">
-              <Settings className="h-4 w-4 mr-2" />
-              Roles
-            </TabsTrigger>
-            <TabsTrigger value="assignments">
-              <UserCog className="h-4 w-4 mr-2" />
-              Assignments
-            </TabsTrigger>
-            <TabsTrigger value="automation">
-              <Zap className="h-4 w-4 mr-2" />
-              Automation
-            </TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-2">
+            <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
+              <TabsTrigger value="health">
+                <Database className="h-4 w-4 mr-2" />
+                System Health
+              </TabsTrigger>
+              <TabsTrigger value="users">
+                <Shield className="h-4 w-4 mr-2" />
+                Users
+              </TabsTrigger>
+              <TabsTrigger value="roles">
+                <Settings className="h-4 w-4 mr-2" />
+                Roles
+              </TabsTrigger>
+              <TabsTrigger value="assignments">
+                <UserCog className="h-4 w-4 mr-2" />
+                Assignments
+              </TabsTrigger>
+              <TabsTrigger value="bulk-ops">
+                <Zap className="h-4 w-4 mr-2" />
+                Bulk Operations
+              </TabsTrigger>
+              <TabsTrigger value="activity">
+                <History className="h-4 w-4 mr-2" />
+                Activity Monitor
+              </TabsTrigger>
+              <TabsTrigger value="automation">
+                <Activity className="h-4 w-4 mr-2" />
+                Automation
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="health" className="mt-6">
+            <SystemHealthDashboard />
+          </TabsContent>
 
           <TabsContent value="users" className="mt-6">
             <UserManagementTab />
@@ -59,6 +80,14 @@ export default function Administration() {
 
           <TabsContent value="automation" className="mt-6">
             <AutomationSettings />
+          </TabsContent>
+
+          <TabsContent value="bulk-ops" className="mt-6">
+            <BulkOperationsManager />
+          </TabsContent>
+
+          <TabsContent value="activity" className="mt-6">
+            <UserActivityMonitor />
           </TabsContent>
         </Tabs>
       </div>
