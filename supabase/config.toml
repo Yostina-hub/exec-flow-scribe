@@ -63,6 +63,9 @@ verify_jwt = false
 [functions.save-transcription]
 verify_jwt = true
 
+[functions.list-transcriptions]
+verify_jwt = true
+
 [functions.openai-realtime]
 verify_jwt = false
 
