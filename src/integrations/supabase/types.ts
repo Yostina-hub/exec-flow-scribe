@@ -3920,6 +3920,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_element: {
+        Args: { _element_type: string; _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_users_with_role_name: {
         Args: { _role_name: string }
         Returns: {
@@ -3940,7 +3944,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_time_based_access: {
+        Args: { _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_admin: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
+      is_senior_role: {
         Args: { _user_id: string }
         Returns: boolean
       }
