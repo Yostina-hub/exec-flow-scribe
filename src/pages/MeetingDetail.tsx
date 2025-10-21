@@ -51,6 +51,8 @@ import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
 import { AIPreparationAssistant } from "@/components/AIPreparationAssistant";
 import { ParticipantDashboard } from "@/components/ParticipantDashboard";
 import { SpeakerQueue } from "@/components/SpeakerQueue";
+import { AutoAssignmentControls } from "@/components/AutoAssignmentControls";
+import { MeetingAnalytics } from "@/components/MeetingAnalytics";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -499,7 +501,7 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
-              <TabsList className="grid w-full grid-cols-8">
+              <TabsList className="grid w-full grid-cols-9">
                 {isOnlineMeeting && hasVideoLink && (
                   <TabsTrigger value="video">Video Call</TabsTrigger>
                 )}
@@ -508,6 +510,7 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
+                <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
@@ -560,17 +563,25 @@ const [wasRecording, setWasRecording] = useState(false);
               )}
 
               <TabsContent value="participants" className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <ParticipantDashboard
-                    meetingId={meetingId}
-                    isHost={meeting?.created_by === userId}
-                    currentUserId={userId || ''}
-                  />
-                  <SpeakerQueue
-                    meetingId={meetingId}
-                    isHost={meeting?.created_by === userId}
-                    currentUserId={userId || ''}
-                  />
+                <div className="space-y-4">
+                  {meeting?.created_by === userId && (
+                    <AutoAssignmentControls
+                      meetingId={meetingId}
+                      isHost={true}
+                    />
+                  )}
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <ParticipantDashboard
+                      meetingId={meetingId}
+                      isHost={meeting?.created_by === userId}
+                      currentUserId={userId || ''}
+                    />
+                    <SpeakerQueue
+                      meetingId={meetingId}
+                      isHost={meeting?.created_by === userId}
+                      currentUserId={userId || ''}
+                    />
+                  </div>
                 </div>
               </TabsContent>
 
@@ -662,6 +673,10 @@ const [wasRecording, setWasRecording] = useState(false);
 
               <TabsContent value="ai-insights" className="space-y-4">
                 <AIIntelligencePanel meetingId={meetingId} />
+              </TabsContent>
+
+              <TabsContent value="analytics" className="space-y-4">
+                <MeetingAnalytics meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="chat" className="space-y-4">

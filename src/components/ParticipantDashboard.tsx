@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
+import { useSpeakingTimeTracker } from "@/hooks/useSpeakingTimeTracker";
 import {
   Users,
   Mic,
@@ -45,6 +46,14 @@ export function ParticipantDashboard({
   const [attendees, setAttendees] = useState<Attendee[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const { toast } = useToast();
+
+  // Track speaking time for current speaker
+  const currentActiveSpeaker = attendees.find((a) => a.is_speaking);
+  useSpeakingTimeTracker({
+    meetingId,
+    userId: currentActiveSpeaker?.user_id || "",
+    isSpeaking: !!currentActiveSpeaker,
+  });
 
   useEffect(() => {
     fetchAttendees();
