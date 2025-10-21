@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, Clock, Users, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 interface CalendarEvent {
   id: string;
@@ -73,6 +73,7 @@ export function CalendarWeekView({
   };
 
   return (
+    <TooltipProvider>
       <div className="space-y-4">
         {/* Week Navigation */}
       <div className="flex items-center justify-between">
@@ -270,5 +271,6 @@ export function CalendarWeekView({
         </div>
       </div>
     </div>
+    </TooltipProvider>
   );
 }
