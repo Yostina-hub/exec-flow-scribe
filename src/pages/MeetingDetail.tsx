@@ -182,6 +182,24 @@ const [wasRecording, setWasRecording] = useState(false);
           // Add a delay to ensure all transcriptions are saved
           await new Promise(resolve => setTimeout(resolve, 2000));
 
+          // If there is no transcript yet, skip auto-generation
+          const { count: txCount, error: txErr } = await supabase
+            .from('transcriptions')
+            .select('id', { count: 'exact', head: true })
+            .eq('meeting_id', meetingId);
+
+          if (txErr) {
+            console.warn('Could not count transcriptions:', txErr);
+          }
+
+          if (!txErr && (txCount ?? 0) === 0) {
+            toast({
+              title: 'No transcript yet',
+              description: 'We will generate minutes once speech is captured and saved.',
+            });
+            return;
+          }
+
           // Auto-save meeting status
           if (id) {
             await supabase
