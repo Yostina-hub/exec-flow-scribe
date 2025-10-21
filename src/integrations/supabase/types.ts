@@ -253,6 +253,59 @@ export type Database = {
           },
         ]
       }
+      automated_workflows: {
+        Row: {
+          actions: Json
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          last_run_at: string | null
+          name: string
+          run_count: number | null
+          trigger_config: Json | null
+          trigger_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name: string
+          run_count?: number | null
+          trigger_config?: Json | null
+          trigger_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          actions?: Json
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_run_at?: string | null
+          name?: string
+          run_count?: number | null
+          trigger_config?: Json | null
+          trigger_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automated_workflows_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_kits: {
         Row: {
           color_accent: string | null
@@ -853,6 +906,47 @@ export type Database = {
           },
         ]
       }
+      distribution_channels: {
+        Row: {
+          channel_type: string
+          config: Json
+          created_at: string | null
+          created_by: string
+          id: string
+          is_active: boolean | null
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel_type: string
+          config?: Json
+          created_at?: string | null
+          created_by: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel_type?: string
+          config?: Json
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       distribution_profiles: {
         Row: {
           audience_type: string
@@ -920,6 +1014,123 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "distribution_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_distributions: {
+        Row: {
+          channel_id: string
+          created_at: string | null
+          delivery_confirmation: Json | null
+          document_version_id: string
+          error_message: string | null
+          id: string
+          recipients: Json
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          channel_id: string
+          created_at?: string | null
+          delivery_confirmation?: Json | null
+          document_version_id: string
+          error_message?: string | null
+          id?: string
+          recipients?: Json
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          channel_id?: string
+          created_at?: string | null
+          delivery_confirmation?: Json | null
+          document_version_id?: string
+          error_message?: string | null
+          id?: string
+          recipients?: Json
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_distributions_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_distributions_document_version_id_fkey"
+            columns: ["document_version_id"]
+            isOneToOne: false
+            referencedRelation: "document_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          change_summary: string | null
+          content: string
+          content_format: string
+          created_at: string | null
+          created_by: string
+          document_type: string
+          file_size_bytes: number | null
+          file_url: string | null
+          id: string
+          is_published: boolean | null
+          meeting_id: string
+          metadata: Json | null
+          published_at: string | null
+          version_number: number
+        }
+        Insert: {
+          change_summary?: string | null
+          content: string
+          content_format?: string
+          created_at?: string | null
+          created_by: string
+          document_type: string
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          meeting_id: string
+          metadata?: Json | null
+          published_at?: string | null
+          version_number?: number
+        }
+        Update: {
+          change_summary?: string | null
+          content?: string
+          content_format?: string
+          created_at?: string | null
+          created_by?: string
+          document_type?: string
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          is_published?: boolean | null
+          meeting_id?: string
+          metadata?: Json | null
+          published_at?: string | null
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_versions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
             referencedColumns: ["id"]
           },
         ]
@@ -1817,6 +2028,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "meeting_insights_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_integrations: {
+        Row: {
+          created_at: string | null
+          external_id: string
+          external_url: string | null
+          id: string
+          integration_type: string
+          last_synced_at: string | null
+          meeting_id: string
+          sync_config: Json | null
+          sync_status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          external_id: string
+          external_url?: string | null
+          id?: string
+          integration_type: string
+          last_synced_at?: string | null
+          meeting_id: string
+          sync_config?: Json | null
+          sync_status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          external_id?: string
+          external_url?: string | null
+          id?: string
+          integration_type?: string
+          last_synced_at?: string | null
+          meeting_id?: string
+          sync_config?: Json | null
+          sync_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_integrations_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"

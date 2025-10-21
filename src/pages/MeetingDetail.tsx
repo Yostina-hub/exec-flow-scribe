@@ -46,6 +46,9 @@ import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
 import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
 import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
 import { AIMinutesGenerator } from "@/components/AIMinutesGenerator";
+import { DocumentVersionControl } from "@/components/DocumentVersionControl";
+import { MultiChannelDistribution } from "@/components/MultiChannelDistribution";
+import { IntegrationManager } from "@/components/IntegrationManager";
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
@@ -538,7 +541,7 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
-              <TabsList className="grid w-full grid-cols-10">
+              <TabsList className="grid w-full grid-cols-11">
                 {isOnlineMeeting && hasVideoLink && (
                   <TabsTrigger value="video">Video Call</TabsTrigger>
                 )}
@@ -549,6 +552,7 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="audit">Audit Log</TabsTrigger>
               </TabsList>
 
@@ -745,6 +749,16 @@ const [wasRecording, setWasRecording] = useState(false);
                     <MeetingTemplateManager />
                     <NotificationPreferences />
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="documents" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-6">
+                    <DocumentVersionControl meetingId={meetingId} />
+                    <MultiChannelDistribution meetingId={meetingId} />
+                  </div>
+                  <IntegrationManager meetingId={meetingId} />
                 </div>
               </TabsContent>
 
