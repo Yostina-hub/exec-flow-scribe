@@ -1381,34 +1381,52 @@ export type Database = {
         Row: {
           attendance_confirmed: boolean | null
           attended: boolean | null
+          can_speak: boolean | null
           created_at: string
           id: string
+          is_speaking: boolean | null
+          last_spoke_at: string | null
           meeting_id: string
+          microphone_granted_at: string | null
           responded_at: string | null
           response_status: string | null
           role: string | null
+          speaking_duration_seconds: number | null
+          speaking_requested_at: string | null
           user_id: string
         }
         Insert: {
           attendance_confirmed?: boolean | null
           attended?: boolean | null
+          can_speak?: boolean | null
           created_at?: string
           id?: string
+          is_speaking?: boolean | null
+          last_spoke_at?: string | null
           meeting_id: string
+          microphone_granted_at?: string | null
           responded_at?: string | null
           response_status?: string | null
           role?: string | null
+          speaking_duration_seconds?: number | null
+          speaking_requested_at?: string | null
           user_id: string
         }
         Update: {
           attendance_confirmed?: boolean | null
           attended?: boolean | null
+          can_speak?: boolean | null
           created_at?: string
           id?: string
+          is_speaking?: boolean | null
+          last_spoke_at?: string | null
           meeting_id?: string
+          microphone_granted_at?: string | null
           responded_at?: string | null
           response_status?: string | null
           role?: string | null
+          speaking_duration_seconds?: number | null
+          speaking_requested_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -1681,6 +1699,56 @@ export type Database = {
             foreignKeyName: "meeting_sentiment_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_settings: {
+        Row: {
+          allow_hand_raise: boolean | null
+          auto_assignment_enabled: boolean | null
+          auto_assignment_mode: string | null
+          created_at: string
+          default_speaking_time_seconds: number | null
+          id: string
+          meeting_id: string
+          mute_on_join: boolean | null
+          recording_mode: string | null
+          require_host_approval: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          allow_hand_raise?: boolean | null
+          auto_assignment_enabled?: boolean | null
+          auto_assignment_mode?: string | null
+          created_at?: string
+          default_speaking_time_seconds?: number | null
+          id?: string
+          meeting_id: string
+          mute_on_join?: boolean | null
+          recording_mode?: string | null
+          require_host_approval?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          allow_hand_raise?: boolean | null
+          auto_assignment_enabled?: boolean | null
+          auto_assignment_mode?: string | null
+          created_at?: string
+          default_speaking_time_seconds?: number | null
+          id?: string
+          meeting_id?: string
+          mute_on_join?: boolean | null
+          recording_mode?: string | null
+          require_host_approval?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_settings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: true
             referencedRelation: "meetings"
             referencedColumns: ["id"]
           },
@@ -2182,6 +2250,44 @@ export type Database = {
           },
         ]
       }
+      participant_status_log: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          metadata: Json | null
+          status_type: string
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          metadata?: Json | null
+          status_type: string
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          metadata?: Json | null
+          status_type?: string
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "participant_status_log_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pdf_generations: {
         Row: {
           approval_stamp: Json
@@ -2605,6 +2711,56 @@ export type Database = {
           username?: string
         }
         Relationships: []
+      }
+      speaker_queue: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          meeting_id: string
+          queue_position: number
+          requested_at: string
+          started_at: string | null
+          status: string
+          time_limit_seconds: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          meeting_id: string
+          queue_position: number
+          requested_at?: string
+          started_at?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          queue_position?: number
+          requested_at?: string
+          started_at?: string | null
+          status?: string
+          time_limit_seconds?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "speaker_queue_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       studio_outputs: {
         Row: {

@@ -49,6 +49,8 @@ import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
 import { AIPreparationAssistant } from "@/components/AIPreparationAssistant";
+import { ParticipantDashboard } from "@/components/ParticipantDashboard";
+import { SpeakerQueue } from "@/components/SpeakerQueue";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -497,10 +499,11 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
-              <TabsList className="grid w-full grid-cols-7">
+              <TabsList className="grid w-full grid-cols-8">
                 {isOnlineMeeting && hasVideoLink && (
                   <TabsTrigger value="video">Video Call</TabsTrigger>
                 )}
+                <TabsTrigger value="participants">Participants</TabsTrigger>
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
@@ -555,6 +558,21 @@ const [wasRecording, setWasRecording] = useState(false);
                   )}
                 </TabsContent>
               )}
+
+              <TabsContent value="participants" className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <ParticipantDashboard
+                    meetingId={meetingId}
+                    isHost={meeting?.created_by === userId}
+                    currentUserId={userId || ''}
+                  />
+                  <SpeakerQueue
+                    meetingId={meetingId}
+                    isHost={meeting?.created_by === userId}
+                    currentUserId={userId || ''}
+                  />
+                </div>
+              </TabsContent>
 
               <TabsContent value="transcription" className="space-y-4">
                 <BrowserSpeechRecognition 
