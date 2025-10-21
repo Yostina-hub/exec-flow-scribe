@@ -56,6 +56,9 @@ import { MeetingAnalytics } from "@/components/MeetingAnalytics";
 import { RealTimePresence } from "@/components/RealTimePresence";
 import { RecordingConsentDialog } from "@/components/RecordingConsentDialog";
 import { AuditLogViewer } from "@/components/AuditLogViewer";
+import { BreakoutRoomsManager } from "@/components/BreakoutRoomsManager";
+import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
+import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -715,6 +718,19 @@ const [wasRecording, setWasRecording] = useState(false);
 
               <TabsContent value="analytics" className="space-y-4">
                 <MeetingAnalytics meetingId={meetingId} />
+              </TabsContent>
+
+              <TabsContent value="advanced" className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <BreakoutRoomsManager 
+                    meetingId={meetingId} 
+                    isHost={meeting?.created_by === userId} 
+                  />
+                  <div className="space-y-6">
+                    <MeetingTemplateManager />
+                    <NotificationPreferences />
+                  </div>
+                </div>
               </TabsContent>
 
               <TabsContent value="audit" className="space-y-4">
