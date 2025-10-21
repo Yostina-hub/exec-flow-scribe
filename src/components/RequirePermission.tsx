@@ -59,6 +59,11 @@ export function RequirePermission({ resource, action, children }: RequirePermiss
   }
 
   if (!allowed) {
+    toast({
+      title: "Access Denied",
+      description: `You need '${action}' permission on '${resource}' to access this page. Please contact an administrator.`,
+      variant: "destructive",
+    });
     return <Navigate to="/" replace />;
   }
 
