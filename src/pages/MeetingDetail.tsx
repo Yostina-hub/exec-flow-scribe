@@ -53,6 +53,9 @@ import { ParticipantDashboard } from "@/components/ParticipantDashboard";
 import { SpeakerQueue } from "@/components/SpeakerQueue";
 import { AutoAssignmentControls } from "@/components/AutoAssignmentControls";
 import { MeetingAnalytics } from "@/components/MeetingAnalytics";
+import { RealTimePresence } from "@/components/RealTimePresence";
+import { RecordingConsentDialog } from "@/components/RecordingConsentDialog";
+import { AuditLogViewer } from "@/components/AuditLogViewer";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,7 +134,9 @@ const MeetingDetail = () => {
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
   const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
   const [userId, setUserId] = useState<string>("");
+  const [userFullName, setUserFullName] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
@@ -155,6 +160,31 @@ const [wasRecording, setWasRecording] = useState(false);
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
+        
+        // Get user's full name
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        
+        if (profile) {
+          setUserFullName(profile.full_name || "User");
+        }
+        
+        // Check if meeting requires consent and user hasn't given it yet
+        if (id) {
+          const { data: consent } = await supabase
+            .from("recording_consents")
+            .select("consent_given")
+            .eq("meeting_id", id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          
+          if (!consent?.consent_given) {
+            setShowConsentDialog(true);
+          }
+        }
       }
     };
     getUser();
@@ -501,7 +531,7 @@ const [wasRecording, setWasRecording] = useState(false);
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
             <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
-              <TabsList className="grid w-full grid-cols-9">
+              <TabsList className="grid w-full grid-cols-10">
                 {isOnlineMeeting && hasVideoLink && (
                   <TabsTrigger value="video">Video Call</TabsTrigger>
                 )}
@@ -511,6 +541,7 @@ const [wasRecording, setWasRecording] = useState(false);
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                <TabsTrigger value="audit">Audit Log</TabsTrigger>
                 <TabsTrigger value="chat">Chat</TabsTrigger>
                 <TabsTrigger value="signatures">Signatures & Audio</TabsTrigger>
               </TabsList>
@@ -564,6 +595,13 @@ const [wasRecording, setWasRecording] = useState(false);
 
               <TabsContent value="participants" className="space-y-4">
                 <div className="space-y-4">
+                  {userId && userFullName && (
+                    <RealTimePresence
+                      meetingId={meetingId}
+                      currentUserId={userId}
+                      currentUserName={userFullName}
+                    />
+                  )}
                   {meeting?.created_by === userId && (
                     <AutoAssignmentControls
                       meetingId={meetingId}
@@ -677,6 +715,10 @@ const [wasRecording, setWasRecording] = useState(false);
 
               <TabsContent value="analytics" className="space-y-4">
                 <MeetingAnalytics meetingId={meetingId} />
+              </TabsContent>
+
+              <TabsContent value="audit" className="space-y-4">
+                <AuditLogViewer meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="chat" className="space-y-4">
@@ -854,6 +896,15 @@ const [wasRecording, setWasRecording] = useState(false);
             meetingDate={meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}
             meetingTime={meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
             videoConferenceUrl={meeting.video_conference_url}
+          />
+        )}
+        
+        {userId && id && (
+          <RecordingConsentDialog
+            meetingId={id}
+            userId={userId}
+            open={showConsentDialog}
+            onOpenChange={setShowConsentDialog}
           />
         )}
       </div>

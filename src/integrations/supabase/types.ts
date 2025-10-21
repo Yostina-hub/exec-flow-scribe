@@ -209,6 +209,50 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action_details: Json | null
+          action_type: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          meeting_id: string | null
+          timestamp: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action_details?: Json | null
+          action_type: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          meeting_id?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action_details?: Json | null
+          action_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          meeting_id?: string | null
+          timestamp?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brand_kits: {
         Row: {
           color_accent: string | null
@@ -256,6 +300,94 @@ export type Database = {
           watermark_text?: string | null
         }
         Relationships: []
+      }
+      breakout_room_assignments: {
+        Row: {
+          assigned_at: string
+          breakout_room_id: string
+          created_at: string
+          id: string
+          joined_at: string | null
+          left_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          breakout_room_id: string
+          created_at?: string
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_at?: string
+          breakout_room_id?: string
+          created_at?: string
+          id?: string
+          joined_at?: string | null
+          left_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breakout_room_assignments_breakout_room_id_fkey"
+            columns: ["breakout_room_id"]
+            isOneToOne: false
+            referencedRelation: "breakout_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      breakout_rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          duration_minutes: number | null
+          ended_at: string | null
+          id: string
+          meeting_id: string
+          room_name: string
+          room_number: number
+          started_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          meeting_id: string
+          room_name: string
+          room_number: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          duration_minutes?: number | null
+          ended_at?: string | null
+          id?: string
+          meeting_id?: string
+          room_name?: string
+          room_number?: number
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "breakout_rooms_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       call_logs: {
         Row: {
@@ -1861,6 +1993,54 @@ export type Database = {
           },
         ]
       }
+      meeting_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          default_agenda: Json | null
+          default_attendee_roles: Json | null
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          is_public: boolean | null
+          meeting_settings: Json | null
+          name: string
+          template_type: string | null
+          updated_at: string
+          use_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          default_agenda?: Json | null
+          default_attendee_roles?: Json | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_public?: boolean | null
+          meeting_settings?: Json | null
+          name: string
+          template_type?: string | null
+          updated_at?: string
+          use_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          default_agenda?: Json | null
+          default_attendee_roles?: Json | null
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          is_public?: boolean | null
+          meeting_settings?: Json | null
+          name?: string
+          template_type?: string | null
+          updated_at?: string
+          use_count?: number | null
+        }
+        Relationships: []
+      }
       meetings: {
         Row: {
           briefing_pack_url: string | null
@@ -2190,6 +2370,63 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          email_enabled: boolean | null
+          id: string
+          notify_action_assigned: boolean | null
+          notify_action_due: boolean | null
+          notify_hand_raised: boolean | null
+          notify_meeting_reminder_minutes: number | null
+          notify_meeting_start: boolean | null
+          notify_mention: boolean | null
+          notify_mic_granted: boolean | null
+          push_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          sms_enabled: boolean | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email_enabled?: boolean | null
+          id?: string
+          notify_action_assigned?: boolean | null
+          notify_action_due?: boolean | null
+          notify_hand_raised?: boolean | null
+          notify_meeting_reminder_minutes?: number | null
+          notify_meeting_start?: boolean | null
+          notify_mention?: boolean | null
+          notify_mic_granted?: boolean | null
+          push_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sms_enabled?: boolean | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email_enabled?: boolean | null
+          id?: string
+          notify_action_assigned?: boolean | null
+          notify_action_due?: boolean | null
+          notify_hand_raised?: boolean | null
+          notify_meeting_reminder_minutes?: number | null
+          notify_meeting_start?: boolean | null
+          notify_mention?: boolean | null
+          notify_mic_granted?: boolean | null
+          push_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          sms_enabled?: boolean | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       outcome_simulations: {
         Row: {
           assumptions: Json
@@ -2414,6 +2651,53 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      recording_consents: {
+        Row: {
+          consent_given: boolean
+          consent_timestamp: string
+          consent_version: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          meeting_id: string
+          updated_at: string
+          user_id: string
+          withdrawal_timestamp: string | null
+        }
+        Insert: {
+          consent_given?: boolean
+          consent_timestamp?: string
+          consent_version?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          meeting_id: string
+          updated_at?: string
+          user_id: string
+          withdrawal_timestamp?: string | null
+        }
+        Update: {
+          consent_given?: boolean
+          consent_timestamp?: string
+          consent_version?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          meeting_id?: string
+          updated_at?: string
+          user_id?: string
+          withdrawal_timestamp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recording_consents_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recurrence_rules: {
         Row: {
