@@ -185,9 +185,17 @@ try {
       ?.map((d: any) => `- ${d.decision_text}`)
       .join("\n") || "";
 
-    // Create language-specific instructions
+    // Create language-specific instructions with STRICT fidelity requirements
     const languageInstruction = detectedLang === 'am'
       ? `\n\n═══ CRITICAL AMHARIC WRITING REQUIREMENTS ═══
+
+🚫 ABSOLUTE FIDELITY RULE - READ CAREFULLY:
+• ONLY summarize information EXPLICITLY STATED in the transcript above
+• DO NOT add information, assumptions, or general knowledge
+• DO NOT make up decisions, action items, or discussions not in the transcript
+• If the transcript is empty or unclear, state that clearly
+• EVERY point in your summary MUST trace back to specific words in the transcript
+• When in doubt, omit rather than fabricate
 
 LANGUAGE & SCRIPT:
 • Write ENTIRELY in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
@@ -225,16 +233,32 @@ Example heading structure:
 ## የተወሰኑ ውሳኔዎች
 ## የተግባር እቅዶች`
       : detectedLang === 'ar'
-      ? `\n\nCRITICAL LANGUAGE REQUIREMENT - ARABIC:
+      ? `\n\n🚫 ABSOLUTE FIDELITY RULE:
+ONLY summarize information EXPLICITLY in the transcript. DO NOT add assumptions or external information.
+
+CRITICAL LANGUAGE REQUIREMENT - ARABIC:
 Generate the minutes in ARABIC using Arabic script.
 Never use Latin letters or romanization.`
-      : `\n\nGenerate the minutes in the SAME LANGUAGE as the transcript.
+      : `\n\n🚫 ABSOLUTE FIDELITY RULE:
+ONLY summarize information EXPLICITLY stated in the transcript above.
+DO NOT add information, assumptions, or content not in the transcript.
+
+Generate the minutes in the SAME LANGUAGE as the transcript.
 If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
 Never romanize or transliterate non-Latin scripts.`;
 
 // Generate minutes using selected AI provider
-    const prompt = `You are an executive assistant tasked with generating professional meeting minutes.
+    const prompt = `🎯 YOUR MISSION: Generate accurate meeting minutes that reflect ONLY what was actually discussed.
 
+⚠️ CRITICAL FIDELITY RULES - YOU MUST FOLLOW:
+1. ONLY include information EXPLICITLY stated in the transcript below
+2. DO NOT add assumptions, external knowledge, or fabricated content
+3. DO NOT invent discussions, decisions, or action items not in the transcript
+4. If information is missing or unclear, acknowledge it rather than making it up
+5. Every statement in your summary must trace back to specific words in the transcript
+6. When in doubt: OMIT rather than FABRICATE
+
+📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
 Duration (scheduled): ${Math.round(
@@ -244,25 +268,25 @@ Duration (scheduled): ${Math.round(
     )} minutes
 ${recordingSeconds !== null ? `Recording Time: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
 
-Agenda Items:
-${agendaList}
+📝 PLANNED AGENDA:
+${agendaList || 'No agenda items'}
 
-Full Transcript:
-${fullTranscript}
+🗣️ ACTUAL TRANSCRIPT (YOUR ONLY SOURCE OF TRUTH):
+${fullTranscript || 'No transcript available'}
 
-Decisions Made:
-${decisionsList}
+✅ RECORDED DECISIONS:
+${decisionsList || 'No decisions recorded'}
 
-${noTranscript ? `NOTE: Transcript not available. Generate a clear draft based on agenda, meeting metadata, and any decisions. Add a disclaimer at the top.` : ``}
+${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
-Please generate comprehensive meeting minutes with these sections:
-1. የስብሰባ ማጠቃለያ (Executive Summary) - 2-3 well-formed sentences
-2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - organized by agenda item
-3. የተወሰኑ ውሳኔዎች (Decisions Made) - clear, actionable decisions
-4. የተግባር እቅዶች (Action Items) - with assigned responsibilities
-5. ቀጣይ እርምጃዎች (Next Steps) - follow-up items
+📊 REQUIRED SECTIONS (only include if information exists in transcript):
+1. የስብሰባ ማጠቃለያ (Executive Summary) - 2-3 sentences based ONLY on transcript
+2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - ONLY topics actually discussed
+3. የተወሰኑ ውሳኔዎች (Decisions Made) - ONLY decisions explicitly stated
+4. የተግባር እቅዶች (Action Items) - ONLY actions explicitly mentioned
+5. ቀጣይ እርምጃዎች (Next Steps) - ONLY if mentioned in transcript
 
-${detectedLang === 'am' ? 'CRITICAL: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas. Use ፦ before lists.' : ''}
+${detectedLang === 'am' ? '✍️ CRITICAL: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas. Use ፦ before lists. Write in formal Amharic using SOV structure.' : ''}
 
 Format as a professional markdown document.${languageInstruction}`;
 
@@ -285,8 +309,23 @@ Format as a professional markdown document.${languageInstruction}`;
                   parts: [
                     {
                       text: detectedLang === 'am' 
-                        ? `You are a professional meeting minutes generator with expert-level proficiency in Amharic business writing. You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon). Every sentence MUST end with ። Use Subject-Object-Verb (SOV) word order. Write in Geez script exclusively - NEVER use Latin script.\n\n${prompt}`
-                        : `You are a professional meeting minutes generator. Preserve the transcript language and script exactly.\n\n${prompt}`
+                        ? `You are a professional meeting minutes generator with expert-level proficiency in Amharic business writing.
+
+🚫 ABSOLUTE RULE: You MUST ONLY summarize what is EXPLICITLY in the transcript. DO NOT hallucinate, assume, or add information not present.
+
+Amharic Requirements:
+• Use proper Ethiopian punctuation: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon)
+• Every sentence MUST end with ።
+• Use Subject-Object-Verb (SOV) word order
+• Write in Ge'ez script exclusively - NEVER use Latin script
+• Use formal business vocabulary
+
+\n\n${prompt}`
+                        : `You are a professional meeting minutes generator. 
+
+🚫 ABSOLUTE RULE: You MUST ONLY summarize what is EXPLICITLY in the transcript. DO NOT hallucinate, assume, or add information not present.
+
+Preserve the transcript language and script exactly.\n\n${prompt}`
                     }
                   ]
                 }
@@ -341,6 +380,15 @@ Format as a professional markdown document.${languageInstruction}`;
                   role: "system", 
                   content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
 
+🚫 CRITICAL FIDELITY REQUIREMENT:
+Your PRIMARY obligation is ACCURACY and FIDELITY to source material. You MUST:
+• ONLY include information EXPLICITLY stated in the provided transcript
+• NEVER add assumptions, external knowledge, or fabricated content
+• NEVER invent discussions, decisions, or action items not in the transcript
+• If information is unclear or missing, acknowledge it honestly
+• Every point in your summary must trace back to specific text in the transcript
+• When in doubt: OMIT rather than FABRICATE
+
 ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
 • You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
 • You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
@@ -348,7 +396,8 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
 • Use Subject-Object-Verb (SOV) word order
 • Use professional honorifics and business terminology
 • Write in Ge'ez script exclusively - NEVER use Latin script or romanization
-• Maintain formal tone and proper grammatical structure` : 'Preserve the transcript language and script exactly. Never romanize or transliterate.'}` 
+• Maintain formal tone and proper grammatical structure
+• BUT MOST IMPORTANTLY: Only summarize what was actually said in Amharic in the transcript` : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is explicitly in the transcript.'}` 
                 },
                 { role: "user", content: prompt },
               ],
@@ -395,8 +444,11 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
             body: JSON.stringify({
               model: "gpt-4o-mini",
               messages: [
-                { role: "system", content: `You are a professional meeting minutes generator specializing in multilingual documentation. 
-${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing. You MUST use proper Ethiopian punctuation (። ፣ ፤ ፦) consistently. End every sentence with ። Use formal vocabulary and proper SOV sentence structure. Never use Latin script or romanization.' : 'Preserve the transcript language and script exactly. Never romanize or transliterate.'}` },
+                { role: "system", content: `You are a professional meeting minutes generator specializing in multilingual documentation.
+
+🚫 CRITICAL: You MUST ONLY summarize information EXPLICITLY in the transcript. DO NOT add assumptions, external knowledge, or fabricated content. Every point must trace back to the source.
+
+${detectedLang === 'am' ? 'You are an expert in formal Amharic business writing. You MUST use proper Ethiopian punctuation (። ፣ ፤ ፦) consistently. End every sentence with ። Use formal vocabulary and proper SOV sentence structure. Never use Latin script or romanization. ONLY summarize what is actually in the Amharic transcript.' : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is in the transcript.'}` },
                 { role: "user", content: prompt },
               ],
               temperature: 0.7,
