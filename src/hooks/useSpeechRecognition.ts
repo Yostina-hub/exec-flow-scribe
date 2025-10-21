@@ -28,6 +28,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>('');
+  const shouldBeListeningRef = useRef(false);
+  const keepAliveIntervalRef = useRef<number | null>(null);
 
   // Check if browser supports speech recognition
   const isSupported = typeof window !== 'undefined' && 
@@ -47,6 +49,18 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Speech recognition started');
       setIsListening(true);
       setError(null);
+      // Keep-alive: Chrome auto-stops after ~60s; force restart via onend
+      if (keepAliveIntervalRef.current) {
+        clearInterval(keepAliveIntervalRef.current);
+        keepAliveIntervalRef.current = null;
+      }
+      keepAliveIntervalRef.current = window.setInterval(() => {
+        if (shouldBeListeningRef.current) {
+          try {
+            recognition.stop(); // onend will trigger and auto-restart
+          } catch {}
+        }
+      }, 55000);
     };
 
     recognition.onresult = (event: any) => {
@@ -68,22 +82,34 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
     recognition.onerror = (event: any) => {
       console.error('Speech recognition error:', event.error);
-      setError(event.error);
+      let msg: string | null = null;
       if (event.error === 'no-speech') {
-        setError('No speech detected. Please try again.');
+        msg = 'No speech detected. Trying again...';
       } else if (event.error === 'audio-capture') {
-        setError('Microphone not found. Please check your microphone.');
+        msg = 'Microphone not found. Please check your microphone.';
       } else if (event.error === 'not-allowed') {
-        setError('Microphone permission denied. Please allow microphone access.');
+        msg = 'Microphone permission denied. Please allow microphone access.';
+      } else if (event.error === 'network') {
+        msg = 'Network issue. Trying to reconnect...';
+      }
+      if (msg) setError(msg);
+      // Auto-restart on recoverable errors
+      const recoverable = ['no-speech', 'network', 'aborted'].includes(event.error);
+      if (recoverable && shouldBeListeningRef.current) {
+        setTimeout(() => {
+          try {
+            recognitionRef.current?.start();
+          } catch (err) {
+            console.error('Error restarting after error:', err);
+          }
+        }, 300);
       }
     };
 
     recognition.onend = () => {
       console.log('Speech recognition ended');
       setIsListening(false);
-      
-      // Auto-restart if we should still be listening (browser stopped due to silence)
-      if (shouldBeListening) {
+      if (shouldBeListeningRef.current) {
         console.log('Auto-restarting speech recognition...');
         setTimeout(() => {
           try {
@@ -91,7 +117,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
           } catch (err) {
             console.error('Error restarting recognition:', err);
           }
-        }, 100);
+        }, 150);
       }
     };
 
@@ -99,10 +125,14 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
     return () => {
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
+        try { recognitionRef.current.stop(); } catch {}
+      }
+      if (keepAliveIntervalRef.current) {
+        clearInterval(keepAliveIntervalRef.current);
+        keepAliveIntervalRef.current = null;
       }
     };
-  }, [isSupported, language, shouldBeListening]);
+  }, [isSupported, language]);
 
   const startListening = useCallback((lang?: string) => {
     if (!isSupported) {
@@ -117,6 +147,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
     console.log('startListening called with language:', lang || language);
     setShouldBeListening(true);
+    shouldBeListeningRef.current = true;
     try {
       if (recognitionRef.current) {
         console.log('Starting speech recognition...');
@@ -138,6 +169,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
   const stopListening = useCallback(() => {
     setShouldBeListening(false);
+    shouldBeListeningRef.current = false;
+    if (keepAliveIntervalRef.current) {
+      clearInterval(keepAliveIntervalRef.current);
+      keepAliveIntervalRef.current = null;
+    }
     try {
       recognitionRef.current?.stop();
     } catch (err) {
