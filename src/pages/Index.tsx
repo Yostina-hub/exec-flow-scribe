@@ -197,13 +197,7 @@ export default function Index() {
   // Calculate dates with meetings for calendar
   const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
-  // Redirect guests to their dedicated dashboard
-  useEffect(() => {
-    if (!guestLoading && isGuest) {
-      navigate("/guest");
-    }
-  }, [isGuest, guestLoading, navigate]);
-
+  
   if (loading || guestLoading) {
     return (
       <Layout>
@@ -212,6 +206,7 @@ export default function Index() {
         </div>
       </Layout>
     );
+  }
   }
 
   return (
