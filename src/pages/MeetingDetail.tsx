@@ -300,27 +300,9 @@ const MeetingDetail = () => {
           // Add a delay to ensure all transcriptions are saved
           await new Promise(resolve => setTimeout(resolve, 3000));
 
-          // If there is no transcript yet, skip auto-generation
-          const { count: txCount, error: txErr } = await supabase
-            .from('transcriptions')
-            .select('id', { count: 'exact', head: true })
-            .eq('meeting_id', meetingId);
-
-          console.log('Transcription count:', txCount);
-
-          if (txErr) {
-            console.warn('Could not count transcriptions:', txErr);
-          }
-
-          if (!txErr && (txCount ?? 0) === 0) {
-            console.log('No transcriptions found, skipping auto-generation');
-            toast({
-              title: 'No transcript yet',
-              description: 'Minutes will generate once speech is captured.',
-            });
-            setIsAutoGenerating(false);
-            return;
-          }
+          // Proceed without client-side transcript existence check.
+          // Server function will validate availability of transcripts and handle messaging.
+          console.log('Skipping client transcript count; delegating check to generate-minutes');
 
           // Auto-save meeting status
           if (id) {
