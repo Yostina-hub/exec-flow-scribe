@@ -67,12 +67,66 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
   };
 
   return (
-    <div className="h-full flex flex-col gap-0 border-0">
-      {/* Summary Section */}
-      <div className="flex-1 overflow-hidden">
-        <Card className="p-0 h-full flex flex-col border-0 bg-muted/30">
-          <ScrollArea className="flex-1 px-6">
-            <div className="space-y-6 py-6">
+    <Card className="p-0 h-full flex flex-col border-0 bg-muted/30">
+      {/* Chat Input Section - Now at Top */}
+      <div className="shrink-0 border-b border-border/50 bg-card/50">
+        <div className="px-6 py-5 space-y-4">
+          <div className="flex gap-3">
+            <Input
+              placeholder="Start typing..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
+              disabled={isLoading || sourceIds.length === 0}
+              className="flex-1 bg-background border-border/50 rounded-full px-5 h-12 text-base"
+            />
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                {sourceIds.length} source{sourceIds.length !== 1 ? 's' : ''}
+              </span>
+              <Button 
+                onClick={sendMessage} 
+                disabled={isLoading || !input.trim() || sourceIds.length === 0}
+                size="icon"
+                className="shrink-0 rounded-full h-12 w-12"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+
+          {messages.length === 0 && sourceIds.length > 0 && (
+            <div className="grid grid-cols-1 gap-3">
+              <button
+                onClick={() => setInput("What are the key insights from these sources?")}
+                className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"
+              >
+                What are the key insights from these sources?
+              </button>
+              <button
+                onClick={() => setInput("Summarize the main points")}
+                className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"
+              >
+                Summarize the main points
+              </button>
+            </div>
+          )}
+
+          <div className="text-xs text-muted-foreground text-center pt-1">
+            AI can be inaccurate; please double check its responses.
+          </div>
+        </div>
+      </div>
+
+      {/* Messages Section - Now Below Input */}
+      <ScrollArea className="flex-1 px-6">
+        <div className="space-y-6 py-6">
+          {messages.length === 0 ? (
+            <div className="text-center text-muted-foreground py-12">
+              <p className="text-sm">Your conversation will appear here</p>
+            </div>
+          ) : (
+            <>
               {messages.map((msg, idx) => (
                 <div key={idx} className="space-y-3">
                   {msg.role === "user" && (
@@ -128,60 +182,10 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
                   <span className="text-sm">Thinking...</span>
                 </div>
               )}
-            </div>
-          </ScrollArea>
-        </Card>
-      </div>
-
-      {/* Chat Input Section */}
-      <div className="shrink-0 border-t border-border/50 bg-card/50">
-        <div className="px-6 py-5 space-y-4">
-          {messages.length === 0 && sourceIds.length > 0 && (
-            <div className="grid grid-cols-1 gap-3">
-              <button
-                onClick={() => setInput("What are the key insights from these sources?")}
-                className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"
-              >
-                What are the key insights from these sources?
-              </button>
-              <button
-                onClick={() => setInput("Summarize the main points")}
-                className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"
-              >
-                Summarize the main points
-              </button>
-            </div>
+            </>
           )}
-          
-          <div className="flex gap-3">
-            <Input
-              placeholder="Start typing..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
-              disabled={isLoading || sourceIds.length === 0}
-              className="flex-1 bg-background border-border/50 rounded-full px-5 h-12 text-base"
-            />
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {sourceIds.length} source{sourceIds.length !== 1 ? 's' : ''}
-              </span>
-              <Button 
-                onClick={sendMessage} 
-                disabled={isLoading || !input.trim() || sourceIds.length === 0}
-                size="icon"
-                className="shrink-0 rounded-full h-12 w-12"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="text-xs text-muted-foreground text-center pt-1">
-            AI can be inaccurate; please double check its responses.
-          </div>
         </div>
-      </div>
-    </div>
+      </ScrollArea>
+    </Card>
   );
 };
