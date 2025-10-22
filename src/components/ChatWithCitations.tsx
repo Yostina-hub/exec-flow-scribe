@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, FileText } from "lucide-react";
+import { Loader2, Send, FileText, Copy, ThumbsUp, ThumbsDown } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
@@ -88,35 +88,63 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
               <p className="text-base">Ask questions about your sources and get answers with citations</p>
             </div>
           ) : (
-            messages.map((msg, idx) => (
-              <div key={idx} className={`space-y-2 ${msg.role === "user" ? "text-right" : ""}`}>
-                <div className={`inline-block max-w-[85%] px-4 py-3 rounded-2xl ${
-                  msg.role === "user" 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted/60"
-                }`}>
-                  <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown>{msg.content}</ReactMarkdown>
-                  </div>
+            <>
+              {messages.map((msg, idx) => (
+                <div key={idx} className="space-y-3">
+                  {msg.role === "user" && (
+                    <div className="text-sm text-muted-foreground">
+                      • {msg.content}
+                    </div>
+                  )}
+                  
+                  {msg.role === "assistant" && (
+                    <div className="space-y-4">
+                      <ScrollArea className="max-h-[400px] pr-4">
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      </ScrollArea>
+                      
+                      {msg.sources && msg.sources.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {msg.sources.map((source, srcIdx) => (
+                            <Badge key={srcIdx} variant="outline" className="text-xs">
+                              {source.title}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <div className="flex items-center gap-3 pt-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="gap-2 text-sm"
+                        >
+                          <FileText className="h-4 w-4" />
+                          Save to note
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <ThumbsUp className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <ThumbsDown className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                
-                {msg.sources && msg.sources.length > 0 && (
-                  <div className="flex flex-wrap gap-2 justify-start">
-                    {msg.sources.map((source, srcIdx) => (
-                      <Badge key={srcIdx} variant="outline" className="text-xs">
-                        {source.title}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-          {isLoading && (
-            <div className="flex items-center gap-2 text-muted-foreground py-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span className="text-sm">Thinking...</span>
-            </div>
+              ))}
+              {isLoading && (
+                <div className="flex items-center gap-2 text-muted-foreground py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="text-sm">Thinking...</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>
