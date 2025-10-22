@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power, Square } from 'lucide-react';
 import * as THREE from 'three';
 import { LiveTranscription } from './LiveTranscription';
+import { BrowserSpeechRecognition } from './BrowserSpeechRecognition';
 import { useNavigate } from 'react-router-dom';
 
 interface VirtualMeetingRoomProps {
@@ -649,6 +650,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
   const [handRaised, setHandRaised] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [meetingDuration, setMeetingDuration] = useState(0);
   const [realTimeMetrics, setRealTimeMetrics] = useState({
     engagement: 85,
@@ -736,16 +738,25 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
       .single();
     
     setMeeting(meetingData);
-    // Auto-start recording for any meeting (force transcription on)
+    // Auto-start recording for any meeting that isn't completed
     const status: string | undefined = meetingData?.status;
     const shouldRecord = status !== 'completed';
-    setIsRecording(shouldRecord);
+    
+    console.log('VirtualRoom: Auto-start recording?', { status, shouldRecord });
+    
+    if (shouldRecord && !isRecording) {
+      setIsRecording(true);
+      console.log('VirtualRoom: Recording auto-started');
+    }
     
     // Update meeting status to in_progress if it's scheduled
     if (status === 'scheduled') {
       await supabase
         .from('meetings')
-        .update({ status: 'in_progress' })
+        .update({ 
+          status: 'in_progress',
+          actual_start_time: new Date().toISOString()
+        })
         .eq('id', meetingId);
     }
 
@@ -858,7 +869,10 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
   const handleEndMeeting = async () => {
     if (!isHost) return;
     try {
+      // Stop recording first
+      console.log('VirtualRoom: Stopping recording...');
       setIsRecording(false);
+      setIsPaused(false);
       
       // Mark meeting completed
       await supabase
@@ -874,7 +888,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
         description: 'Processing recording and generating minutes...'
       });
 
-      // Wait for transcriptions to be saved
+      // Wait for transcriptions to be saved (BrowserSpeechRecognition saves them)
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Check if we have transcriptions
@@ -986,15 +1000,14 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
           <Button
             variant={isRecording ? "destructive" : "default"}
             className="gap-2"
-            onClick={async () => {
+            onClick={() => {
               const newState = !isRecording;
               setIsRecording(newState);
-              if (!newState) {
-                setRecordingTime(0); // Reset timer when stopping
-              }
+              setIsPaused(false);
+              console.log('VirtualRoom: Recording toggled:', newState);
               toast({
                 title: newState ? 'Recording Started' : 'Recording Stopped',
-                description: newState ? 'Transcription is active' : 'Transcription stopped'
+                description: newState ? 'Live transcription is active' : 'Recording saved'
               });
             }}
           >
@@ -1010,6 +1023,25 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
               </>
             )}
           </Button>
+
+          {/* Pause/Resume Button - only show when recording */}
+          {isRecording && (
+            <Button
+              variant="secondary"
+              className="gap-2"
+              onClick={() => {
+                const newPauseState = !isPaused;
+                setIsPaused(newPauseState);
+                console.log('VirtualRoom: Recording paused:', newPauseState);
+                toast({
+                  title: newPauseState ? 'Recording Paused' : 'Recording Resumed',
+                  description: newPauseState ? 'Transcription paused' : 'Transcription resumed'
+                });
+              }}
+            >
+              {isPaused ? 'Resume' : 'Pause'}
+            </Button>
+          )}
 
           <Button
             variant={isMuted ? "destructive" : "secondary"}
@@ -1379,7 +1411,20 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
             </TabsContent>
 
             <TabsContent value="transcription" className="flex-1 overflow-hidden p-4">
-              <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+              <div className="space-y-4">
+                {/* Hidden BrowserSpeechRecognition component that handles actual recording */}
+                <div className="hidden">
+                  <BrowserSpeechRecognition
+                    meetingId={meetingId}
+                    externalIsRecording={isRecording}
+                    isPaused={isPaused}
+                    onDurationChange={(seconds) => setRecordingTime(seconds)}
+                  />
+                </div>
+                
+                {/* Display live transcription */}
+                <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+              </div>
             </TabsContent>
           </Tabs>
         </Card>
