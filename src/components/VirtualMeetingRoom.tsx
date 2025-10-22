@@ -744,14 +744,29 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         leftPresences.forEach((presence: any) => {
-          const participant = participants.find(p => p.user_id === presence.user_id);
-          const name = participant?.profiles?.full_name || 'Someone';
-          soundFX.playLeave();
-          toast({
-            title: 'Participant Left',
-            description: `${name} left the meeting`,
-            variant: 'destructive',
-          });
+          const userId = presence.user_id;
+          
+          // Don't show toast for self or temporary disconnections
+          if (userId === currentUserId) return;
+          
+          // Wait 3 seconds to confirm they really left (not just network hiccup)
+          setTimeout(() => {
+            const state = presenceChannel.presenceState();
+            const stillGone = !Object.keys(state).some(stateKey => 
+              state[stateKey].some((p: any) => p.user_id === userId)
+            );
+            
+            if (stillGone) {
+              const participant = participants.find(p => p.user_id === userId);
+              const name = participant?.profiles?.full_name || 'Someone';
+              soundFX.playLeave();
+              toast({
+                title: 'Participant Left',
+                description: `${name} left the meeting`,
+                variant: 'destructive',
+              });
+            }
+          }, 3000);
         });
       })
       .subscribe(async (status) => {
