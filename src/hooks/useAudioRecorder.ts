@@ -65,6 +65,18 @@ export const useAudioRecorder = (meetingId: string) => {
 
   const startRecording = useCallback(async () => {
     try {
+      // Update meeting status to "in_progress" when recording starts
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(meetingId)) {
+        await supabase
+          .from('meetings')
+          .update({ 
+            status: 'in_progress',
+            actual_start_time: new Date().toISOString()
+          })
+          .eq('id', meetingId);
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           sampleRate: 24000,
@@ -321,7 +333,7 @@ export const useAudioRecorder = (meetingId: string) => {
     }
   }, [normalizedMeetingId, toast]);
 
-  const stopRecording = useCallback(() => {
+  const stopRecording = useCallback(async () => {
     console.log('Stop recording called, isRecording:', isRecording);
     if (mediaRecorderRef.current && isRecording) {
       try {
@@ -332,9 +344,21 @@ export const useAudioRecorder = (meetingId: string) => {
         setIsRecording(false);
         setIsPaused(false);
         
+        // Update meeting status to "completed" when recording stops
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(meetingId)) {
+          await supabase
+            .from('meetings')
+            .update({ 
+              status: 'completed',
+              actual_end_time: new Date().toISOString()
+            })
+            .eq('id', meetingId);
+        }
+        
         toast({
           title: 'Recording stopped',
-          description: 'Transcription complete',
+          description: 'Meeting completed, generating minutes...',
         });
       } catch (e) {
         console.error('Error stopping recording:', e);
@@ -343,7 +367,7 @@ export const useAudioRecorder = (meetingId: string) => {
         setIsPaused(false);
       }
     }
-  }, [isRecording, toast]);
+  }, [isRecording, meetingId, toast]);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && isRecording && !isPaused) {
