@@ -4050,6 +4050,7 @@ export type Database = {
         Args: { _meeting_id: string; _user_id: string }
         Returns: boolean
       }
+      is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_senior_role: { Args: { _user_id: string }; Returns: boolean }
       seed_sample_data: { Args: never; Returns: undefined }
     }

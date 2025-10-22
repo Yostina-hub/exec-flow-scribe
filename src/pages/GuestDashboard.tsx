@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { GuestLayout } from "@/components/GuestLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from "react-router-dom";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { useToast } from "@/hooks/use-toast";
@@ -16,7 +17,9 @@ import {
   Loader2,
   Sparkles,
   ArrowRight,
-  MapPin
+  MapPin,
+  ShieldAlert,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -49,7 +52,7 @@ interface AvailableMeeting {
 export default function GuestDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { guestName, loading: guestLoading } = useIsGuest();
+  const { isGuest, guestName, loading: guestLoading } = useIsGuest();
   const [meetings, setMeetings] = useState<GuestMeeting[]>([]);
   const [availableMeetings, setAvailableMeetings] = useState<AvailableMeeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -225,7 +228,61 @@ export default function GuestDashboard() {
     );
   };
 
-  if (loading || guestLoading) {
+  // Check guest loading first
+  if (guestLoading) {
+    return (
+      <GuestLayout guestName={guestName}>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+          <div className="relative">
+            <Loader2 className="h-16 w-16 animate-spin text-purple-500" />
+            <div className="absolute inset-0 bg-purple-500/20 blur-2xl animate-pulse" />
+          </div>
+          <div className="text-center space-y-2 animate-fade-in">
+            <p className="text-xl font-semibold text-white">Verifying access...</p>
+            <p className="text-sm text-purple-300/60">Just a moment...</p>
+          </div>
+        </div>
+      </GuestLayout>
+    );
+  }
+
+  // If not a guest, show access denied
+  if (isGuest === false) {
+    return (
+      <GuestLayout guestName={guestName}>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+          <Card className="max-w-md border-red-500/30 bg-red-500/10 backdrop-blur-sm">
+            <CardHeader className="text-center">
+              <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-500/20 flex items-center justify-center">
+                <ShieldAlert className="h-8 w-8 text-red-400" />
+              </div>
+              <CardTitle className="text-white">Access Restricted</CardTitle>
+              <CardDescription className="text-red-200/80">
+                This dashboard is only accessible to guest users.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Alert className="border-yellow-500/30 bg-yellow-500/10">
+                <AlertCircle className="h-4 w-4 text-yellow-400" />
+                <AlertDescription className="text-white/90 text-sm">
+                  If you believe this is an error, please contact your administrator.
+                </AlertDescription>
+              </Alert>
+              <Button
+                onClick={() => navigate('/')}
+                className="w-full"
+                variant="outline"
+              >
+                Go to Main Dashboard
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </GuestLayout>
+    );
+  }
+
+  if (loading) {
     return (
       <GuestLayout guestName={guestName}>
         <div className="flex items-center justify-center min-h-[60vh]">
