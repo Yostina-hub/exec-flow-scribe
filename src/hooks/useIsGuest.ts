@@ -31,19 +31,26 @@ export function useIsGuest(meetingId?: string): GuestStatus {
         // Check if user has any approved guest access (for any meeting or specific one)
         let query = supabase
           .from('guest_access_requests')
-          .select('status, full_name')
+          .select('full_name', { count: 'exact' })
           .eq('user_id', user.id)
-          .eq('status', 'approved');
+          .eq('status', 'approved')
+          .order('created_at', { ascending: false })
+          .limit(1);
 
         if (meetingId) {
           query = query.eq('meeting_id', meetingId);
         }
 
-        const { data: guestAccess } = await query.maybeSingle();
+        const { data, count, error } = await query;
+        if (error) {
+          console.error('useIsGuest query error:', error);
+        }
+
+        const first = Array.isArray(data) && data.length > 0 ? data[0] as any : null;
 
         setGuestStatus({
-          isGuest: !!guestAccess,
-          guestName: guestAccess?.full_name || null,
+          isGuest: !!(count && count > 0) || !!first,
+          guestName: first?.full_name || null,
           loading: false,
         });
       } catch (error) {

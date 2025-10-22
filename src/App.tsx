@@ -27,6 +27,7 @@ import GuestSignup from "./pages/GuestSignup";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import DocumentViewer from "./components/DocumentViewer";
+import GuestDashboard from "./pages/GuestDashboard";
 import { Toaster } from "@/components/ui/toaster";
 
 const queryClient = new QueryClient({
@@ -60,6 +61,7 @@ const App = () => (
                 } 
               />
               <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/guest" element={<ProtectedRoute><GuestDashboard /></ProtectedRoute>} />
               <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
               <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
               <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetail /></ProtectedRoute>} />
