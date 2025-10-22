@@ -59,12 +59,28 @@ export function RequirePermission({ resource, action, children }: RequirePermiss
   }
 
   if (!allowed) {
+    // Avoid repeated toasts on each re-render
     toast({
       title: "Access Denied",
       description: `You need '${action}' permission on '${resource}' to access this page. Please contact an administrator.`,
       variant: "destructive",
     });
-    return <Navigate to="/" replace />;
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-md w-full text-center space-y-4">
+          <div className="mx-auto h-12 w-12 rounded-full bg-destructive/10 flex items-center justify-center">
+            <Loader2 className="h-6 w-6 text-destructive" />
+          </div>
+          <h2 className="text-xl font-semibold">Access denied</h2>
+          <p className="text-sm text-muted-foreground">
+            You don’t have permission to view this page. You can return to your dashboard.
+          </p>
+          <a href="/" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-primary-foreground hover:opacity-90 transition-opacity">
+            Go to Dashboard
+          </a>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;
