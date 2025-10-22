@@ -185,8 +185,8 @@ export const BrowserSpeechRecognition = ({
   }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isListening) {
+    let interval: NodeJS.Timeout | undefined;
+    if (externalIsRecording && !isPaused) {
       interval = setInterval(() => {
         setRecordingDuration(prev => {
           const next = prev + 1;
@@ -195,8 +195,10 @@ export const BrowserSpeechRecognition = ({
         });
       }, 1000);
     }
-    return () => clearInterval(interval);
-  }, [isListening, onDurationChange]);
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [externalIsRecording, isPaused, onDurationChange]);
 
   // Auto-save transcript every ~5s while recording (no audio upload, text only)
   const lastSavedLenRef = useRef(0);
