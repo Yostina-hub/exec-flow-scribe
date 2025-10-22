@@ -34,6 +34,7 @@ import {
   Sparkles,
   ListChecks,
   FileSignature,
+  Settings,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -79,6 +80,8 @@ import { format } from "date-fns";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
 import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
 import { ProtectedElement } from "@/components/ProtectedElement";
+import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
+import { HostManagementPanel } from "@/components/HostManagementPanel";
 
 interface AgendaItem {
   id: string;
@@ -154,6 +157,8 @@ const MeetingDetail = () => {
   const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
+  const [showVirtualRoom, setShowVirtualRoom] = useState(false);
+  const [showHostPanel, setShowHostPanel] = useState(false);
   const [userId, setUserId] = useState<string>("");
   const [userFullName, setUserFullName] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
@@ -411,6 +416,27 @@ const MeetingDetail = () => {
     );
   }
 
+  // Show Virtual Meeting Room
+  if (showVirtualRoom && meeting && userId) {
+    return (
+      <VirtualMeetingRoom
+        meetingId={meetingId}
+        isHost={meeting.created_by === userId}
+        currentUserId={userId}
+      />
+    );
+  }
+
+  // Show Host Management Panel
+  if (showHostPanel && meeting && userId && meeting.created_by === userId) {
+    return (
+      <HostManagementPanel
+        meetingId={meetingId}
+        onLaunchRoom={() => setShowVirtualRoom(true)}
+      />
+    );
+  }
+
   const meetingTitle = meeting?.title || "Executive Strategy Review";
   const meetingLocation = meeting?.location || "Board Room";
   const isOnlineMeeting = meeting?.meeting_type === 'online' || meeting?.meeting_type === 'hybrid';
@@ -534,6 +560,16 @@ const MeetingDetail = () => {
                       <FileSignature className="h-4 w-4 mr-2" />
                       Request Sign-Off
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowVirtualRoom(true)}>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      🌐 Launch Virtual Room
+                    </DropdownMenuItem>
+                    {meeting?.created_by === userId && (
+                      <DropdownMenuItem onClick={() => setShowHostPanel(true)}>
+                        <Settings className="h-4 w-4 mr-2" />
+                        🎛️ Host Management Panel
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import MeetingDetail from "./pages/MeetingDetail";
 import MinutesEditor from "./pages/MinutesEditor";
 import SignatureApproval from "./pages/SignatureApproval";
+import QuickParticipant from "./pages/QuickParticipant";
 import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
@@ -187,6 +188,7 @@ const App = () => (
               }
             />
             <Route path="/document" element={<DocumentViewer />} />
+            <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
