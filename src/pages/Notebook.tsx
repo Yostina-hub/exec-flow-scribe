@@ -509,7 +509,7 @@ const Notebook = () => {
               <TabsTrigger value="audio">Audio</TabsTrigger>
             </TabsList>
             <TabsContent value="studio" className="flex-1">
-              <MeetingStudioPanel selectedMeetingIds={selectedSources} />
+              <MeetingStudioPanel meetingId={selectedSources[0] || ''} />
             </TabsContent>
             <TabsContent value="study" className="flex-1">
               <StudyGuideGenerator sourceIds={selectedSources} />
@@ -518,100 +518,6 @@ const Notebook = () => {
               <AudioOverviewPlayer sourceIds={selectedSources} notebookId={currentNotebook || ''} />
             </TabsContent>
           </Tabs>
-        </div>
-          {selectedSources.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center p-8">
-              <div className="text-center space-y-6 max-w-md">
-                <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto">
-                  <MessageSquare className="h-10 w-10 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <h2 className="text-xl font-semibold">
-                    Ready to explore your sources
-                  </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    Add and select sources from the left panel to start asking questions and getting AI-powered insights
-                  </p>
-                </div>
-                <Button size="lg" onClick={() => setShowAddSourceDialog(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Your First Source
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex-1 flex flex-col">
-              <div className="border-b px-4 py-3 bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <h2 className="font-semibold text-base">
-                    {selectedSources.length === 1
-                      ? sources.find(s => s.id === selectedSources[0])?.title
-                      : `${selectedSources.length} sources selected`}
-                  </h2>
-                </div>
-                {selectedSources.length > 1 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {selectedSources.map(sourceId => {
-                      const source = sources.find(s => s.id === sourceId);
-                      return source ? (
-                        <Badge key={sourceId} variant="secondary" className="gap-1.5 py-1">
-                          {getSourceIcon(source.source_type)}
-                          <span className="text-xs font-medium">{source.title}</span>
-                        </Badge>
-                      ) : null;
-                    })}
-                  </div>
-                )}
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <MeetingChatPanel 
-                  meetingId={selectedSources[0]}
-                  sourceIds={selectedSources}
-                  sourceTitles={selectedSources.map(id => {
-                    const source = sources.find(s => s.id === id);
-                    return source ? { id: source.id, title: source.title, type: source.source_type } : null;
-                  }).filter(Boolean) as Array<{id: string; title: string; type: string}>}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Studio Panel */}
-        <div className="col-span-4 border-l flex flex-col bg-muted/20">
-          <div className="border-b px-4 py-4 bg-background/50">
-            <h2 className="font-semibold flex items-center gap-2 text-sm">
-              <Sparkles className="h-4 w-4 text-primary" />
-              AI Studio
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Generate summaries, guides, and more
-            </p>
-          </div>
-          
-          <ScrollArea className="flex-1">
-            {selectedSources.length === 0 ? (
-              <div className="flex items-center justify-center h-full p-8">
-                <div className="text-center space-y-4 max-w-sm">
-                  <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
-                    <Sparkles className="h-8 w-8 text-primary" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">
-                      AI Studio Features
-                    </p>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Select sources to generate audio overviews, study guides, executive briefings, FAQs, and timelines
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="p-4">
-                <MeetingStudioPanel meetingId={selectedSources[0]} />
-              </div>
-            )}
-          </ScrollArea>
         </div>
       </div>
 
