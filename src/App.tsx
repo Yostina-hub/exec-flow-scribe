@@ -23,6 +23,7 @@ import Notebook from "./pages/Notebook";
 import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
+import GuestSignup from "./pages/GuestSignup";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import DocumentViewer from "./components/DocumentViewer";
@@ -50,6 +51,7 @@ const App = () => (
           <>
             <Routes>
               <Route path="/auth" element={<Auth />} />
+              <Route path="/guest-signup" element={<GuestSignup />} />
               <Route 
                 path="/google-oauth-callback" 
                 element={

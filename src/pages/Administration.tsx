@@ -9,6 +9,7 @@ import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManag
 import { SystemHealthDashboard } from "@/components/admin/SystemHealthDashboard";
 import { BulkOperationsManager } from "@/components/admin/BulkOperationsManager";
 import { UserActivityMonitor } from "@/components/admin/UserActivityMonitor";
+import { GuestApprovalTab } from "@/components/admin/GuestApprovalTab";
 
 export default function Administration() {
   const [activeTab, setActiveTab] = useState("users");
@@ -55,6 +56,10 @@ export default function Administration() {
                 <History className="h-4 w-4 mr-2" />
                 Activity Monitor
               </TabsTrigger>
+              <TabsTrigger value="guests">
+                <UserCog className="h-4 w-4 mr-2" />
+                Guest Approvals
+              </TabsTrigger>
               <TabsTrigger value="automation">
                 <Activity className="h-4 w-4 mr-2" />
                 Automation
@@ -88,6 +93,10 @@ export default function Administration() {
 
           <TabsContent value="activity" className="mt-6">
             <UserActivityMonitor />
+          </TabsContent>
+
+          <TabsContent value="guests" className="mt-6">
+            <GuestApprovalTab />
           </TabsContent>
         </Tabs>
       </div>

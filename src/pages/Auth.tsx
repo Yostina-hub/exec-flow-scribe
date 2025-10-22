@@ -289,6 +289,24 @@ const Auth = () => {
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Create Account
                       </Button>
+                      
+                      <div className="relative my-4">
+                        <div className="absolute inset-0 flex items-center">
+                          <span className="w-full border-t border-gray-300" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                          <span className="bg-white px-2 text-gray-500">Or</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full h-11 lg:h-10 text-sm lg:text-base border-2 hover:bg-gray-50"
+                        onClick={() => navigate('/guest-signup')}
+                      >
+                        Request Guest Access
+                      </Button>
                     </form>
                   </TabsContent>
                 </Tabs>
