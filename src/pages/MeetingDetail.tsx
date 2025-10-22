@@ -35,6 +35,7 @@ import {
   ListChecks,
   FileSignature,
   Settings,
+  MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -755,14 +756,27 @@ const MeetingDetail = () => {
 
               <TabsContent value="transcription" className="space-y-4">
                 <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                  <BrowserSpeechRecognition 
-                    meetingId={meetingId}
-                    externalIsRecording={isRecording}
-                    isPaused={isPaused}
-                    onRecordingStart={startRecording}
-                    onRecordingStop={() => stopRecording()}
-                    onDurationChange={(s) => setRecordingSeconds(s)}
-                  />
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="h-5 w-5" />
+                        Live Transcription & Recording
+                      </CardTitle>
+                      <CardDescription>
+                        Real-time speech-to-text with speaker detection
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <BrowserSpeechRecognition 
+                        meetingId={meetingId}
+                        externalIsRecording={isRecording}
+                        isPaused={isPaused}
+                        onRecordingStart={startRecording}
+                        onRecordingStop={() => stopRecording()}
+                        onDurationChange={(s) => setRecordingSeconds(s)}
+                      />
+                    </CardContent>
+                  </Card>
                   <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
                 </ProtectedElement>
               </TabsContent>

@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power, Square } from 'lucide-react';
 import * as THREE from 'three';
 import { LiveTranscription } from './LiveTranscription';
 import { useNavigate } from 'react-router-dom';
@@ -736,9 +736,18 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
       .single();
     
     setMeeting(meetingData);
-    // Auto-start recording for any meeting that isn't completed yet
+    // Auto-start recording for any meeting (force transcription on)
     const status: string | undefined = meetingData?.status;
-    setIsRecording(status ? status !== 'completed' : true);
+    const shouldRecord = status !== 'completed';
+    setIsRecording(shouldRecord);
+    
+    // Update meeting status to in_progress if it's scheduled
+    if (status === 'scheduled') {
+      await supabase
+        .from('meetings')
+        .update({ status: 'in_progress' })
+        .eq('id', meetingId);
+    }
 
     const { data: agendaData } = await supabase
       .from('agenda_items')
@@ -919,6 +928,35 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
         </div>
         
         <div className="flex items-center gap-2">
+          {/* Recording Toggle */}
+          <Button
+            variant={isRecording ? "destructive" : "default"}
+            className="gap-2"
+            onClick={async () => {
+              const newState = !isRecording;
+              setIsRecording(newState);
+              if (!newState) {
+                setRecordingTime(0); // Reset timer when stopping
+              }
+              toast({
+                title: newState ? 'Recording Started' : 'Recording Stopped',
+                description: newState ? 'Transcription is active' : 'Transcription stopped'
+              });
+            }}
+          >
+            {isRecording ? (
+              <>
+                <Square className="h-4 w-4 animate-pulse" />
+                Stop Recording
+              </>
+            ) : (
+              <>
+                <Mic className="h-4 w-4" />
+                Start Recording
+              </>
+            )}
+          </Button>
+
           <Button
             variant={isMuted ? "destructive" : "secondary"}
             size="icon"
