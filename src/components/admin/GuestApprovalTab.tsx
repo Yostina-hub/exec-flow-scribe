@@ -106,6 +106,7 @@ export function GuestApprovalTab() {
         .insert({
           meeting_id: request.meeting_id,
           user_id: request.user_id,
+          role: 'optional',
           attended: false
         });
 
