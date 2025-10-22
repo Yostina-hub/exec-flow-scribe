@@ -197,12 +197,14 @@ export class OpenAIRealtimeClient {
     onTranscript: (text: string, speaker?: string) => void,
     onError: (error: string) => void,
     onProcessingChange?: (isProcessing: boolean) => void,
-    language: string = 'auto'
+    language: string = 'auto',
+    speakerName: string = 'User'
   ) {
     this.onTranscript = onTranscript;
     this.onError = onError;
     this.onProcessingChange = onProcessingChange;
     this.sessionLanguage = language;
+    this.lastSpeaker = speakerName; // Use the actual speaker name
     this.audioEl = document.createElement("audio");
     this.audioEl.autoplay = true;
   }

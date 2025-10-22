@@ -3,7 +3,7 @@ import { OpenAIRealtimeClient } from '@/utils/openaiRealtime';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
+export const useOpenAIRealtime = (meetingId: string, enabled: boolean, speakerName: string = 'User') => {
   const [isConnected, setIsConnected] = useState(false);
   const [transcripts, setTranscripts] = useState<Array<{ text: string; speaker: string; id: string; language?: string }>>([]);
   const [rateLimited, setRateLimited] = useState(false);
@@ -108,7 +108,8 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
           handleTranscript, 
           handleError,
           (processing) => setIsProcessing(processing),
-          userLanguage
+          userLanguage,
+          speakerName
         );
         clientRef.current = client;
 

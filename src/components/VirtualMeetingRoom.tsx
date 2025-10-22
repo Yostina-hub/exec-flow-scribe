@@ -1832,7 +1832,11 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                 </div>
                 
                 {/* Display live transcription */}
-                <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+                <LiveTranscription 
+                  meetingId={meetingId} 
+                  isRecording={isRecording}
+                  currentUserName={participants.find(p => p.user_id === currentUserId)?.profiles?.full_name || 'Unknown User'}
+                />
               </div>
             </TabsContent>
           </Tabs>

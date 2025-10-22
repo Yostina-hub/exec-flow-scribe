@@ -20,6 +20,7 @@ interface Transcription {
 interface LiveTranscriptionProps {
   meetingId: string;
   isRecording: boolean;
+  currentUserName: string;
 }
 
 // Normalize meeting IDs deterministically so client/server match without localStorage
@@ -68,7 +69,7 @@ const getSpeakerColor = (speaker: string, allSpeakers: string[]): string => {
   return SPEAKER_COLOR_PALETTE[index % SPEAKER_COLOR_PALETTE.length];
 };
 
-export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionProps) => {
+export const LiveTranscription = ({ meetingId, isRecording, currentUserName }: LiveTranscriptionProps) => {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [useRealtime, setUseRealtime] = useState(false);
   const [allSpeakers, setAllSpeakers] = useState<string[]>([]);
@@ -85,7 +86,8 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
   
   const { isConnected, transcripts: realtimeTranscripts, rateLimited, isProcessing } = useOpenAIRealtime(
     normalizedId,
-    useRealtime && isRecording
+    useRealtime && isRecording,
+    currentUserName
   );
 
   // Debug logging for production

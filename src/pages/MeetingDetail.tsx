@@ -852,7 +852,11 @@ const MeetingDetail = () => {
                       />
                     </CardContent>
                   </Card>
-                  <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
+                  <LiveTranscription 
+                    meetingId={meetingId} 
+                    isRecording={isRecording}
+                    currentUserName={userFullName || 'Unknown User'}
+                  />
                 </ProtectedElement>
               </TabsContent>
 
