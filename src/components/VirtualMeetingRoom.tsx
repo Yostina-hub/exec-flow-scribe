@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power } from 'lucide-react';
 import * as THREE from 'three';
 import { LiveTranscription } from './LiveTranscription';
+import { useNavigate } from 'react-router-dom';
 
 interface VirtualMeetingRoomProps {
   meetingId: string;
@@ -184,18 +185,31 @@ function MediaScreen({ resource, position }: { resource: any, position: [number,
             )}
             
             {resource.type === 'presentation' && (
-              <iframe
-                src={resource.url}
-                title={resource.title}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                }}
-                allow="fullscreen"
-              />
+              (() => {
+                const url: string = resource.url || '';
+                const lower = url.toLowerCase();
+                const isPpt = lower.endsWith('.ppt') || lower.endsWith('.pptx');
+                const isGoogle = /docs\.google\.com\/presentation|drive\.google\.com/.test(lower);
+                const embedSrc = isPpt
+                  ? `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}`
+                  : isGoogle
+                  ? url.replace('/edit', '/preview')
+                  : url;
+                return (
+                  <iframe
+                    src={embedSrc}
+                    title={resource.title}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      border: 'none',
+                    }}
+                    allow="fullscreen"
+                  />
+                );
+              })()
             )}
-            
+
             {resource.type === 'document' && (
               <iframe
                 src={`${resource.url}#view=FitH`}
@@ -648,6 +662,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
     vipParticipants: []
   });
   const [activeSpeaker, setActiveSpeaker] = useState<any>(null);
+  const navigate = useNavigate();
 
   // Detect active speaker
   useEffect(() => {
@@ -721,7 +736,9 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
       .single();
     
     setMeeting(meetingData);
-    setIsRecording(meetingData?.status === 'in_progress');
+    // Auto-start recording for any meeting that isn't completed yet
+    const status: string | undefined = meetingData?.status;
+    setIsRecording(status ? status !== 'completed' : true);
 
     const { data: agendaData } = await supabase
       .from('agenda_items')
@@ -831,21 +848,40 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
 
   const handleEndMeeting = async () => {
     if (!isHost) return;
-    
-    await supabase
-      .from('meetings')
-      .update({ 
-        status: 'completed',
-        actual_end_time: new Date().toISOString()
-      })
-      .eq('id', meetingId);
+    try {
+      setIsRecording(false);
+      // Mark meeting completed
+      await supabase
+        .from('meetings')
+        .update({ 
+          status: 'completed',
+          actual_end_time: new Date().toISOString()
+        })
+        .eq('id', meetingId);
 
-    toast({
-      title: "Meeting Ended",
-      description: "Minutes will be generated automatically",
-    });
+      toast({
+        title: 'Meeting Ended',
+        description: 'Generating minutes...'
+      });
+
+      // Kick off automatic minutes generation using existing function
+      const { data: sessionData } = await supabase.auth.getSession();
+      await supabase.functions.invoke('generate-minutes', {
+        body: { meetingId, recordingSeconds: meetingDuration },
+        headers: sessionData?.session ? { Authorization: `Bearer ${sessionData.session.access_token}` } : undefined,
+      });
+
+      // Navigate back to meeting detail to view results
+      navigate(`/meetings/${meetingId}`);
+    } catch (e: any) {
+      console.error('End meeting failed:', e);
+      toast({
+        title: 'Failed to end meeting',
+        description: e?.message || 'Please try again',
+        variant: 'destructive'
+      });
+    }
   };
-
   return (
     <div className="h-screen w-full flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
       {/* Enhanced Top Bar with Real-Time Metrics */}
