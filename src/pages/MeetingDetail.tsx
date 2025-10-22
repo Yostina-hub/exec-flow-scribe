@@ -83,6 +83,9 @@ import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
 import { ProtectedElement } from "@/components/ProtectedElement";
 import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
 import { HostManagementPanel } from "@/components/HostManagementPanel";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import { GuestLayout } from "@/components/GuestLayout";
+import { GuestMeetingView } from "@/components/GuestMeetingView";
 
 interface AgendaItem {
   id: string;
@@ -169,11 +172,11 @@ const MeetingDetail = () => {
   const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [isGuest, setIsGuest] = useState(false);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const meetingId = id || "demo-meeting-id";
   const meetingAccess = useMeetingAccess(id);
+  const { isGuest, guestName, loading: guestLoading } = useIsGuest(id);
   const { 
     isRecording, 
     isPaused, 
@@ -198,17 +201,6 @@ const MeetingDetail = () => {
         
         if (profile) {
           setUserFullName(profile.full_name || "User");
-        }
-        
-        // Guest access detection
-        if (id) {
-          const { data: gar } = await supabase
-            .from('guest_access_requests')
-            .select('status')
-            .eq('meeting_id', id)
-            .eq('user_id', user.id)
-            .maybeSingle();
-          setIsGuest(gar?.status === 'approved');
         }
         
         // Check if meeting requires consent and user hasn't given it yet
@@ -450,7 +442,7 @@ const MeetingDetail = () => {
     }
   };
 
-  if (loading) {
+  if (loading || guestLoading) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-fade-in">
@@ -464,6 +456,15 @@ const MeetingDetail = () => {
           </div>
         </div>
       </Layout>
+    );
+  }
+
+  // Guest users get a completely different experience
+  if (isGuest && userId) {
+    return (
+      <GuestLayout guestName={guestName}>
+        <GuestMeetingView meetingId={meetingId} userId={userId} />
+      </GuestLayout>
     );
   }
 
@@ -492,33 +493,6 @@ const MeetingDetail = () => {
     );
   }
 
-  // Minimal guest view: only Join Virtual Room
-  if (isGuest && meeting && userId && meeting.created_by !== userId) {
-    return (
-      <Layout>
-        <TimeBasedAccessGuard meetingId={meetingId}>
-          <div className="max-w-3xl mx-auto mt-10">
-            <Card>
-              <CardHeader>
-                <CardTitle>{meeting?.title || 'Meeting'}</CardTitle>
-                <CardDescription>Join the virtual room to participate</CardDescription>
-              </CardHeader>
-              <CardContent className="flex items-center gap-3">
-                {isMeetingCompleted ? (
-                  <Badge variant="secondary" className="text-muted-foreground">Meeting Completed</Badge>
-                ) : (
-                  <Button className="gap-2" onClick={() => setShowVirtualRoom(true)}>
-                    <Sparkles className="h-4 w-4" />
-                    Join Virtual Room
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        </TimeBasedAccessGuard>
-      </Layout>
-    );
-  }
 
   // Show Host Management Panel
   if (showHostPanel && meeting && userId && meeting.created_by === userId) {
