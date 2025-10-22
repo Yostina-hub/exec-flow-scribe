@@ -20,7 +20,10 @@ import {
   Hand,
   Eye,
   Settings,
-  Sparkles
+  Sparkles,
+  Star,
+  Crown,
+  Lightbulb
 } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { Label } from '@/components/ui/label';
@@ -32,6 +35,13 @@ interface HostManagementPanelProps {
   onLaunchRoom: () => void;
 }
 
+interface EventSettings {
+  mode: 'standard' | 'vip' | 'conference' | 'press-briefing' | 'ceremony';
+  lighting: 'ambient' | 'spotlight' | 'dramatic' | 'festive';
+  backgroundTheme: 'corporate' | 'elegant' | 'futuristic' | 'minimal';
+  vipParticipants: string[];
+}
+
 export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementPanelProps) {
   const { toast } = useToast();
   const { isRecording, startRecording, stopRecording } = useAudioRecorder(meetingId);
@@ -41,6 +51,12 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
   const [agenda, setAgenda] = useState<any[]>([]);
   const [newAgendaItem, setNewAgendaItem] = useState({ title: '', duration: 15 });
   const [inviteEmail, setInviteEmail] = useState('');
+  const [eventSettings, setEventSettings] = useState<EventSettings>({
+    mode: 'standard',
+    lighting: 'ambient',
+    backgroundTheme: 'futuristic',
+    vipParticipants: []
+  });
 
   useEffect(() => {
     fetchAllData();
@@ -244,6 +260,46 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
     });
   };
 
+  const broadcastEventSettings = async (settings: EventSettings) => {
+    const channel = supabase.channel(`event-settings-${meetingId}`);
+    await channel.send({
+      type: 'broadcast',
+      event: 'settings-update',
+      payload: settings
+    });
+    
+    toast({
+      title: "Event Settings Updated",
+      description: "All participants will see the new settings",
+    });
+  };
+
+  const handleToggleVIP = async (userId: string) => {
+    const newVips = eventSettings.vipParticipants.includes(userId)
+      ? eventSettings.vipParticipants.filter(id => id !== userId)
+      : [...eventSettings.vipParticipants, userId];
+
+    const newSettings = {
+      ...eventSettings,
+      vipParticipants: newVips
+    };
+    
+    setEventSettings(newSettings);
+    await broadcastEventSettings(newSettings);
+  };
+
+  const handleEventModeChange = async (mode: EventSettings['mode']) => {
+    const newSettings = { ...eventSettings, mode };
+    setEventSettings(newSettings);
+    await broadcastEventSettings(newSettings);
+  };
+
+  const handleLightingChange = async (lighting: EventSettings['lighting']) => {
+    const newSettings = { ...eventSettings, lighting };
+    setEventSettings(newSettings);
+    await broadcastEventSettings(newSettings);
+  };
+
   return (
     <div className="h-screen w-full bg-background p-6 overflow-auto">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -290,13 +346,14 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
 
         {/* Main Management Tabs */}
         <Tabs defaultValue="participants" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-5 w-full">
             <TabsTrigger value="participants">Participants</TabsTrigger>
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
-            <TabsTrigger value="media">
+            <TabsTrigger value="event">
               <Sparkles className="h-4 w-4 mr-2" />
-              Media
+              Event Mode
             </TabsTrigger>
+            <TabsTrigger value="media">Media</TabsTrigger>
             <TabsTrigger value="invites">Invitations</TabsTrigger>
           </TabsList>
 
@@ -304,22 +361,49 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
             <Card>
               <CardHeader>
                 <CardTitle>Manage Participants</CardTitle>
-                <CardDescription>Control who can speak and interact</CardDescription>
+                <CardDescription>Control who can speak and designate VIPs</CardDescription>
               </CardHeader>
               <CardContent>
                 <ScrollArea className="h-[400px]">
                   <div className="space-y-3">
                     {participants.map((p) => (
                       <div key={p.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-semibold">
+                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-semibold ${
+                          eventSettings.vipParticipants.includes(p.user_id)
+                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                            : 'bg-primary text-primary-foreground'
+                        }`}>
+                          {eventSettings.vipParticipants.includes(p.user_id) && (
+                            <Crown className="absolute -top-1 -right-1 h-5 w-5 text-yellow-400" />
+                          )}
                           {p.profiles?.full_name?.[0] || '?'}
                         </div>
                         
                         <div className="flex-1">
-                          <p className="font-medium">{p.profiles?.full_name}</p>
+                          <p className="font-medium flex items-center gap-2">
+                            {p.profiles?.full_name}
+                            {eventSettings.vipParticipants.includes(p.user_id) && (
+                              <Badge variant="default" className="bg-gradient-to-r from-yellow-500 to-orange-500">
+                                <Star className="h-3 w-3 mr-1" />
+                                VIP
+                              </Badge>
+                            )}
+                          </p>
                           <p className="text-sm text-muted-foreground">{p.profiles?.email}</p>
                           <Badge variant="outline" className="mt-1">{p.role}</Badge>
                         </div>
+
+                        <Button
+                          size="sm"
+                          variant={eventSettings.vipParticipants.includes(p.user_id) ? "default" : "outline"}
+                          onClick={() => handleToggleVIP(p.user_id)}
+                          className={eventSettings.vipParticipants.includes(p.user_id) ? 
+                            'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600' : ''
+                          }
+                        >
+                          <Star className="h-4 w-4 mr-1" />
+                          {eventSettings.vipParticipants.includes(p.user_id) ? 'VIP' : 'Make VIP'}
+                        </Button>
 
                         {p.speaking_requested_at && (
                           <div className="flex gap-2">
@@ -357,6 +441,94 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
                     ))}
                   </div>
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="event">
+            <Card>
+              <CardHeader>
+                <CardTitle>Event Settings</CardTitle>
+                <CardDescription>Configure the virtual room experience</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Event Mode */}
+                <div className="space-y-3">
+                  <Label>Event Mode</Label>
+                  <Select value={eventSettings.mode} onValueChange={(v) => handleEventModeChange(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="standard">Standard Meeting</SelectItem>
+                      <SelectItem value="vip">VIP Event</SelectItem>
+                      <SelectItem value="conference">Conference</SelectItem>
+                      <SelectItem value="press-briefing">Press Briefing</SelectItem>
+                      <SelectItem value="ceremony">Ceremony</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {eventSettings.mode === 'vip' && 'Highlights VIP guests on the main stage'}
+                    {eventSettings.mode === 'conference' && 'Optimized for panel discussions'}
+                    {eventSettings.mode === 'press-briefing' && 'Professional briefing layout'}
+                    {eventSettings.mode === 'ceremony' && 'Festive atmosphere for special occasions'}
+                    {eventSettings.mode === 'standard' && 'Regular meeting layout'}
+                  </p>
+                </div>
+
+                {/* Lighting */}
+                <div className="space-y-3">
+                  <Label>Lighting Effects</Label>
+                  <Select value={eventSettings.lighting} onValueChange={(v) => handleLightingChange(v as any)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ambient">Ambient</SelectItem>
+                      <SelectItem value="spotlight">Spotlight</SelectItem>
+                      <SelectItem value="dramatic">Dramatic</SelectItem>
+                      <SelectItem value="festive">Festive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    {eventSettings.lighting === 'spotlight' && 'Focuses attention on active speaker'}
+                    {eventSettings.lighting === 'dramatic' && 'Multiple colored lights for impact'}
+                    {eventSettings.lighting === 'festive' && 'Colorful party atmosphere'}
+                    {eventSettings.lighting === 'ambient' && 'Soft, professional lighting'}
+                  </p>
+                </div>
+
+                {/* VIP Summary */}
+                <div className="space-y-3 p-4 border rounded-lg bg-muted/50">
+                  <div className="flex items-center gap-2">
+                    <Star className="h-5 w-5 text-yellow-500" />
+                    <Label>VIP Participants ({eventSettings.vipParticipants.length})</Label>
+                  </div>
+                  {eventSettings.vipParticipants.length > 0 ? (
+                    <div className="space-y-2">
+                      {eventSettings.vipParticipants.map(vipId => {
+                        const vip = participants.find(p => p.user_id === vipId);
+                        return vip ? (
+                          <div key={vipId} className="flex items-center gap-2 p-2 bg-background rounded">
+                            <Crown className="h-4 w-4 text-yellow-500" />
+                            <span className="text-sm font-medium">{vip.profiles?.full_name}</span>
+                          </div>
+                        ) : null;
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No VIP participants yet</p>
+                  )}
+                </div>
+
+                {/* Apply Button */}
+                <Button 
+                  onClick={() => broadcastEventSettings(eventSettings)}
+                  className="w-full"
+                >
+                  <Lightbulb className="h-4 w-4 mr-2" />
+                  Apply Settings to Room
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

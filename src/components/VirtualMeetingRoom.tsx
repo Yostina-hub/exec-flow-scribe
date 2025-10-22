@@ -8,13 +8,20 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb } from 'lucide-react';
 import * as THREE from 'three';
 
 interface VirtualMeetingRoomProps {
   meetingId: string;
   isHost: boolean;
   currentUserId: string;
+}
+
+interface EventSettings {
+  mode: 'standard' | 'vip' | 'conference' | 'press-briefing' | 'ceremony';
+  lighting: 'ambient' | 'spotlight' | 'dramatic' | 'festive';
+  backgroundTheme: 'corporate' | 'elegant' | 'futuristic' | 'minimal';
+  vipParticipants: string[];
 }
 
 // Particle System for Ambient Effects
@@ -238,17 +245,98 @@ function StatsPanel({ position, participants }: { position: [number, number, num
   );
 }
 
+// Speaker Spotlight Component
+function SpeakerSpotlight({ 
+  speaker, 
+  position, 
+  isVIP 
+}: { 
+  speaker: any, 
+  position: [number, number, number],
+  isVIP?: boolean
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const time = state.clock.getElapsedTime();
+    if (groupRef.current) {
+      groupRef.current.position.y = position[1] + Math.sin(time * 2) * 0.05;
+    }
+    if (glowRef.current) {
+      glowRef.current.scale.setScalar(1 + Math.sin(time * 3) * 0.1);
+    }
+  });
+
+  return (
+    <group ref={groupRef} position={position}>
+      {/* VIP Crown */}
+      {isVIP && (
+        <mesh position={[0, 2, 0]}>
+          <coneGeometry args={[0.3, 0.5, 8]} />
+          <meshStandardMaterial
+            color="#fbbf24"
+            emissive="#fbbf24"
+            emissiveIntensity={1.5}
+            metalness={0.9}
+            roughness={0.1}
+          />
+        </mesh>
+      )}
+
+      {/* Speaker Avatar Sphere */}
+      <Sphere args={[0.8, 64, 64]}>
+        <meshStandardMaterial
+          color={isVIP ? "#fbbf24" : "#10b981"}
+          emissive={isVIP ? "#fbbf24" : "#10b981"}
+          emissiveIntensity={isVIP ? 2 : 1.5}
+          metalness={0.8}
+          roughness={0.2}
+        />
+      </Sphere>
+
+      {/* Glow Ring */}
+      <mesh ref={glowRef} position={[0, 0, 0]}>
+        <ringGeometry args={[1, 1.2, 32]} />
+        <meshBasicMaterial
+          color={isVIP ? "#fbbf24" : "#10b981"}
+          transparent
+          opacity={0.6}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* Name Tag */}
+      <Html position={[0, -1.5, 0]} center>
+        <div className={`px-4 py-2 rounded-lg font-semibold text-sm backdrop-blur-sm ${
+          isVIP 
+            ? 'bg-gradient-to-r from-yellow-500/90 to-orange-500/90 text-white shadow-xl' 
+            : 'bg-gradient-to-r from-green-500/90 to-emerald-500/90 text-white shadow-lg'
+        }`}>
+          {isVIP && <Crown className="inline h-4 w-4 mr-1" />}
+          {speaker.profiles?.full_name || 'Guest'}
+          {isVIP && <span className="ml-2 text-xs">VIP</span>}
+        </div>
+      </Html>
+    </group>
+  );
+}
+
 // Enhanced 3D Meeting Room Scene
 function MeetingRoomScene({ 
   agenda, 
   currentSlide, 
   presentingResource,
-  participants 
+  participants,
+  eventSettings,
+  activeSpeaker
 }: { 
   agenda: any[], 
   currentSlide: number,
   presentingResource: any,
-  participants: any[]
+  participants: any[],
+  eventSettings: EventSettings,
+  activeSpeaker: any | null
 }) {
   return (
     <>
@@ -356,20 +444,77 @@ function MeetingRoomScene({
         );
       })}
 
-      {/* Advanced Lighting */}
-      <ambientLight intensity={0.3} />
+      {/* Center Stage for Active Speaker */}
+      {activeSpeaker && !presentingResource && (
+        <SpeakerSpotlight
+          speaker={activeSpeaker}
+          position={[0, 4, -6]}
+          isVIP={eventSettings.vipParticipants.includes(activeSpeaker.user_id)}
+        />
+      )}
+
+      {/* VIP Participants Display (when no active speaker) */}
+      {!activeSpeaker && eventSettings.vipParticipants.length > 0 && (
+        eventSettings.vipParticipants.slice(0, 3).map((vipId, idx) => {
+          const vipParticipant = participants.find(p => p.user_id === vipId);
+          if (!vipParticipant) return null;
+          return (
+            <SpeakerSpotlight
+              key={vipId}
+              speaker={vipParticipant}
+              position={[
+                (idx - 1) * 4,
+                4,
+                -6
+              ]}
+              isVIP={true}
+            />
+          );
+        })
+      )}
+
+      {/* Advanced Lighting - Dynamic based on event settings */}
+      <ambientLight intensity={eventSettings.lighting === 'ambient' ? 0.5 : 0.2} />
       <directionalLight position={[10, 15, 10]} intensity={1} castShadow />
-      <pointLight position={[0, 8, 0]} intensity={0.8} color="#3b82f6" />
-      <pointLight position={[-8, 3, -4]} intensity={0.5} color="#8b5cf6" />
-      <pointLight position={[8, 3, -4]} intensity={0.5} color="#06b6d4" />
-      <spotLight
-        position={[0, 10, -8]}
-        angle={0.5}
-        penumbra={0.5}
-        intensity={1.5}
-        castShadow
-        target-position={[0, 0, -8]}
-      />
+      
+      {eventSettings.lighting === 'spotlight' && activeSpeaker && (
+        <>
+          <spotLight
+            position={[0, 12, -4]}
+            angle={0.4}
+            penumbra={0.3}
+            intensity={3}
+            castShadow
+            color="#ffffff"
+          />
+          <pointLight position={[0, 8, -6]} intensity={2} color="#fbbf24" />
+        </>
+      )}
+      
+      {eventSettings.lighting === 'dramatic' && (
+        <>
+          <spotLight position={[-5, 10, -5]} angle={0.6} intensity={2} color="#8b5cf6" />
+          <spotLight position={[5, 10, -5]} angle={0.6} intensity={2} color="#06b6d4" />
+          <pointLight position={[0, 2, 0]} intensity={1.5} color="#3b82f6" />
+        </>
+      )}
+      
+      {eventSettings.lighting === 'festive' && (
+        <>
+          <pointLight position={[-8, 6, -4]} intensity={1.2} color="#f97316" />
+          <pointLight position={[8, 6, -4]} intensity={1.2} color="#8b5cf6" />
+          <pointLight position={[0, 8, 0]} intensity={1} color="#fbbf24" />
+          <pointLight position={[0, 4, -8]} intensity={1.5} color="#10b981" />
+        </>
+      )}
+      
+      {eventSettings.lighting === 'ambient' && (
+        <>
+          <pointLight position={[0, 8, 0]} intensity={0.8} color="#3b82f6" />
+          <pointLight position={[-8, 3, -4]} intensity={0.5} color="#8b5cf6" />
+          <pointLight position={[8, 3, -4]} intensity={0.5} color="#06b6d4" />
+        </>
+      )}
     </>
   );
 }
@@ -393,6 +538,43 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
     activeTime: 0,
     interactions: 0
   });
+  const [eventSettings, setEventSettings] = useState<EventSettings>({
+    mode: 'standard',
+    lighting: 'ambient',
+    backgroundTheme: 'futuristic',
+    vipParticipants: []
+  });
+  const [activeSpeaker, setActiveSpeaker] = useState<any>(null);
+
+  // Detect active speaker
+  useEffect(() => {
+    const speakingParticipant = participants.find(p => p.is_speaking);
+    if (speakingParticipant && speakingParticipant.id !== activeSpeaker?.id) {
+      setActiveSpeaker(speakingParticipant);
+    } else if (!speakingParticipant && activeSpeaker) {
+      // Keep showing speaker for 2 seconds after they stop
+      const timeout = setTimeout(() => setActiveSpeaker(null), 2000);
+      return () => clearTimeout(timeout);
+    }
+  }, [participants]);
+
+  // Listen for event settings from host
+  useEffect(() => {
+    const channel = supabase
+      .channel(`event-settings-${meetingId}`)
+      .on('broadcast', { event: 'settings-update' }, ({ payload }) => {
+        setEventSettings(payload);
+        toast({
+          title: "Event Settings Updated",
+          description: `Mode: ${payload.mode}, Lighting: ${payload.lighting}`,
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [meetingId]);
 
   useEffect(() => {
     fetchMeetingData();
@@ -634,6 +816,8 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
                 currentSlide={currentSlide}
                 presentingResource={presentingResource}
                 participants={participants}
+                eventSettings={eventSettings}
+                activeSpeaker={activeSpeaker}
               />
             </Canvas>
           </Suspense>
@@ -714,42 +898,112 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
             <TabsContent value="participants" className="flex-1 overflow-hidden">
               <ScrollArea className="h-full p-4">
                 <div className="space-y-3">
-                  {participants.map((p) => (
-                    <div
-                      key={p.id}
-                      className={`relative flex items-center gap-3 p-4 rounded-xl transition-all ${
-                        p.is_speaking
-                          ? 'bg-gradient-to-r from-green-500/20 to-green-500/5 border-l-4 border-green-500 animate-pulse'
-                          : 'bg-muted/50 hover:bg-muted'
-                      }`}
-                    >
-                      <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg ${
-                        p.is_speaking ? 'bg-green-500 text-white' : 'bg-primary text-primary-foreground'
-                      }`}>
-                        {p.profiles?.full_name?.[0] || '?'}
-                        {p.is_speaking && (
-                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-ping" />
-                        )}
+                  {/* Active Speaker Display */}
+                  {activeSpeaker && (
+                    <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-green-500/20 to-emerald-500/10 border-2 border-green-500 animate-pulse">
+                      <div className="flex items-center gap-3 mb-2">
+                        <Activity className="h-5 w-5 text-green-500" />
+                        <p className="text-sm font-semibold text-green-500">ACTIVE SPEAKER</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold truncate">{p.profiles?.full_name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">{p.role}</Badge>
-                          {p.can_speak && (
-                            <Badge variant="secondary" className="text-xs">
-                              <Mic className="h-2 w-2 mr-1" />
-                              Can speak
-                            </Badge>
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl bg-green-500 text-white">
+                          {activeSpeaker.profiles?.full_name?.[0] || '?'}
+                          <span className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full animate-ping" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-lg">{activeSpeaker.profiles?.full_name}</p>
+                          <Badge variant="default" className="mt-1 bg-green-500">
+                            <Mic className="h-3 w-3 mr-1" />
+                            Speaking Now
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VIP Participants Section */}
+                  {eventSettings.vipParticipants.length > 0 && (
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Star className="h-4 w-4 text-yellow-500" />
+                        <p className="text-sm font-semibold text-yellow-500">VIP GUESTS</p>
+                      </div>
+                      <div className="space-y-2">
+                        {participants
+                          .filter(p => eventSettings.vipParticipants.includes(p.user_id))
+                          .map((vip) => (
+                            <div
+                              key={vip.id}
+                              className="relative flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-yellow-500/20 to-orange-500/10 border-2 border-yellow-500/50"
+                            >
+                              <div className="relative w-14 h-14 rounded-full flex items-center justify-center font-bold text-lg bg-gradient-to-r from-yellow-500 to-orange-500 text-white">
+                                <Crown className="absolute -top-2 -right-2 h-6 w-6 text-yellow-400" />
+                                {vip.profiles?.full_name?.[0] || '?'}
+                              </div>
+                              <div className="flex-1">
+                                <p className="font-bold">{vip.profiles?.full_name}</p>
+                                <Badge variant="default" className="mt-1 bg-gradient-to-r from-yellow-500 to-orange-500">
+                                  <Star className="h-2 w-2 mr-1" />
+                                  VIP
+                                </Badge>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Regular Participants */}
+                  <div className="border-t pt-3">
+                    <p className="text-xs font-semibold text-muted-foreground mb-3">ALL PARTICIPANTS</p>
+                    {participants.map((p) => (
+                      <div
+                        key={p.id}
+                        className={`relative flex items-center gap-3 p-4 rounded-xl transition-all mb-2 ${
+                          p.is_speaking
+                            ? 'bg-gradient-to-r from-green-500/20 to-green-500/5 border-l-4 border-green-500'
+                            : eventSettings.vipParticipants.includes(p.user_id)
+                            ? 'opacity-50'
+                            : 'bg-muted/50 hover:bg-muted'
+                        }`}
+                      >
+                        <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-semibold text-lg ${
+                          p.is_speaking 
+                            ? 'bg-green-500 text-white' 
+                            : eventSettings.vipParticipants.includes(p.user_id)
+                            ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white'
+                            : 'bg-primary text-primary-foreground'
+                        }`}>
+                          {p.profiles?.full_name?.[0] || '?'}
+                          {p.is_speaking && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-ping" />
                           )}
                         </div>
-                      </div>
-                      {p.speaking_requested_at && (
-                        <div className="animate-bounce">
-                          <Hand className="h-5 w-5 text-orange-500" />
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold truncate flex items-center gap-2">
+                            {p.profiles?.full_name}
+                            {eventSettings.vipParticipants.includes(p.user_id) && (
+                              <Star className="h-3 w-3 text-yellow-500" />
+                            )}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">{p.role}</Badge>
+                            {p.can_speak && (
+                              <Badge variant="secondary" className="text-xs">
+                                <Mic className="h-2 w-2 mr-1" />
+                                Can speak
+                              </Badge>
+                            )}
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  ))}
+                        {p.speaking_requested_at && (
+                          <div className="animate-bounce">
+                            <Hand className="h-5 w-5 text-orange-500" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </ScrollArea>
             </TabsContent>
