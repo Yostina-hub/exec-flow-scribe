@@ -891,20 +891,20 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
       // Wait for transcriptions to be saved (BrowserSpeechRecognition saves them)
       await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Check if we have transcriptions
-      const { count: txCount, error: txErr } = await supabase
-        .from('transcriptions')
-        .select('id', { count: 'exact', head: true })
-        .eq('meeting_id', meetingId);
+      // Check if we have transcriptions (bypass RLS via edge function)
+      const { data: listData, error: listErr } = await supabase.functions.invoke('list-transcriptions', {
+        body: { meetingId }
+      });
+      const txCount = Array.isArray(listData?.transcriptions) ? listData.transcriptions.length : 0;
 
       console.log('VirtualRoom: Transcription count:', txCount);
 
-      if (txErr) {
-        console.warn('VirtualRoom: Could not count transcriptions:', txErr);
+      if (listErr) {
+        console.warn('VirtualRoom: Could not list transcriptions:', listErr);
       }
 
       // If we have transcriptions, generate minutes automatically
-      if (!txErr && (txCount ?? 0) > 0) {
+      if (!listErr && txCount > 0) {
         console.log('VirtualRoom: Starting minutes generation...');
         
         const { data: sessionData } = await supabase.auth.getSession();
