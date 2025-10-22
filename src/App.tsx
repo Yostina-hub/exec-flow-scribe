@@ -47,8 +47,7 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-          {/* Temporarily disable IntegrationProvider to resolve hook issue */}
-          <>
+          <IntegrationProvider>
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/guest-signup" element={<GuestSignup />} />
@@ -81,7 +80,7 @@ const App = () => (
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </>
+          </IntegrationProvider>
         </BrowserRouter>
         <Toaster />
    </QueryClientProvider>

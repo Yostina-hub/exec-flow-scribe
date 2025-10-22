@@ -21,7 +21,6 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "date-fns";
-import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
 
 export default function Index() {
   const navigate = useNavigate();
@@ -37,8 +36,6 @@ export default function Index() {
   const [isCEO, setIsCEO] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const openedRef = useRef(false);
-  
-  useNotificationDispatcher();
 
   useEffect(() => {
     checkUserRole();
