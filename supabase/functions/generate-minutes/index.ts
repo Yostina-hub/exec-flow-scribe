@@ -436,8 +436,49 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
         providerError = `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
+    // Final fallback: Lovable AI Gateway (no user-provided keys required)
+    const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+    if (lovableKey && !minutes) {
+      try {
+        console.log("🤖 Using Lovable AI Gateway (google/gemini-2.5-flash)");
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${lovableKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: "You are a professional meeting minutes generator. Keep outputs faithful to transcript with zero fabrication." },
+              { role: "user", content: prompt },
+            ],
+          }),
+        });
 
-
+        if (aiResp.ok) {
+          const aiJson = await aiResp.json();
+          minutes = aiJson.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with Lovable AI Gateway");
+        } else {
+          const statusCode = aiResp.status;
+          const errTxt = await aiResp.text();
+          console.error(`Lovable AI Gateway error (${statusCode}):`, errTxt);
+          if (statusCode === 429) {
+            providerStatus = 429;
+            providerError = "Lovable AI rate limit exceeded.";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "Lovable AI: Payment required.";
+          } else {
+            providerError = `Lovable AI: ${errTxt}`;
+          }
+        }
+      } catch (e) {
+        console.error("Lovable AI Gateway failed:", e);
+        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
 
     if (!minutes) {
       const errMsg = providerError || "Please try again later.";
