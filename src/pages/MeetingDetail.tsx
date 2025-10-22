@@ -360,7 +360,8 @@ const MeetingDetail = () => {
             description: 'Your meeting minutes are ready to view',
           });
 
-          // Do not auto-open the minutes dialog after generation
+          // Auto-open the minutes viewer so users see the result immediately
+          setShowViewMinutesDialog(true);
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
           const msg = typeof (error?.message) === 'string' ? error.message : (typeof error === 'string' ? error : '');
@@ -1122,7 +1123,7 @@ const MeetingDetail = () => {
                   variant="outline" 
                   className="w-full justify-start gap-2"
                   onClick={() => setShowViewMinutesDialog(true)}
-                  disabled={!meeting?.minutes_url}
+                  disabled={!(meeting?.minutes || meeting?.minutes_url)}
                 >
                   <FileText className="h-4 w-4" />
                   View Previous Minutes
