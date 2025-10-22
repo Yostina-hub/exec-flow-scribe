@@ -184,7 +184,7 @@ export const BrowserSpeechRecognition = ({
     void sync();
   }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
 
-useEffect(() => {
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isListening) {
       interval = setInterval(() => {
@@ -198,6 +198,32 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, [isListening, onDurationChange]);
 
+  // Auto-save transcript every ~5s while recording (no audio upload, text only)
+  const lastSavedLenRef = useRef(0);
+  useEffect(() => {
+    if (!isListening) return;
+    const autosave = setInterval(async () => {
+      const text = transcript.trim();
+      if (text && text.length - lastSavedLenRef.current >= 50) {
+        try {
+          await supabase.functions.invoke('save-transcription', {
+            body: {
+              meetingId,
+              content: text.slice(lastSavedLenRef.current),
+              timestamp: new Date().toISOString(),
+              speaker: userName,
+              detectedLanguage: selectedLanguage,
+            },
+          });
+          lastSavedLenRef.current = text.length;
+        } catch (e) {
+          console.warn('Autosave transcription failed:', e);
+        }
+      }
+    }, 5000);
+    return () => clearInterval(autosave);
+  }, [isListening, transcript, meetingId, userName, selectedLanguage]);
+
 
   const handleSave = async (audioFile?: Blob | null) => {
     if (!transcript.trim() && !audioFile) return;
@@ -205,61 +231,75 @@ useEffect(() => {
 
     setIsSaving(true);
     try {
-      // Save transcription
-      if (transcript.trim()) {
+      let finalText = transcript.trim();
+
+      // If we have audio but no text → server-side transcription fallback
+      if (audioFile && !finalText) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(audioFile);
+        });
+
+        const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+          body: {
+            audioBase64: base64,
+            meetingId,
+            language: selectedLanguage || 'auto',
+            contentType: audioFile.type || 'audio/webm'
+          }
+        });
+
+        if (error) throw error;
+        if (data?.transcription) {
+          finalText = data.transcription as string;
+        }
+      }
+
+      // Save transcription text (either browser-recognized or server-side)
+      if (finalText) {
         const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
           body: {
             meetingId,
-            content: transcript,
+            content: finalText,
             timestamp: new Date().toISOString(),
             speaker: userName,
             detectedLanguage: selectedLanguage,
           },
         });
-
         if (saveErr) throw saveErr;
+        lastSavedLenRef.current = finalText.length;
       }
 
       // Upload audio file to storage
       if (audioFile && userId) {
         const timestamp = Date.now();
         const fileName = `${userId}/${meetingId}/${timestamp}.webm`;
-        
         const { error: uploadError } = await supabase.storage
           .from('meeting-audio')
           .upload(fileName, audioFile, {
             contentType: audioFile.type,
             cacheControl: '3600',
           });
-
         if (uploadError) {
           console.error('Audio upload error:', uploadError);
-          throw new Error('Failed to upload audio');
-        }
-
-        // Save audio reference in meeting_media table
-        const { data: { publicUrl } } = supabase.storage
-          .from('meeting-audio')
-          .getPublicUrl(fileName);
-
-        const { error: mediaError } = await supabase
-          .from('meeting_media')
-          .insert({
-            meeting_id: meetingId,
-            media_type: 'audio',
-            file_url: fileName,
-            format: audioFile.type.split('/')[1],
-            file_size: audioFile.size,
-            duration_seconds: recordingDuration,
-            uploaded_by: userId,
-            checksum: `audio-${timestamp}`,
-          });
-
-        if (mediaError) {
-          console.error('Media reference error:', mediaError);
+          // don't throw; transcript may already be saved
         } else {
-          // Refresh saved audios list
-          await fetchSavedAudios();
+          // Save audio reference in meeting_media table
+          const { error: mediaError } = await supabase
+            .from('meeting_media')
+            .insert({
+              meeting_id: meetingId,
+              media_type: 'audio',
+              file_url: fileName,
+              format: audioFile.type.split('/')[1] || 'webm',
+              file_size: audioFile.size,
+              duration_seconds: recordingDuration,
+              uploaded_by: userId,
+              checksum: `audio-${timestamp}`,
+            });
+          if (mediaError) console.error('Media reference error:', mediaError);
         }
       }
 
