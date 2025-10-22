@@ -15,6 +15,33 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
   useEffect(() => {
     if (!enabled || !meetingId) return;
 
+    console.log('🚀 [PRODUCTION] useOpenAIRealtime initializing with:', { 
+      meetingId, 
+      enabled, 
+      isHTTPS: window.location.protocol === 'https:',
+      hasMediaDevices: !!navigator.mediaDevices 
+    });
+
+    // Check for HTTPS
+    if (window.location.protocol !== 'https:') {
+      toast({
+        title: 'HTTPS Required',
+        description: 'Microphone access requires HTTPS. Live transcription is disabled.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check for browser support
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      toast({
+        title: 'Browser Not Supported',
+        description: 'Your browser does not support microphone access. Please use Chrome, Firefox, or Safari.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // Fetch user's language preference and then connect
     const initializeConnection = async () => {
       try {
@@ -85,17 +112,19 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean) => {
         );
         clientRef.current = client;
 
+        console.log('🔗 [PRODUCTION] Attempting to connect client...');
         await client.connect(meetingId);
         setIsConnected(true);
+        console.log('✅ [PRODUCTION] Client connected successfully');
         toast({
           title: 'Connected',
           description: `Real-time transcription active (${userLanguage === 'am' ? 'Amharic' : userLanguage === 'ar' ? 'Arabic' : 'Auto-detect'})`,
         });
       } catch (err: any) {
-        console.error('Failed to connect:', err);
+        console.error('❌ [PRODUCTION] Failed to connect:', err);
         toast({
           title: 'Connection Failed',
-          description: err.message || 'Failed to connect',
+          description: err.message || 'Failed to connect to transcription service. Check console for details.',
           variant: 'destructive',
         });
       }

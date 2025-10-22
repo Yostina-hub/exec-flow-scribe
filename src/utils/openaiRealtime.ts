@@ -210,22 +210,38 @@ export class OpenAIRealtimeClient {
   async connect(meetingId: string) {
     this.currentMeetingId = meetingId;
     try {
-      console.log('Getting ephemeral token for language:', this.sessionLanguage);
+      console.log('🎙️ [PRODUCTION] Connecting realtime transcription for meeting:', meetingId, 'language:', this.sessionLanguage);
       
       // Get ephemeral token from our edge function with language
+      console.log('📡 [PRODUCTION] Requesting ephemeral token from edge function...');
       const { data, error } = await supabase.functions.invoke('openai-realtime-token', {
         body: { language: this.sessionLanguage }
       });
       
+      console.log('📡 [PRODUCTION] Token response:', { hasData: !!data, error, hasSecret: !!data?.client_secret?.value });
+      
       if (error || !data?.client_secret?.value) {
-        throw new Error(error?.message || 'Failed to get ephemeral token');
+        const errMsg = error?.message || 'Failed to get ephemeral token';
+        console.error('❌ [PRODUCTION] Token fetch failed:', errMsg);
+        throw new Error(errMsg);
       }
 
       const EPHEMERAL_KEY = data.client_secret.value;
-      console.log('Token received, creating peer connection...');
+      console.log('✅ [PRODUCTION] Token received, creating peer connection...');
 
       // Create peer connection
       this.pc = new RTCPeerConnection();
+      
+      this.pc.onconnectionstatechange = () => {
+        console.log('🔌 [PRODUCTION] Connection state:', this.pc?.connectionState);
+        if (this.pc?.connectionState === 'failed') {
+          this.onError('WebRTC connection failed');
+        }
+      };
+      
+      this.pc.onicecandidateerror = (e) => {
+        console.error('❌ [PRODUCTION] ICE candidate error:', e);
+      };
 
       // Set up remote audio
       this.pc.ontrack = e => {
@@ -234,6 +250,12 @@ export class OpenAIRealtimeClient {
       };
 
       // Add local audio track
+      console.log('🎤 [PRODUCTION] Requesting microphone access...');
+      
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Browser does not support microphone access. Please use a modern browser with HTTPS.');
+      }
+      
       const ms = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           sampleRate: 24000,
@@ -242,7 +264,12 @@ export class OpenAIRealtimeClient {
           noiseSuppression: true,
           autoGainControl: true
         }
+      }).catch((err) => {
+        console.error('❌ [PRODUCTION] Microphone access denied:', err);
+        throw new Error(`Microphone access denied: ${err.message}. Please grant microphone permissions and refresh.`);
       });
+      
+      console.log('✅ [PRODUCTION] Microphone access granted');
       this.pc.addTrack(ms.getTracks()[0]);
 
       // Set up data channel
@@ -382,7 +409,7 @@ export class OpenAIRealtimeClient {
       const baseUrl = "https://api.openai.com/v1/realtime";
       const model = "gpt-4o-realtime-preview-2024-12-17";
       
-      console.log('Connecting to OpenAI Realtime API...');
+      console.log('📡 [PRODUCTION] Connecting to OpenAI Realtime API with model:', model);
       const sdpResponse = await fetch(`${baseUrl}?model=${model}`, {
         method: "POST",
         body: offer.sdp,
@@ -390,10 +417,16 @@ export class OpenAIRealtimeClient {
           Authorization: `Bearer ${EPHEMERAL_KEY}`,
           "Content-Type": "application/sdp"
         },
+      }).catch((err) => {
+        console.error('❌ [PRODUCTION] Fetch to OpenAI failed:', err);
+        throw new Error(`Network error connecting to OpenAI: ${err.message}`);
       });
+
+      console.log('📡 [PRODUCTION] OpenAI response status:', sdpResponse.status);
 
       if (!sdpResponse.ok) {
         const errorText = await sdpResponse.text();
+        console.error('❌ [PRODUCTION] OpenAI API error:', errorText);
         throw new Error(`OpenAI connection failed: ${sdpResponse.status} - ${errorText}`);
       }
 

@@ -88,6 +88,19 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
     useRealtime && isRecording
   );
 
+  // Debug logging for production
+  useEffect(() => {
+    console.log('🎯 [PRODUCTION] LiveTranscription state:', {
+      useRealtime,
+      isRecording,
+      isConnected,
+      rateLimited,
+      isProcessing,
+      hasTranscripts: transcriptions.length,
+      hasRealtimeTranscripts: realtimeTranscripts.length
+    });
+  }, [useRealtime, isRecording, isConnected, rateLimited, isProcessing, transcriptions.length, realtimeTranscripts.length]);
+
   useEffect(() => {
     // Check if realtime mode is enabled
     const checkRealtimeMode = async () => {
