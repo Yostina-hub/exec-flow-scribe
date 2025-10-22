@@ -23,7 +23,9 @@ import {
   Sparkles,
   Star,
   Crown,
-  Lightbulb
+  Lightbulb,
+  Music,
+  Volume2
 } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { Label } from '@/components/ui/label';
@@ -40,6 +42,8 @@ interface EventSettings {
   lighting: 'ambient' | 'spotlight' | 'dramatic' | 'festive';
   backgroundTheme: 'corporate' | 'elegant' | 'futuristic' | 'minimal';
   vipParticipants: string[];
+  intermission?: boolean;
+  ambientVolume?: number;
 }
 
 export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementPanelProps) {
@@ -55,7 +59,9 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
     mode: 'standard',
     lighting: 'ambient',
     backgroundTheme: 'futuristic',
-    vipParticipants: []
+    vipParticipants: [],
+    intermission: false,
+    ambientVolume: 0.3,
   });
 
   useEffect(() => {
@@ -300,6 +306,35 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
     await broadcastEventSettings(newSettings);
   };
 
+  const handleIntermissionToggle = async () => {
+    const newSettings = { ...eventSettings, intermission: !eventSettings.intermission };
+    setEventSettings(newSettings);
+    await broadcastEventSettings(newSettings);
+    toast({
+      title: newSettings.intermission ? "Intermission Started" : "Intermission Ended",
+      description: newSettings.intermission ? "Ambient music is playing" : "Meeting resumed",
+    });
+  };
+
+  const handleVolumeChange = async (volume: number) => {
+    const newSettings = { ...eventSettings, ambientVolume: volume };
+    setEventSettings(newSettings);
+    await broadcastEventSettings(newSettings);
+  };
+
+  const promoteToSpeaker = async (userId: string) => {
+    await supabase
+      .from('meeting_attendees')
+      .update({ can_speak: true })
+      .eq('meeting_id', meetingId)
+      .eq('user_id', userId);
+    fetchAllData();
+    toast({
+      title: "Promoted to Speaker",
+      description: "Participant can now speak",
+    });
+  };
+
   return (
     <div className="h-screen w-full bg-background p-6 overflow-auto">
       <div className="max-w-7xl mx-auto space-y-6">
@@ -405,6 +440,17 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
                           {eventSettings.vipParticipants.includes(p.user_id) ? 'VIP' : 'Make VIP'}
                         </Button>
 
+                        {!p.can_speak && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => promoteToSpeaker(p.user_id)}
+                          >
+                            <Mic className="h-4 w-4 mr-1" />
+                            Promote
+                          </Button>
+                        )}
+
                         {p.speaking_requested_at && (
                           <div className="flex gap-2">
                             <Button
@@ -496,6 +542,42 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
                     {eventSettings.lighting === 'festive' && 'Colorful party atmosphere'}
                     {eventSettings.lighting === 'ambient' && 'Soft, professional lighting'}
                   </p>
+                </div>
+
+                {/* Intermission Control */}
+                <div className="space-y-3 p-4 border rounded-lg bg-gradient-to-r from-purple-500/10 to-pink-500/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Music className="h-5 w-5 text-purple-500" />
+                      <Label>Intermission Mode</Label>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant={eventSettings.intermission ? "default" : "outline"}
+                      onClick={handleIntermissionToggle}
+                      className={eventSettings.intermission ? 'bg-gradient-to-r from-purple-500 to-pink-500' : ''}
+                    >
+                      {eventSettings.intermission ? 'End Break' : 'Start Break'}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Play ambient music during breaks or before meeting starts
+                  </p>
+                  
+                  {eventSettings.intermission && (
+                    <div className="space-y-2 mt-4">
+                      <Label>Ambient Volume: {Math.round((eventSettings.ambientVolume || 0.3) * 100)}%</Label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={eventSettings.ambientVolume || 0.3}
+                        onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                        className="w-full"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* VIP Summary */}

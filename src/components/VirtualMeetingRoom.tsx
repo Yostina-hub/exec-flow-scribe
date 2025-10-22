@@ -13,6 +13,7 @@ import * as THREE from 'three';
 import { LiveTranscription } from './LiveTranscription';
 import { BrowserSpeechRecognition } from './BrowserSpeechRecognition';
 import { useNavigate } from 'react-router-dom';
+import { soundFX } from '@/utils/soundEffects';
 
 interface VirtualMeetingRoomProps {
   meetingId: string;
@@ -27,6 +28,7 @@ interface EventSettings {
   backgroundTheme: 'corporate' | 'elegant' | 'futuristic' | 'minimal';
   vipParticipants: string[];
   intermission?: boolean;
+  ambientVolume?: number;
 }
 
 // Particle System for Ambient Effects
@@ -524,41 +526,83 @@ function MeetingRoomScene({
         />
       ))}
 
-      {/* Participant Indicators with Glow */}
+      {/* Participant Indicators with Glow - Active speaker gets center stage */}
       {participants.slice(0, 8).map((p, i) => {
-        const angle = (i / 8) * Math.PI * 2;
-        const radius = 5;
+        const isSpeaking = activeSpeaker && p.user_id === activeSpeaker.user_id;
+        const isVIP = eventSettings.vipParticipants.includes(p.user_id);
+        
+        // Active speaker gets prominent center-front position
+        const angle = isSpeaking ? 0 : ((i + 1) / 8) * Math.PI * 2;
+        const radius = isSpeaking ? 3 : 6;
+        const height = isSpeaking ? 1.5 : 1;
+        
         return (
-          <group key={i}>
-            <Sphere 
-              position={[
-                Math.cos(angle) * radius,
-                1.3,
-                Math.sin(angle) * radius
-              ]}
-              args={[0.25, 32, 32]}
-            >
-              <meshStandardMaterial 
-                color={p.is_speaking ? "#10b981" : "#3b82f6"}
-                emissive={p.is_speaking ? "#10b981" : "#3b82f6"}
-                emissiveIntensity={p.is_speaking ? 1.5 : 0.8}
+          <group key={p.id} position={[
+            Math.cos(angle) * radius,
+            height,
+            Math.sin(angle) * radius - (isSpeaking ? 2 : 0)
+          ]}>
+            {/* Main Avatar Sphere */}
+            <Sphere args={[isSpeaking ? 1.2 : 0.4, 32, 32]} castShadow>
+              <meshStandardMaterial
+                color={isSpeaking ? "#10b981" : isVIP ? "#fbbf24" : "#3b82f6"}
+                emissive={isSpeaking ? "#10b981" : isVIP ? "#fbbf24" : "#3b82f6"}
+                emissiveIntensity={isSpeaking ? 2 : isVIP ? 1 : 0.5}
                 metalness={0.8}
                 roughness={0.2}
               />
             </Sphere>
-            {/* Name Tag */}
-            <Html
-              position={[
-                Math.cos(angle) * radius,
-                1.8,
-                Math.sin(angle) * radius
-              ]}
-              center
-            >
-              <div className="bg-black/80 px-2 py-1 rounded text-xs text-white whitespace-nowrap">
-                {p.profiles?.full_name || 'Guest'}
+            
+            {/* Speaking Animation - Expanding Rings */}
+            {isSpeaking && (
+              <>
+                <mesh>
+                  <ringGeometry args={[1.5, 1.8, 32]} />
+                  <meshBasicMaterial color="#10b981" transparent opacity={0.4} side={THREE.DoubleSide} />
+                </mesh>
+                <mesh>
+                  <ringGeometry args={[2, 2.3, 32]} />
+                  <meshBasicMaterial color="#10b981" transparent opacity={0.2} side={THREE.DoubleSide} />
+                </mesh>
+              </>
+            )}
+            
+            {/* VIP Crown */}
+            {isVIP && (
+              <mesh position={[0, isSpeaking ? 1.5 : 0.6, 0]}>
+                <coneGeometry args={[0.3, 0.5, 8]} />
+                <meshStandardMaterial
+                  color="#fbbf24"
+                  emissive="#fbbf24"
+                  emissiveIntensity={1.5}
+                  metalness={0.9}
+                />
+              </mesh>
+            )}
+            
+            {/* Name Label */}
+            <Html position={[0, isSpeaking ? -2 : -0.8, 0]} center>
+              <div className={`px-3 py-1 rounded-lg backdrop-blur-sm font-semibold text-xs ${
+                isSpeaking 
+                  ? 'bg-green-500/90 text-white text-lg animate-pulse' 
+                  : isVIP
+                  ? 'bg-yellow-500/80 text-white'
+                  : 'bg-blue-500/70 text-white'
+              }`}>
+                {p.profiles?.full_name || 'Unknown'}
               </div>
             </Html>
+            
+            {/* Spotlight from above for active speaker */}
+            {isSpeaking && (
+              <pointLight
+                position={[0, 5, 0]}
+                intensity={3}
+                distance={10}
+                color="#10b981"
+                castShadow
+              />
+            )}
           </group>
         );
       })}
@@ -593,8 +637,8 @@ function MeetingRoomScene({
       )}
 
       {/* Advanced Lighting - Dynamic based on event settings */}
-      <ambientLight intensity={eventSettings.lighting === 'ambient' ? 0.5 : 0.2} />
-      <directionalLight position={[10, 15, 10]} intensity={1} castShadow />
+      <ambientLight intensity={eventSettings.intermission ? 0.2 : (eventSettings.lighting === 'ambient' ? 0.5 : 0.2)} />
+      <directionalLight position={[10, 15, 10]} intensity={eventSettings.intermission ? 0.3 : 1} castShadow />
       
       {eventSettings.lighting === 'spotlight' && activeSpeaker && (
         <>
@@ -602,19 +646,19 @@ function MeetingRoomScene({
             position={[0, 12, -4]}
             angle={0.4}
             penumbra={0.3}
-            intensity={3}
+            intensity={eventSettings.intermission ? 1 : 3}
             castShadow
             color="#ffffff"
           />
-          <pointLight position={[0, 8, -6]} intensity={2} color="#fbbf24" />
+          <pointLight position={[0, 8, -6]} intensity={eventSettings.intermission ? 0.5 : 2} color="#fbbf24" />
         </>
       )}
       
       {eventSettings.lighting === 'dramatic' && (
         <>
-          <spotLight position={[-5, 10, -5]} angle={0.6} intensity={2} color="#8b5cf6" />
-          <spotLight position={[5, 10, -5]} angle={0.6} intensity={2} color="#06b6d4" />
-          <pointLight position={[0, 2, 0]} intensity={1.5} color="#3b82f6" />
+          <spotLight position={[-5, 10, -5]} angle={0.6} intensity={eventSettings.intermission ? 0.8 : 2} color="#8b5cf6" />
+          <spotLight position={[5, 10, -5]} angle={0.6} intensity={eventSettings.intermission ? 0.8 : 2} color="#06b6d4" />
+          <pointLight position={[0, 2, 0]} intensity={eventSettings.intermission ? 0.5 : 1.5} color="#3b82f6" />
         </>
       )}
       
@@ -629,9 +673,9 @@ function MeetingRoomScene({
       
       {eventSettings.lighting === 'ambient' && (
         <>
-          <pointLight position={[0, 8, 0]} intensity={0.8} color="#3b82f6" />
-          <pointLight position={[-8, 3, -4]} intensity={0.5} color="#8b5cf6" />
-          <pointLight position={[8, 3, -4]} intensity={0.5} color="#06b6d4" />
+          <pointLight position={[0, 8, 0]} intensity={eventSettings.intermission ? 0.3 : 0.8} color="#3b82f6" />
+          <pointLight position={[-8, 3, -4]} intensity={eventSettings.intermission ? 0.2 : 0.5} color="#8b5cf6" />
+          <pointLight position={[8, 3, -4]} intensity={eventSettings.intermission ? 0.2 : 0.5} color="#06b6d4" />
         </>
       )}
     </>
@@ -690,6 +734,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         newPresences.forEach((presence: any) => {
           const participant = participants.find(p => p.user_id === presence.user_id);
           const name = participant?.profiles?.full_name || 'Someone';
+          soundFX.playJoin();
           toast({
             title: "Participant Joined",
             description: `${name} joined the meeting`,
@@ -700,6 +745,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         leftPresences.forEach((presence: any) => {
           const participant = participants.find(p => p.user_id === presence.user_id);
           const name = participant?.profiles?.full_name || 'Someone';
+          soundFX.playLeave();
           toast({
             title: "Participant Left",
             description: `${name} left the meeting`,
@@ -778,7 +824,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     const ctx = new AudioContext();
     const gain = ctx.createGain();
     const comp = ctx.createDynamicsCompressor();
-    gain.gain.value = 0.05; // very low volume by default
+    gain.gain.value = eventSettings.ambientVolume || 0.05;
     comp.threshold.value = -24;
     comp.knee.value = 30;
     comp.ratio.value = 12;
@@ -799,6 +845,11 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     compressorRef.current = comp;
     noiseSrcRef.current = src;
     setAmbientOn(true);
+    
+    toast({
+      title: "Intermission Started",
+      description: "Ambient soundscape is playing",
+    });
   };
 
   const stopAmbient = () => {
@@ -819,7 +870,15 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   useEffect(() => {
     if (eventSettings.intermission) startAmbient();
     else stopAmbient();
+    return () => stopAmbient();
   }, [eventSettings.intermission]);
+
+  // Update volume when changed
+  useEffect(() => {
+    if (gainRef.current && eventSettings.ambientVolume !== undefined) {
+      gainRef.current.gain.value = eventSettings.ambientVolume;
+    }
+  }, [eventSettings.ambientVolume]);
 
 
   // Detect active speaker
@@ -861,6 +920,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       .on('broadcast', { event: 'hand-raised' }, ({ payload }) => {
         const participant = participants.find(p => p.user_id === payload.user_id);
         const name = participant?.profiles?.full_name || 'A participant';
+        soundFX.playNotification();
         toast({
           title: "Hand Raised",
           description: `${name} would like to speak`,
@@ -1051,6 +1111,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
 
     // Broadcast hand raise event for real-time notification
     if (newValue) {
+      soundFX.playHandRaise();
       const channel = supabase.channel(`hand-raise-${meetingId}`);
       await channel.send({
         type: 'broadcast',
@@ -1092,6 +1153,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         .eq('id', meetingId);
 
       // Broadcast meeting ended to all participants
+      soundFX.playEndMeeting();
       const broadcastChannel = supabase.channel(`meeting-ended-${meetingId}`);
       await broadcastChannel.send({
         type: 'broadcast',
@@ -1173,10 +1235,17 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
               <span className="font-mono">{formatTime(recordingTime)}</span>
             </Badge>
           )}
-          <Badge variant="outline" className="animate-pulse border-green-500/50 text-green-500">
-            <Zap className="h-3 w-3 mr-1" />
-            LIVE
-          </Badge>
+          {eventSettings.intermission ? (
+            <Badge variant="secondary" className="animate-pulse border-purple-500/50 text-purple-500 px-4 py-2">
+              <Music className="h-3 w-3 mr-1" />
+              INTERMISSION
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="animate-pulse border-green-500/50 text-green-500">
+              <Zap className="h-3 w-3 mr-1" />
+              LIVE
+            </Badge>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
@@ -1281,6 +1350,33 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       <div className="flex-1 flex overflow-hidden">
         {/* 3D Virtual Room */}
         <div className="flex-1 relative bg-gradient-to-b from-black via-slate-900 to-black">
+          {/* Intermission Overlay */}
+          {eventSettings.intermission && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+              <div className="text-center space-y-6 animate-fade-in">
+                <div className="relative">
+                  <Music className="h-32 w-32 mx-auto text-purple-500 animate-pulse" />
+                  <div className="absolute inset-0 bg-purple-500/30 blur-3xl animate-pulse" />
+                </div>
+                <div>
+                  <h2 className="text-6xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent mb-4">
+                    Intermission
+                  </h2>
+                  <p className="text-2xl text-white/80">Meeting will resume shortly</p>
+                  <div className="mt-6 flex justify-center gap-2">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="h-3 w-3 rounded-full bg-purple-500 animate-pulse"
+                        style={{ animationDelay: `${i * 0.2}s` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          
           <Suspense fallback={
             <div className="w-full h-full flex items-center justify-center">
               <div className="text-center space-y-4">
