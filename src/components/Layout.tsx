@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
 import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud, Bell } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { QuickSearch } from "@/components/QuickSearch";
 import { NotificationBell } from "@/components/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
+import { useUserPermissions } from "@/hooks/useUserPermissions";
 import {
   Sidebar,
   SidebarContent,
@@ -43,10 +43,14 @@ const navigation = [
 function AppSidebar() {
   const { open } = useSidebar();
   const location = useLocation();
+  const { canAccessRoute, loading } = useUserPermissions();
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
+
+  // Filter navigation items based on user permissions
+  const visibleNavigation = navigation.filter(item => canAccessRoute(item.href));
 
   return (
     <Sidebar collapsible="icon">
@@ -61,21 +65,25 @@ function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href;
-                return (
-                  <SidebarMenuItem key={item.name}>
-                    <SidebarMenuButton asChild isActive={isActive}>
-                      <NavLink to={item.href}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.name}</span>
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                );
-              })}
-            </SidebarMenu>
+            {loading ? (
+              <div className="px-2 py-4 text-sm text-muted-foreground">Loading...</div>
+            ) : (
+              <SidebarMenu>
+                {visibleNavigation.map((item) => {
+                  const isActive = location.pathname === item.href;
+                  return (
+                    <SidebarMenuItem key={item.name}>
+                      <SidebarMenuButton asChild isActive={isActive}>
+                        <NavLink to={item.href}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.name}</span>
+                        </NavLink>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+              </SidebarMenu>
+            )}
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

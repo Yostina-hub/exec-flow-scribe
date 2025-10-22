@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Settings, Zap, UserCog, Activity, Database, History } from "lucide-react";
+import { Shield, Settings, Zap, UserCog, Activity, Database, History, Lock } from "lucide-react";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
 import { RoleManagementTab } from "@/components/admin/RoleManagementTab";
+import { PermissionManagementTab } from "@/components/admin/PermissionManagementTab";
 import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
 import { SystemHealthDashboard } from "@/components/admin/SystemHealthDashboard";
@@ -44,6 +45,10 @@ export default function Administration() {
                 <Settings className="h-4 w-4 mr-2" />
                 Roles
               </TabsTrigger>
+              <TabsTrigger value="permissions">
+                <Lock className="h-4 w-4 mr-2" />
+                Permissions
+              </TabsTrigger>
               <TabsTrigger value="assignments">
                 <UserCog className="h-4 w-4 mr-2" />
                 Assignments
@@ -77,6 +82,10 @@ export default function Administration() {
 
           <TabsContent value="roles" className="mt-6">
             <RoleManagementTab />
+          </TabsContent>
+
+          <TabsContent value="permissions" className="mt-6">
+            <PermissionManagementTab />
           </TabsContent>
 
           <TabsContent value="assignments" className="mt-6">
