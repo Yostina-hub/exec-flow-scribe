@@ -8,10 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, UserCheck, Clock } from "lucide-react";
+import { Loader2, UserCheck, Clock, RefreshCw } from "lucide-react";
 
 export function GuestSignup() {
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -27,10 +28,13 @@ export function GuestSignup() {
   }, []);
 
   const fetchMeetings = async () => {
+    setRefreshing(true);
     const now = new Date();
     const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     
-    const { data } = await supabase
+    console.log('Fetching meetings between:', now.toISOString(), 'and', twoHoursFromNow.toISOString());
+    
+    const { data, error } = await supabase
       .from('meetings')
       .select('id, title, start_time')
       .gte('start_time', now.toISOString())
@@ -38,7 +42,10 @@ export function GuestSignup() {
       .order('start_time', { ascending: true })
       .limit(20);
     
+    console.log('Meetings fetched:', data, 'Error:', error);
+    
     if (data) setMeetings(data);
+    setRefreshing(false);
   };
 
   const handleGuestSignup = async (e: React.FormEvent) => {
@@ -201,7 +208,23 @@ export function GuestSignup() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="meeting">Meeting</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="meeting">Meeting</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={fetchMeetings}
+                disabled={refreshing}
+                className="h-8 px-2"
+              >
+                {refreshing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <Select value={meetingId} onValueChange={setMeetingId} required>
               <SelectTrigger>
                 <SelectValue placeholder="Select a meeting" />
@@ -214,7 +237,7 @@ export function GuestSignup() {
                 ) : (
                   meetings.map((meeting) => (
                     <SelectItem key={meeting.id} value={meeting.id}>
-                      {meeting.title} - {new Date(meeting.start_time).toLocaleDateString()}
+                      {meeting.title} - {new Date(meeting.start_time).toLocaleString()}
                     </SelectItem>
                   ))
                 )}
