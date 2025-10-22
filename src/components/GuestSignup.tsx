@@ -206,12 +206,18 @@ export function GuestSignup() {
               <SelectTrigger>
                 <SelectValue placeholder="Select a meeting" />
               </SelectTrigger>
-              <SelectContent>
-                {meetings.map((meeting) => (
-                  <SelectItem key={meeting.id} value={meeting.id}>
-                    {meeting.title} - {new Date(meeting.start_time).toLocaleDateString()}
+              <SelectContent className="z-50 bg-popover border border-border shadow-lg">
+                {meetings.length === 0 ? (
+                  <SelectItem disabled value="no-meetings">
+                    No meetings in next 2 hours
                   </SelectItem>
-                ))}
+                ) : (
+                  meetings.map((meeting) => (
+                    <SelectItem key={meeting.id} value={meeting.id}>
+                      {meeting.title} - {new Date(meeting.start_time).toLocaleDateString()}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>
