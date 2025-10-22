@@ -101,9 +101,28 @@ export function GuestSignup() {
             Your guest access request is pending approval
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4 text-center">
-          <p className="text-sm text-muted-foreground">
-            An administrator will review your request shortly. You'll receive a notification once your access is approved.
+        <CardContent className="space-y-4">
+          <div className="rounded-lg bg-blue-50 p-4 text-center">
+            <p className="text-sm font-medium text-blue-900 mb-2">
+              What happens next?
+            </p>
+            <ol className="text-sm text-blue-700 space-y-2 text-left">
+              <li className="flex gap-2">
+                <span className="font-semibold">1.</span>
+                <span>An administrator will review your request</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold">2.</span>
+                <span>Once approved, you'll receive a quick access link</span>
+              </li>
+              <li className="flex gap-2">
+                <span className="font-semibold">3.</span>
+                <span>Use that link to join the meeting directly</span>
+              </li>
+            </ol>
+          </div>
+          <p className="text-sm text-muted-foreground text-center">
+            Check your email for the access link once approved. You can also sign in with your credentials to view meeting details.
           </p>
           <Button onClick={() => navigate("/auth")} variant="outline" className="w-full">
             Back to Sign In

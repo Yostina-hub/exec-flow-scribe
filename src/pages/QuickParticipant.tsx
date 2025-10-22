@@ -29,7 +29,7 @@ export default function QuickParticipant() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {
-        // Check if user is already an attendee
+        // Check if user is already an attendee or has approved guest access
         const { data: attendee } = await supabase
           .from('meeting_attendees')
           .select('*')
@@ -40,6 +40,31 @@ export default function QuickParticipant() {
         if (attendee) {
           setCurrentUserId(user.id);
           setJoined(true);
+        } else {
+          // Check if user has an approved guest access request
+          const { data: guestRequest } = await supabase
+            .from('guest_access_requests')
+            .select('*')
+            .eq('meeting_id', meetingId)
+            .eq('user_id', user.id)
+            .eq('status', 'approved')
+            .single();
+
+          if (guestRequest) {
+            // Approved guest - check if they're already in attendees
+            const { error: addError } = await supabase
+              .from('meeting_attendees')
+              .insert({
+                meeting_id: meetingId,
+                user_id: user.id,
+                attended: false
+              });
+
+            if (!addError) {
+              setCurrentUserId(user.id);
+              setJoined(true);
+            }
+          }
         }
       }
 

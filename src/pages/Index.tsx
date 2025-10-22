@@ -5,6 +5,7 @@ import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { CEOBriefing } from "@/components/CEOBriefing";
 import { WhatsAppIntegration } from "@/components/WhatsAppIntegration";
 import { UrgentMessagesPanel } from "@/components/UrgentMessagesPanel";
+import { GuestAccessStatus } from "@/components/GuestAccessStatus";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
@@ -285,6 +286,9 @@ export default function Index() {
             </Card>
           ))}
         </div>
+
+        {/* Guest Access Status */}
+        <GuestAccessStatus />
 
         {/* Smart Action Cards */}
         <div className="grid gap-3 lg:gap-6 grid-cols-1 lg:grid-cols-3">

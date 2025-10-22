@@ -4,7 +4,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, CheckCircle, XCircle, Clock, UserCheck } from "lucide-react";
+import { Loader2, CheckCircle, XCircle, Clock, UserCheck, Link as LinkIcon, Copy } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Table,
   TableBody,
@@ -110,9 +111,15 @@ export function GuestApprovalTab() {
 
       if (attendeeError) throw attendeeError;
 
+      // Generate quick access link
+      const quickLink = `${window.location.origin}/quick-join/${request.meeting_id}`;
+
+      // Copy to clipboard
+      await navigator.clipboard.writeText(quickLink);
+
       toast({
         title: "Guest approved",
-        description: `${request.full_name} has been granted access to the meeting.`,
+        description: `${request.full_name} has been granted access. Quick link copied to clipboard!`,
       });
     } catch (error: any) {
       toast({
@@ -238,7 +245,24 @@ export function GuestApprovalTab() {
                     </Button>
                   </div>
                 )}
-                {request.status !== 'pending' && (
+                {request.status === 'approved' && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const link = `${window.location.origin}/quick-join/${request.meeting_id}`;
+                      await navigator.clipboard.writeText(link);
+                      toast({
+                        title: "Link copied",
+                        description: "Quick access link copied to clipboard",
+                      });
+                    }}
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy Link
+                  </Button>
+                )}
+                {request.status === 'rejected' && (
                   <span className="text-sm text-muted-foreground">
                     {request.reviewed_at && new Date(request.reviewed_at).toLocaleDateString()}
                   </span>
@@ -273,6 +297,12 @@ export function GuestApprovalTab() {
         <CardDescription>
           Review and approve guest access requests to meetings
         </CardDescription>
+        <Alert className="mt-4">
+          <LinkIcon className="h-4 w-4" />
+          <AlertDescription>
+            When you approve a guest, a quick access link will be automatically copied to your clipboard. Share this link with the guest to give them direct access to the meeting.
+          </AlertDescription>
+        </Alert>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="pending">
