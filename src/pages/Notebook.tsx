@@ -31,6 +31,7 @@ import { AudioOverviewPlayer } from "@/components/AudioOverviewPlayer";
 import { TimelineView } from "@/components/TimelineView";
 import { StudyGuideGenerator } from "@/components/StudyGuideGenerator";
 import { ChatWithCitations } from "@/components/ChatWithCitations";
+import { SourceSummaryPanel } from "@/components/SourceSummaryPanel";
 import { NotebookStudioGrid } from "@/components/NotebookStudioGrid";
 import {
   DropdownMenu,
@@ -493,9 +494,14 @@ const Notebook = () => {
           </ScrollArea>
         </div>
 
-        {/* Center Panel - Chat */}
-        <div className="col-span-5 flex flex-col bg-background">
-          <ChatWithCitations sourceIds={selectedSources} />
+        {/* Center Panel - Summary & Chat */}
+        <div className="col-span-5 flex flex-col bg-background overflow-hidden">
+          <div className="flex-1 overflow-hidden">
+            <SourceSummaryPanel sourceIds={selectedSources} />
+          </div>
+          <div className="h-[300px] shrink-0 border-t">
+            <ChatWithCitations sourceIds={selectedSources} />
+          </div>
         </div>
 
         {/* Right Panel - Studio */}
