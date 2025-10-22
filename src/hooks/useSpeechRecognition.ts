@@ -95,13 +95,12 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         msg = 'Network issue. Trying to reconnect...';
       }
       if (msg) setError(msg);
-      // Auto-restart on recoverable errors
+      // Auto-recover on common transient errors
       const recoverable = ['no-speech', 'network', 'aborted'].includes(event.error);
-      if (recoverable && shouldBeListeningRef.current && !isListeningRef.current) {
+      if (recoverable && shouldBeListeningRef.current) {
+        try { recognitionRef.current?.stop(); } catch {}
         setTimeout(() => {
-          try {
-            if (!isListeningRef.current) recognitionRef.current?.start();
-          } catch (err) {
+          try { recognitionRef.current?.start(); } catch (err) {
             console.error('Error restarting after error:', err);
           }
         }, 300);
@@ -112,7 +111,14 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Speech recognition ended');
       setIsListening(false);
       isListeningRef.current = false;
-      // DO NOT auto-restart here; external controller (component) will call startListening when appropriate
+      // Auto-restart if we should still be listening (e.g., long Chrome sessions or brief silence)
+      if (shouldBeListeningRef.current) {
+        setTimeout(() => {
+          try { recognitionRef.current?.start(); } catch (err) {
+            console.error('Error auto-restarting recognition:', err);
+          }
+        }, 200);
+      }
     };
 
     recognitionRef.current = recognition;

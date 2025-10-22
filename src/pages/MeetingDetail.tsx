@@ -439,6 +439,7 @@ const MeetingDetail = () => {
         meetingId={meetingId}
         isHost={meeting.created_by === userId}
         currentUserId={userId}
+        onCloseRoom={() => setShowVirtualRoom(false)}
       />
     );
   }

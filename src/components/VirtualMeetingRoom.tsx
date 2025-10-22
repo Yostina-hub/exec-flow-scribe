@@ -18,6 +18,7 @@ interface VirtualMeetingRoomProps {
   meetingId: string;
   isHost: boolean;
   currentUserId: string;
+  onCloseRoom?: () => void;
 }
 
 interface EventSettings {
@@ -636,7 +637,7 @@ function MeetingRoomScene({
   );
 }
 
-export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: VirtualMeetingRoomProps) {
+export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRoom }: VirtualMeetingRoomProps) {
   const { toast } = useToast();
   const [meeting, setMeeting] = useState<any>(null);
   const [agenda, setAgenda] = useState<any[]>([]);
@@ -873,8 +874,11 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
       console.log('VirtualRoom: Stopping recording...');
       setIsRecording(false);
       setIsPaused(false);
-      
-      // Mark meeting completed
+
+      // Close the room immediately in the UI
+      onCloseRoom?.();
+
+      // Best-effort: mark meeting completed (non-blocking for UI)
       await supabase
         .from('meetings')
         .update({ 
@@ -882,12 +886,10 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
           actual_end_time: new Date().toISOString()
         })
         .eq('id', meetingId);
-
-      // Immediately navigate back to meeting detail without generating or showing summaries
-      navigate(`/meetings/${meetingId}`);
     } catch (e: any) {
       console.error('VirtualRoom: End meeting failed:', e);
-      navigate(`/meetings/${meetingId}`);
+      // Ensure room closes even if backend update fails
+      onCloseRoom?.();
     }
   };
   return (
