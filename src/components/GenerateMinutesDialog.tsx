@@ -121,12 +121,21 @@ export const GenerateMinutesDialog = ({
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(minutes);
-    toast({
-      title: 'Copied to clipboard',
-      description: 'Meeting minutes copied successfully',
-    });
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(minutes);
+      toast({
+        title: 'Copied to clipboard',
+        description: 'Meeting minutes copied successfully',
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: 'Copy failed',
+        description: 'Failed to copy to clipboard. Please check clipboard permissions.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleDownload = () => {

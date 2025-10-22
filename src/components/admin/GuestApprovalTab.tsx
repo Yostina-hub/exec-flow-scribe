@@ -141,7 +141,11 @@ export function GuestApprovalTab() {
       }
 
       // Copy to clipboard
-      await navigator.clipboard.writeText(quickLink);
+      try {
+        await navigator.clipboard.writeText(quickLink);
+      } catch (error) {
+        console.error('Clipboard error:', error);
+      }
 
       toast({
         title: "Guest approved",
@@ -276,12 +280,21 @@ export function GuestApprovalTab() {
                     size="sm"
                     variant="outline"
                     onClick={async () => {
-                      const link = `${window.location.origin}/quick-join/${request.meeting_id}`;
-                      await navigator.clipboard.writeText(link);
-                      toast({
-                        title: "Link copied",
-                        description: "Quick access link copied to clipboard",
-                      });
+                      try {
+                        const link = `${window.location.origin}/quick-join/${request.meeting_id}`;
+                        await navigator.clipboard.writeText(link);
+                        toast({
+                          title: "Link copied",
+                          description: "Quick access link copied to clipboard",
+                        });
+                      } catch (error) {
+                        console.error('Clipboard error:', error);
+                        toast({
+                          title: "Copy failed",
+                          description: "Failed to copy link. Please check clipboard permissions.",
+                          variant: "destructive",
+                        });
+                      }
                     }}
                   >
                     <Copy className="h-4 w-4 mr-1" />

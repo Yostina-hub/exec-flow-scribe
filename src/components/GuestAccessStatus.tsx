@@ -80,12 +80,21 @@ export function GuestAccessStatus() {
   };
 
   const handleCopyLink = async (meetingId: string) => {
-    const link = `${window.location.origin}/quick-join/${meetingId}`;
-    await navigator.clipboard.writeText(link);
-    toast({
-      title: "Link copied",
-      description: "Quick access link copied to clipboard",
-    });
+    try {
+      const link = `${window.location.origin}/quick-join/${meetingId}`;
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: "Link copied",
+        description: "Quick access link copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy link. Please check clipboard permissions.",
+        variant: "destructive",
+      });
+    }
   };
 
   if (loading) {

@@ -213,12 +213,21 @@ SELECT * FROM cron.job;
                       size="sm"
                       variant="outline"
                       className="absolute top-2 right-2"
-                      onClick={() => {
-                        navigator.clipboard.writeText(setupInstructions);
-                        toast({
-                          title: 'Copied',
-                          description: 'SQL copied to clipboard',
-                        });
+                      onClick={async () => {
+                        try {
+                          await navigator.clipboard.writeText(setupInstructions);
+                          toast({
+                            title: 'Copied',
+                            description: 'SQL copied to clipboard',
+                          });
+                        } catch (error) {
+                          console.error('Clipboard error:', error);
+                          toast({
+                            title: 'Copy failed',
+                            description: 'Failed to copy to clipboard. Please check clipboard permissions.',
+                            variant: 'destructive',
+                          });
+                        }
                       }}
                     >
                       Copy SQL

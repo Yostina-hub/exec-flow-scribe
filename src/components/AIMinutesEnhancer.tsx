@@ -121,7 +121,15 @@ export function AIMinutesEnhancer({ minutes, meetingId, onMinutesUpdate }: AIMin
         </div>
 
         <Button
-          onClick={() => navigator.clipboard.writeText(minutes)}
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText(minutes);
+              toast.success('Minutes copied to clipboard');
+            } catch (error) {
+              console.error('Clipboard error:', error);
+              toast.error('Failed to copy to clipboard. Please try again or check clipboard permissions.');
+            }
+          }}
           disabled={!minutes}
           variant="secondary"
           className="w-full gap-2"

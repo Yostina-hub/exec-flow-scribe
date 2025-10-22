@@ -72,13 +72,22 @@ export const MeetingCard = ({
     getUser();
   }, []);
 
-  const handleCopyLink = () => {
-    const meetingUrl = `${window.location.origin}/meetings/${id}`;
-    navigator.clipboard.writeText(meetingUrl);
-    toast({
-      title: "Link copied",
-      description: "Meeting link copied to clipboard",
-    });
+  const handleCopyLink = async () => {
+    try {
+      const meetingUrl = `${window.location.origin}/meetings/${id}`;
+      await navigator.clipboard.writeText(meetingUrl);
+      toast({
+        title: "Link copied",
+        description: "Meeting link copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy link. Please check clipboard permissions.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleJoinVirtualRoom = () => {

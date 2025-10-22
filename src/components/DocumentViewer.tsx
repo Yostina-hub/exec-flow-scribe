@@ -40,12 +40,21 @@ const DocumentViewer = () => {
     });
   };
 
-  const handleCopyToClipboard = () => {
-    navigator.clipboard.writeText(content);
-    toast({
-      title: "Copied",
-      description: "Document content copied to clipboard"
-    });
+  const handleCopyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({
+        title: "Copied",
+        description: "Document content copied to clipboard"
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to copy to clipboard. Please check clipboard permissions.",
+        variant: "destructive"
+      });
+    }
   };
 
   return (

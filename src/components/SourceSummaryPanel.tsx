@@ -60,12 +60,21 @@ export const SourceSummaryPanel = ({ sourceIds, targetLanguage }: SourceSummaryP
     }
   }, [sourceIds, targetLanguage]);
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(summary);
-    toast({
-      title: "Copied!",
-      description: "Summary copied to clipboard",
-    });
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(summary);
+      toast({
+        title: "Copied!",
+        description: "Summary copied to clipboard",
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy to clipboard. Please check clipboard permissions.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

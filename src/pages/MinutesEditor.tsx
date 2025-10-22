@@ -288,13 +288,22 @@ export default function MinutesEditor() {
     setSelectedSegment(segment);
   };
 
-  const handleCopySegment = (content: string, e: React.MouseEvent) => {
+  const handleCopySegment = async (content: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(content);
-    toast({
-      title: 'Copied',
-      description: 'Transcript segment copied to clipboard',
-    });
+    try {
+      await navigator.clipboard.writeText(content);
+      toast({
+        title: 'Copied',
+        description: 'Transcript segment copied to clipboard',
+      });
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: 'Copy failed',
+        description: 'Failed to copy to clipboard. Please check clipboard permissions.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSubmitForSignOff = async () => {

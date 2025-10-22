@@ -112,14 +112,23 @@ const MeetingChatPanel = ({ meetingId, sourceIds, sourceTitles }: MeetingChatPan
     })) || []);
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(autoSummary || "");
-    setCopied(true);
-    toast({
-      title: "Copied to clipboard",
-      description: "Summary has been copied to your clipboard",
-    });
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(autoSummary || "");
+      setCopied(true);
+      toast({
+        title: "Copied to clipboard",
+        description: "Summary has been copied to your clipboard",
+      });
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy to clipboard. Please check clipboard permissions.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

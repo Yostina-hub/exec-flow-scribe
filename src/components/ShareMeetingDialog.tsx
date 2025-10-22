@@ -40,16 +40,26 @@ export function ShareMeetingDialog({
   
   const shareText = `You're invited to: ${meetingTitle}\n\nDate: ${meetingDate}\nTime: ${meetingTime}\n\nMeeting Details: ${meetingUrl}${videoConferenceUrl ? `\n\nJoin Video Call: ${videoConferenceUrl}` : ''}`;
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(videoConferenceUrl || meetingUrl);
-    setCopied(true);
-    toast.success('Link copied to clipboard');
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(videoConferenceUrl || meetingUrl);
+      setCopied(true);
+      toast.success('Link copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast.error('Failed to copy link. Please check clipboard permissions.');
+    }
   };
 
-  const handleCopyAll = () => {
-    navigator.clipboard.writeText(shareText);
-    toast.success('Meeting details copied to clipboard');
+  const handleCopyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      toast.success('Meeting details copied to clipboard');
+    } catch (error) {
+      console.error('Clipboard error:', error);
+      toast.error('Failed to copy details. Please check clipboard permissions.');
+    }
   };
 
   const handleShareEmail = async () => {
