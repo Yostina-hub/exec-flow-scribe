@@ -12,11 +12,11 @@ interface GuestRequest {
   meeting_id: string;
   status: 'pending' | 'approved' | 'rejected';
   created_at: string;
-  meeting: {
-    title: string;
-    start_time: string;
-    status: string;
-  };
+  meeting?: {
+    title?: string | null;
+    start_time?: string | null;
+    status?: string | null;
+  } | null;
 }
 
 export function GuestAccessStatus() {
@@ -111,51 +111,57 @@ export function GuestAccessStatus() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {requests.map((request) => (
-          <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-medium">{request.meeting.title}</h3>
-                {getStatusBadge(request.status)}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                {new Date(request.meeting.start_time).toLocaleString()}
-              </p>
-              {request.status === 'approved' && (
-                <p className="text-xs text-green-600 mt-1">
-                  ✓ You can now access this meeting
+        {requests.map((request) => {
+          const meetingTitle = request.meeting?.title || "Meeting (details unavailable)";
+          const meetingStart = request.meeting?.start_time
+            ? new Date(request.meeting.start_time).toLocaleString()
+            : "Start time unavailable";
+          return (
+            <div key={request.id} className="flex items-center justify-between p-4 border rounded-lg">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-medium">{meetingTitle}</h3>
+                  {getStatusBadge(request.status)}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  {meetingStart}
                 </p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              {request.status === 'approved' && (
-                <>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleCopyLink(request.meeting_id)}
-                  >
-                    <Copy className="h-4 w-4 mr-1" />
-                    Copy Link
+                {request.status === 'approved' && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ You can now access this meeting
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {request.status === 'approved' && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleCopyLink(request.meeting_id)}
+                    >
+                      <Copy className="h-4 w-4 mr-1" />
+                      Copy Link
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => navigate(`/quick-join/${request.meeting_id}`)}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Join
+                    </Button>
+                  </>
+                )}
+                {request.status === 'pending' && (
+                  <Button size="sm" variant="outline" disabled>
+                    <Clock className="h-4 w-4 mr-1" />
+                    Awaiting Approval
                   </Button>
-                  <Button
-                    size="sm"
-                    onClick={() => navigate(`/quick-join/${request.meeting_id}`)}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-1" />
-                    Join
-                  </Button>
-                </>
-              )}
-              {request.status === 'pending' && (
-                <Button size="sm" variant="outline" disabled>
-                  <Clock className="h-4 w-4 mr-1" />
-                  Awaiting Approval
-                </Button>
-              )}
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </CardContent>
     </Card>
   );
