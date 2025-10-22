@@ -7,6 +7,12 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
   Calendar,
   Clock,
   MapPin,
@@ -469,9 +475,31 @@ const MeetingDetail = () => {
                   <Sparkles className="h-4 w-4" />
                   Open in Notebook
                 </Button>
-                <Button variant="outline" size="icon">
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <MoreHorizontal className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => setShowRescheduleDialog(true)}>
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Reschedule Meeting
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowManageAttendeesDialog(true)}>
+                      <Users className="h-4 w-4 mr-2" />
+                      Manage Attendees
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowViewMinutesDialog(true)}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Previous Minutes
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setShowCreateSignatureDialog(true)}>
+                      <FileSignature className="h-4 w-4 mr-2" />
+                      Request Sign-Off
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
           </div>
