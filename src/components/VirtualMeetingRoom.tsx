@@ -8,8 +8,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power } from 'lucide-react';
 import * as THREE from 'three';
+import { LiveTranscription } from './LiveTranscription';
 
 interface VirtualMeetingRoomProps {
   meetingId: string;
@@ -634,6 +635,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
   const [handRaised, setHandRaised] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isRecording, setIsRecording] = useState(false);
+  const [meetingDuration, setMeetingDuration] = useState(0);
   const [realTimeMetrics, setRealTimeMetrics] = useState({
     engagement: 85,
     activeTime: 0,
@@ -702,6 +704,14 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
     }
     return () => clearInterval(interval);
   }, [isRecording]);
+
+  // Meeting duration timer (total time in meeting)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setMeetingDuration(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   const fetchMeetingData = async () => {
     const { data: meetingData } = await supabase
@@ -819,6 +829,23 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleEndMeeting = async () => {
+    if (!isHost) return;
+    
+    await supabase
+      .from('meetings')
+      .update({ 
+        status: 'completed',
+        actual_end_time: new Date().toISOString()
+      })
+      .eq('id', meetingId);
+
+    toast({
+      title: "Meeting Ended",
+      description: "Minutes will be generated automatically",
+    });
+  };
+
   return (
     <div className="h-screen w-full flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
       {/* Enhanced Top Bar with Real-Time Metrics */}
@@ -833,6 +860,16 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
               {participants.length} participants • Engagement: {realTimeMetrics.engagement.toFixed(0)}%
             </p>
           </div>
+          
+          {/* Meeting Duration Timer - Always Visible */}
+          <div className="flex flex-col items-center px-4 py-2 rounded-lg border border-primary/30 bg-primary/5">
+            <p className="text-xs text-muted-foreground mb-1">Meeting Duration</p>
+            <Badge variant="outline" className="font-mono text-lg px-4 py-1 border-primary/50">
+              <Clock className="h-4 w-4 mr-2" />
+              {formatTime(meetingDuration)}
+            </Badge>
+          </div>
+
           {isRecording && (
             <Badge variant="destructive" className="animate-pulse px-4 py-2">
               <div className="w-2 h-2 rounded-full bg-white mr-2 animate-ping" />
@@ -881,6 +918,18 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
               Raise Hand
             </span>
           </Button>
+
+          {/* Host End Meeting Button */}
+          {isHost && (
+            <Button
+              variant="destructive"
+              className="gap-2 font-semibold"
+              onClick={handleEndMeeting}
+            >
+              <Power className="h-4 w-4" />
+              End Meeting
+            </Button>
+          )}
         </div>
       </div>
 
@@ -1201,37 +1250,8 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="transcription" className="flex-1 overflow-hidden">
-              <ScrollArea className="h-full p-4">
-                <div className="space-y-3">
-                  {transcription.map((t: any, idx) => (
-                    <div 
-                      key={t.id} 
-                      className="p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/20 border-l-4 border-blue-500/50 animate-fade-in"
-                      style={{ animationDelay: `${idx * 0.1}s` }}
-                    >
-                      <p className="text-xs font-medium text-blue-500 mb-2 flex items-center gap-2">
-                        <Clock className="h-3 w-3" />
-                        {new Date(t.created_at).toLocaleTimeString()}
-                      </p>
-                      <p className="text-sm leading-relaxed">{t.text}</p>
-                    </div>
-                  ))}
-                  {transcription.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                      <MessageSquare className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p className="text-sm font-medium">Live Transcription</p>
-                      <p className="text-xs mt-2">Start speaking to see real-time transcription</p>
-                    </div>
-                  )}
-                  {transcription.length > 0 && (
-                    <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                      Transcribing in real-time
-                    </div>
-                  )}
-                </div>
-              </ScrollArea>
+            <TabsContent value="transcription" className="flex-1 overflow-hidden p-4">
+              <LiveTranscription meetingId={meetingId} isRecording={isRecording} />
             </TabsContent>
           </Tabs>
         </Card>

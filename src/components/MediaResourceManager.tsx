@@ -38,6 +38,8 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
     url: '',
     description: ''
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
 
   useEffect(() => {
     fetchResources();
@@ -72,18 +74,40 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
     };
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setSelectedFile(file);
+    
+    // Create preview for images
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFilePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setFilePreview(null);
+    }
+
+    // Auto-fill title if empty
+    if (!newResource.title) {
+      setNewResource({ ...newResource, title: file.name });
+    }
+  };
+
+  const handleUploadFile = async () => {
+    if (!selectedFile) return;
+
     setUploading(true);
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${meetingId}/${Date.now()}.${fileExt}`;
 
       const { error: uploadError, data } = await supabase.storage
         .from('meeting-media')
-        .upload(fileName, file);
+        .upload(fileName, selectedFile);
 
       if (uploadError) throw uploadError;
 
@@ -95,15 +119,17 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
         .from('meeting_resources')
         .insert({
           meeting_id: meetingId,
-          title: newResource.title || file.name,
+          title: newResource.title || selectedFile.name,
           type: newResource.type,
           url: publicUrl,
           description: newResource.description,
-          file_size: file.size,
-          file_type: file.type
+          file_size: selectedFile.size,
+          file_type: selectedFile.type
         });
 
       setNewResource({ title: '', type: 'presentation', url: '', description: '' });
+      setSelectedFile(null);
+      setFilePreview(null);
       toast({
         title: "Media Uploaded",
         description: "Resource is now available in the meeting room",
@@ -117,6 +143,11 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleCancelFile = () => {
+    setSelectedFile(null);
+    setFilePreview(null);
   };
 
   const handleAddURL = async () => {
@@ -318,6 +349,76 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
           </div>
         )}
 
+        {/* File Preview Section - Show selected file before upload */}
+        {selectedFile && (
+          <div className="space-y-4 p-4 border-2 border-primary rounded-lg bg-primary/5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+                <h3 className="font-semibold">File Ready to Upload</h3>
+              </div>
+              <Button variant="ghost" size="sm" onClick={handleCancelFile}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="p-4 rounded-lg bg-background border-2 border-primary/20">
+              {filePreview ? (
+                <div className="flex items-center gap-4">
+                  <img 
+                    src={filePreview} 
+                    alt="Preview" 
+                    className="h-20 w-20 object-cover rounded-lg border"
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{selectedFile.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <Badge variant="secondary" className="mt-1">
+                      {selectedFile.type}
+                    </Badge>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-lg border-2 border-dashed flex items-center justify-center bg-muted">
+                    {getResourceIcon(newResource.type)}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{selectedFile.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
+                    <Badge variant="secondary" className="mt-1">
+                      {selectedFile.type}
+                    </Badge>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Button 
+              onClick={handleUploadFile} 
+              disabled={uploading || !newResource.title}
+              className="w-full gap-2"
+              size="lg"
+            >
+              {uploading ? (
+                <>
+                  <Clock className="h-4 w-4 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                <>
+                  <Send className="h-4 w-4" />
+                  Upload to Virtual Room
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+
         {/* Upload Section */}
         <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
           <div className="flex items-center gap-2 mb-2">
@@ -366,8 +467,8 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
               <Input
                 id="file-upload"
                 type="file"
-                onChange={handleFileUpload}
-                disabled={uploading}
+                onChange={handleFileSelect}
+                disabled={uploading || !!selectedFile}
                 className="cursor-pointer"
               />
             </div>
