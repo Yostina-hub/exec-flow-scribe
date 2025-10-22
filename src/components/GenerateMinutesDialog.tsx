@@ -90,6 +90,10 @@ export const GenerateMinutesDialog = ({
       });
 
       if (error) throw error;
+      
+      if (data?.error) {
+        throw new Error(data.error);
+      }
 
       setMinutes(data.minutes);
       
@@ -100,9 +104,16 @@ export const GenerateMinutesDialog = ({
     } catch (error: any) {
       console.error('Error generating minutes:', error);
       const msg = error?.message || (typeof error === 'string' ? error : 'Could not generate minutes');
+      const is402 = /Payment required|402|insufficient_quota|exceeded your current quota/i.test(msg);
+      const is429 = /Rate limit|Too Many Requests|429/i.test(msg);
+      
       toast({
-        title: 'Generation failed',
-        description: msg,
+        title: is402 ? 'AI credits required' : is429 ? 'Rate limit reached' : 'Generation failed',
+        description: is402 
+          ? 'Please add AI credits to your OpenAI account or wait for Lovable AI credits to refresh.'
+          : is429
+          ? 'Too many requests. Please wait a minute and try again.'
+          : msg,
         variant: 'destructive',
       });
     } finally {
@@ -143,21 +154,23 @@ export const GenerateMinutesDialog = ({
             <FileText className="h-5 w-5" />
             AI-Generated Meeting Minutes
           </DialogTitle>
-          <DialogDescription className="flex items-center gap-2">
-            Comprehensive summary of your meeting with key decisions and action items
-            <Badge variant="outline" className="ml-2 gap-1">
-              {aiProvider === 'lovable_ai' ? (
-                <>
-                  <Brain className="h-3 w-3" />
-                  Lovable AI
-                </>
-              ) : (
-                <>
-                  <BookOpen className="h-3 w-3" />
-                  NotebookLM
-                </>
-              )}
-            </Badge>
+          <DialogDescription>
+            <div className="flex items-center gap-2">
+              <span>Comprehensive summary of your meeting with key decisions and action items</span>
+              <Badge variant="outline" className="ml-2 gap-1">
+                {aiProvider === 'lovable_ai' ? (
+                  <>
+                    <Brain className="h-3 w-3" />
+                    Lovable AI
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="h-3 w-3" />
+                    NotebookLM
+                  </>
+                )}
+              </Badge>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

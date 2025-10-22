@@ -78,13 +78,7 @@ export const useAudioRecorder = (meetingId: string) => {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          sampleRate: 24000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true
-        } 
+        audio: true
       });
 
       const supported = pickSupportedMimeType();
