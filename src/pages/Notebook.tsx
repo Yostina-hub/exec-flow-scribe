@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   FileText,
@@ -26,6 +27,10 @@ import MeetingChatPanel from "@/components/MeetingChatPanel";
 import MeetingStudioPanel from "@/components/MeetingStudioPanel";
 import { AddSourceDialog } from "@/components/AddSourceDialog";
 import { CreateNotebookDialog } from "@/components/CreateNotebookDialog";
+import { AudioOverviewPlayer } from "@/components/AudioOverviewPlayer";
+import { TimelineView } from "@/components/TimelineView";
+import { StudyGuideGenerator } from "@/components/StudyGuideGenerator";
+import { ChatWithCitations } from "@/components/ChatWithCitations";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -479,8 +484,41 @@ const Notebook = () => {
           </ScrollArea>
         </div>
 
-        {/* Center Panel - Chat */}
-        <div className="col-span-5 flex flex-col bg-background">
+        {/* Center Panel - Chat & Timeline */}
+        <div className="col-span-5 flex flex-col bg-background p-4">
+          <Tabs defaultValue="chat" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="chat">Chat with Citations</TabsTrigger>
+              <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            </TabsList>
+            <TabsContent value="chat" className="flex-1">
+              <ChatWithCitations sourceIds={selectedSources} />
+            </TabsContent>
+            <TabsContent value="timeline" className="flex-1">
+              <TimelineView sourceIds={selectedSources} />
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right Panel - Studio & Study Guide */}
+        <div className="col-span-4 flex flex-col bg-background p-4">
+          <Tabs defaultValue="studio" className="h-full flex flex-col">
+            <TabsList className="grid w-full grid-cols-3 mb-4">
+              <TabsTrigger value="studio">Studio</TabsTrigger>
+              <TabsTrigger value="study">Study Guide</TabsTrigger>
+              <TabsTrigger value="audio">Audio</TabsTrigger>
+            </TabsList>
+            <TabsContent value="studio" className="flex-1">
+              <MeetingStudioPanel selectedMeetingIds={selectedSources} />
+            </TabsContent>
+            <TabsContent value="study" className="flex-1">
+              <StudyGuideGenerator sourceIds={selectedSources} />
+            </TabsContent>
+            <TabsContent value="audio" className="flex-1">
+              <AudioOverviewPlayer sourceIds={selectedSources} notebookId={currentNotebook || ''} />
+            </TabsContent>
+          </Tabs>
+        </div>
           {selectedSources.length === 0 ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center space-y-6 max-w-md">

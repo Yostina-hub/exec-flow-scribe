@@ -1,4 +1,3 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
@@ -13,9 +12,13 @@ serve(async (req) => {
   }
 
   try {
-    const { meetingId } = await req.json();
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
+    const { sourceIds } = await req.json();
     
+    if (!sourceIds || sourceIds.length === 0) {
+      throw new Error('No source IDs provided');
+    }
+
+    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
     if (!GEMINI_API_KEY) {
       throw new Error('GEMINI_API_KEY not configured');
     }
@@ -24,87 +27,68 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get meeting data
-    const { data: meeting, error: meetingError } = await supabase
-      .from('meetings')
-      .select('*, transcriptions(*), decisions(*), action_items(*)')
-      .eq('id', meetingId)
-      .single();
+    const { data: sources, error: sourcesError } = await supabase
+      .from('notebook_sources')
+      .select('*')
+      .in('id', sourceIds);
 
-    if (meetingError) throw meetingError;
+    if (sourcesError) throw sourcesError;
 
-    // Generate study guide using AI
-    const prompt = `Based on this meeting content, create a comprehensive study guide:
+    const combinedContent = sources.map(s => 
+      `Source: ${s.title}\n${s.content || s.summary || ''}`
+    ).join('\n\n---\n\n');
 
-Meeting: ${meeting.title}
-Description: ${meeting.description || 'N/A'}
+    const prompt = `Create a study guide from this content:
 
-Transcript: ${meeting.transcriptions?.[0]?.content || 'No transcript available'}
+# Study Guide
 
-Key Decisions:
-${meeting.decisions?.map((d: any) => `- ${d.decision_text}`).join('\n') || 'None'}
+## Key Concepts
+5-10 main concepts with definitions
 
-Action Items:
-${meeting.action_items?.map((a: any) => `- ${a.title}`).join('\n') || 'None'}
+## Important Terms
+10-15 key terms glossary
 
-Create a study guide with:
-1. Key Concepts (bullet points of main ideas)
-2. Important Terms (definitions of key terms mentioned)
-3. Summary Points (concise takeaways)
-4. Discussion Questions (thought-provoking questions)
-5. Action Points (what needs to be remembered/done)
+## Summary
+3-4 paragraph summary
 
-Format as JSON with sections: key_concepts (array), terms (array of {term, definition}), summary_points (array), discussion_questions (array), action_points (array)`;
+## Practice Questions
+10 questions (3 easy, 4 medium, 3 hard)
 
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${GEMINI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
-        messages: [
-          { role: 'system', content: 'You are an expert at creating educational study guides. Always respond with valid JSON.' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.7,
-      }),
-    });
+## Further Study
+3-5 topics for deeper exploration
 
-    if (!response.ok) {
-      throw new Error(`AI API error: ${response.status}`);
-    }
+Content:
+${combinedContent.substring(0, 20000)}`;
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.3,
+            maxOutputTokens: 4096,
+          }
+        })
+      }
+    );
+
+    if (!response.ok) throw new Error('Failed to generate');
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    
-    // Parse JSON response
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    const studyGuide = jsonMatch ? JSON.parse(jsonMatch[0]) : { error: 'Failed to parse response' };
+    const studyGuide = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-    // Save to database
-    const { data: savedOutput, error: saveError } = await supabase
-      .from('studio_outputs')
-      .insert({
-        meeting_id: meetingId,
-        output_type: 'study_guide',
-        content: studyGuide,
-      })
-      .select()
-      .single();
-
-    if (saveError) throw saveError;
-
-    return new Response(JSON.stringify({ studyGuide, outputId: savedOutput.id }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ studyGuide, sourceCount: sources.length }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
 
   } catch (error) {
-    console.error('Error in generate-study-guide:', error);
-    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
   }
 });

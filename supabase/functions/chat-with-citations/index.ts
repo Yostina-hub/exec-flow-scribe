@@ -12,10 +12,10 @@ serve(async (req) => {
   }
 
   try {
-    const { sourceIds } = await req.json();
+    const { query, sourceIds } = await req.json();
     
-    if (!sourceIds || sourceIds.length === 0) {
-      throw new Error('No source IDs provided');
+    if (!query) {
+      throw new Error('No query provided');
     }
 
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
@@ -27,6 +27,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
+    // Fetch sources
     const { data: sources, error: sourcesError } = await supabase
       .from('notebook_sources')
       .select('*')
@@ -34,25 +35,21 @@ serve(async (req) => {
 
     if (sourcesError) throw sourcesError;
 
-    const combinedContent = sources.map(s => 
-      `Source: ${s.title}\n${s.content || s.summary || ''}`
+    // Create context with source IDs
+    const contextWithIds = sources.map((s, idx) => 
+      `[SOURCE_${idx}] Title: ${s.title}\nType: ${s.source_type}\n\nContent:\n${s.content || s.summary || ''}`
     ).join('\n\n---\n\n');
 
-    const prompt = `Extract chronological events from this content.
-    
-Return JSON array:
-[
-  {
-    "date": "ISO date or descriptive",
-    "title": "Event title",
-    "description": "Description",
-    "source": "Source title",
-    "category": "milestone/decision/event/etc"
-  }
-]
+    const prompt = `You are a helpful AI assistant answering questions based on provided sources.
 
-Content:
-${combinedContent.substring(0, 20000)}`;
+IMPORTANT: When you reference information from sources, cite them using [SOURCE_X] notation where X is the source number.
+
+User question: ${query}
+
+Sources:
+${contextWithIds.substring(0, 20000)}
+
+Provide a clear, comprehensive answer with inline citations. After your answer, list which sources were most relevant.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
@@ -62,30 +59,36 @@ ${combinedContent.substring(0, 20000)}`;
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.1,
-            maxOutputTokens: 4096,
+            temperature: 0.3,
+            maxOutputTokens: 2048,
           }
         })
       }
     );
 
-    if (!response.ok) throw new Error('Failed to generate');
+    if (!response.ok) {
+      throw new Error('Failed to generate answer');
+    }
 
     const data = await response.json();
-    let timelineText = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
-    
-    const jsonMatch = timelineText.match(/```json\s*([\s\S]*?)\s*```/) || 
-                     timelineText.match(/```\s*([\s\S]*?)\s*```/) ||
-                     [null, timelineText];
-    
-    const timeline = JSON.parse(jsonMatch[1].trim());
+    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    // Extract cited source indices
+    const citationMatches = answer.matchAll(/\[SOURCE_(\d+)\]/g);
+    const citedIndices = new Set([...citationMatches].map(m => parseInt(m[1])));
+    const citedSources = sources.filter((_, idx) => citedIndices.has(idx));
 
     return new Response(
-      JSON.stringify({ timeline, sourceCount: sources.length }),
+      JSON.stringify({ 
+        answer, 
+        sources: citedSources.map(s => ({ id: s.id, title: s.title, type: s.source_type })),
+        totalSources: sources.length 
+      }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
