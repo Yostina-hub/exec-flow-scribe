@@ -714,6 +714,25 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     };
   }, [meetingId, currentUserId, participants]);
 
+  // Ensure current user is recorded as an attendee (prevents empty participant list)
+  useEffect(() => {
+    const ensureAttendee = async () => {
+      if (!currentUserId || !meetingId) return;
+      const { data: existing } = await supabase
+        .from('meeting_attendees')
+        .select('id')
+        .eq('meeting_id', meetingId)
+        .eq('user_id', currentUserId)
+        .maybeSingle();
+      if (!existing) {
+        await supabase
+          .from('meeting_attendees')
+          .insert({ meeting_id: meetingId, user_id: currentUserId, attended: true, role: 'optional' });
+      }
+    };
+    void ensureAttendee();
+  }, [meetingId, currentUserId]);
+
   // Detect active speaker
   useEffect(() => {
     const speakingParticipant = participants.find(p => p.is_speaking);
@@ -1044,10 +1063,10 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-500 bg-clip-text text-transparent">
               {meeting?.title}
             </h1>
-            <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
-              <Activity className="h-3 w-3" />
-              {participants.length} participants • Engagement: {realTimeMetrics.engagement.toFixed(0)}%
-            </p>
+              <p className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                <Activity className="h-3 w-3" />
+                {onlineUsers.length} participants • Engagement: {realTimeMetrics.engagement.toFixed(0)}%
+              </p>
           </div>
           
           {/* Meeting Duration Timer - Always Visible */}
@@ -1407,6 +1426,9 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                             : 'bg-primary text-primary-foreground'
                         }`}>
                           {p.profiles?.full_name?.[0] || '?'}
+                          {onlineUsers.includes(p.user_id) && (
+                            <span className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-background rounded-full" />
+                          )}
                           {p.is_speaking && (
                             <span className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-ping" />
                           )}
@@ -1417,6 +1439,9 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                             {eventSettings.vipParticipants.includes(p.user_id) && (
                               <Star className="h-3 w-3 text-yellow-500" />
                             )}
+                            <Badge variant={onlineUsers.includes(p.user_id) ? 'secondary' : 'outline'} className="text-[10px]">
+                              {onlineUsers.includes(p.user_id) ? 'Online' : 'Offline'}
+                            </Badge>
                           </p>
                           <div className="flex items-center gap-2 mt-1">
                             <Badge variant="outline" className="text-xs">{p.role}</Badge>
