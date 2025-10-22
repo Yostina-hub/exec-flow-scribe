@@ -57,34 +57,72 @@ serve(async (req) => {
     const jwt = authHeader?.replace("Bearer ", "");
     const { data: userData } = await supabase.auth.getUser(jwt || "");
 
+    // Get meeting attendees with names to map speakers
+    const { data: attendees } = await supabase
+      .from("meeting_attendees")
+      .select(`
+        user_id,
+        profiles(full_name)
+      `)
+      .eq("meeting_id", normalizedMeetingId);
+
+    // Map speaker to actual attendee name if possible
+    let speakerName = speaker?.trim() || 'Unknown Speaker';
+    
+    // If no specific speaker name or generic name, try to identify from attendees
+    if (userData?.user?.id && attendees && attendees.length > 0) {
+      // Check if current user is speaking
+      const currentUserAttendee = attendees.find((a: any) => a.user_id === userData.user.id);
+      const userProfile = currentUserAttendee?.profiles as any;
+      if (userProfile?.full_name) {
+        speakerName = userProfile.full_name;
+      } else if (!speaker || speaker === 'User' || speaker === 'Speaker') {
+        // Assign speaker numbers based on order in attendees
+        const speakerIndex = attendees.findIndex((a: any) => {
+          const profile = a.profiles as any;
+          return !speakerName.includes(profile?.full_name || '');
+        });
+        if (speakerIndex >= 0) {
+          const attendeeProfile = (attendees[speakerIndex] as any).profiles as any;
+          if (attendeeProfile?.full_name) {
+            speakerName = attendeeProfile.full_name;
+          }
+        }
+        // Fallback to sequential numbering if no match found
+        if (speakerName === speaker?.trim() || speakerName === 'Unknown Speaker') {
+          const { count } = await supabase
+            .from("transcriptions")
+            .select("speaker_name", { count: 'exact', head: true })
+            .eq("meeting_id", normalizedMeetingId);
+          speakerName = `Speaker ${(count || 0) + 1}`;
+        }
+      }
+    }
+
     const insertPayload: Record<string, any> = {
       meeting_id: normalizedMeetingId,
       content: content.trim(),
       timestamp: timestamp || new Date().toISOString(),
       detected_language: detectedLanguage || 'auto',
-      confidence_score: 0.95
+      confidence_score: 0.95,
+      speaker_name: speakerName
     };
-    
-    // Add speaker if provided
-    if (speaker && speaker.trim()) {
-      insertPayload.speaker_name = speaker.trim();
-    }
 
-    console.log(`💾 Saving transcription: speaker=${speaker}, lang=${detectedLanguage}`);
+    console.log(`💾 Saving transcription: speaker=${speakerName}, lang=${detectedLanguage}`);
 
     // Check if there's a recent transcription from the same speaker (within 30 seconds)
     const { data: recentTranscriptions } = await supabase
       .from("transcriptions")
       .select("*")
       .eq("meeting_id", normalizedMeetingId)
-      .eq("speaker_name", speaker?.trim() || "")
+      .eq("speaker_name", speakerName)
       .order("timestamp", { ascending: false })
       .limit(1);
 
     const now = new Date(timestamp || new Date().toISOString());
     const shouldConsolidate = recentTranscriptions && 
       recentTranscriptions.length > 0 && 
-      recentTranscriptions[0].speaker_name === (speaker?.trim() || "") &&
+      recentTranscriptions[0].speaker_name === speakerName &&
       (now.getTime() - new Date(recentTranscriptions[0].timestamp).getTime()) < 30000; // 30 seconds
 
     if (shouldConsolidate && recentTranscriptions[0]) {

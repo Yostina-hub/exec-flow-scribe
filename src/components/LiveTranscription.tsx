@@ -51,19 +51,36 @@ const normalizeMeetingId = (id: string) => {
   return uuidRegex.test(id) ? id : stringToUUID(id);
 };
 
-// Speaker colors for realtime mode
-const SPEAKER_COLORS: Record<string, string> = {
-  'User': 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
-  'Assistant': 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
-  'Speaker': 'bg-gray-500/10 text-gray-700 dark:text-gray-300 border-gray-500/20',
+// Speaker colors - dynamically assign colors to different speakers
+const SPEAKER_COLOR_PALETTE = [
+  'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20',
+  'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20',
+  'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20',
+  'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20',
+  'bg-pink-500/10 text-pink-700 dark:text-pink-300 border-pink-500/20',
+  'bg-cyan-500/10 text-cyan-700 dark:text-cyan-300 border-cyan-500/20',
+  'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20',
+  'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300 border-indigo-500/20',
+];
+
+const getSpeakerColor = (speaker: string, allSpeakers: string[]): string => {
+  const index = allSpeakers.indexOf(speaker);
+  return SPEAKER_COLOR_PALETTE[index % SPEAKER_COLOR_PALETTE.length];
 };
 
 export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionProps) => {
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [useRealtime, setUseRealtime] = useState(false);
+  const [allSpeakers, setAllSpeakers] = useState<string[]>([]);
   const { toast } = useToast();
 
   const normalizedId = normalizeMeetingId(meetingId);
+  
+  // Extract unique speakers for color mapping
+  useEffect(() => {
+    const speakers = [...new Set(transcriptions.map(t => t.speaker_name || 'Unknown Speaker'))];
+    setAllSpeakers(speakers);
+  }, [transcriptions]);
   
   const { isConnected, transcripts: realtimeTranscripts, rateLimited, isProcessing } = useOpenAIRealtime(
     normalizedId,
@@ -255,22 +272,25 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
           <div className="space-y-4">
             {useRealtime && realtimeTranscripts.length > 0 && (
               <>
-                {realtimeTranscripts.map((rt) => (
-                  <div key={rt.id} className="animate-fade-in">
-                    <div className="p-4 rounded-lg bg-muted/50 border-l-4" style={{ borderLeftColor: rt.speaker === 'User' ? '#3b82f6' : '#a855f7' }}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs ${SPEAKER_COLORS[rt.speaker] || SPEAKER_COLORS['Speaker']}`}
-                        >
-                          {rt.speaker}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">Live</span>
+                {realtimeTranscripts.map((rt) => {
+                  const realtimeSpeakers = [...new Set(realtimeTranscripts.map(t => t.speaker))];
+                  return (
+                    <div key={rt.id} className="animate-fade-in">
+                      <div className="p-4 rounded-lg bg-muted/50 border-l-4" style={{ borderLeftColor: rt.speaker === 'User' ? '#3b82f6' : '#a855f7' }}>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge 
+                            variant="outline" 
+                            className={`text-xs ${getSpeakerColor(rt.speaker, realtimeSpeakers)}`}
+                          >
+                            {rt.speaker}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">Live</span>
+                        </div>
+                        <p className="text-sm leading-relaxed">{rt.text}</p>
                       </div>
-                      <p className="text-sm leading-relaxed">{rt.text}</p>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {transcriptions.length > 0 && <Separator className="my-4" />}
               </>
             )}
@@ -281,9 +301,9 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
                     <div className="flex items-center gap-2">
                       <Badge 
                         variant="outline" 
-                        className={`text-xs ${SPEAKER_COLORS[transcript.speaker_name || 'Speaker'] || SPEAKER_COLORS['Speaker']}`}
+                        className={`text-xs ${getSpeakerColor(transcript.speaker_name || 'Unknown Speaker', allSpeakers)}`}
                       >
-                        {transcript.speaker_name || 'Speaker'}
+                        {transcript.speaker_name || 'Unknown Speaker'}
                       </Badge>
                       <span className="text-xs text-muted-foreground">
                         {formatTime(transcript.timestamp)}
