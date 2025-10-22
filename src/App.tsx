@@ -45,157 +45,44 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-        <IntegrationProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route 
-              path="/google-oauth-callback" 
-              element={
-                <ProtectedRoute>
-                  <GoogleOAuthCallback />
-                </ProtectedRoute>
-              } 
-            />
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <Index />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/calendar"
-              element={
-                <ProtectedRoute>
-                  <CalendarView />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meetings"
-              element={
-                <ProtectedRoute>
-                  <Meetings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meetings/:id"
-              element={
-                <ProtectedRoute>
-                  <MeetingDetail />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/meetings/:meetingId/minutes"
-              element={
-                <ProtectedRoute>
-                  <MinutesEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/drive"
-              element={
-                <ProtectedRoute>
-                  <DriveIntegration />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebooks"
-              element={
-                <ProtectedRoute>
-                  <NotebooksLibrary />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notebook"
-              element={
-                <ProtectedRoute>
-                  <Notebook />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/signature/:requestId"
-              element={
-                <ProtectedRoute>
-                  <SignatureApproval />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/actions"
-              element={
-                <ProtectedRoute>
-                  <Actions />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/analytics"
-              element={
-                <ProtectedRoute>
-                  <Analytics />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/notifications"
-              element={
-                <ProtectedRoute>
-                  <Notifications />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <RequirePermission resource="users" action="manage">
-                    <Administration />
-                  </RequirePermission>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/integration-test"
-              element={
-                <ProtectedRoute>
-                  <IntegrationTest />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/document" element={<DocumentViewer />} />
-            <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </IntegrationProvider>
+      <BrowserRouter>
+          {/* Temporarily disable IntegrationProvider to resolve hook issue */}
+          <>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route 
+                path="/google-oauth-callback" 
+                element={
+                  <ProtectedRoute>
+                    <GoogleOAuthCallback />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
+              <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
+              <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetail /></ProtectedRoute>} />
+              <Route path="/meetings/:meetingId/minutes" element={<ProtectedRoute><MinutesEditor /></ProtectedRoute>} />
+              <Route path="/drive" element={<ProtectedRoute><DriveIntegration /></ProtectedRoute>} />
+              <Route path="/notebooks" element={<ProtectedRoute><NotebooksLibrary /></ProtectedRoute>} />
+              <Route path="/notebook" element={<ProtectedRoute><Notebook /></ProtectedRoute>} />
+              <Route path="/signature/:requestId" element={<ProtectedRoute><SignatureApproval /></ProtectedRoute>} />
+              <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Administration /></RequirePermission></ProtectedRoute>} />
+              <Route path="/integration-test" element={<ProtectedRoute><IntegrationTest /></ProtectedRoute>} />
+              <Route path="/document" element={<DocumentViewer />} />
+              <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </>
+        </BrowserRouter>
         <Toaster />
-      </BrowserRouter>
-  </QueryClientProvider>
+   </QueryClientProvider>
 );
 
 export default App;
