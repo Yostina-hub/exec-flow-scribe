@@ -140,3 +140,6 @@ verify_jwt = true
 
 [functions.save-google-credentials]
 verify_jwt = true
+
+[functions.list-upcoming-meetings]
+verify_jwt = false

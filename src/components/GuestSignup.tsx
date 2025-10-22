@@ -34,17 +34,16 @@ export function GuestSignup() {
     
     console.log('Fetching meetings between:', now.toISOString(), 'and', twoHoursFromNow.toISOString());
     
-    const { data, error } = await supabase
-      .from('meetings')
-      .select('id, title, start_time')
-      .gte('start_time', now.toISOString())
-      .lte('start_time', twoHoursFromNow.toISOString())
-      .order('start_time', { ascending: true })
-      .limit(20);
+    const { data: fnData, error } = await supabase.functions.invoke('list-upcoming-meetings', {
+      body: {
+        from: now.toISOString(),
+        to: twoHoursFromNow.toISOString(),
+      },
+    });
     
-    console.log('Meetings fetched:', data, 'Error:', error);
+    console.log('Meetings fetched:', fnData, 'Error:', error);
     
-    if (data) setMeetings(data);
+    if (fnData) setMeetings(fnData as any[]);
     setRefreshing(false);
   };
 
