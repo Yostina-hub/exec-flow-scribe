@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation } from 'lucide-react';
 import * as THREE from 'three';
 
 interface VirtualMeetingRoomProps {
@@ -816,7 +816,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
                         }`}>
                           {resource.type === 'video' && <Video className="h-4 w-4" />}
                           {resource.type === 'presentation' && <Presentation className="h-4 w-4" />}
-                          {resource.type === 'image' && <ImageIcon className="h-4 w-4" />}
+                          {resource.type === 'image' && <Image className="h-4 w-4" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-sm truncate">{resource.title}</p>
