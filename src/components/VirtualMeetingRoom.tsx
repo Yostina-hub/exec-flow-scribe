@@ -1410,7 +1410,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
               </ScrollArea>
             </TabsContent>
 
-            <TabsContent value="transcription" className="flex-1 overflow-hidden p-4">
+            <TabsContent value="transcription" forceMount className="flex-1 overflow-hidden p-4">
               <div className="space-y-4">
                 {/* Hidden BrowserSpeechRecognition component that handles actual recording */}
                 <div className="hidden">

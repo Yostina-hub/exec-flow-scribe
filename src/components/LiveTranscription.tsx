@@ -204,13 +204,13 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
   const autoSwitchedRef = useRef(false);
   useEffect(() => {
     if (!useRealtime || !isRecording) return;
-    if (rateLimited || (!isConnected && transcriptions.length === 0)) {
+    if (rateLimited || !isConnected) {
       if (!autoSwitchedRef.current) {
         autoSwitchedRef.current = true;
         switchToBrowser();
       }
     }
-  }, [useRealtime, isRecording, rateLimited, isConnected, transcriptions.length]);
+  }, [useRealtime, isRecording, rateLimited, isConnected]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
