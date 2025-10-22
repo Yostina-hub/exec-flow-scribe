@@ -665,7 +665,54 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     vipParticipants: []
   });
   const [activeSpeaker, setActiveSpeaker] = useState<any>(null);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  // Presence tracking for join/leave notifications
+  useEffect(() => {
+    const presenceChannel = supabase
+      .channel(`meeting-presence-${meetingId}`)
+      .on('presence', { event: 'sync' }, () => {
+        const state = presenceChannel.presenceState();
+        const userIds = Object.keys(state).flatMap(key => 
+          state[key].map((presence: any) => presence.user_id)
+        );
+        setOnlineUsers(userIds);
+      })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        newPresences.forEach((presence: any) => {
+          const participant = participants.find(p => p.user_id === presence.user_id);
+          const name = participant?.profiles?.full_name || 'Someone';
+          toast({
+            title: "Participant Joined",
+            description: `${name} joined the meeting`,
+          });
+        });
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        leftPresences.forEach((presence: any) => {
+          const participant = participants.find(p => p.user_id === presence.user_id);
+          const name = participant?.profiles?.full_name || 'Someone';
+          toast({
+            title: "Participant Left",
+            description: `${name} left the meeting`,
+            variant: "destructive",
+          });
+        });
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await presenceChannel.track({
+            user_id: currentUserId,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(presenceChannel);
+    };
+  }, [meetingId, currentUserId, participants]);
 
   // Detect active speaker
   useEffect(() => {
@@ -696,6 +743,45 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       supabase.removeChannel(channel);
     };
   }, [meetingId]);
+
+  // Listen for hand raise notifications (host only)
+  useEffect(() => {
+    if (!isHost) return;
+
+    const handRaiseChannel = supabase
+      .channel(`hand-raise-${meetingId}`)
+      .on('broadcast', { event: 'hand-raised' }, ({ payload }) => {
+        const participant = participants.find(p => p.user_id === payload.user_id);
+        const name = participant?.profiles?.full_name || 'A participant';
+        toast({
+          title: "Hand Raised",
+          description: `${name} would like to speak`,
+          action: participant ? (
+            <Button
+              size="sm"
+              onClick={async () => {
+                await supabase
+                  .from('meeting_attendees')
+                  .update({ can_speak: true })
+                  .eq('meeting_id', meetingId)
+                  .eq('user_id', payload.user_id);
+                toast({
+                  title: "Permission Granted",
+                  description: `${name} can now speak`,
+                });
+              }}
+            >
+              Allow
+            </Button>
+          ) : undefined,
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(handRaiseChannel);
+    };
+  }, [meetingId, isHost, participants]);
 
   useEffect(() => {
     fetchMeetingData();
@@ -855,6 +941,19 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       .eq('meeting_id', meetingId)
       .eq('user_id', currentUserId);
 
+    // Broadcast hand raise event for real-time notification
+    if (newValue) {
+      const channel = supabase.channel(`hand-raise-${meetingId}`);
+      await channel.send({
+        type: 'broadcast',
+        event: 'hand-raised',
+        payload: {
+          user_id: currentUserId,
+          timestamp: new Date().toISOString()
+        }
+      });
+    }
+
     toast({
       title: newValue ? "Hand Raised" : "Hand Lowered",
       description: newValue ? "The host has been notified" : "Request withdrawn",
@@ -875,10 +974,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       setIsRecording(false);
       setIsPaused(false);
 
-      // Close the room immediately in the UI
-      onCloseRoom?.();
-
-      // Best-effort: mark meeting completed (non-blocking for UI)
+      // Mark meeting completed - this will prevent others from rejoining
       await supabase
         .from('meetings')
         .update({ 
@@ -886,12 +982,59 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
           actual_end_time: new Date().toISOString()
         })
         .eq('id', meetingId);
+
+      // Broadcast meeting ended to all participants
+      const broadcastChannel = supabase.channel(`meeting-ended-${meetingId}`);
+      await broadcastChannel.send({
+        type: 'broadcast',
+        event: 'meeting-ended',
+        payload: { meetingId }
+      });
+
+      toast({
+        title: "Meeting Ended",
+        description: "All participants have been notified",
+      });
+
+      // Close the room
+      setTimeout(() => {
+        onCloseRoom?.();
+      }, 2000);
     } catch (e: any) {
       console.error('VirtualRoom: End meeting failed:', e);
-      // Ensure room closes even if backend update fails
+      toast({
+        title: "Error",
+        description: "Failed to end meeting properly",
+        variant: "destructive",
+      });
+      // Still close the room
       onCloseRoom?.();
     }
   };
+
+  // Listen for meeting ended event (non-host participants)
+  useEffect(() => {
+    if (isHost) return;
+
+    const endChannel = supabase
+      .channel(`meeting-ended-${meetingId}`)
+      .on('broadcast', { event: 'meeting-ended' }, () => {
+        toast({
+          title: "Meeting Ended",
+          description: "The host has ended this meeting",
+          variant: "destructive",
+        });
+        setTimeout(() => {
+          onCloseRoom?.();
+          navigate('/meetings');
+        }, 3000);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(endChannel);
+    };
+  }, [meetingId, isHost, onCloseRoom, navigate]);
   return (
     <div className="h-screen w-full flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
       {/* Enhanced Top Bar with Real-Time Metrics */}
@@ -1141,6 +1284,52 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
             <TabsContent value="participants" className="flex-1 overflow-hidden">
               <ScrollArea className="h-full p-4">
                 <div className="space-y-3">
+                  {/* Raised Hands Section - Host View */}
+                  {isHost && participants.filter(p => p.speaking_requested_at).length > 0 && (
+                    <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-orange-500/20 to-yellow-500/10 border-2 border-orange-500">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Hand className="h-5 w-5 text-orange-500 animate-bounce" />
+                        <p className="text-sm font-semibold text-orange-500">
+                          RAISED HANDS ({participants.filter(p => p.speaking_requested_at).length})
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        {participants
+                          .filter(p => p.speaking_requested_at)
+                          .map(participant => (
+                            <div 
+                              key={participant.user_id}
+                              className="flex items-center justify-between p-2 rounded-lg bg-background/50"
+                            >
+                              <p className="text-sm font-medium">
+                                {participant.profiles?.full_name || 'Unknown'}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  await supabase
+                                    .from('meeting_attendees')
+                                    .update({ 
+                                      can_speak: true,
+                                      speaking_requested_at: null 
+                                    })
+                                    .eq('meeting_id', meetingId)
+                                    .eq('user_id', participant.user_id);
+                                  toast({
+                                    title: "Permission Granted",
+                                    description: `${participant.profiles?.full_name} can now speak`,
+                                  });
+                                }}
+                              >
+                                Allow to Speak
+                              </Button>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Active Speaker Display */}
                   {activeSpeaker && (
                     <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-green-500/20 to-emerald-500/10 border-2 border-green-500 animate-pulse">

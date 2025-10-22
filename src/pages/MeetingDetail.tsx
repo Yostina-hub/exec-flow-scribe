@@ -432,8 +432,21 @@ const MeetingDetail = () => {
     );
   }
 
+  // Check if meeting is completed - prevent rejoining
+  const isMeetingCompleted = meeting?.status === 'completed';
+  
   // Show Virtual Meeting Room
   if (showVirtualRoom && meeting && userId) {
+    if (isMeetingCompleted) {
+      toast({
+        title: "Meeting Ended",
+        description: "This meeting has been completed and closed by the host",
+        variant: "destructive",
+      });
+      setShowVirtualRoom(false);
+      return null;
+    }
+    
     return (
       <VirtualMeetingRoom
         meetingId={meetingId}
@@ -494,7 +507,7 @@ const MeetingDetail = () => {
               </div>
               <div className="flex gap-2">
                 {/* Participants - Direct Join Virtual Room Button */}
-                {meeting?.created_by !== userId && (
+                {meeting?.created_by !== userId && meeting?.status !== 'completed' && (
                   <Button
                     className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
                     onClick={() => setShowVirtualRoom(true)}
@@ -502,6 +515,12 @@ const MeetingDetail = () => {
                     <Sparkles className="h-4 w-4" />
                     Join Virtual Room
                   </Button>
+                )}
+                
+                {meeting?.status === 'completed' && (
+                  <Badge variant="secondary" className="text-muted-foreground">
+                    Meeting Completed
+                  </Badge>
                 )}
                 
                 {isOnlineMeeting && hasVideoLink && (
@@ -710,7 +729,7 @@ const MeetingDetail = () => {
                       </div>
                       <JitsiMeetEmbed
                         roomName={meeting.video_conference_url.split('/').pop() || meetingId}
-                        displayName={userId || 'Guest'}
+                        displayName={userFullName || userId || 'Guest'}
                         width="100%"
                         height="600px"
                       />
