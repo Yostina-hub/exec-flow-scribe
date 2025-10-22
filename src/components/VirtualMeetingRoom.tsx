@@ -803,6 +803,30 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     };
   }, [meetingId, currentUserId, participants]);
 
+  // Listen for kick events
+  useEffect(() => {
+    const kickChannel = supabase
+      .channel(`meeting:${meetingId}`)
+      .on('broadcast', { event: 'participant_kicked' }, ({ payload }) => {
+        if (payload.userId === currentUserId) {
+          toast({
+            title: "Removed from Meeting",
+            description: "You have been removed from this meeting by the host",
+            variant: "destructive",
+          });
+          // Redirect to meetings page after a short delay
+          setTimeout(() => {
+            navigate('/meetings');
+          }, 2000);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(kickChannel);
+    };
+  }, [meetingId, currentUserId, navigate, toast]);
+
   // Ensure current user is recorded as an attendee (prevents empty participant list)
   useEffect(() => {
     const ensureAttendee = async () => {

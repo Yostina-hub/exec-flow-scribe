@@ -193,6 +193,45 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
     });
   };
 
+  const handleStopSpeaking = async (attendeeId: string) => {
+    await supabase
+      .from('meeting_attendees')
+      .update({ 
+        can_speak: false,
+        speaking_requested_at: null
+      })
+      .eq('id', attendeeId);
+
+    toast({
+      title: "Speaking Stopped",
+      description: "Participant microphone has been revoked",
+    });
+  };
+
+  const handleKickOut = async (attendeeId: string, userId: string, participantName: string) => {
+    // Remove participant from meeting
+    await supabase
+      .from('meeting_attendees')
+      .delete()
+      .eq('id', attendeeId);
+
+    // Broadcast kick event to notify the participant
+    const channel = supabase.channel(`meeting:${meetingId}`);
+    channel.send({
+      type: 'broadcast',
+      event: 'participant_kicked',
+      payload: { userId }
+    });
+
+    // Refresh participants list
+    fetchAllData();
+
+    toast({
+      title: "Participant Removed",
+      description: `${participantName} has been removed from the meeting`,
+    });
+  };
+
   const handleHandRaiseResponse = async (attendeeId: string, grant: boolean) => {
     await supabase
       .from('meeting_attendees')
@@ -472,12 +511,33 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
                           </div>
                         )}
 
+                        {p.can_speak && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleStopSpeaking(p.id)}
+                            className="text-orange-500 hover:text-orange-600"
+                          >
+                            <MicOff className="h-4 w-4 mr-1" />
+                            Stop Speaking
+                          </Button>
+                        )}
+
                         <Button
                           size="icon"
                           variant={p.can_speak ? "default" : "outline"}
                           onClick={() => handleToggleMic(p.id, p.can_speak)}
                         >
                           {p.can_speak ? <Mic className="h-4 w-4" /> : <MicOff className="h-4 w-4" />}
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleKickOut(p.id, p.user_id, p.profiles?.full_name || 'Participant')}
+                        >
+                          <XCircle className="h-4 w-4 mr-1" />
+                          Kick Out
                         </Button>
 
                         {p.speaking_requested_at && (
