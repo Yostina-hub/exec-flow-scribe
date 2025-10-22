@@ -40,11 +40,6 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
   const openedRef = useRef(false);
 
-  // Redirect guests to their dashboard
-  if (!guestLoading && isGuest) {
-    return <GuestDashboard />;
-  }
-
   useEffect(() => {
     checkUserRole();
     fetchData();
@@ -203,7 +198,12 @@ export default function Index() {
   // Calculate dates with meetings for calendar
   const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
-  if (loading) {
+  // Redirect guests to their dedicated dashboard
+  if (!guestLoading && isGuest) {
+    return <GuestDashboard />;
+  }
+
+  if (loading || guestLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[400px]">
