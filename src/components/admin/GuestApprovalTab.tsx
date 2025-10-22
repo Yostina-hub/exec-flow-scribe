@@ -114,12 +114,37 @@ export function GuestApprovalTab() {
       // Generate quick access link
       const quickLink = `${window.location.origin}/quick-join/${request.meeting_id}`;
 
+      // Send approval email with meeting link
+      try {
+        const { error: emailError } = await supabase.functions.invoke('send-guest-approval-email', {
+          body: {
+            guestEmail: request.email,
+            guestName: request.full_name,
+            meetingTitle: request.meeting.title,
+            meetingStartTime: request.meeting.start_time,
+            meetingId: request.meeting_id,
+            quickAccessLink: quickLink,
+          },
+        });
+
+        if (emailError) {
+          console.error('Failed to send email:', emailError);
+          toast({
+            title: "Approved but email failed",
+            description: "Guest was approved but the notification email could not be sent. Please share the link manually.",
+            variant: "destructive",
+          });
+        }
+      } catch (emailError) {
+        console.error('Email notification error:', emailError);
+      }
+
       // Copy to clipboard
       await navigator.clipboard.writeText(quickLink);
 
       toast({
         title: "Guest approved",
-        description: `${request.full_name} has been granted access. Quick link copied to clipboard!`,
+        description: `${request.full_name} has been granted access. Email notification sent and link copied to clipboard!`,
       });
     } catch (error: any) {
       toast({

@@ -73,6 +73,21 @@ export function GuestSignup() {
 
       if (requestError) throw requestError;
 
+      // Send confirmation email to guest
+      try {
+        await supabase.functions.invoke('send-guest-request-confirmation', {
+          body: {
+            guestEmail: email,
+            guestName: fullName,
+            meetingTitle: meetings.find(m => m.id === meetingId)?.title || 'Meeting',
+            meetingStartTime: meetings.find(m => m.id === meetingId)?.start_time || new Date().toISOString(),
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send confirmation email:', emailError);
+        // Don't throw - request was still created successfully
+      }
+
       setRequestSubmitted(true);
       toast({
         title: "Request submitted!",
