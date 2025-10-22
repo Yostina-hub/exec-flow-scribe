@@ -334,54 +334,72 @@ export const useAudioRecorder = (meetingId: string) => {
   }, [normalizedMeetingId, toast]);
 
   const stopRecording = useCallback(async () => {
-    console.log('Stop recording called, isRecording:', isRecording);
-    if (mediaRecorderRef.current && isRecording) {
-      try {
-        // Ensure proper cleanup
-        if (mediaRecorderRef.current.state !== 'inactive') {
-          mediaRecorderRef.current.stop();
-        }
-        setIsRecording(false);
-        setIsPaused(false);
-        
-        // Update meeting status to "completed" when recording stops
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-        if (uuidRegex.test(meetingId)) {
-          await supabase
-            .from('meetings')
-            .update({ 
-              status: 'completed',
-              actual_end_time: new Date().toISOString()
-            })
-            .eq('id', meetingId);
-        }
-        
-        toast({
-          title: 'Recording stopped',
-          description: 'Meeting completed, generating minutes...',
-        });
-      } catch (e) {
-        console.error('Error stopping recording:', e);
-        // Force state update even if stop fails
-        setIsRecording(false);
-        setIsPaused(false);
+    console.log('Stop recording called');
+    
+    if (!mediaRecorderRef.current) {
+      console.log('No media recorder to stop');
+      return;
+    }
+
+    const recorder = mediaRecorderRef.current;
+    
+    try {
+      // Stop the recorder if it's active
+      if (recorder.state === 'recording' || recorder.state === 'paused') {
+        recorder.stop();
+        console.log('Stop command sent to recorder, state was:', recorder.state);
+      } else {
+        console.log('Recorder already inactive');
       }
-    }
-  }, [isRecording, meetingId, toast]);
-
-  const pauseRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording && !isPaused) {
-      mediaRecorderRef.current.pause();
-      setIsPaused(true);
-    }
-  }, [isRecording, isPaused]);
-
-  const resumeRecording = useCallback(() => {
-    if (mediaRecorderRef.current && isRecording && isPaused) {
-      mediaRecorderRef.current.resume();
+      
+      setIsRecording(false);
+      setIsPaused(false);
+      
+      // Update meeting status to "completed" when recording stops
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(meetingId)) {
+        await supabase
+          .from('meetings')
+          .update({ 
+            status: 'completed',
+            actual_end_time: new Date().toISOString()
+          })
+          .eq('id', meetingId);
+      }
+      
+      toast({
+        title: 'Recording stopped',
+        description: 'Meeting completed, generating minutes...',
+      });
+    } catch (e) {
+      console.error('Error stopping recording:', e);
+      // Force state update even if stop fails
+      setIsRecording(false);
       setIsPaused(false);
     }
-  }, [isRecording, isPaused]);
+  }, [meetingId, toast]);
+
+  const pauseRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      try {
+        mediaRecorderRef.current.pause();
+        setIsPaused(true);
+      } catch (err) {
+        console.error('Error pausing recording:', err);
+      }
+    }
+  }, []);
+
+  const resumeRecording = useCallback(() => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      try {
+        mediaRecorderRef.current.resume();
+        setIsPaused(false);
+      } catch (err) {
+        console.error('Error resuming recording:', err);
+      }
+    }
+  }, []);
 
   return {
     isRecording,

@@ -30,9 +30,11 @@ export const useAudioRecording = (): AudioRecordingHook => {
     try {
       setError(null);
       
-      // Request microphone access
+      // Request microphone access with 24kHz sample rate
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
+          sampleRate: 24000,
+          channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
@@ -76,11 +78,15 @@ export const useAudioRecording = (): AudioRecordingHook => {
           streamRef.current.getTracks().forEach(track => track.stop());
           streamRef.current = null;
         }
+        
+        setIsRecording(false);
+        setIsPaused(false);
       };
 
       mediaRecorder.onerror = (event: any) => {
         console.error('MediaRecorder error:', event);
         setError('Recording error occurred');
+        setIsRecording(false);
       };
 
       startTimeRef.current = Date.now();
@@ -91,35 +97,64 @@ export const useAudioRecording = (): AudioRecordingHook => {
     } catch (err: any) {
       console.error('Error starting recording:', err);
       setError(err.message || 'Failed to access microphone');
+      setIsRecording(false);
     }
   }, []);
 
   const stopRecording = useCallback(async (): Promise<Blob | null> => {
     return new Promise((resolve) => {
-      if (mediaRecorderRef.current && isRecording) {
-        mediaRecorderRef.current.onstop = () => {
-          const mimeType = mediaRecorderRef.current?.mimeType || 'audio/webm';
-          const blob = new Blob(audioChunksRef.current, { type: mimeType });
-          setAudioBlob(blob);
-          
-          const duration = Math.floor((Date.now() - startTimeRef.current - pauseTimeRef.current) / 1000);
-          setAudioDuration(duration);
-          
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-            streamRef.current = null;
-          }
-          
-          setIsRecording(false);
-          resolve(blob);
-        };
+      if (!mediaRecorderRef.current) {
+        console.log('No media recorder to stop');
+        resolve(null);
+        return;
+      }
 
-        mediaRecorderRef.current.stop();
-      } else {
+      const recorder = mediaRecorderRef.current;
+      
+      // If already inactive, just resolve
+      if (recorder.state === 'inactive') {
+        console.log('Recorder already inactive');
+        setIsRecording(false);
+        setIsPaused(false);
+        resolve(null);
+        return;
+      }
+
+      // Set up the stop handler
+      recorder.onstop = () => {
+        console.log('MediaRecorder stopped successfully');
+        const mimeType = recorder.mimeType || 'audio/webm';
+        const blob = new Blob(audioChunksRef.current, { type: mimeType });
+        setAudioBlob(blob);
+        
+        const duration = Math.floor((Date.now() - startTimeRef.current - pauseTimeRef.current) / 1000);
+        setAudioDuration(duration);
+        
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => {
+            track.stop();
+            console.log('Stopped track:', track.kind);
+          });
+          streamRef.current = null;
+        }
+        
+        setIsRecording(false);
+        setIsPaused(false);
+        resolve(blob);
+      };
+
+      // Stop the recorder
+      try {
+        recorder.stop();
+        console.log('Stop command sent to recorder');
+      } catch (err) {
+        console.error('Error stopping recorder:', err);
+        setIsRecording(false);
+        setIsPaused(false);
         resolve(null);
       }
     });
-  }, [isRecording]);
+  }, []);
 
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
