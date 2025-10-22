@@ -7,8 +7,7 @@ import { WhatsAppIntegration } from "@/components/WhatsAppIntegration";
 import { UrgentMessagesPanel } from "@/components/UrgentMessagesPanel";
 import { GuestAccessStatus } from "@/components/GuestAccessStatus";
 import { useIsGuest } from "@/hooks/useIsGuest";
-import GuestDashboard from "./GuestDashboard";
-import { 
+import {
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
   BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight, Brain, Search
@@ -199,9 +198,11 @@ export default function Index() {
   const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
   // Redirect guests to their dedicated dashboard
-  if (!guestLoading && isGuest) {
-    return <GuestDashboard />;
-  }
+  useEffect(() => {
+    if (!guestLoading && isGuest) {
+      navigate("/guest");
+    }
+  }, [isGuest, guestLoading, navigate]);
 
   if (loading || guestLoading) {
     return (

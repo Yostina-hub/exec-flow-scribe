@@ -24,6 +24,7 @@ import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
 import GuestSignup from "./pages/GuestSignup";
+import GuestDashboard from "./pages/GuestDashboard";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import DocumentViewer from "./components/DocumentViewer";
@@ -51,7 +52,8 @@ const App = () => (
             <Routes>
               <Route path="/auth" element={<Auth />} />
               <Route path="/guest-signup" element={<GuestSignup />} />
-              <Route 
+              <Route path="/guest" element={<ProtectedRoute><GuestDashboard /></ProtectedRoute>} />
+              <Route
                 path="/google-oauth-callback" 
                 element={
                   <ProtectedRoute>

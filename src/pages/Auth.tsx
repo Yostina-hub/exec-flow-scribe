@@ -19,17 +19,38 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+    const checkAndRedirect = async (userId: string) => {
+      try {
+        // Check if user has approved guest access
+        const { data: guestAccess } = await supabase
+          .from('guest_access_requests')
+          .select('status')
+          .eq('user_id', userId)
+          .eq('status', 'approved')
+          .maybeSingle();
+
+        if (guestAccess) {
+          navigate("/guest");
+        } else {
+          navigate("/");
+        }
+      } catch (error) {
+        console.error("Error checking guest status:", error);
         navigate("/");
+      }
+    };
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user?.id) {
+        checkAndRedirect(session.user.id);
       }
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session) {
-        navigate("/");
+      if (session?.user?.id) {
+        checkAndRedirect(session.user.id);
       }
     });
 
