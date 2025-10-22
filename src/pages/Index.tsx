@@ -207,7 +207,6 @@ export default function Index() {
       </Layout>
     );
   }
-  }
 
   return (
     <Layout>
