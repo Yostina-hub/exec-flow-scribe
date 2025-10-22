@@ -170,6 +170,7 @@ const MeetingDetail = () => {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [isGuest, setIsGuest] = useState(false);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   const meetingId = id || "demo-meeting-id";
   const meetingAccess = useMeetingAccess(id);
@@ -234,12 +235,51 @@ const MeetingDetail = () => {
     }
   }, [id]);
 
+  // Cleanup recording timer on unmount
+  useEffect(() => {
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  // Track recording time
+  useEffect(() => {
+    if (isRecording && !isPaused) {
+      // Start/resume timer
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+    } else {
+      // Pause or stop - clear timer
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+    }
+
+    return () => {
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+      }
+    };
+  }, [isRecording, isPaused]);
+
+  // Reset recording seconds when recording starts fresh
+  useEffect(() => {
+    if (isRecording && !wasRecordingRef.current) {
+      setRecordingSeconds(0);
+    }
+  }, [isRecording]);
+
   // Auto-generate minutes when recording stops
   useEffect(() => {
     const autoGenerateMinutes = async () => {
       const wasRecording = wasRecordingRef.current;
       
-      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating });
+      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating, recordingSeconds });
       
       // Check if recording just stopped (was recording, now not recording)
       if (wasRecording && !isRecording && !isAutoGenerating) {
