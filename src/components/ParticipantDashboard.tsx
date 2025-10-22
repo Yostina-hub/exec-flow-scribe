@@ -58,18 +58,119 @@ export function ParticipantDashboard({
   useEffect(() => {
     fetchAttendees();
 
-    // Real-time subscription for attendee changes
+    // Real-time subscription for attendee changes with notifications
     const channel = supabase
       .channel(`meeting-${meetingId}-attendees`)
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "INSERT",
           schema: "public",
           table: "meeting_attendees",
           filter: `meeting_id=eq.${meetingId}`,
         },
-        () => {
+        async (payload) => {
+          console.log('New attendee joined:', payload);
+          fetchAttendees();
+          
+          // Fetch participant name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', payload.new.user_id)
+            .single();
+          
+          if (profile && payload.new.user_id !== currentUserId) {
+            toast({
+              title: "Participant Joined",
+              description: `${profile.full_name} joined the meeting`,
+            });
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "meeting_attendees",
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        async (payload) => {
+          console.log('Attendee updated:', payload);
+          const oldRecord = payload.old as Attendee;
+          const newRecord = payload.new as Attendee;
+          
+          // Fetch participant name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', newRecord.user_id)
+            .single();
+          
+          const participantName = profile?.full_name || 'A participant';
+          
+          // Notify hand raise (show to host only)
+          if (!oldRecord.speaking_requested_at && newRecord.speaking_requested_at && isHost) {
+            toast({
+              title: "Hand Raised",
+              description: `${participantName} wants to speak`,
+            });
+          }
+          
+          // Notify mic granted (show to participant)
+          if (!oldRecord.can_speak && newRecord.can_speak && newRecord.user_id === currentUserId) {
+            toast({
+              title: "Microphone Access Granted",
+              description: "You can now speak",
+            });
+          }
+          
+          // Notify mic revoked (show to participant)
+          if (oldRecord.can_speak && !newRecord.can_speak && newRecord.user_id === currentUserId) {
+            toast({
+              title: "Microphone Access Revoked",
+              description: "You have been muted",
+              variant: "destructive",
+            });
+          }
+          
+          // Notify when someone starts speaking (show to all except speaker)
+          if (!oldRecord.is_speaking && newRecord.is_speaking && newRecord.user_id !== currentUserId) {
+            toast({
+              title: "Now Speaking",
+              description: `${participantName} is speaking`,
+            });
+          }
+          
+          fetchAttendees();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "meeting_attendees",
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        async (payload) => {
+          console.log('Attendee left:', payload);
+          
+          // Fetch participant name
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', payload.old.user_id)
+            .single();
+          
+          if (profile && payload.old.user_id !== currentUserId) {
+            toast({
+              title: "Participant Left",
+              description: `${profile.full_name} left the meeting`,
+            });
+          }
+          
           fetchAttendees();
         }
       )
@@ -78,7 +179,7 @@ export function ParticipantDashboard({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [meetingId]);
+  }, [meetingId, isHost, currentUserId, toast]);
 
   const fetchAttendees = async () => {
     const { data, error } = await supabase
