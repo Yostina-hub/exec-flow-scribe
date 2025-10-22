@@ -40,6 +40,13 @@ export default function Index() {
   const [searchQuery, setSearchQuery] = useState("");
   const openedRef = useRef(false);
 
+  // Redirect guests to their dedicated dashboard
+  useEffect(() => {
+    if (!guestLoading && isGuest) {
+      navigate("/guest");
+    }
+  }, [isGuest, guestLoading, navigate]);
+
   useEffect(() => {
     checkUserRole();
     fetchData();

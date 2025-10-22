@@ -49,11 +49,18 @@ interface AvailableMeeting {
 export default function GuestDashboard() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { guestName, loading: guestLoading } = useIsGuest();
+  const { guestName, isGuest, loading: guestLoading } = useIsGuest();
   const [meetings, setMeetings] = useState<GuestMeeting[]>([]);
   const [availableMeetings, setAvailableMeetings] = useState<AvailableMeeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [requesting, setRequesting] = useState<string | null>(null);
+
+  // Redirect non-guests to main dashboard
+  useEffect(() => {
+    if (!guestLoading && !isGuest) {
+      navigate("/");
+    }
+  }, [isGuest, guestLoading, navigate]);
 
   useEffect(() => {
     fetchGuestMeetings();

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
+import { useIsGuest } from "@/hooks/useIsGuest";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -17,11 +18,12 @@ const Auth = () => {
   const [title, setTitle] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isGuest, loading: guestLoading } = useIsGuest();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/");
+      if (session && !guestLoading) {
+        navigate(isGuest ? "/guest" : "/");
       }
     });
 
@@ -29,12 +31,17 @@ const Auth = () => {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session) {
-        navigate("/");
+        // Small delay to allow guest status to update
+        setTimeout(() => {
+          if (!guestLoading) {
+            navigate(isGuest ? "/guest" : "/");
+          }
+        }, 300);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, isGuest, guestLoading]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
