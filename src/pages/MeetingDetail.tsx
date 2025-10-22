@@ -482,6 +482,42 @@ const MeetingDetail = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
+                    {meeting?.status !== 'completed' && (
+                      <DropdownMenuItem onClick={async () => {
+                        if (!id) return;
+                        try {
+                          await supabase
+                            .from('meetings')
+                            .update({ 
+                              status: 'completed',
+                              actual_end_time: new Date().toISOString()
+                            })
+                            .eq('id', id);
+                          
+                          toast({
+                            title: 'Meeting completed',
+                            description: 'Minutes will be auto-generated if transcription is available',
+                          });
+                          
+                          // Refresh meeting data
+                          fetchMeetingDetails();
+                        } catch (error) {
+                          console.error('Error completing meeting:', error);
+                          toast({
+                            title: 'Error',
+                            description: 'Failed to complete meeting',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Complete Meeting
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem onClick={() => setShowMinutesDialog(true)}>
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Generate Minutes
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setShowRescheduleDialog(true)}>
                       <Calendar className="h-4 w-4 mr-2" />
                       Reschedule Meeting
