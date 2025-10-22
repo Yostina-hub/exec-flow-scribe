@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power, Square } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power, Square, Music } from 'lucide-react';
 import * as THREE from 'three';
 import { LiveTranscription } from './LiveTranscription';
 import { BrowserSpeechRecognition } from './BrowserSpeechRecognition';
@@ -26,6 +26,7 @@ interface EventSettings {
   lighting: 'ambient' | 'spotlight' | 'dramatic' | 'festive';
   backgroundTheme: 'corporate' | 'elegant' | 'futuristic' | 'minimal';
   vipParticipants: string[];
+  intermission?: boolean;
 }
 
 // Particle System for Ambient Effects
@@ -662,10 +663,16 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     mode: 'standard',
     lighting: 'ambient',
     backgroundTheme: 'futuristic',
-    vipParticipants: []
+    vipParticipants: [],
+    intermission: false,
   });
   const [activeSpeaker, setActiveSpeaker] = useState<any>(null);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
+  const [ambientOn, setAmbientOn] = useState(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const compressorRef = useRef<DynamicsCompressorNode | null>(null);
+  const noiseSrcRef = useRef<AudioBufferSourceNode | null>(null);
   const navigate = useNavigate();
 
   // Presence tracking for join/leave notifications
@@ -717,21 +724,103 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   // Ensure current user is recorded as an attendee (prevents empty participant list)
   useEffect(() => {
     const ensureAttendee = async () => {
-      if (!currentUserId || !meetingId) return;
-      const { data: existing } = await supabase
-        .from('meeting_attendees')
-        .select('id')
-        .eq('meeting_id', meetingId)
-        .eq('user_id', currentUserId)
-        .maybeSingle();
-      if (!existing) {
-        await supabase
+      try {
+        if (!currentUserId || !meetingId) return;
+        const { data: existing } = await supabase
           .from('meeting_attendees')
-          .insert({ meeting_id: meetingId, user_id: currentUserId, attended: true, role: 'optional' });
+          .select('id')
+          .eq('meeting_id', meetingId)
+          .eq('user_id', currentUserId)
+          .maybeSingle();
+        if (!existing) {
+          const { error: insErr } = await supabase
+            .from('meeting_attendees')
+            .insert({ meeting_id: meetingId, user_id: currentUserId, attended: true, role: 'optional' });
+          if (insErr) {
+            console.warn('Could not insert attendee (likely RLS):', insErr);
+          }
+        }
+      } catch (e) {
+        console.warn('ensureAttendee failed', e);
       }
     };
     void ensureAttendee();
   }, [meetingId, currentUserId]);
+
+
+  // Derived: displayed participants (active first, online first)
+  const displayedParticipants = [...participants].sort((a, b) => {
+    if (activeSpeaker && a.user_id === activeSpeaker.user_id) return -1;
+    if (activeSpeaker && b.user_id === activeSpeaker.user_id) return 1;
+    const aOnline = onlineUsers.includes(a.user_id);
+    const bOnline = onlineUsers.includes(b.user_id);
+    if (aOnline !== bOnline) return aOnline ? -1 : 1;
+    return (a.profiles?.full_name || '').localeCompare(b.profiles?.full_name || '');
+  });
+
+  // Ambient audio helpers
+  const createNoiseBuffer = (audioCtx: AudioContext) => {
+    const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    let lastOut = 0.0;
+    for (let i = 0; i < bufferSize; i++) {
+      const white = Math.random() * 2 - 1;
+      data[i] = (lastOut + (0.02 * white)) / 1.02; // simple brown noise
+      lastOut = data[i];
+      data[i] *= 0.3; // lower amplitude
+    }
+    return buffer;
+  };
+
+  const startAmbient = async () => {
+    if (ambientOn && audioCtxRef.current) return;
+    const ctx = new AudioContext();
+    const gain = ctx.createGain();
+    const comp = ctx.createDynamicsCompressor();
+    gain.gain.value = 0.05; // very low volume by default
+    comp.threshold.value = -24;
+    comp.knee.value = 30;
+    comp.ratio.value = 12;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.25;
+
+    const src = ctx.createBufferSource();
+    src.buffer = createNoiseBuffer(ctx);
+    src.loop = true;
+
+    src.connect(comp);
+    comp.connect(gain);
+    gain.connect(ctx.destination);
+    src.start(0);
+
+    audioCtxRef.current = ctx;
+    gainRef.current = gain;
+    compressorRef.current = comp;
+    noiseSrcRef.current = src;
+    setAmbientOn(true);
+  };
+
+  const stopAmbient = () => {
+    try {
+      noiseSrcRef.current?.stop();
+    } catch {}
+    noiseSrcRef.current = null;
+    gainRef.current = null;
+    compressorRef.current = null;
+    if (audioCtxRef.current) {
+      audioCtxRef.current.close();
+      audioCtxRef.current = null;
+    }
+    setAmbientOn(false);
+  };
+
+  // React to intermission state
+  useEffect(() => {
+    if (eventSettings.intermission) startAmbient();
+    else stopAmbient();
+  }, [eventSettings.intermission]);
+
 
   // Detect active speaker
   useEffect(() => {
@@ -1407,7 +1496,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                   {/* Regular Participants */}
                   <div className="border-t pt-3">
                     <p className="text-xs font-semibold text-muted-foreground mb-3">ALL PARTICIPANTS</p>
-                    {participants.map((p) => (
+                    {displayedParticipants.map((p) => (
                       <div
                         key={p.id}
                         className={`relative flex items-center gap-3 p-4 rounded-xl transition-all mb-2 ${
