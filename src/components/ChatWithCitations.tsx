@@ -81,19 +81,19 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 pr-4">
-        <div className="space-y-4">
+      <ScrollArea className="flex-1 px-4">
+        <div className="space-y-4 py-4">
           {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              <p>Ask questions about your sources and get answers with citations</p>
+            <div className="text-center text-muted-foreground py-12">
+              <p className="text-base">Ask questions about your sources and get answers with citations</p>
             </div>
           ) : (
             messages.map((msg, idx) => (
               <div key={idx} className={`space-y-2 ${msg.role === "user" ? "text-right" : ""}`}>
-                <div className={`inline-block max-w-[80%] p-3 rounded-lg ${
+                <div className={`inline-block max-w-[85%] px-4 py-3 rounded-2xl ${
                   msg.role === "user" 
                     ? "bg-primary text-primary-foreground" 
-                    : "bg-muted"
+                    : "bg-muted/60"
                 }`}>
                   <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
                     <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -113,7 +113,7 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
             ))
           )}
           {isLoading && (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground py-2">
               <Loader2 className="h-4 w-4 animate-spin" />
               <span className="text-sm">Thinking...</span>
             </div>
@@ -121,50 +121,50 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
         </div>
       </ScrollArea>
 
-      <div className="px-4 py-3 border-t space-y-3">
-        {messages.length === 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs whitespace-nowrap"
-              onClick={() => setInput("What are the key insights from these sources?")}
-            >
-              Key insights?
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs whitespace-nowrap"
-              onClick={() => setInput("Summarize the main points")}
-            >
-              Main points?
-            </Button>
-          </div>
-        )}
-        
-        <div className="flex gap-2">
+      <div className="px-4 py-4 border-t space-y-4 bg-background">
+        <div className="flex gap-3">
           <Input
             placeholder="Start typing..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
             disabled={isLoading || sourceIds.length === 0}
-            className="flex-1"
+            className="flex-1 bg-muted/40 border-muted-foreground/20 rounded-full px-4 h-11"
           />
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground whitespace-nowrap">
               {sourceIds.length} source{sourceIds.length !== 1 ? 's' : ''}
             </span>
             <Button 
               onClick={sendMessage} 
               disabled={isLoading || !input.trim() || sourceIds.length === 0}
               size="icon"
-              className="shrink-0"
+              className="shrink-0 rounded-full h-11 w-11"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        {messages.length === 0 && sourceIds.length > 0 && (
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            <button
+              onClick={() => setInput("What are the key insights from these sources?")}
+              className="flex-shrink-0 px-4 py-3 rounded-2xl bg-muted/40 hover:bg-muted/60 transition-colors text-sm text-left border border-muted-foreground/10"
+            >
+              What are the key insights from these sources?
+            </button>
+            <button
+              onClick={() => setInput("Summarize the main points")}
+              className="flex-shrink-0 px-4 py-3 rounded-2xl bg-muted/40 hover:bg-muted/60 transition-colors text-sm text-left border border-muted-foreground/10"
+            >
+              Summarize the main points
+            </button>
+          </div>
+        )}
+
+        <div className="text-xs text-muted-foreground text-center pt-2 border-t border-muted-foreground/10">
+          AI can be inaccurate; please double check its responses.
         </div>
       </div>
     </Card>
