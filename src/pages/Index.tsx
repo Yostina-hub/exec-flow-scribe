@@ -6,6 +6,8 @@ import { CEOBriefing } from "@/components/CEOBriefing";
 import { WhatsAppIntegration } from "@/components/WhatsAppIntegration";
 import { UrgentMessagesPanel } from "@/components/UrgentMessagesPanel";
 import { GuestAccessStatus } from "@/components/GuestAccessStatus";
+import { useIsGuest } from "@/hooks/useIsGuest";
+import GuestDashboard from "./GuestDashboard";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
@@ -24,6 +26,7 @@ import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "
 
 export default function Index() {
   const navigate = useNavigate();
+  const { isGuest, loading: guestLoading } = useIsGuest();
   const [meetings, setMeetings] = useState<any[]>([]);
   const [actions, setActions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +39,11 @@ export default function Index() {
   const [isCEO, setIsCEO] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const openedRef = useRef(false);
+
+  // Redirect guests to their dashboard
+  if (!guestLoading && isGuest) {
+    return <GuestDashboard />;
+  }
 
   useEffect(() => {
     checkUserRole();
