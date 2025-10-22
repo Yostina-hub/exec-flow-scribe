@@ -67,24 +67,24 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
   };
 
   return (
-    <Card className="p-0 h-full flex flex-col border-0 bg-transparent">
-      <div className="flex items-center justify-between px-4 py-3 border-b">
-        <h3 className="font-semibold text-base">Chat</h3>
+    <Card className="p-0 h-full flex flex-col border-0 bg-muted/30">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+        <h3 className="font-semibold text-lg">Chat</h3>
         <Button 
           variant="ghost" 
           size="sm"
           onClick={() => setMessages([])}
-          className="gap-2"
+          className="gap-2 hover:bg-muted/60"
         >
           <FileText className="h-4 w-4" />
           Refresh
         </Button>
       </div>
 
-      <ScrollArea className="flex-1 px-4">
-        <div className="space-y-4 py-4">
+      <ScrollArea className="flex-1 px-6">
+        <div className="space-y-6 py-6">
           {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-12">
+            <div className="text-center text-muted-foreground py-20">
               <p className="text-base">Ask questions about your sources and get answers with citations</p>
             </div>
           ) : (
@@ -121,7 +121,24 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
         </div>
       </ScrollArea>
 
-      <div className="px-4 py-4 border-t space-y-4 bg-background">
+      <div className="px-6 py-5 border-t border-border/50 space-y-4 bg-card/50">
+        {messages.length === 0 && sourceIds.length > 0 && (
+          <div className="grid grid-cols-1 gap-3">
+            <button
+              onClick={() => setInput("What are the key insights from these sources?")}
+              className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"
+            >
+              What are the key insights from these sources?
+            </button>
+            <button
+              onClick={() => setInput("Summarize the main points")}
+              className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"
+            >
+              Summarize the main points
+            </button>
+          </div>
+        )}
+        
         <div className="flex gap-3">
           <Input
             placeholder="Start typing..."
@@ -129,7 +146,7 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
             disabled={isLoading || sourceIds.length === 0}
-            className="flex-1 bg-muted/40 border-muted-foreground/20 rounded-full px-4 h-11"
+            className="flex-1 bg-background border-border/50 rounded-full px-5 h-12 text-base"
           />
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground whitespace-nowrap">
@@ -139,31 +156,14 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
               onClick={sendMessage} 
               disabled={isLoading || !input.trim() || sourceIds.length === 0}
               size="icon"
-              className="shrink-0 rounded-full h-11 w-11"
+              className="shrink-0 rounded-full h-12 w-12"
             >
               <Send className="h-4 w-4" />
             </Button>
           </div>
         </div>
 
-        {messages.length === 0 && sourceIds.length > 0 && (
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            <button
-              onClick={() => setInput("What are the key insights from these sources?")}
-              className="flex-shrink-0 px-4 py-3 rounded-2xl bg-muted/40 hover:bg-muted/60 transition-colors text-sm text-left border border-muted-foreground/10"
-            >
-              What are the key insights from these sources?
-            </button>
-            <button
-              onClick={() => setInput("Summarize the main points")}
-              className="flex-shrink-0 px-4 py-3 rounded-2xl bg-muted/40 hover:bg-muted/60 transition-colors text-sm text-left border border-muted-foreground/10"
-            >
-              Summarize the main points
-            </button>
-          </div>
-        )}
-
-        <div className="text-xs text-muted-foreground text-center pt-2 border-t border-muted-foreground/10">
+        <div className="text-xs text-muted-foreground text-center pt-1">
           AI can be inaccurate; please double check its responses.
         </div>
       </div>
