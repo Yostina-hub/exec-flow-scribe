@@ -82,11 +82,21 @@ Provide a clear, comprehensive answer with inline citations in the same language
     const citedIndices = new Set([...citationMatches].map(m => parseInt(m[1])));
     const citedSources = sources.filter((_, idx) => citedIndices.has(idx));
 
+    // Detect language from the query (simple heuristic based on character ranges)
+    let detectedLanguage = 'English';
+    if (/[\u1200-\u137F]/.test(query)) detectedLanguage = 'Amharic';
+    else if (/[\u0600-\u06FF]/.test(query)) detectedLanguage = 'Arabic';
+    else if (/[\u4E00-\u9FFF]/.test(query)) detectedLanguage = 'Chinese';
+    else if (/[\u3040-\u309F\u30A0-\u30FF]/.test(query)) detectedLanguage = 'Japanese';
+    else if (/[\uAC00-\uD7AF]/.test(query)) detectedLanguage = 'Korean';
+    else if (/[\u0590-\u05FF]/.test(query)) detectedLanguage = 'Hebrew';
+
     return new Response(
       JSON.stringify({ 
         answer, 
         sources: citedSources.map(s => ({ id: s.id, title: s.title, type: s.source_type })),
-        totalSources: sources.length 
+        totalSources: sources.length,
+        detectedLanguage
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );

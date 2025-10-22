@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { sourceIds } = await req.json();
+    const { sourceIds, targetLanguage } = await req.json();
 
     if (!sourceIds || !Array.isArray(sourceIds) || sourceIds.length === 0) {
       throw new Error("Source IDs are required");
@@ -55,17 +55,20 @@ serve(async (req) => {
       throw new Error("GEMINI_API_KEY not configured");
     }
 
+    const languageInstruction = targetLanguage 
+      ? `IMPORTANT: Generate the summary in ${targetLanguage} language, translating the content as needed.`
+      : `Detect the primary language of the sources and create your summary in THE SAME LANGUAGE as the sources.`;
+
     const systemPrompt = `You are an expert at analyzing and summarizing documents in ANY language including Amharic (አማርኛ), Arabic, Hebrew, Chinese, Japanese, and all other languages.
 
 CRITICAL INSTRUCTIONS:
-1. Detect the primary language of the sources
-2. Create your summary in THE SAME LANGUAGE as the sources
-3. If sources are in multiple languages, use the dominant language
-4. Use **bold markdown** for key terms, names, amounts, dates, and important concepts
-5. Identify main topics and themes with clear emphasis
-6. Highlight critical information like agreements, decisions, monetary values, and dates
-7. Note significant people, organizations, or entities
-8. Provide clear context about what these sources contain
+1. ${languageInstruction}
+2. If sources are in multiple languages and no target language is specified, use the dominant language
+3. Use **bold markdown** for key terms, names, amounts, dates, and important concepts
+4. Identify main topics and themes with clear emphasis
+5. Highlight critical information like agreements, decisions, monetary values, and dates
+6. Note significant people, organizations, or entities
+7. Provide clear context about what these sources contain
 
 Format the summary as a well-structured paragraph with key information emphasized in bold.`;
 

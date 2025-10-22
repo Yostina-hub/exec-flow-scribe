@@ -17,9 +17,10 @@ interface Message {
 
 interface ChatWithCitationsProps {
   sourceIds: string[];
+  onLanguageDetected?: (language: string) => void;
 }
 
-export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
+export const ChatWithCitations = ({ sourceIds, onLanguageDetected }: ChatWithCitationsProps) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -54,6 +55,11 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+      
+      // Notify parent about detected language
+      if (data.detectedLanguage && onLanguageDetected) {
+        onLanguageDetected(data.detectedLanguage);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       toast({

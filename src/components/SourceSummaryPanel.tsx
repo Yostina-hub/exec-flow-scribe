@@ -10,9 +10,10 @@ import ReactMarkdown from "react-markdown";
 
 interface SourceSummaryPanelProps {
   sourceIds: string[];
+  targetLanguage?: string;
 }
 
-export const SourceSummaryPanel = ({ sourceIds }: SourceSummaryPanelProps) => {
+export const SourceSummaryPanel = ({ sourceIds, targetLanguage }: SourceSummaryPanelProps) => {
   const [summary, setSummary] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [sources, setSources] = useState<Array<{ id: string; title: string; type: string }>>([]);
@@ -31,7 +32,7 @@ export const SourceSummaryPanel = ({ sourceIds }: SourceSummaryPanelProps) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-source-summary', {
-        body: { sourceIds }
+        body: { sourceIds, targetLanguage }
       });
 
       if (error) throw error;
@@ -57,7 +58,7 @@ export const SourceSummaryPanel = ({ sourceIds }: SourceSummaryPanelProps) => {
       setSummary("");
       setSources([]);
     }
-  }, [sourceIds]);
+  }, [sourceIds, targetLanguage]);
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(summary);

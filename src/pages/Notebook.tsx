@@ -66,6 +66,7 @@ const Notebook = () => {
   const [currentNotebook, setCurrentNotebook] = useState<string | null>(null);
   const [sources, setSources] = useState<NotebookSource[]>([]);
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [currentLanguage, setCurrentLanguage] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [showAddSourceDialog, setShowAddSourceDialog] = useState(false);
   const [showCreateNotebookDialog, setShowCreateNotebookDialog] = useState(false);
@@ -497,10 +498,13 @@ const Notebook = () => {
         {/* Center Panel - Summary & Chat */}
         <div className="col-span-5 flex flex-col bg-background overflow-hidden">
           <div className="flex-1 overflow-hidden">
-            <SourceSummaryPanel sourceIds={selectedSources} />
+            <SourceSummaryPanel sourceIds={selectedSources} targetLanguage={currentLanguage} />
           </div>
           <div className="h-[300px] shrink-0 border-t">
-            <ChatWithCitations sourceIds={selectedSources} />
+            <ChatWithCitations 
+              sourceIds={selectedSources} 
+              onLanguageDetected={setCurrentLanguage}
+            />
           </div>
         </div>
 
