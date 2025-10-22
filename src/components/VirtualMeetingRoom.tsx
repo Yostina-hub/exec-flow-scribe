@@ -131,52 +131,153 @@ function MediaScreen({ resource, position }: { resource: any, position: [number,
         />
       </mesh>
 
-      {/* Content Display */}
+      {/* Content Display Background */}
       <mesh position={[0, 0, 0.16]}>
         <planeGeometry args={[11.5, 5.5]} />
-        <meshBasicMaterial color="#0f172a" />
+        <meshBasicMaterial color="#000000" />
       </mesh>
 
-      {/* Resource Info */}
+      {/* Resource Content Display using Html */}
       {resource && (
         <>
-          <Text
-            position={[0, 1.5, 0.17]}
-            fontSize={0.5}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={10}
-            fontWeight={700}
+          <Html
+            position={[0, 0, 0.17]}
+            transform
+            occlude
+            style={{
+              width: '1150px',
+              height: '550px',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#000',
+              borderRadius: '8px',
+              overflow: 'hidden',
+            }}
           >
-            {resource.title}
-          </Text>
-          
-          <Text
-            position={[0, 0.5, 0.17]}
-            fontSize={0.3}
-            color="#94a3b8"
-            anchorX="center"
-            anchorY="middle"
-            maxWidth={10}
-          >
-            {resource.description || 'Now Presenting'}
-          </Text>
+            {/* Display actual content based on type */}
+            {resource.type === 'image' && (
+              <img 
+                src={resource.url} 
+                alt={resource.title}
+                style={{
+                  maxWidth: '100%',
+                  maxHeight: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            )}
+            
+            {resource.type === 'video' && (
+              <video
+                src={resource.url}
+                controls
+                autoPlay
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                }}
+              />
+            )}
+            
+            {resource.type === 'presentation' && (
+              <iframe
+                src={resource.url}
+                title={resource.title}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+                allow="fullscreen"
+              />
+            )}
+            
+            {resource.type === 'document' && (
+              <iframe
+                src={`${resource.url}#view=FitH`}
+                title={resource.title}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  border: 'none',
+                }}
+              />
+            )}
+          </Html>
 
-          {/* Type Badge */}
-          <mesh position={[0, -1, 0.17]}>
-            <planeGeometry args={[2, 0.6]} />
-            <meshBasicMaterial color="#3b82f6" />
-          </mesh>
-          <Text
-            position={[0, -1, 0.18]}
-            fontSize={0.25}
-            color="#ffffff"
-            anchorX="center"
-            anchorY="middle"
+          {/* Title and Info Overlay */}
+          <Html
+            position={[0, -2.5, 0.17]}
+            center
+            style={{
+              width: '1100px',
+            }}
           >
-            {resource.type.toUpperCase()}
-          </Text>
+            <div style={{
+              background: 'linear-gradient(to top, rgba(0,0,0,0.9), transparent)',
+              padding: '20px',
+              borderRadius: '8px',
+            }}>
+              <div style={{
+                color: '#fff',
+                fontSize: '24px',
+                fontWeight: 'bold',
+                textAlign: 'center',
+                marginBottom: '8px',
+              }}>
+                {resource.title}
+              </div>
+              {resource.description && (
+                <div style={{
+                  color: '#94a3b8',
+                  fontSize: '16px',
+                  textAlign: 'center',
+                }}>
+                  {resource.description}
+                </div>
+              )}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '12px',
+                marginTop: '12px',
+              }}>
+                <span style={{
+                  background: '#3b82f6',
+                  color: '#fff',
+                  padding: '4px 16px',
+                  borderRadius: '16px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                }}>
+                  {resource.type.toUpperCase()}
+                </span>
+                <span style={{
+                  background: '#10b981',
+                  color: '#fff',
+                  padding: '4px 16px',
+                  borderRadius: '16px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}>
+                  <span style={{
+                    width: '8px',
+                    height: '8px',
+                    background: '#fff',
+                    borderRadius: '50%',
+                    animation: 'pulse 2s infinite',
+                  }} />
+                  NOW PRESENTING
+                </span>
+              </div>
+            </div>
+          </Html>
         </>
       )}
 
