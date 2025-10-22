@@ -135,45 +135,6 @@ export function GuestLayout({ children, guestName }: GuestLayoutProps) {
         </div>
       </footer>
 
-      <style>{`
-        @keyframes float {
-          0%, 100% {
-            transform: translateY(0) translateX(0);
-            opacity: 0.3;
-          }
-          25% {
-            transform: translateY(-20px) translateX(10px);
-            opacity: 0.5;
-          }
-          50% {
-            transform: translateY(-10px) translateX(-10px);
-            opacity: 0.7;
-          }
-          75% {
-            transform: translateY(-30px) translateX(5px);
-            opacity: 0.4;
-          }
-        }
-        
-        @keyframes slide-down {
-          from {
-            transform: translateY(-100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
-        }
-        
-        .animate-float {
-          animation: float linear infinite;
-        }
-        
-        .animate-slide-down {
-          animation: slide-down 0.5s ease-out;
-        }
-      `}</style>
     </div>
   );
 }

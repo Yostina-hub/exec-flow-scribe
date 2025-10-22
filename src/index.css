@@ -281,6 +281,17 @@ All colors MUST be HSL.
       transform: scale(1);
     }
   }
+  
+  @keyframes slide-down {
+    from {
+      transform: translateY(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 
   /* Utility animations */
   .animate-float {
@@ -307,6 +318,10 @@ All colors MUST be HSL.
   
   .animate-scale-in {
     animation: scale-in 0.3s ease-out;
+  }
+  
+  .animate-slide-down {
+    animation: slide-down 0.5s ease-out;
   }
 
 /* Focus visible enhancements */
