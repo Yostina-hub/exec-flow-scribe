@@ -30,13 +30,14 @@ export function GuestSignup() {
   const fetchMeetings = async () => {
     setRefreshing(true);
     const now = new Date();
+    const twentyMinutesAgo = new Date(now.getTime() - 20 * 60 * 1000);
     const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
     
-    console.log('Fetching meetings between:', now.toISOString(), 'and', twoHoursFromNow.toISOString());
+    console.log('Fetching meetings between:', twentyMinutesAgo.toISOString(), 'and', twoHoursFromNow.toISOString());
     
     const { data: fnData, error } = await supabase.functions.invoke('list-upcoming-meetings', {
       body: {
-        from: now.toISOString(),
+        from: twentyMinutesAgo.toISOString(),
         to: twoHoursFromNow.toISOString(),
       },
     });
@@ -164,9 +165,9 @@ export function GuestSignup() {
           <UserCheck className="h-5 w-5 text-primary" />
           <CardTitle>Guest Access Request</CardTitle>
         </div>
-        <CardDescription>
-          Request access to a meeting as a guest
-        </CardDescription>
+          <CardDescription>
+            Request access to join a meeting (running late? meetings up to 20min past start time are shown)
+          </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleGuestSignup} className="space-y-4">
@@ -231,14 +232,27 @@ export function GuestSignup() {
               <SelectContent className="z-50 bg-popover border border-border shadow-lg">
                 {meetings.length === 0 ? (
                   <SelectItem disabled value="no-meetings">
-                    No meetings in next 2 hours
+                    No meetings available (past 20min - next 2h)
                   </SelectItem>
                 ) : (
-                  meetings.map((meeting) => (
-                    <SelectItem key={meeting.id} value={meeting.id}>
-                      {meeting.title} - {new Date(meeting.start_time).toLocaleString()}
-                    </SelectItem>
-                  ))
+                  meetings.map((meeting) => {
+                    const startTime = new Date(meeting.start_time);
+                    const now = new Date();
+                    const diffMinutes = Math.round((startTime.getTime() - now.getTime()) / (1000 * 60));
+                    
+                    let timeLabel = startTime.toLocaleString();
+                    if (diffMinutes < 0) {
+                      timeLabel = `Started ${Math.abs(diffMinutes)}min ago`;
+                    } else if (diffMinutes < 60) {
+                      timeLabel = `In ${diffMinutes}min`;
+                    }
+                    
+                    return (
+                      <SelectItem key={meeting.id} value={meeting.id}>
+                        {meeting.title} - {timeLabel}
+                      </SelectItem>
+                    );
+                  })
                 )}
               </SelectContent>
             </Select>

@@ -28,18 +28,21 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     // Optional body with custom window
+    // Default: 20 minutes ago to 2 hours from now
     let fromIso: string;
     let toIso: string;
     try {
       const body = await req.json().catch(() => ({}));
       const now = new Date();
-      const defaultTo = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-      fromIso = body?.from ?? now.toISOString();
+      const defaultFrom = new Date(now.getTime() - 20 * 60 * 1000); // 20 minutes ago
+      const defaultTo = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours ahead
+      fromIso = body?.from ?? defaultFrom.toISOString();
       toIso = body?.to ?? defaultTo.toISOString();
     } catch {
       const now = new Date();
+      const defaultFrom = new Date(now.getTime() - 20 * 60 * 1000);
       const defaultTo = new Date(now.getTime() + 2 * 60 * 60 * 1000);
-      fromIso = now.toISOString();
+      fromIso = defaultFrom.toISOString();
       toIso = defaultTo.toISOString();
     }
 
