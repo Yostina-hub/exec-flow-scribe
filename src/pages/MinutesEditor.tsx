@@ -71,15 +71,15 @@ export default function MinutesEditor() {
     try {
       setIsLoading(true);
       
-      const { data: transcriptions, error: transError } = await supabase
-        .from('transcriptions')
-        .select('*')
-        .eq('meeting_id', meetingId)
-        .order('timestamp', { ascending: true });
+      // Use backend function to list transcriptions (bypasses RLS safely via backend)
+      const { data: txData, error: txError } = await supabase.functions.invoke('list-transcriptions', {
+        body: { meetingId },
+      });
 
-      if (transError) throw transError;
+      if (txError) throw txError;
 
-      const segments: TranscriptSegment[] = (transcriptions || []).map((t, idx) => ({
+      const txList = txData?.transcriptions ?? [];
+      const segments: TranscriptSegment[] = txList.map((t: any, idx: number) => ({
         id: t.id,
         speaker: t.speaker_name || 'Unknown Speaker',
         content: t.content,
@@ -110,9 +110,17 @@ export default function MinutesEditor() {
         .limit(1)
         .maybeSingle();
 
-      if (minutesData) {
+      if (minutesData?.content) {
         setMinutes(minutesData.content);
         setLatestMinutesVersionId(minutesData.id);
+      } else {
+        // Fallback: if no version yet, use latest from meeting record
+        const { data: m } = await supabase
+          .from('meetings')
+          .select('minutes_url')
+          .eq('id', meetingId)
+          .maybeSingle();
+        if (m?.minutes_url) setMinutes(m.minutes_url);
       }
 
       const { data: sections } = await supabase
