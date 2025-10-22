@@ -726,7 +726,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       .channel(`meeting-presence-${meetingId}`)
       .on('presence', { event: 'sync' }, () => {
         const state = presenceChannel.presenceState();
-        const userIds = Object.keys(state).flatMap(key => 
+        const userIds = Object.keys(state).flatMap(key =>
           state[key].map((presence: any) => presence.user_id)
         );
         setOnlineUsers(userIds);
@@ -737,7 +737,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
           const name = participant?.profiles?.full_name || 'Someone';
           soundFX.playJoin();
           toast({
-            title: "Participant Joined",
+            title: 'Participant Joined',
             description: `${name} joined the meeting`,
           });
         });
@@ -748,9 +748,9 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
           const name = participant?.profiles?.full_name || 'Someone';
           soundFX.playLeave();
           toast({
-            title: "Participant Left",
+            title: 'Participant Left',
             description: `${name} left the meeting`,
-            variant: "destructive",
+            variant: 'destructive',
           });
         });
       })
@@ -763,7 +763,27 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         }
       });
 
+    // Heartbeat to keep mobile sessions alive and recover from backgrounding
+    const heartbeat = setInterval(() => {
+      presenceChannel.track({
+        user_id: currentUserId,
+        online_at: new Date().toISOString(),
+      }).catch(() => {/* no-op */});
+    }, 20000);
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        presenceChannel.track({
+          user_id: currentUserId,
+          online_at: new Date().toISOString(),
+        }).catch(() => {/* no-op */});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
     return () => {
+      clearInterval(heartbeat);
+      document.removeEventListener('visibilitychange', onVisibility);
       supabase.removeChannel(presenceChannel);
     };
   }, [meetingId, currentUserId, participants]);
