@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ArrowLeft } from 'lucide-react';
 import { GuestLayout } from '@/components/GuestLayout';
 
 export default function QuickParticipant() {
@@ -231,11 +231,19 @@ export default function QuickParticipant() {
     return (
       <GuestLayout guestName={guestName || undefined}>
         <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="p-6 text-center">
+          <Card className="p-6 text-center space-y-4">
             <h2 className="text-xl font-semibold mb-2">Meeting Not Available</h2>
             <p className="text-muted-foreground">
               This meeting is not currently active.
             </p>
+            <Button
+              onClick={() => navigate('/guest')}
+              className="w-full gap-2"
+              variant="outline"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
           </Card>
         </div>
       </GuestLayout>

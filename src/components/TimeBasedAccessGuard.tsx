@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Clock, AlertTriangle } from "lucide-react";
+import { Clock, AlertTriangle, ArrowLeft } from "lucide-react";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 interface TimeBasedAccessGuardProps {
   meetingId: string;
@@ -19,6 +21,7 @@ export function TimeBasedAccessGuard({
   children,
 }: TimeBasedAccessGuardProps) {
   const access = useMeetingAccess(meetingId);
+  const navigate = useNavigate();
 
   if (access.loading) {
     return (
@@ -50,6 +53,15 @@ export function TimeBasedAccessGuard({
             After the meeting ends, you'll be able to access your own recordings and transcriptions if available.
           </AlertDescription>
         </Alert>
+
+        <Button
+          onClick={() => navigate('/guest')}
+          className="mt-6 w-full gap-2"
+          variant="outline"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Dashboard
+        </Button>
       </div>
     );
   }
