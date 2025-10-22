@@ -1,9 +1,12 @@
-import { Calendar, Clock, Users, MapPin, FileText, Video, Link2, Copy } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, FileText, Video, Link2, Copy, Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface MeetingCardProps {
   id: string;
@@ -18,6 +21,7 @@ interface MeetingCardProps {
   meetingType?: string;
   videoConferenceUrl?: string | null;
   videoProvider?: string | null;
+  createdBy?: string;
 }
 
 const statusConfig = {
@@ -48,11 +52,25 @@ export const MeetingCard = ({
   meetingType,
   videoConferenceUrl,
   videoProvider,
+  createdBy,
 }: MeetingCardProps) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const statusInfo = statusConfig[status];
   const isOnlineMeeting = meetingType === 'online' || meetingType === 'hybrid';
   const hasVideoLink = !!videoConferenceUrl;
+  const isHost = createdBy === currentUserId;
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
 
   const handleCopyLink = () => {
     const meetingUrl = `${window.location.origin}/meetings/${id}`;
@@ -61,6 +79,11 @@ export const MeetingCard = ({
       title: "Link copied",
       description: "Meeting link copied to clipboard",
     });
+  };
+
+  const handleJoinVirtualRoom = () => {
+    navigate(`/meetings/${id}`);
+    // The MeetingDetail page will show the virtual room directly for participants
   };
 
   return (
@@ -96,6 +119,18 @@ export const MeetingCard = ({
           </div>
         </div>
         <div className="flex gap-2 mt-4">
+          {/* Participants see Join Virtual Room button */}
+          {!isHost && status === "in-progress" && (
+            <Button 
+              size="sm" 
+              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600" 
+              onClick={handleJoinVirtualRoom}
+            >
+              <Sparkles className="h-4 w-4" />
+              Join Virtual Room
+            </Button>
+          )}
+          
           {isOnlineMeeting && hasVideoLink && (
             <Button 
               size="sm" 
@@ -103,12 +138,14 @@ export const MeetingCard = ({
               onClick={() => window.open(videoConferenceUrl, '_blank')}
             >
               <Video className="h-4 w-4" />
-              Join Meeting
+              Join Video Call
             </Button>
           )}
-          <Button size="sm" className="flex-1" asChild>
+          
+          <Button size="sm" className={!isHost && status === "in-progress" ? "" : "flex-1"} asChild>
             <a href={`/meetings/${id}`}>View Details</a>
           </Button>
+          
           <Button 
             size="sm" 
             variant="outline"

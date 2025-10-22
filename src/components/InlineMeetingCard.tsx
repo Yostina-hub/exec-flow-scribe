@@ -2,12 +2,14 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil, Video
+  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil, Video, Sparkles
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { AgendaIntakeForm } from './AgendaIntakeForm';
 import { EditMeetingDialog } from './EditMeetingDialog';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface InlineMeetingCardProps {
   id: string;
@@ -21,6 +23,7 @@ interface InlineMeetingCardProps {
   agendaItems: number;
   meetingType?: string;
   videoConferenceUrl?: string | null;
+  createdBy?: string;
 }
 
 const statusConfig = {
@@ -56,11 +59,24 @@ export function InlineMeetingCard({
   agendaItems,
   meetingType,
   videoConferenceUrl,
+  createdBy,
 }: InlineMeetingCardProps) {
   const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const config = statusConfig[status];
   const isOnlineMeeting = meetingType === 'online' || meetingType === 'hybrid';
   const hasVideoLink = !!videoConferenceUrl;
+  const isHost = createdBy === currentUserId;
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+      }
+    };
+    getUser();
+  }, []);
 
   return (
     <Card 
@@ -127,10 +143,25 @@ export function InlineMeetingCard({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
+          {/* Participants see Join Virtual Room for in-progress meetings */}
+          {!isHost && status === 'in-progress' && (
+            <Button
+              size="sm"
+              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/meetings/${id}`);
+              }}
+            >
+              <Sparkles className="h-4 w-4" />
+              Join Virtual Room
+            </Button>
+          )}
+          
           {isOnlineMeeting && hasVideoLink ? (
             <Button
               size="sm"
-              className="flex-1 gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90"
+              className={`${!isHost && status === 'in-progress' ? '' : 'flex-1'} gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90`}
               onClick={(e) => {
                 e.stopPropagation();
                 window.open(videoConferenceUrl, '_blank');
@@ -140,21 +171,23 @@ export function InlineMeetingCard({
               Join Video
             </Button>
           ) : (
-            <Button
-              size="sm"
-              className={cn(
-                "flex-1 gap-2 bg-gradient-to-r",
-                config.gradient,
-                "hover:opacity-90 transition-opacity"
-              )}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/meetings/${id}`);
-              }}
-            >
-              <Play className="h-4 w-4" />
-              View Meeting
-            </Button>
+            !(!isHost && status === 'in-progress') && (
+              <Button
+                size="sm"
+                className={cn(
+                  "flex-1 gap-2 bg-gradient-to-r",
+                  config.gradient,
+                  "hover:opacity-90 transition-opacity"
+                )}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`/meetings/${id}`);
+                }}
+              >
+                <Play className="h-4 w-4" />
+                View Meeting
+              </Button>
+            )
           )}
           <EditMeetingDialog 
             meetingId={id}

@@ -476,6 +476,17 @@ const MeetingDetail = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                {/* Participants - Direct Join Virtual Room Button */}
+                {meeting?.created_by !== userId && (
+                  <Button
+                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
+                    onClick={() => setShowVirtualRoom(true)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Join Virtual Room
+                  </Button>
+                )}
+                
                 {isOnlineMeeting && hasVideoLink && (
                   <Button
                     className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
@@ -501,77 +512,79 @@ const MeetingDetail = () => {
                   <Sparkles className="h-4 w-4" />
                   Open in Notebook
                 </Button>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    {meeting?.status !== 'completed' && (
-                      <DropdownMenuItem onClick={async () => {
-                        if (!id) return;
-                        try {
-                          await supabase
-                            .from('meetings')
-                            .update({ 
-                              status: 'completed',
-                              actual_end_time: new Date().toISOString()
-                            })
-                            .eq('id', id);
-                          
-                          toast({
-                            title: 'Meeting completed',
-                            description: 'Minutes will be auto-generated if transcription is available',
-                          });
-                          
-                          // Refresh meeting data
-                          fetchMeetingDetails();
-                        } catch (error) {
-                          console.error('Error completing meeting:', error);
-                          toast({
-                            title: 'Error',
-                            description: 'Failed to complete meeting',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Complete Meeting
+                
+                {/* Host-only 3-dot menu */}
+                {meeting?.created_by === userId && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <MoreHorizontal className="h-5 w-5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {meeting?.status !== 'completed' && (
+                        <DropdownMenuItem onClick={async () => {
+                          if (!id) return;
+                          try {
+                            await supabase
+                              .from('meetings')
+                              .update({ 
+                                status: 'completed',
+                                actual_end_time: new Date().toISOString()
+                              })
+                              .eq('id', id);
+                            
+                            toast({
+                              title: 'Meeting completed',
+                              description: 'Minutes will be auto-generated if transcription is available',
+                            });
+                            
+                            // Refresh meeting data
+                            fetchMeetingDetails();
+                          } catch (error) {
+                            console.error('Error completing meeting:', error);
+                            toast({
+                              title: 'Error',
+                              description: 'Failed to complete meeting',
+                              variant: 'destructive',
+                            });
+                          }
+                        }}>
+                          <CheckCircle2 className="h-4 w-4 mr-2" />
+                          Complete Meeting
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem onClick={() => setShowMinutesDialog(true)}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Minutes
                       </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => setShowMinutesDialog(true)}>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate Minutes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowRescheduleDialog(true)}>
-                      <Calendar className="h-4 w-4 mr-2" />
-                      Reschedule Meeting
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowManageAttendeesDialog(true)}>
-                      <Users className="h-4 w-4 mr-2" />
-                      Manage Attendees
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowViewMinutesDialog(true)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Previous Minutes
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowCreateSignatureDialog(true)}>
-                      <FileSignature className="h-4 w-4 mr-2" />
-                      Request Sign-Off
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setShowVirtualRoom(true)}>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      🌐 Launch Virtual Room
-                    </DropdownMenuItem>
-                    {meeting?.created_by === userId && (
+                      <DropdownMenuItem onClick={() => setShowRescheduleDialog(true)}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Reschedule Meeting
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowManageAttendeesDialog(true)}>
+                        <Users className="h-4 w-4 mr-2" />
+                        Manage Attendees
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowViewMinutesDialog(true)}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        View Previous Minutes
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowCreateSignatureDialog(true)}>
+                        <FileSignature className="h-4 w-4 mr-2" />
+                        Request Sign-Off
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setShowVirtualRoom(true)}>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        🌐 Launch Virtual Room
+                      </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => setShowHostPanel(true)}>
                         <Settings className="h-4 w-4 mr-2" />
                         🎛️ Host Management Panel
                       </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
             </div>
           </div>

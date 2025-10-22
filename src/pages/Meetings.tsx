@@ -66,6 +66,7 @@ interface Meeting {
   location: string | null;
   status: string;
   created_at: string;
+  created_by: string;
   meeting_type?: string | null;
   video_conference_url?: string | null;
   video_provider?: string | null;
@@ -86,6 +87,7 @@ interface FormattedMeeting {
   meetingType?: string;
   videoConferenceUrl?: string | null;
   videoProvider?: string | null;
+  createdBy?: string;
 }
 
 interface MeetingStats {
@@ -311,6 +313,7 @@ export default function Meetings() {
       agendaItems: meeting.agenda_count || 0,
       meetingType: meeting.meeting_type || undefined,
       videoConferenceUrl: meeting.video_conference_url,
+      createdBy: meeting.created_by,
     };
   };
 
@@ -701,6 +704,7 @@ export default function Meetings() {
                         agendaItems={meeting.agendaItems}
                         meetingType={meeting.meetingType}
                         videoConferenceUrl={meeting.videoConferenceUrl}
+                        createdBy={meeting.createdBy}
                       />
                       {prep && (
                         <div className="absolute top-3 right-3 space-y-2">
@@ -757,6 +761,7 @@ export default function Meetings() {
                     agendaItems={meeting.agendaItems}
                     meetingType={meeting.meetingType}
                     videoConferenceUrl={meeting.videoConferenceUrl}
+                    createdBy={meeting.createdBy}
                   />
                 ))}
               </div>
@@ -779,6 +784,7 @@ export default function Meetings() {
                   agendaItems={meeting.agendaItems}
                   meetingType={meeting.meetingType}
                   videoConferenceUrl={meeting.videoConferenceUrl}
+                  createdBy={meeting.createdBy}
                 />
               ))}
             </div>
