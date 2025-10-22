@@ -74,7 +74,7 @@ import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { LivePolling } from "@/components/LivePolling";
 import { CollaborativeNotes } from "@/components/CollaborativeNotes";
 import { MeetingBookmarks } from "@/components/MeetingBookmarks";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -166,7 +166,7 @@ const MeetingDetail = () => {
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const [loading, setLoading] = useState(true);
-  const [wasRecording, setWasRecording] = useState(false);
+  const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   
@@ -225,9 +225,15 @@ const MeetingDetail = () => {
   // Auto-generate minutes when recording stops
   useEffect(() => {
     const autoGenerateMinutes = async () => {
+      const wasRecording = wasRecordingRef.current;
+      
+      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating });
+      
       // Check if recording just stopped (was recording, now not recording)
       if (wasRecording && !isRecording && !isAutoGenerating) {
         setIsAutoGenerating(true);
+        
+        console.log('Starting auto-generation of minutes...');
         
         toast({
           title: 'Processing recording',
@@ -240,7 +246,7 @@ const MeetingDetail = () => {
           if (!session) throw new Error('Not authenticated');
 
           // Add a delay to ensure all transcriptions are saved
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          await new Promise(resolve => setTimeout(resolve, 3000));
 
           // If there is no transcript yet, skip auto-generation
           const { count: txCount, error: txErr } = await supabase
@@ -248,15 +254,19 @@ const MeetingDetail = () => {
             .select('id', { count: 'exact', head: true })
             .eq('meeting_id', meetingId);
 
+          console.log('Transcription count:', txCount);
+
           if (txErr) {
             console.warn('Could not count transcriptions:', txErr);
           }
 
           if (!txErr && (txCount ?? 0) === 0) {
+            console.log('No transcriptions found, skipping auto-generation');
             toast({
               title: 'No transcript yet',
-              description: 'We will generate minutes once speech is captured and saved.',
+              description: 'Minutes will generate once speech is captured.',
             });
+            setIsAutoGenerating(false);
             return;
           }
 
@@ -270,6 +280,8 @@ const MeetingDetail = () => {
               })
               .eq('id', id);
           }
+
+          console.log('Calling generate-minutes function...');
 
           // Generate minutes automatically
           const { data, error } = await supabase.functions.invoke('generate-minutes', {
@@ -288,6 +300,8 @@ const MeetingDetail = () => {
             console.error('Edge function data error:', data.error);
             throw new Error(data.error);
           }
+
+          console.log('Minutes generated successfully!');
 
           toast({
             title: 'Minutes generated',
@@ -314,11 +328,13 @@ const MeetingDetail = () => {
           setIsAutoGenerating(false);
         }
       }
+      
+      // Update ref for next comparison
+      wasRecordingRef.current = isRecording;
     };
 
     autoGenerateMinutes();
-    setWasRecording(isRecording);
-  }, [isRecording, wasRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds]);
+  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds]);
 
   const fetchMeetingDetails = async () => {
     try {
