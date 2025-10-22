@@ -40,20 +40,12 @@ const DocumentViewer = () => {
     });
   };
 
-  const handleCopyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(content);
-      toast({
-        title: "Copied",
-        description: "Document content copied to clipboard"
-      });
-    } catch (error) {
-      toast({
-        title: "Copy failed",
-        description: "Failed to copy to clipboard. Please try again.",
-        variant: "destructive",
-      });
-    }
+  const handleCopyToClipboard = () => {
+    navigator.clipboard.writeText(content);
+    toast({
+      title: "Copied",
+      description: "Document content copied to clipboard"
+    });
   };
 
   return (

@@ -141,11 +141,7 @@ export function GuestApprovalTab() {
       }
 
       // Copy to clipboard
-      try {
-        await navigator.clipboard.writeText(quickLink);
-      } catch (error) {
-        console.error('Failed to copy to clipboard:', error);
-      }
+      await navigator.clipboard.writeText(quickLink);
 
       toast({
         title: "Guest approved",
@@ -280,20 +276,12 @@ export function GuestApprovalTab() {
                     size="sm"
                     variant="outline"
                     onClick={async () => {
-                      try {
-                        const link = `${window.location.origin}/quick-join/${request.meeting_id}`;
-                        await navigator.clipboard.writeText(link);
-                        toast({
-                          title: "Link copied",
-                          description: "Quick access link copied to clipboard",
-                        });
-                      } catch (error) {
-                        toast({
-                          title: "Copy failed",
-                          description: "Failed to copy link. Please try again.",
-                          variant: "destructive",
-                        });
-                      }
+                      const link = `${window.location.origin}/quick-join/${request.meeting_id}`;
+                      await navigator.clipboard.writeText(link);
+                      toast({
+                        title: "Link copied",
+                        description: "Quick access link copied to clipboard",
+                      });
                     }}
                   >
                     <Copy className="h-4 w-4 mr-1" />

@@ -80,20 +80,12 @@ export function GuestAccessStatus() {
   };
 
   const handleCopyLink = async (meetingId: string) => {
-    try {
-      const link = `${window.location.origin}/quick-join/${meetingId}`;
-      await navigator.clipboard.writeText(link);
-      toast({
-        title: "Link copied",
-        description: "Quick access link copied to clipboard",
-      });
-    } catch (error) {
-      toast({
-        title: "Copy failed",
-        description: "Failed to copy link. Please try again.",
-        variant: "destructive",
-      });
-    }
+    const link = `${window.location.origin}/quick-join/${meetingId}`;
+    await navigator.clipboard.writeText(link);
+    toast({
+      title: "Link copied",
+      description: "Quick access link copied to clipboard",
+    });
   };
 
   if (loading) {
