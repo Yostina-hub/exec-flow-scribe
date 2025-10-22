@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -72,6 +72,7 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
   const [transcriptions, setTranscriptions] = useState<Transcription[]>([]);
   const [useRealtime, setUseRealtime] = useState(false);
   const [allSpeakers, setAllSpeakers] = useState<string[]>([]);
+  const switchedRef = useState(false)[0] as unknown as { current: boolean };
   const { toast } = useToast();
 
   const normalizedId = normalizeMeetingId(meetingId);
@@ -199,10 +200,22 @@ export const LiveTranscription = ({ meetingId, isRecording }: LiveTranscriptionP
     }
   };
 
+  // Auto-fallback to browser transcription on rate limits or connection issues
+  const autoSwitchedRef = useRef(false);
+  useEffect(() => {
+    if (!useRealtime || !isRecording) return;
+    if (rateLimited || (!isConnected && transcriptions.length === 0)) {
+      if (!autoSwitchedRef.current) {
+        autoSwitchedRef.current = true;
+        switchToBrowser();
+      }
+    }
+  }, [useRealtime, isRecording, rateLimited, isConnected, transcriptions.length]);
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
