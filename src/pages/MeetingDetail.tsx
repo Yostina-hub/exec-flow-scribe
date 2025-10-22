@@ -169,6 +169,7 @@ const MeetingDetail = () => {
   const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isGuest, setIsGuest] = useState(false);
   
   const meetingId = id || "demo-meeting-id";
   const meetingAccess = useMeetingAccess(id);
@@ -196,6 +197,17 @@ const MeetingDetail = () => {
         
         if (profile) {
           setUserFullName(profile.full_name || "User");
+        }
+        
+        // Guest access detection
+        if (id) {
+          const { data: gar } = await supabase
+            .from('guest_access_requests')
+            .select('status')
+            .eq('meeting_id', id)
+            .eq('user_id', user.id)
+            .maybeSingle();
+          setIsGuest(gar?.status === 'approved');
         }
         
         // Check if meeting requires consent and user hasn't given it yet
@@ -454,6 +466,34 @@ const MeetingDetail = () => {
         currentUserId={userId}
         onCloseRoom={() => setShowVirtualRoom(false)}
       />
+    );
+  }
+
+  // Minimal guest view: only Join Virtual Room
+  if (isGuest && meeting && userId && meeting.created_by !== userId) {
+    return (
+      <Layout>
+        <TimeBasedAccessGuard meetingId={meetingId}>
+          <div className="max-w-3xl mx-auto mt-10">
+            <Card>
+              <CardHeader>
+                <CardTitle>{meeting?.title || 'Meeting'}</CardTitle>
+                <CardDescription>Join the virtual room to participate</CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-center gap-3">
+                {isMeetingCompleted ? (
+                  <Badge variant="secondary" className="text-muted-foreground">Meeting Completed</Badge>
+                ) : (
+                  <Button className="gap-2" onClick={() => setShowVirtualRoom(true)}>
+                    <Sparkles className="h-4 w-4" />
+                    Join Virtual Room
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TimeBasedAccessGuard>
+      </Layout>
     );
   }
 
