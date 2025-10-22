@@ -204,7 +204,7 @@ export const BrowserSpeechRecognition = ({
     if (!isListening) return;
     const autosave = setInterval(async () => {
       const text = transcript.trim();
-      if (text && text.length - lastSavedLenRef.current >= 50) {
+      if (text && text.length - lastSavedLenRef.current >= 10) {
         try {
           await supabase.functions.invoke('save-transcription', {
             body: {
@@ -220,7 +220,7 @@ export const BrowserSpeechRecognition = ({
           console.warn('Autosave transcription failed:', e);
         }
       }
-    }, 5000);
+    }, 2000);
     return () => clearInterval(autosave);
   }, [isListening, transcript, meetingId, userName, selectedLanguage]);
 

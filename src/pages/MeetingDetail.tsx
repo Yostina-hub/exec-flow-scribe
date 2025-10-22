@@ -308,8 +308,7 @@ const MeetingDetail = () => {
             description: 'Your meeting minutes are ready to view',
           });
 
-          // Auto-open the view minutes dialog
-          setShowViewMinutesDialog(true);
+          // Do not auto-open the minutes dialog after generation
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
           const msg = typeof (error?.message) === 'string' ? error.message : (typeof error === 'string' ? error : '');

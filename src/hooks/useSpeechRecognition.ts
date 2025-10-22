@@ -30,6 +30,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const finalTranscriptRef = useRef<string>('');
   const shouldBeListeningRef = useRef(false);
   const keepAliveIntervalRef = useRef<number | null>(null);
+  const isListeningRef = useRef(false);
 
   // Check if browser supports speech recognition
   const isSupported = typeof window !== 'undefined' && 
@@ -48,6 +49,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     recognition.onstart = () => {
       console.log('Speech recognition started');
       setIsListening(true);
+      isListeningRef.current = true;
       setError(null);
       // Keep-alive: Chrome auto-stops after ~60s; force restart via onend
       if (keepAliveIntervalRef.current) {
@@ -57,7 +59,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       keepAliveIntervalRef.current = window.setInterval(() => {
         if (shouldBeListeningRef.current) {
           try {
-            recognition.stop(); // onend will trigger and auto-restart
+            recognition.stop(); // onend will trigger; external controller will restart
           } catch {}
         }
       }, 55000);
@@ -95,10 +97,10 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       if (msg) setError(msg);
       // Auto-restart on recoverable errors
       const recoverable = ['no-speech', 'network', 'aborted'].includes(event.error);
-      if (recoverable && shouldBeListeningRef.current) {
+      if (recoverable && shouldBeListeningRef.current && !isListeningRef.current) {
         setTimeout(() => {
           try {
-            recognitionRef.current?.start();
+            if (!isListeningRef.current) recognitionRef.current?.start();
           } catch (err) {
             console.error('Error restarting after error:', err);
           }
@@ -109,16 +111,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     recognition.onend = () => {
       console.log('Speech recognition ended');
       setIsListening(false);
-      if (shouldBeListeningRef.current) {
-        console.log('Auto-restarting speech recognition...');
-        setTimeout(() => {
-          try {
-            recognitionRef.current?.start();
-          } catch (err) {
-            console.error('Error restarting recognition:', err);
-          }
-        }, 150);
-      }
+      isListeningRef.current = false;
+      // DO NOT auto-restart here; external controller (component) will call startListening when appropriate
     };
 
     recognitionRef.current = recognition;
@@ -143,6 +137,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     if (lang && recognitionRef.current) {
       recognitionRef.current.lang = lang;
       setLanguage(lang);
+    }
+
+    if (isListeningRef.current) {
+      console.log('Recognition already active, skipping start');
+      return;
     }
 
     console.log('startListening called with language:', lang || language);
@@ -178,6 +177,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       recognitionRef.current?.stop();
     } catch (err) {
       console.error('Error stopping recognition:', err);
+    } finally {
+      isListeningRef.current = false;
     }
   }, []);
 
