@@ -859,6 +859,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
     if (!isHost) return;
     try {
       setIsRecording(false);
+      
       // Mark meeting completed
       await supabase
         .from('meetings')
@@ -870,25 +871,78 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId }: Virtual
 
       toast({
         title: 'Meeting Ended',
-        description: 'Generating minutes...'
+        description: 'Processing recording and generating minutes...'
       });
 
-      // Kick off automatic minutes generation using existing function
-      const { data: sessionData } = await supabase.auth.getSession();
-      await supabase.functions.invoke('generate-minutes', {
-        body: { meetingId, recordingSeconds: meetingDuration },
-        headers: sessionData?.session ? { Authorization: `Bearer ${sessionData.session.access_token}` } : undefined,
-      });
+      // Wait for transcriptions to be saved
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      // Check if we have transcriptions
+      const { count: txCount, error: txErr } = await supabase
+        .from('transcriptions')
+        .select('id', { count: 'exact', head: true })
+        .eq('meeting_id', meetingId);
+
+      console.log('VirtualRoom: Transcription count:', txCount);
+
+      if (txErr) {
+        console.warn('VirtualRoom: Could not count transcriptions:', txErr);
+      }
+
+      // If we have transcriptions, generate minutes automatically
+      if (!txErr && (txCount ?? 0) > 0) {
+        console.log('VirtualRoom: Starting minutes generation...');
+        
+        const { data: sessionData } = await supabase.auth.getSession();
+        const { data, error } = await supabase.functions.invoke('generate-minutes', {
+          body: { meetingId, recordingSeconds: meetingDuration },
+          headers: sessionData?.session ? { Authorization: `Bearer ${sessionData.session.access_token}` } : undefined,
+        });
+
+        if (error) {
+          console.error('VirtualRoom: Minutes generation error:', error);
+          throw error;
+        }
+
+        if (data?.error) {
+          console.error('VirtualRoom: Minutes generation data error:', data.error);
+          throw new Error(data.error);
+        }
+
+        console.log('VirtualRoom: Minutes generated successfully');
+        
+        toast({
+          title: 'Minutes Generated',
+          description: 'Your meeting minutes are ready to view'
+        });
+      } else {
+        console.log('VirtualRoom: No transcriptions found, skipping auto-generation');
+        toast({
+          title: 'Meeting Ended',
+          description: 'No transcriptions found. Minutes can be generated manually.'
+        });
+      }
 
       // Navigate back to meeting detail to view results
       navigate(`/meetings/${meetingId}`);
     } catch (e: any) {
-      console.error('End meeting failed:', e);
+      console.error('VirtualRoom: End meeting failed:', e);
+      const msg = typeof (e?.message) === 'string' ? e.message : (typeof e === 'string' ? e : '');
+      const is402 = /Payment required|402/i.test(msg);
+      const is429 = /Rate limit|Too Many Requests|429/i.test(msg);
+      
       toast({
-        title: 'Failed to end meeting',
-        description: e?.message || 'Please try again',
+        title: is402 ? 'AI credits required' : is429 ? 'Rate limit reached' : 'Failed to end meeting',
+        description: is402
+          ? 'Please add AI credits in Settings → Workspace → Usage and try again.'
+          : is429
+          ? 'Too many requests. Please wait a minute and try again.'
+          : msg || 'Please try again',
         variant: 'destructive'
       });
+      
+      // Still navigate even if minutes generation fails
+      navigate(`/meetings/${meetingId}`);
     }
   };
   return (
