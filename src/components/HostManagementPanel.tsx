@@ -19,11 +19,13 @@ import {
   XCircle,
   Hand,
   Eye,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react';
 import { useAudioRecorder } from '@/hooks/useAudioRecorder';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MediaResourceManager } from './MediaResourceManager';
 
 interface HostManagementPanelProps {
   meetingId: string;
@@ -288,9 +290,13 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
 
         {/* Main Management Tabs */}
         <Tabs defaultValue="participants" className="space-y-4">
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="participants">Participants</TabsTrigger>
             <TabsTrigger value="agenda">Agenda</TabsTrigger>
+            <TabsTrigger value="media">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Media
+            </TabsTrigger>
             <TabsTrigger value="invites">Invitations</TabsTrigger>
           </TabsList>
 
@@ -393,6 +399,10 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
                 </ScrollArea>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="media">
+            <MediaResourceManager meetingId={meetingId} />
           </TabsContent>
 
           <TabsContent value="invites">

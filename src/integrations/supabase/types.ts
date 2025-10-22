@@ -2232,6 +2232,56 @@ export type Database = {
           },
         ]
       }
+      meeting_resources: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          file_size: number | null
+          file_type: string | null
+          id: string
+          is_presenting: boolean | null
+          meeting_id: string
+          title: string
+          type: string
+          updated_at: string | null
+          url: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_presenting?: boolean | null
+          meeting_id: string
+          title: string
+          type: string
+          updated_at?: string | null
+          url: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          id?: string
+          is_presenting?: boolean | null
+          meeting_id?: string
+          title?: string
+          type?: string
+          updated_at?: string | null
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_resources_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_sentiment: {
         Row: {
           analyzed_at: string | null
