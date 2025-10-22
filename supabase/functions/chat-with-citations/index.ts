@@ -40,16 +40,20 @@ serve(async (req) => {
       `[SOURCE_${idx}] Title: ${s.title}\nType: ${s.source_type}\n\nContent:\n${s.content || s.summary || ''}`
     ).join('\n\n---\n\n');
 
-    const prompt = `You are a helpful AI assistant answering questions based on provided sources.
+    const prompt = `You are a helpful AI assistant that answers questions based on provided sources.
 
-IMPORTANT: When you reference information from sources, cite them using [SOURCE_X] notation where X is the source number.
+CRITICAL INSTRUCTIONS:
+1. Detect the language of the user's question and respond in THE SAME LANGUAGE
+2. Support all languages including Amharic (አማርኛ), Arabic, Hebrew, Chinese, Japanese, and any other language
+3. When referencing information, cite sources using [SOURCE_X] notation where X is the source number
+4. Maintain natural, fluent communication in the user's language
 
 User question: ${query}
 
 Sources:
 ${contextWithIds.substring(0, 20000)}
 
-Provide a clear, comprehensive answer with inline citations. After your answer, list which sources were most relevant.`;
+Provide a clear, comprehensive answer with inline citations in the same language as the user's question.`;
 
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,

@@ -73,7 +73,7 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
         <div className="px-6 py-5 space-y-4">
           <div className="flex gap-3">
             <Input
-              placeholder="Start typing..."
+              placeholder="Ask in any language (English, አማርኛ, العربية, 中文...)"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
