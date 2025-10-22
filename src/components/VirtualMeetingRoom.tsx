@@ -713,6 +713,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   const [activeSpeaker, setActiveSpeaker] = useState<any>(null);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const [ambientOn, setAmbientOn] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const compressorRef = useRef<DynamicsCompressorNode | null>(null);
@@ -821,46 +822,79 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
 
   const startAmbient = async () => {
     if (ambientOn && audioCtxRef.current) return;
-    const ctx = new AudioContext();
-    const gain = ctx.createGain();
-    const comp = ctx.createDynamicsCompressor();
-    gain.gain.value = eventSettings.ambientVolume || 0.05;
-    comp.threshold.value = -24;
-    comp.knee.value = 30;
-    comp.ratio.value = 12;
-    comp.attack.value = 0.003;
-    comp.release.value = 0.25;
+    try {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContextClass) {
+        setAudioError("Audio not supported in this browser");
+        return;
+      }
 
-    const src = ctx.createBufferSource();
-    src.buffer = createNoiseBuffer(ctx);
-    src.loop = true;
+      const ctx = new AudioContextClass();
+      
+      // Resume context if suspended (browser autoplay policy)
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
 
-    src.connect(comp);
-    comp.connect(gain);
-    gain.connect(ctx.destination);
-    src.start(0);
+      const gain = ctx.createGain();
+      const comp = ctx.createDynamicsCompressor();
+      gain.gain.value = eventSettings.ambientVolume || 0.05;
+      comp.threshold.value = -24;
+      comp.knee.value = 30;
+      comp.ratio.value = 12;
+      comp.attack.value = 0.003;
+      comp.release.value = 0.25;
 
-    audioCtxRef.current = ctx;
-    gainRef.current = gain;
-    compressorRef.current = comp;
-    noiseSrcRef.current = src;
-    setAmbientOn(true);
-    
-    toast({
-      title: "Intermission Started",
-      description: "Ambient soundscape is playing",
-    });
+      const src = ctx.createBufferSource();
+      src.buffer = createNoiseBuffer(ctx);
+      src.loop = true;
+
+      src.connect(comp);
+      comp.connect(gain);
+      gain.connect(ctx.destination);
+      src.start(0);
+
+      audioCtxRef.current = ctx;
+      gainRef.current = gain;
+      compressorRef.current = comp;
+      noiseSrcRef.current = src;
+      setAmbientOn(true);
+      setAudioError(null);
+      
+      toast({
+        title: "Intermission Started",
+        description: "Ambient soundscape is playing",
+      });
+    } catch (err) {
+      console.error("Failed to start ambient audio:", err);
+      setAudioError("Could not start ambient audio");
+      toast({
+        title: "Audio Error",
+        description: "Ambient audio not available",
+        variant: "destructive",
+      });
+    }
   };
 
   const stopAmbient = () => {
     try {
-      noiseSrcRef.current?.stop();
-    } catch {}
-    noiseSrcRef.current = null;
+      if (noiseSrcRef.current) {
+        noiseSrcRef.current.stop();
+        noiseSrcRef.current = null;
+      }
+    } catch (err) {
+      console.warn("Error stopping audio source:", err);
+    }
+    
     gainRef.current = null;
     compressorRef.current = null;
+    
     if (audioCtxRef.current) {
-      audioCtxRef.current.close();
+      try {
+        audioCtxRef.current.close();
+      } catch (err) {
+        console.warn("Error closing audio context:", err);
+      }
       audioCtxRef.current = null;
     }
     setAmbientOn(false);
@@ -876,7 +910,11 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   // Update volume when changed
   useEffect(() => {
     if (gainRef.current && eventSettings.ambientVolume !== undefined) {
-      gainRef.current.gain.value = eventSettings.ambientVolume;
+      try {
+        gainRef.current.gain.value = eventSettings.ambientVolume;
+      } catch (err) {
+        console.warn("Error setting volume:", err);
+      }
     }
   }, [eventSettings.ambientVolume]);
 

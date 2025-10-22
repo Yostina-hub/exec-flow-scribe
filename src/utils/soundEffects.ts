@@ -5,28 +5,44 @@ class SoundEffectPlayer {
 
   private getContext() {
     if (!this.audioContext) {
-      this.audioContext = new AudioContext();
+      try {
+        this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (err) {
+        console.error("AudioContext not supported:", err);
+        throw new Error("Audio not supported");
+      }
     }
     return this.audioContext;
   }
 
   // Create a short beep sound
   private createBeep(frequency: number, duration: number, volume: number = 0.3) {
-    const ctx = this.getContext();
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+    try {
+      const ctx = this.getContext();
+      
+      // Resume context if needed (browser autoplay policy)
+      if (ctx.state === 'suspended') {
+        ctx.resume().catch(err => console.error("Failed to resume audio:", err));
+      }
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+      const oscillator = ctx.createOscillator();
+      const gainNode = ctx.createGain();
 
-    oscillator.frequency.value = frequency;
-    oscillator.type = 'sine';
+      oscillator.connect(gainNode);
+      gainNode.connect(ctx.destination);
 
-    gainNode.gain.setValueAtTime(volume, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+      oscillator.frequency.value = frequency;
+      oscillator.type = 'sine';
 
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + duration);
+      gainNode.gain.setValueAtTime(volume, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + duration);
+    } catch (err) {
+      // Silently fail if audio isn't available
+      console.warn("Sound effect failed:", err);
+    }
   }
 
   // Play a notification sound
@@ -68,9 +84,13 @@ class SoundEffectPlayer {
 
   // Clean up
   dispose() {
-    if (this.audioContext) {
-      this.audioContext.close();
-      this.audioContext = null;
+    try {
+      if (this.audioContext) {
+        this.audioContext.close();
+        this.audioContext = null;
+      }
+    } catch (err) {
+      console.error("Error disposing audio:", err);
     }
   }
 }
