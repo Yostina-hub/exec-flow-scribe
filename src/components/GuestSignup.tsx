@@ -27,10 +27,14 @@ export function GuestSignup() {
   }, []);
 
   const fetchMeetings = async () => {
+    const now = new Date();
+    const twoHoursFromNow = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+    
     const { data } = await supabase
       .from('meetings')
       .select('id, title, start_time')
-      .gte('start_time', new Date().toISOString())
+      .gte('start_time', now.toISOString())
+      .lte('start_time', twoHoursFromNow.toISOString())
       .order('start_time', { ascending: true })
       .limit(20);
     
