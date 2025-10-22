@@ -67,13 +67,18 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
   };
 
   return (
-    <Card className="p-6 space-y-4 h-full flex flex-col">
-      <div className="flex items-center gap-2">
-        <FileText className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">Chat with Sources</h3>
-        <Badge variant="secondary" className="ml-auto">
-          {sourceIds.length} sources
-        </Badge>
+    <Card className="p-0 h-full flex flex-col border-0 bg-transparent">
+      <div className="flex items-center justify-between px-4 py-3 border-b">
+        <h3 className="font-semibold text-base">Chat</h3>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          onClick={() => setMessages([])}
+          className="gap-2"
+        >
+          <FileText className="h-4 w-4" />
+          Refresh
+        </Button>
       </div>
 
       <ScrollArea className="flex-1 pr-4">
@@ -116,21 +121,51 @@ export const ChatWithCitations = ({ sourceIds }: ChatWithCitationsProps) => {
         </div>
       </ScrollArea>
 
-      <div className="flex gap-2">
-        <Input
-          placeholder="Ask a question about your sources..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
-          disabled={isLoading || sourceIds.length === 0}
-        />
-        <Button 
-          onClick={sendMessage} 
-          disabled={isLoading || !input.trim() || sourceIds.length === 0}
-          size="icon"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+      <div className="px-4 py-3 border-t space-y-3">
+        {messages.length === 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs whitespace-nowrap"
+              onClick={() => setInput("What are the key insights from these sources?")}
+            >
+              Key insights?
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs whitespace-nowrap"
+              onClick={() => setInput("Summarize the main points")}
+            >
+              Main points?
+            </Button>
+          </div>
+        )}
+        
+        <div className="flex gap-2">
+          <Input
+            placeholder="Start typing..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
+            disabled={isLoading || sourceIds.length === 0}
+            className="flex-1"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">
+              {sourceIds.length} source{sourceIds.length !== 1 ? 's' : ''}
+            </span>
+            <Button 
+              onClick={sendMessage} 
+              disabled={isLoading || !input.trim() || sourceIds.length === 0}
+              size="icon"
+              className="shrink-0"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </div>
     </Card>
   );

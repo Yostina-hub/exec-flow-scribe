@@ -31,6 +31,7 @@ import { AudioOverviewPlayer } from "@/components/AudioOverviewPlayer";
 import { TimelineView } from "@/components/TimelineView";
 import { StudyGuideGenerator } from "@/components/StudyGuideGenerator";
 import { ChatWithCitations } from "@/components/ChatWithCitations";
+import { NotebookStudioGrid } from "@/components/NotebookStudioGrid";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -387,32 +388,40 @@ const Notebook = () => {
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
         {/* Sources Panel */}
         <div className="col-span-3 border-r flex flex-col bg-gradient-to-b from-muted/40 to-muted/20">
-          <div className="px-4 py-5 border-b bg-card/80 backdrop-blur-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-bold flex items-center gap-2 text-base">
-                <FileText className="h-5 w-5 text-primary" />
-                Sources
-              </h2>
-              <Badge variant="secondary" className="text-xs font-medium">
-                {sources.length} / 50
-              </Badge>
-            </div>
+          <div className="px-4 py-5 border-b bg-card/80 backdrop-blur-sm space-y-4">
+            <h2 className="font-semibold text-base">Sources</h2>
             
-            <Button
-              variant="default"
-              size="default"
-              className="w-full justify-center gap-2 shadow-md hover:shadow-lg transition-all hover-scale"
-              onClick={() => setShowAddSourceDialog(true)}
-            >
-              <Plus className="h-4 w-4" />
-              Add Source
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2"
+                onClick={() => setShowAddSourceDialog(true)}
+              >
+                <Plus className="h-4 w-4" />
+                Add
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 gap-2"
+                onClick={() => {
+                  toast({
+                    title: "Coming soon",
+                    description: "Discover feature will help you find relevant sources",
+                  });
+                }}
+              >
+                <Globe className="h-4 w-4" />
+                Discover
+              </Button>
+            </div>
             
             {sources.length > 0 && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="w-full justify-center text-xs mt-2"
+                className="w-full justify-start text-sm font-normal"
                 onClick={() => {
                   if (selectedSources.length === sources.length) {
                     setSelectedSources([]);
@@ -421,7 +430,7 @@ const Notebook = () => {
                   }
                 }}
               >
-                {selectedSources.length === sources.length ? "Deselect all" : "Select all"}
+                {selectedSources.length === sources.length ? "✓" : "○"} Select all sources
               </Button>
             )}
           </div>
@@ -484,40 +493,31 @@ const Notebook = () => {
           </ScrollArea>
         </div>
 
-        {/* Center Panel - Chat & Timeline */}
-        <div className="col-span-5 flex flex-col bg-background p-4">
-          <Tabs defaultValue="chat" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="chat">Chat with Citations</TabsTrigger>
-              <TabsTrigger value="timeline">Timeline</TabsTrigger>
-            </TabsList>
-            <TabsContent value="chat" className="flex-1">
-              <ChatWithCitations sourceIds={selectedSources} />
-            </TabsContent>
-            <TabsContent value="timeline" className="flex-1">
-              <TimelineView sourceIds={selectedSources} />
-            </TabsContent>
-          </Tabs>
+        {/* Center Panel - Chat */}
+        <div className="col-span-5 flex flex-col bg-background">
+          <ChatWithCitations sourceIds={selectedSources} />
         </div>
 
-        {/* Right Panel - Studio & Study Guide */}
-        <div className="col-span-4 flex flex-col bg-background p-4">
-          <Tabs defaultValue="studio" className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-3 mb-4">
-              <TabsTrigger value="studio">Studio</TabsTrigger>
-              <TabsTrigger value="study">Study Guide</TabsTrigger>
-              <TabsTrigger value="audio">Audio</TabsTrigger>
-            </TabsList>
-            <TabsContent value="studio" className="flex-1">
-              <MeetingStudioPanel meetingId={selectedSources[0] || ''} />
-            </TabsContent>
-            <TabsContent value="study" className="flex-1">
-              <StudyGuideGenerator sourceIds={selectedSources} />
-            </TabsContent>
-            <TabsContent value="audio" className="flex-1">
-              <AudioOverviewPlayer sourceIds={selectedSources} notebookId={currentNotebook || ''} />
-            </TabsContent>
-          </Tabs>
+        {/* Right Panel - Studio */}
+        <div className="col-span-4 flex flex-col bg-background border-l">
+          <div className="px-4 py-3 border-b">
+            <h3 className="font-semibold text-base">Studio</h3>
+          </div>
+          <ScrollArea className="flex-1">
+            <NotebookStudioGrid 
+              sourceIds={selectedSources}
+              notebookId={currentNotebook || ''}
+              onFeatureSelect={(feature) => {
+                if (feature === 'audio') {
+                  // Show audio overview dialog
+                  toast({
+                    title: "Generating Audio Overview",
+                    description: "This will take a moment...",
+                  });
+                }
+              }}
+            />
+          </ScrollArea>
         </div>
       </div>
 
