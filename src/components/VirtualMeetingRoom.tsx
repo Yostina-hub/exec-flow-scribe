@@ -1322,51 +1322,55 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         </div>
         
         <div className="flex items-center gap-2">
-          {/* Recording Toggle */}
-          <Button
-            variant={isRecording ? "destructive" : "default"}
-            className="gap-2"
-            onClick={() => {
-              const newState = !isRecording;
-              setIsRecording(newState);
-              setIsPaused(false);
-              console.log('VirtualRoom: Recording toggled:', newState);
-              toast({
-                title: newState ? 'Recording Started' : 'Recording Stopped',
-                description: newState ? 'Live transcription is active' : 'Recording saved'
-              });
-            }}
-          >
-            {isRecording ? (
-              <>
-                <Square className="h-4 w-4 animate-pulse" />
-                Stop Recording
-              </>
-            ) : (
-              <>
-                <Mic className="h-4 w-4" />
-                Start Recording
-              </>
-            )}
-          </Button>
+          {/* Recording Controls - Host Only */}
+          {isHost && (
+            <>
+              <Button
+                variant={isRecording ? "destructive" : "default"}
+                className="gap-2"
+                onClick={() => {
+                  const newState = !isRecording;
+                  setIsRecording(newState);
+                  setIsPaused(false);
+                  console.log('VirtualRoom: Recording toggled:', newState);
+                  toast({
+                    title: newState ? 'Recording Started' : 'Recording Stopped',
+                    description: newState ? 'Live transcription is active' : 'Recording saved'
+                  });
+                }}
+              >
+                {isRecording ? (
+                  <>
+                    <Square className="h-4 w-4 animate-pulse" />
+                    Stop Recording
+                  </>
+                ) : (
+                  <>
+                    <Mic className="h-4 w-4" />
+                    Start Recording
+                  </>
+                )}
+              </Button>
 
-          {/* Pause/Resume Button - only show when recording */}
-          {isRecording && (
-            <Button
-              variant="secondary"
-              className="gap-2"
-              onClick={() => {
-                const newPauseState = !isPaused;
-                setIsPaused(newPauseState);
-                console.log('VirtualRoom: Recording paused:', newPauseState);
-                toast({
-                  title: newPauseState ? 'Recording Paused' : 'Recording Resumed',
-                  description: newPauseState ? 'Transcription paused' : 'Transcription resumed'
-                });
-              }}
-            >
-              {isPaused ? 'Resume' : 'Pause'}
-            </Button>
+              {/* Pause/Resume Button - only show when recording */}
+              {isRecording && (
+                <Button
+                  variant="secondary"
+                  className="gap-2"
+                  onClick={() => {
+                    const newPauseState = !isPaused;
+                    setIsPaused(newPauseState);
+                    console.log('VirtualRoom: Recording paused:', newPauseState);
+                    toast({
+                      title: newPauseState ? 'Recording Paused' : 'Recording Resumed',
+                      description: newPauseState ? 'Transcription paused' : 'Transcription resumed'
+                    });
+                  }}
+                >
+                  {isPaused ? 'Resume' : 'Pause'}
+                </Button>
+              )}
+            </>
           )}
 
           <Button
