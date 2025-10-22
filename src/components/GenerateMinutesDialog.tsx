@@ -77,8 +77,16 @@ export const GenerateMinutesDialog = ({
   const handleGenerate = async () => {
     setIsGenerating(true);
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('You must be signed in to generate minutes.');
+      }
+
       const { data, error } = await supabase.functions.invoke('generate-minutes', {
         body: { meetingId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (error) throw error;
@@ -91,9 +99,10 @@ export const GenerateMinutesDialog = ({
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
+      const msg = error?.message || (typeof error === 'string' ? error : 'Could not generate minutes');
       toast({
         title: 'Generation failed',
-        description: error.message || 'Could not generate minutes',
+        description: msg,
         variant: 'destructive',
       });
     } finally {
