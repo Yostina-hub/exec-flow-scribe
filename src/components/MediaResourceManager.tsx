@@ -114,7 +114,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
         .from('meeting-media')
         .getPublicUrl(fileName);
 
-      await supabase
+      const { error: insertError } = await supabase
         .from('meeting_resources')
         .insert({
           meeting_id: meetingId,
@@ -126,6 +126,11 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
           file_type: selectedFile.type
         });
 
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw new Error(`Failed to save resource: ${insertError.message}`);
+      }
+
       setNewResource({ title: '', type: 'presentation', url: '', description: '' });
       setSelectedFile(null);
       setFilePreview(null);
@@ -133,10 +138,11 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
         title: "Media Uploaded",
         description: "Resource is now available in the meeting room",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Upload error:', error);
       toast({
         title: "Upload Failed",
+        description: error.message || "Please check console for details",
         variant: "destructive",
       });
     } finally {
