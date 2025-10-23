@@ -13,7 +13,6 @@ import {
   Video, 
   Image as ImageIcon, 
   Presentation,
-  Play,
   Trash2,
   Eye,
   Sparkles,
@@ -166,25 +165,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
     setNewResource({ title: '', type: 'presentation', url: '', description: '' });
     toast({
       title: "Resource Added",
-    });
-  };
-
-  const handlePresentResource = async (resourceId: string) => {
-    await supabase
-      .from('meeting_resources')
-      .update({ is_presenting: true })
-      .eq('id', resourceId);
-
-    // Clear other presenting resources
-    await supabase
-      .from('meeting_resources')
-      .update({ is_presenting: false })
-      .eq('meeting_id', meetingId)
-      .neq('id', resourceId);
-
-    toast({
-      title: "Now Presenting",
-      description: "Resource is displayed in the virtual room",
+      description: "Resource available in Presenter Controls",
     });
   };
 
@@ -215,7 +196,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
           <Sparkles className="h-5 w-5 text-primary" />
           Media & Resources
         </CardTitle>
-        <CardDescription>Upload and present content in the virtual room</CardDescription>
+        <CardDescription>Upload and manage meeting resources</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Uploaded Resources - Preview Section */}
@@ -227,7 +208,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
                   <CheckCircle className="h-4 w-4 text-green-500" />
                   Uploaded Resources ({resources.length})
                 </h3>
-                <p className="text-xs text-muted-foreground">Ready to present in virtual room</p>
+                <p className="text-xs text-muted-foreground">Available for presentation</p>
               </div>
             </div>
             
@@ -236,11 +217,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
                 {resources.map((resource) => (
                   <div
                     key={resource.id}
-                    className={`group relative overflow-hidden rounded-lg border-2 transition-all ${
-                      resource.is_presenting
-                        ? 'border-primary bg-primary/5 shadow-lg ring-2 ring-primary/20'
-                        : 'border-border bg-card hover:border-primary/50 hover:shadow-md'
-                    }`}
+                    className="group relative overflow-hidden rounded-lg border-2 border-border bg-card hover:border-primary/50 hover:shadow-md transition-all"
                   >
                     {/* Resource Preview/Thumbnail */}
                     <div className="aspect-video w-full bg-gradient-to-br from-muted to-muted/50 flex items-center justify-center relative overflow-hidden">
@@ -258,16 +235,6 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
                           <Badge variant="secondary" className="text-xs">
                             {resource.type}
                           </Badge>
-                        </div>
-                      )}
-                      
-                      {/* Presenting Overlay */}
-                      {resource.is_presenting && (
-                        <div className="absolute inset-0 bg-primary/90 flex items-center justify-center">
-                          <div className="text-center text-white">
-                            <Play className="h-8 w-8 mx-auto mb-2 animate-pulse" />
-                            <p className="text-sm font-semibold">Now Presenting</p>
-                          </div>
                         </div>
                       )}
                       
@@ -301,44 +268,13 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
                             <p className="text-xs text-muted-foreground line-clamp-1">{resource.description}</p>
                           )}
                         </div>
-                        {resource.is_presenting && (
-                          <Badge variant="default" className="shrink-0 text-xs animate-pulse">
-                            <Play className="h-2 w-2 mr-1" />
-                            Live
-                          </Badge>
-                        )}
                       </div>
                       
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {resource.file_size && (
-                            <span className="text-xs text-muted-foreground">
-                              {(resource.file_size / 1024 / 1024).toFixed(1)} MB
-                            </span>
-                          )}
-                        </div>
-                        
-                        {!resource.is_presenting ? (
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => handlePresentResource(resource.id)}
-                          >
-                            <Send className="h-3 w-3" />
-                            Present
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => handlePresentResource(resource.id)}
-                          >
-                            <Clock className="h-3 w-3" />
-                            Stop
-                          </Button>
-                        )}
-                      </div>
+                      {resource.file_size && (
+                        <span className="text-xs text-muted-foreground">
+                          {(resource.file_size / 1024 / 1024).toFixed(1)} MB
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -493,7 +429,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
           <div className="text-center py-12 border-2 border-dashed rounded-lg bg-muted/30">
             <Upload className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
             <p className="text-muted-foreground">No resources yet. Upload or add a URL to get started.</p>
-            <p className="text-xs text-muted-foreground mt-1">Files will appear above before presenting</p>
+            <p className="text-xs text-muted-foreground mt-1">Use Presenter Controls to present resources</p>
           </div>
         )}
       </CardContent>

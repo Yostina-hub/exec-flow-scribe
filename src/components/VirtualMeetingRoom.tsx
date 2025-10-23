@@ -14,6 +14,7 @@ import { LiveTranscription } from './LiveTranscription';
 import { BrowserSpeechRecognition } from './BrowserSpeechRecognition';
 import { useNavigate } from 'react-router-dom';
 import { soundFX } from '@/utils/soundEffects';
+import { PresenterControls } from './PresenterControls';
 
 interface VirtualMeetingRoomProps {
   meetingId: string;
@@ -502,11 +503,7 @@ function MeetingRoomScene({
 
       {/* Main Media Screen */}
       <MediaScreen 
-        resource={presentingResource || (agenda[currentSlide] ? { 
-          title: agenda[currentSlide].title,
-          type: 'agenda',
-          description: `${agenda[currentSlide].duration_minutes} minutes`
-        } : null)}
+        resource={presentingResource}
         position={[0, 4, -8]}
       />
 
@@ -691,6 +688,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   const [transcription, setTranscription] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [presentingResource, setPresentingResource] = useState<any>(null);
+  const [presentationSlide, setPresentationSlide] = useState(0);
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOff, setIsVideoOff] = useState(false);
   const [handRaised, setHandRaised] = useState(false);
@@ -1142,9 +1140,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
     
     setResources(resourcesData || []);
     
-    // Find presenting resource
-    const presenting = resourcesData?.find(r => r.is_presenting);
-    setPresentingResource(presenting || null);
+    // Don't automatically show presentations - presenter controls them manually
   };
 
   const setupRealtimeSubscriptions = () => {
@@ -1513,38 +1509,15 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
             </Canvas>
           </Suspense>
 
-          {/* Enhanced Slide Controls */}
-          {(agenda.length > 0 || presentingResource) && (
+          {/* Enhanced Slide Controls - Only show for presenter when actively presenting */}
+          {presentingResource && (
             <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-3 items-center">
               <div className="glass px-6 py-3 rounded-full border border-primary/30 backdrop-blur-xl flex items-center gap-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentSlide(Math.max(0, currentSlide - 1))}
-                  disabled={currentSlide === 0}
-                  className="hover:bg-primary/20"
-                >
-                  ← Prev
-                </Button>
-                <Badge variant="default" className="px-4 py-2 font-mono text-sm">
-                  {currentSlide + 1} / {agenda.length || 1}
-                </Badge>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setCurrentSlide(Math.min((agenda.length || 1) - 1, currentSlide + 1))}
-                  disabled={currentSlide === (agenda.length || 1) - 1}
-                  className="hover:bg-primary/20"
-                >
-                  Next →
-                </Button>
-              </div>
-              {presentingResource && (
                 <Badge variant="secondary" className="animate-pulse">
                   <Sparkles className="h-3 w-3 mr-1" />
-                  Presenting: {presentingResource.type}
+                  Presenting: {presentingResource.title}
                 </Badge>
-              )}
+              </div>
             </div>
           )}
 
@@ -1568,13 +1541,17 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         {/* Right Sidebar - Meeting Tools */}
         <Card className="w-[420px] border-l rounded-none bg-card/50 backdrop-blur-xl">
           <Tabs defaultValue="participants" className="h-full flex flex-col">
-            <TabsList className="w-full grid grid-cols-4 bg-muted/50">
+            <TabsList className="w-full grid grid-cols-5 bg-muted/50">
               <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
                 <Users className="h-4 w-4 mr-1" />
                 People
               </TabsTrigger>
               <TabsTrigger value="agenda" className="data-[state=active]:bg-primary/20">
                 Agenda
+              </TabsTrigger>
+              <TabsTrigger value="presenter" className="data-[state=active]:bg-primary/20">
+                <Presentation className="h-4 w-4 mr-1" />
+                Present
               </TabsTrigger>
               <TabsTrigger value="resources" className="data-[state=active]:bg-primary/20">
                 <Sparkles className="h-4 w-4 mr-1" />
@@ -1793,6 +1770,17 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                   )}
                 </div>
               </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="presenter" className="flex-1 overflow-hidden">
+              <PresenterControls 
+                meetingId={meetingId}
+                isHost={isHost}
+                onPresentationChange={(resource, slideIndex) => {
+                  setPresentingResource(resource);
+                  setPresentationSlide(slideIndex);
+                }}
+              />
             </TabsContent>
 
             <TabsContent value="resources" className="flex-1 overflow-hidden">
