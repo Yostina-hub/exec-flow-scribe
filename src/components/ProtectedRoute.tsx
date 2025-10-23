@@ -30,7 +30,18 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
   const checkAuthAndGuestStatus = async () => {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      // If there's an auth error (like invalid refresh token), sign out and clear session
+      if (error) {
+        console.error("Auth error:", error);
+        await supabase.auth.signOut();
+        setAuthenticated(false);
+        setIsGuest(false);
+        setLoading(false);
+        return;
+      }
+      
       setAuthenticated(!!session);
 
       if (session?.user) {
@@ -46,6 +57,9 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       }
     } catch (error) {
       console.error("Error checking auth status:", error);
+      await supabase.auth.signOut();
+      setAuthenticated(false);
+      setIsGuest(false);
     } finally {
       setLoading(false);
     }

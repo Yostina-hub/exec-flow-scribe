@@ -21,7 +21,14 @@ const Auth = () => {
   const { isGuest, loading: guestLoading } = useIsGuest();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      // If there's an auth error (like invalid refresh token), sign out
+      if (error) {
+        console.error("Auth error on load:", error);
+        supabase.auth.signOut();
+        return;
+      }
+      
       if (session && !guestLoading) {
         navigate(isGuest ? "/guest" : "/");
       }
@@ -29,7 +36,14 @@ const Auth = () => {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Handle token refresh failures
+      if (event === 'TOKEN_REFRESHED' && !session) {
+        console.log("Token refresh failed, signing out");
+        await supabase.auth.signOut();
+        return;
+      }
+      
       if (session) {
         // Small delay to allow guest status to update
         setTimeout(() => {
