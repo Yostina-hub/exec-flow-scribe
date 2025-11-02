@@ -58,6 +58,7 @@ import { AIMinutesGenerator } from "@/components/AIMinutesGenerator";
 import { DocumentVersionControl } from "@/components/DocumentVersionControl";
 import { MultiChannelDistribution } from "@/components/MultiChannelDistribution";
 import { IntegrationManager } from "@/components/IntegrationManager";
+import { TranscriptionDocumentExport } from "@/components/TranscriptionDocumentExport";
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
@@ -1009,6 +1010,10 @@ const MeetingDetail = () => {
 
               <TabsContent value="documents" className="space-y-6">
                 <ProtectedElement meetingId={meetingId} elementType="documents">
+                  <TranscriptionDocumentExport 
+                    meetingId={meetingId} 
+                    meetingTitle={meeting?.title || 'Meeting'} 
+                  />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-6">
                       <DocumentVersionControl meetingId={meetingId} />

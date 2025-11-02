@@ -145,6 +145,18 @@ try {
       throw new Error("Failed to fetch decisions");
     }
 
+    // Fetch polls and poll responses
+    console.log("🗳️ Fetching polls and responses...");
+    const { data: polls, error: pollsError } = await supabase
+      .from("meeting_polls")
+      .select("*, poll_responses(*)")
+      .eq("meeting_id", meetingId)
+      .order("created_at", { ascending: true });
+
+    if (pollsError) {
+      console.warn("Poll fetch warning:", pollsError);
+    }
+
     // Combine and analyze transcript to detect dominant language (favor Amharic when mixed)
     const fullTranscript = transcriptions
       ?.map((t) => `${t.speaker_name || "Speaker"}: ${t.content}`)
@@ -184,6 +196,30 @@ try {
     const decisionsList = decisions
       ?.map((d: any) => `- ${d.decision_text}`)
       .join("\n") || "";
+
+    // Format polls data
+    const pollsList = polls?.map((p: any) => {
+      const optionsArray = Array.isArray(p.options) ? p.options : [];
+      const responses = p.poll_responses || [];
+      const totalVotes = responses.length;
+      
+      // Count votes for each option
+      const voteCounts: { [key: string]: number } = {};
+      responses.forEach((r: any) => {
+        const selectedOpts = Array.isArray(r.selected_options) ? r.selected_options : [];
+        selectedOpts.forEach((opt: string) => {
+          voteCounts[opt] = (voteCounts[opt] || 0) + 1;
+        });
+      });
+      
+      const resultsText = optionsArray.map((opt: string) => {
+        const count = voteCounts[opt] || 0;
+        const percentage = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) : "0.0";
+        return `  • ${opt}: ${count} votes (${percentage}%)`;
+      }).join("\n");
+      
+      return `Poll: ${p.question}\nType: ${p.poll_type}\nStatus: ${p.status}\nTotal Votes: ${totalVotes}\nResults:\n${resultsText}`;
+    }).join("\n\n") || "";
 
     // Create language-specific instructions with STRICT fidelity requirements
     const languageInstruction = detectedLang === 'am'
@@ -277,14 +313,18 @@ ${fullTranscript || 'No transcript available'}
 ✅ RECORDED DECISIONS:
 ${decisionsList || 'No decisions recorded'}
 
+🗳️ POLLS & VOTING RESULTS:
+${pollsList || 'No polls conducted'}
+
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
 📊 REQUIRED SECTIONS (only include if information exists in transcript):
 1. የስብሰባ ማጠቃለያ (Executive Summary) - 2-3 sentences based ONLY on transcript
 2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - ONLY topics actually discussed
 3. የተወሰኑ ውሳኔዎች (Decisions Made) - ONLY decisions explicitly stated
-4. የተግባር እቅዶች (Action Items) - ONLY actions explicitly mentioned
-5. ቀጣይ እርምጃዎች (Next Steps) - ONLY if mentioned in transcript
+4. 🗳️ የምርጫ ውጤቶች (Poll Results) - Include all poll questions and voting results if polls exist
+5. የተግባር እቅዶች (Action Items) - ONLY actions explicitly mentioned
+6. ቀጣይ እርምጃዎች (Next Steps) - ONLY if mentioned in transcript
 
 ${detectedLang === 'am' ? '✍️ CRITICAL: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas. Use ፦ before lists. Write in formal Amharic using SOV structure.' : ''}
 
