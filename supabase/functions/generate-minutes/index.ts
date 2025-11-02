@@ -534,13 +534,13 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       );
     }
 
-    // Persist generated minutes into meeting_minutes and update meeting status
-    // Compute next version number
+    // Persist generated minutes into minutes_versions and update meeting status
+    // Compute next version number from minutes_versions
     const { data: lastVersionRow, error: versionError } = await supabase
-      .from('meeting_minutes')
-      .select('version')
+      .from('minutes_versions')
+      .select('version_number')
       .eq('meeting_id', meetingId)
-      .order('version', { ascending: false })
+      .order('version_number', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -548,17 +548,17 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       console.warn('Version fetch error:', versionError);
     }
 
-    const nextVersion = (lastVersionRow?.version || 0) + 1;
+    const nextVersion = (lastVersionRow?.version_number || 0) + 1;
 
     // Insert minutes record
     const { error: insertError } = await supabase
-      .from('meeting_minutes')
+      .from('minutes_versions')
       .insert({
         meeting_id: meetingId,
+        version_number: nextVersion,
         content: minutes,
-        generated_by: user.id,
-        version: nextVersion,
-        is_final: false,
+        created_by: user.id,
+        is_ratified: false,
       });
 
     if (insertError) {
@@ -583,9 +583,10 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
         minutes,
       }),
       {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
+
   } catch (error) {
     console.error("Error in generate-minutes:", error);
     return new Response(
