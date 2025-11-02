@@ -22,7 +22,7 @@ import { Zap, Video } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { generateGoogleMeetLink, generateJitsiMeetLink } from '@/utils/videoConference';
+import { generateGoogleMeetLink, generateTMeetLink } from '@/utils/videoConference';
 
 export function InstantMeetingDialog() {
   const [open, setOpen] = useState(false);
@@ -75,15 +75,15 @@ export function InstantMeetingDialog() {
           console.error('Google Meet error:', error);
           toast({
             title: 'Google Meet setup failed',
-            description: 'Using Jitsi Meet instead.',
+            description: 'Using TMeet instead.',
             variant: 'destructive',
           });
-          videoUrl = generateJitsiMeetLink(title, crypto.randomUUID());
-          finalProvider = 'jitsi_meet'; // Update to jitsi on fallback
+          videoUrl = generateTMeetLink(title, crypto.randomUUID());
+          finalProvider = 'tmeet'; // Update to tmeet on fallback
         }
       } else {
-        // Use Jitsi Meet
-        videoUrl = generateJitsiMeetLink(title, crypto.randomUUID());
+        // Use TMeet
+        videoUrl = generateTMeetLink(title, crypto.randomUUID());
       }
 
       const { data: meeting, error: meetingError } = await supabase
@@ -178,12 +178,12 @@ export function InstantMeetingDialog() {
 
             <div className="space-y-2">
               <Label htmlFor="video_provider">Video Platform</Label>
-              <Select defaultValue="jitsi_meet" name="video_provider">
+              <Select defaultValue="tmeet" name="video_provider">
                 <SelectTrigger id="video_provider">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="jitsi_meet">Jitsi Meet (Instant)</SelectItem>
+                  <SelectItem value="tmeet">TMeet (Instant)</SelectItem>
                   <SelectItem value="google_meet">Google Meet (with OAuth)</SelectItem>
                 </SelectContent>
               </Select>

@@ -28,6 +28,15 @@ export const generateJitsiMeetLink = (meetingTitle: string, meetingId: string): 
 };
 
 /**
+ * Generate a TMeet room link
+ */
+export const generateTMeetLink = (meetingTitle: string, meetingId: string): string => {
+  // Create URL-friendly room name from title and ID
+  const roomName = `${meetingTitle.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${meetingId.slice(0, 8)}`;
+  return `https://tmeet.gubatech.com/${roomName}`;
+};
+
+/**
  * Get the appropriate video conference link based on provider
  */
 export const getVideoConferenceLink = (
@@ -45,6 +54,8 @@ export const getVideoConferenceLink = (
       return generateGoogleMeetLink(meetingId);
     case 'jitsi_meet':
       return generateJitsiMeetLink(meetingTitle, meetingId);
+    case 'tmeet':
+      return generateTMeetLink(meetingTitle, meetingId);
     default:
       return '';
   }
@@ -57,6 +68,7 @@ export const getProviderDisplayName = (provider: string): string => {
   const names: Record<string, string> = {
     google_meet: 'Google Meet',
     jitsi_meet: 'Jitsi Meet',
+    tmeet: 'TMeet',
     zoom: 'Zoom',
     teams: 'Microsoft Teams',
     other: 'Other'
