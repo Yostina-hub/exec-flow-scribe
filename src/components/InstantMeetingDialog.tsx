@@ -140,7 +140,7 @@ export function InstantMeetingDialog() {
           Instant Meeting
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Video className="h-5 w-5 text-primary" />
@@ -150,8 +150,8 @@ export function InstantMeetingDialog() {
             Create and join a video meeting right now
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleCreateInstant}>
-          <div className="grid gap-4 py-4">
+        <form onSubmit={handleCreateInstant} className="flex flex-col overflow-hidden">
+          <div className="grid gap-4 py-4 overflow-y-auto pr-2">
             <div className="space-y-2">
               <Label htmlFor="title">Meeting Title</Label>
               <Input
@@ -236,7 +236,7 @@ export function InstantMeetingDialog() {
               </ul>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="mt-4 flex-shrink-0">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
               Cancel
             </Button>
