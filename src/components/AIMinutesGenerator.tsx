@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase } from "lucide-react";
+import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface AIMinutesGeneratorProps {
   meetingId: string;
@@ -14,7 +15,31 @@ interface AIMinutesGeneratorProps {
 
 export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
   const [generating, setGenerating] = useState(false);
+  const [generatingType, setGeneratingType] = useState<string>("");
+  const [progressText, setProgressText] = useState("");
   const { toast } = useToast();
+
+  const progressSteps = [
+    "Analyzing meeting content...",
+    "Processing transcription...",
+    "Identifying key points...",
+    "Generating summary...",
+    "Finalizing content..."
+  ];
+
+  useEffect(() => {
+    if (!generating) return;
+    
+    let currentStep = 0;
+    setProgressText(progressSteps[0]);
+    
+    const interval = setInterval(() => {
+      currentStep = (currentStep + 1) % progressSteps.length;
+      setProgressText(progressSteps[currentStep]);
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [generating]);
 
   const { data: summaries, refetch } = useQuery({
     queryKey: ['meeting-summaries', meetingId],
@@ -32,6 +57,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
 
   const generateSummary = async (type: 'brief' | 'detailed' | 'executive' | 'action_items') => {
     setGenerating(true);
+    setGeneratingType(type);
     try {
       // Get meeting transcription and details
       const { data: meeting, error: meetingError } = await supabase
@@ -129,12 +155,126 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
           ))}
         </div>
 
-        {generating && (
-          <div className="flex items-center justify-center gap-2 py-8">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span className="text-sm text-muted-foreground">Generating summary...</span>
-          </div>
-        )}
+        <AnimatePresence>
+          {generating && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative py-12 px-6 overflow-hidden rounded-lg bg-gradient-to-br from-primary/5 via-purple-500/5 to-blue-500/5"
+            >
+              {/* Animated background particles */}
+              <div className="absolute inset-0 overflow-hidden">
+                {[...Array(20)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-1 h-1 bg-primary/20 rounded-full"
+                    initial={{
+                      x: Math.random() * 100 + "%",
+                      y: Math.random() * 100 + "%",
+                    }}
+                    animate={{
+                      x: [
+                        Math.random() * 100 + "%",
+                        Math.random() * 100 + "%",
+                        Math.random() * 100 + "%",
+                      ],
+                      y: [
+                        Math.random() * 100 + "%",
+                        Math.random() * 100 + "%",
+                        Math.random() * 100 + "%",
+                      ],
+                      scale: [1, 1.5, 1],
+                      opacity: [0.2, 0.5, 0.2],
+                    }}
+                    transition={{
+                      duration: 3 + Math.random() * 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  />
+                ))}
+              </div>
+
+              {/* Main content */}
+              <div className="relative flex flex-col items-center gap-6">
+                {/* Animated icons */}
+                <div className="relative">
+                  <motion.div
+                    animate={{
+                      rotate: 360,
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
+                    className="absolute inset-0 flex items-center justify-center"
+                  >
+                    <Sparkles className="h-8 w-8 text-primary/30" />
+                  </motion.div>
+                  
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.2, 1],
+                      opacity: [0.5, 1, 0.5],
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      ease: "easeInOut",
+                    }}
+                  >
+                    <Brain className="h-12 w-12 text-primary" />
+                  </motion.div>
+                </div>
+
+                {/* Progress text */}
+                <div className="flex flex-col items-center gap-3">
+                  <motion.div
+                    animate={{
+                      scale: [1, 1.05, 1],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                    }}
+                  >
+                    <h3 className="text-lg font-semibold flex items-center gap-2">
+                      <Zap className="h-5 w-5 text-yellow-500" />
+                      Generating {generatingType.replace('_', ' ')} summary
+                    </h3>
+                  </motion.div>
+                  
+                  <motion.p
+                    key={progressText}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="text-sm text-muted-foreground"
+                  >
+                    {progressText}
+                  </motion.p>
+                </div>
+
+                {/* Progress bar */}
+                <div className="w-full max-w-xs">
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-gradient-to-r from-primary via-purple-500 to-blue-500"
+                      initial={{ width: "0%" }}
+                      animate={{ width: "100%" }}
+                      transition={{
+                        duration: 10,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {summaries && summaries.length > 0 && (
           <Tabs defaultValue={summaries[0]?.summary_type} className="w-full">
