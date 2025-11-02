@@ -29,6 +29,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { ShareMeetingDialog } from "./ShareMeetingDialog";
 import { generateGoogleMeetLink, generateTMeetLink } from "@/utils/videoConference";
+import { MeetingTypeSelector } from "./MeetingTypeSelector";
 
 interface Category {
   id: string;
@@ -42,8 +43,7 @@ export const CreateMeetingDialog = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [meetingType, setMeetingType] = useState<string>('in_person');
-  const [showVideoFields, setShowVideoFields] = useState(false);
+  const [meetingType, setMeetingType] = useState<'video_conference' | 'virtual_room' | 'standard'>('standard');
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [createdMeeting, setCreatedMeeting] = useState<any>(null);
 
@@ -132,7 +132,7 @@ export const CreateMeetingDialog = () => {
       if (!user) throw new Error("Not authenticated");
 
       // Generate video link if not provided
-      if ((meetingType === 'online' || meetingType === 'hybrid') && !videoUrl) {
+      if (meetingType === 'video_conference' && !videoUrl) {
         const tempId = crypto.randomUUID();
         if (videoProvider === 'google_meet') {
           videoUrl = generateGoogleMeetLink(tempId);
@@ -156,9 +156,9 @@ export const CreateMeetingDialog = () => {
           timezone,
           is_recurring: isRecurring,
           meeting_type: meetingType as any,
-          video_conference_url: videoUrl || null,
-          video_provider: videoProvider as any,
-          requires_offline_support: meetingType === 'in_person',
+          video_conference_url: (meetingType === 'video_conference' ? videoUrl : null) || null,
+          video_provider: (meetingType === 'video_conference' ? videoProvider : null) as any,
+          requires_offline_support: meetingType === 'standard',
         } as any)
         .select()
         .single();
@@ -272,57 +272,37 @@ export const CreateMeetingDialog = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="duration">Duration</Label>
-                <Select defaultValue="60" name="duration">
-                  <SelectTrigger id="duration">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="15">15 minutes</SelectItem>
-                    <SelectItem value="30">30 minutes</SelectItem>
-                    <SelectItem value="45">45 minutes</SelectItem>
-                    <SelectItem value="60">1 hour</SelectItem>
-                    <SelectItem value="90">1.5 hours</SelectItem>
-                    <SelectItem value="120">2 hours</SelectItem>
-                    <SelectItem value="180">3 hours</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location</Label>
-                <Input id="location" name="location" placeholder="Board Room" required />
-              </div>
-            </div>
-
             <div className="space-y-2">
-              <Label htmlFor="meeting_type">Meeting Type</Label>
-              <Select 
-                defaultValue="in_person" 
-                name="meeting_type"
-                onValueChange={(value) => {
-                  setMeetingType(value);
-                  setShowVideoFields(value === 'online' || value === 'hybrid');
-                }}
-              >
-                <SelectTrigger id="meeting_type">
+              <Label htmlFor="duration">Duration</Label>
+              <Select defaultValue="60" name="duration">
+                <SelectTrigger id="duration">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="in_person">In-Person</SelectItem>
-                  <SelectItem value="online">Online</SelectItem>
-                  <SelectItem value="hybrid">Hybrid</SelectItem>
+                  <SelectItem value="15">15 minutes</SelectItem>
+                  <SelectItem value="30">30 minutes</SelectItem>
+                  <SelectItem value="45">45 minutes</SelectItem>
+                  <SelectItem value="60">1 hour</SelectItem>
+                  <SelectItem value="90">1.5 hours</SelectItem>
+                  <SelectItem value="120">2 hours</SelectItem>
+                  <SelectItem value="180">3 hours</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {showVideoFields && (
+            <div className="space-y-4">
+              <Label>Meeting Type</Label>
+              <MeetingTypeSelector
+                value={meetingType}
+                onChange={setMeetingType}
+              />
+            </div>
+
+            {meetingType === 'video_conference' && (
               <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="h-4 w-4 text-primary" />
-                  <Label className="text-base font-semibold">Video Conference</Label>
+                  <Label className="text-base font-semibold">Video Conference Settings</Label>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -347,7 +327,7 @@ export const CreateMeetingDialog = () => {
                     <Input 
                       id="video_url" 
                       name="video_url" 
-                      placeholder="https://meet.jit.si/..." 
+                      placeholder="Auto-generated if empty" 
                       type="url"
                     />
                   </div>
@@ -356,6 +336,13 @@ export const CreateMeetingDialog = () => {
                 <p className="text-xs text-muted-foreground">
                   Leave link empty to auto-generate a TMeet room
                 </p>
+              </div>
+            )}
+
+            {meetingType === 'standard' && (
+              <div className="space-y-2">
+                <Label htmlFor="location">Location</Label>
+                <Input id="location" name="location" placeholder="Board Room, Office, etc." required />
               </div>
             )}
 

@@ -4067,7 +4067,13 @@ export type Database = {
         | "in_progress"
         | "completed"
         | "cancelled"
-      meeting_type: "online" | "in_person" | "hybrid"
+      meeting_type:
+        | "online"
+        | "in_person"
+        | "hybrid"
+        | "video_conference"
+        | "virtual_room"
+        | "standard"
       permission_action: "create" | "read" | "update" | "delete" | "manage"
       permission_resource:
         | "users"
@@ -4220,7 +4226,14 @@ export const Constants = {
         "completed",
         "cancelled",
       ],
-      meeting_type: ["online", "in_person", "hybrid"],
+      meeting_type: [
+        "online",
+        "in_person",
+        "hybrid",
+        "video_conference",
+        "virtual_room",
+        "standard",
+      ],
       permission_action: ["create", "read", "update", "delete", "manage"],
       permission_resource: [
         "users",

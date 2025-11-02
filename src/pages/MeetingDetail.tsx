@@ -43,6 +43,7 @@ import { LiveTranscription } from "@/components/LiveTranscription";
 import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
 import { ContextPanel } from "@/components/ContextPanel";
 import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
+import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
 // Jitsi removed - using TMeet now
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
@@ -81,7 +82,6 @@ import { format } from "date-fns";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
 import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
 import { ProtectedElement } from "@/components/ProtectedElement";
-import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
 import { HostManagementPanel } from "@/components/HostManagementPanel";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { GuestLayout } from "@/components/GuestLayout";
@@ -612,13 +612,22 @@ const MeetingDetail = () => {
                   </Badge>
                 )}
                 
-                {isOnlineMeeting && hasVideoLink && (
+                {(meeting.meeting_type === 'video_conference' && meeting.video_conference_url) && (
                   <Button
                     className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
                     onClick={() => window.open(meeting.video_conference_url, '_blank')}
                   >
                     <Video className="h-4 w-4" />
                     Join Video Call
+                  </Button>
+                )}
+                {meeting.meeting_type === 'virtual_room' && (
+                  <Button
+                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+                    onClick={() => setShowVirtualRoom(true)}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Join Virtual Room
                   </Button>
                 )}
                 <Button
@@ -763,7 +772,7 @@ const MeetingDetail = () => {
                     </Button>
                   </>
                 )}
-                {isOnlineMeeting && hasVideoLink && (
+                {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
                   <Button 
                     className="gap-2 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-500"
                     onClick={() => window.open(meeting.video_conference_url, '_blank')}
@@ -785,11 +794,13 @@ const MeetingDetail = () => {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue={isOnlineMeeting && hasVideoLink ? "video" : "transcription"} className="w-full">
+            <Tabs defaultValue={(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') ? "video" : "transcription"} className="w-full">
               <div className="w-full overflow-x-auto pb-2">
                 <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
-                {isOnlineMeeting && hasVideoLink && (
-                  <TabsTrigger value="video">Video Call</TabsTrigger>
+                {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
+                  <TabsTrigger value="video">
+                    {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
+                  </TabsTrigger>
                 )}
                 <TabsTrigger value="participants">Participants</TabsTrigger>
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
@@ -804,28 +815,37 @@ const MeetingDetail = () => {
               </TabsList>
               </div>
 
-              {isOnlineMeeting && hasVideoLink && (
+              {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
                 <TabsContent value="video" className="space-y-4">
-                  <Card>
-                    <CardContent className="p-6">
-                      <div className="text-center space-y-4">
-                        <Video className="h-12 w-12 mx-auto text-muted-foreground" />
-                        <div>
-                          <h3 className="font-semibold text-lg mb-2">Video Conference</h3>
-                          <p className="text-sm text-muted-foreground mb-4">
-                            Join the video conference by clicking below.
-                          </p>
-                          <Button
-                            className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-                            onClick={() => window.open(meeting.video_conference_url, '_blank')}
-                          >
-                            <Video className="h-4 w-4" />
-                            Join Meeting
-                          </Button>
+                  {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="text-center space-y-4">
+                          <Video className="h-12 w-12 mx-auto text-muted-foreground" />
+                          <div>
+                            <h3 className="font-semibold text-lg mb-2">Video Conference</h3>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Join the video conference by clicking below.
+                            </p>
+                            <Button 
+                              onClick={() => window.open(meeting.video_conference_url, '_blank')}
+                              className="gap-2"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                              Join Now
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  )}
+                  {meeting.meeting_type === 'virtual_room' && (
+                    <VirtualMeetingRoom 
+                      meetingId={id!} 
+                      isHost={meeting.created_by === userId}
+                      currentUserId={userId || ''}
+                    />
+                  )}
                 </TabsContent>
               )}
 
