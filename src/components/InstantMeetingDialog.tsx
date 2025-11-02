@@ -18,12 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Zap, Video } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Zap, Video, Globe } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { generateGoogleMeetLink, generateTMeetLink } from '@/utils/videoConference';
-import { MeetingTypeSelector } from './MeetingTypeSelector';
 
 export function InstantMeetingDialog() {
   const [open, setOpen] = useState(false);
@@ -180,10 +180,36 @@ export function InstantMeetingDialog() {
 
             <div className="space-y-4">
               <Label>Meeting Experience</Label>
-              <MeetingTypeSelector
-                value={meetingType}
-                onChange={setMeetingType}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <Card
+                  className={`cursor-pointer transition-all duration-200 border-2 ${
+                    meetingType === 'video_conference'
+                      ? 'border-blue-500/50 bg-blue-500/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => setMeetingType('video_conference')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <Video className="h-12 w-12 mx-auto mb-4 text-blue-500" />
+                    <h3 className="font-semibold text-lg mb-2">Video Conference</h3>
+                    <p className="text-sm text-muted-foreground">External video call (Google Meet, TMeet)</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={`cursor-pointer transition-all duration-200 border-2 ${
+                    meetingType === 'virtual_room'
+                      ? 'border-purple-500/50 bg-purple-500/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => setMeetingType('virtual_room')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <Globe className="h-12 w-12 mx-auto mb-4 text-purple-500" />
+                    <h3 className="font-semibold text-lg mb-2">Virtual 3D Room</h3>
+                    <p className="text-sm text-muted-foreground">Immersive 3D meeting experience</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {meetingType === 'video_conference' && (
