@@ -168,7 +168,84 @@ Return JSON:
     }
 
     if (!brief) {
-      throw new Error("All AI providers failed");
+      // Final fallback: Lovable AI Gateway
+      const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+      if (lovableApiKey) {
+        try {
+          console.log("Attempting Lovable AI for executive brief");
+          const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [{
+                role: "system",
+                content: "You are an executive briefing generator. Return only valid JSON."
+              }, {
+                role: "user",
+                content: `Generate a 1-page executive brief for upcoming meeting:
+
+Meeting: "${meeting.title}"
+Date: ${meeting.start_time}
+
+Context:
+- Actions: ${actions?.length || 0} total, ${actions?.filter(a => a.status === 'completed').length || 0} completed
+- Decisions: ${decisions?.length || 0}
+- Risks: ${sentiments?.filter(s => s.risk_indicators?.length > 0).length || 0}
+
+Data: ${JSON.stringify({ actions: actions?.slice(0, 10), decisions, sentiments })}
+
+Return JSON with:
+{
+  "key_insights": ["insight1", "insight2", "insight3"],
+  "action_status_summary": {
+    "total": number,
+    "completed": number,
+    "at_risk": number,
+    "blocked": number
+  },
+  "risk_alerts": ["risk1", "risk2"],
+  "recommended_focus": ["focus1", "focus2", "focus3"],
+  "one_page_brief": "markdown formatted executive summary"
+}`
+              }],
+              response_format: { type: "json_object" }
+            }),
+          });
+
+          if (aiResponse.ok) {
+            const result = await aiResponse.json();
+            console.log("Lovable AI response:", JSON.stringify(result).substring(0, 500));
+            brief = JSON.parse(result.choices[0].message.content);
+            console.log("Lovable AI brief successful");
+          } else {
+            const status = aiResponse.status;
+            const errorText = await aiResponse.text();
+            console.error("Lovable AI gateway error:", status, errorText);
+            if (status === 429) {
+              return new Response(
+                JSON.stringify({ error: "Rate limit exceeded. Please retry in a minute." }),
+                { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" } }
+              );
+            }
+            if (status === 402) {
+              return new Response(
+                JSON.stringify({ error: "Payment required. Please add credits to your AI workspace." }),
+                { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
+            }
+          }
+        } catch (e) {
+          console.error("Lovable AI failed:", e);
+        }
+      }
+
+      if (!brief) {
+        throw new Error("All AI providers failed");
+      }
     }
 
     // Save brief
