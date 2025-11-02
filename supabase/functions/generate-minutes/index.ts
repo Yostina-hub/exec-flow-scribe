@@ -574,12 +574,19 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
         break;
       }
 
-      const errStr = JSON.stringify(insertError);
-      console.error(`Minutes insert error (attempt ${attempts + 1}, version ${nextVersion}):`, errStr);
-
+      // Extract detailed error information
       const message = (insertError as any)?.message || '';
       const details = (insertError as any)?.details || '';
+      const hint = (insertError as any)?.hint || '';
       const code = (insertError as any)?.code || '';
+      const errStr = JSON.stringify({ message, details, hint, code });
+      
+      console.error(`❌ Minutes insert error (attempt ${attempts + 1}, version ${nextVersion}):`, errStr);
+      console.error(`📋 Full error object:`, JSON.stringify(insertError));
+      console.error(`👤 Attempting with user: ${createdByCandidate}`);
+      console.error(`🆔 Meeting ID: ${meetingId}`);
+      console.error(`📊 Meeting creator: ${(meeting as any)?.created_by}`);
+
       const msgLower = message.toLowerCase();
       const detailsLower = details.toLowerCase();
       const isUniqueViolation =
@@ -592,25 +599,49 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       const isRlsViolation =
         msgLower.includes('row-level security') ||
         msgLower.includes('rls') ||
+        msgLower.includes('policy') ||
         detailsLower.includes('row-level security');
 
+      // Check for foreign key violations
+      const isFkViolation =
+        (typeof code === 'string' && code.includes('23503')) ||
+        msgLower.includes('foreign key') ||
+        msgLower.includes('violates foreign key constraint') ||
+        detailsLower.includes('foreign key');
+
       if (isUniqueViolation) {
+        console.warn(`⚠️ Unique constraint violation, incrementing version to ${nextVersion + 1}`);
         nextVersion += 1;
         attempts += 1;
-        // small backoff to avoid tight races
         await new Promise((r) => setTimeout(r, 120));
         continue;
       }
 
       if (isRlsViolation && createdByCandidate !== (meeting as any)?.created_by) {
+        console.warn(`⚠️ RLS violation, retrying with meeting creator: ${(meeting as any)?.created_by}`);
         createdByCandidate = (meeting as any).created_by;
         attempts += 1;
         await new Promise((r) => setTimeout(r, 80));
         continue;
       }
 
-      // Other errors: stop with detailed message
-      throw new Error('Failed to save minutes');
+      // Surface detailed error to client for debugging
+      let errorDetail = `Database insert failed: ${message}`;
+      if (details) errorDetail += `\nDetails: ${details}`;
+      if (hint) errorDetail += `\nHint: ${hint}`;
+      if (code) errorDetail += `\nCode: ${code}`;
+      
+      if (isFkViolation) {
+        errorDetail += `\n\n🔍 Foreign key constraint violation detected. Check that:
+- User ${createdByCandidate} exists in auth.users
+- Meeting ${meetingId} exists in meetings table
+- All referenced IDs are valid`;
+      } else if (isRlsViolation) {
+        errorDetail += `\n\n🔒 RLS policy violation. User ${createdByCandidate} cannot insert minutes for meeting ${meetingId}.`;
+      }
+      
+      console.error(`💥 Unrecoverable error:`, errorDetail);
+      throw new Error(errorDetail);
     }
 
     if (!inserted) {
