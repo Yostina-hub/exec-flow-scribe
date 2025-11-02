@@ -436,22 +436,96 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
         providerError = `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
-    if (!minutes) {
-      // Build a more helpful error message
-      // Build a more helpful error message
-      let errMsg = "All AI providers failed. ";
-      if (providerStatus === 429) {
-        errMsg += "Rate limits exceeded. Please wait a few minutes and try again.";
-      } else if (providerStatus === 402) {
-        errMsg += "API credits exhausted. Please check your API key billing.";
-      } else {
-        errMsg += providerError || "Please check your API keys and try again.";
+
+    // Final fallback to Lovable AI (if available)
+    if (lovableApiKey && !minutes) {
+      try {
+        console.log("🤖 Using Lovable AI (final fallback)");
+        const lovableResponse = await fetch(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { 
+                  role: "system", 
+                  content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
+
+🚫 CRITICAL FIDELITY REQUIREMENT:
+Your PRIMARY obligation is ACCURACY and FIDELITY to source material. You MUST:
+• ONLY include information EXPLICITLY stated in the provided transcript
+• NEVER add assumptions, external knowledge, or fabricated content
+• NEVER invent discussions, decisions, or action items not in the transcript
+• If information is unclear or missing, acknowledge it honestly
+• Every point in your summary must trace back to specific text in the transcript
+• When in doubt: OMIT rather than FABRICATE
+
+${detectedLang === 'am' ? `AMHARIC EXPERTISE:
+• You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
+• You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
+• Every sentence MUST end with ።
+• Use Subject-Object-Verb (SOV) word order
+• Use professional honorifics and business terminology
+• Write in Ge'ez script exclusively - NEVER use Latin script or romanization
+• Maintain formal tone and proper grammatical structure
+• BUT MOST IMPORTANTLY: Only summarize what was actually said in Amharic in the transcript` : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is explicitly in the transcript.'}` 
+                },
+                { role: "user", content: prompt },
+              ],
+            }),
+          }
+        );
+
+        if (lovableResponse.ok) {
+          const lovableData = await lovableResponse.json();
+          minutes = lovableData.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with Lovable AI");
+        } else {
+          const statusCode = lovableResponse.status;
+          const errorText = await lovableResponse.text();
+          console.error(`Lovable AI error (${statusCode}):`, errorText);
+          
+          if (statusCode === 429) {
+            providerStatus = 429;
+            providerError = "Lovable AI rate limit exceeded.";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "Lovable AI: Payment required - please add credits to your workspace.";
+          } else {
+            providerError = `Lovable AI: ${errorText}`;
+          }
+        }
+      } catch (e) {
+        console.error("Lovable AI provider failed:", e);
+        providerError += ` | Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
+    }
+
+    // If all providers failed, return helpful error
+    if (!minutes) {
+      let errMsg = "Unable to generate minutes. ";
+      
+      if (providerStatus === 429) {
+        errMsg = "⏳ Rate Limit Exceeded\n\nAll AI providers are temporarily rate limited. This is usually temporary.\n\n📋 What to do:\n• Wait 2-3 minutes and try again\n• If this persists, check your API provider dashboards\n• Contact support if the issue continues\n\nTip: Consider adding multiple AI provider keys in Settings to have automatic fallbacks.";
+      } else if (providerStatus === 402) {
+        errMsg = "💳 Payment Required\n\nYour AI provider credits have been exhausted.\n\n📋 What to do:\n1. Go to Settings → Workspace → Usage\n2. Add credits to your Lovable AI workspace\n3. Or add your own OpenAI/Gemini API keys in Settings\n\nOnce done, try generating minutes again.";
+      } else {
+        errMsg += providerError || "Please check your AI provider configuration in Settings.";
+      }
+      
       const errorStatusCode = providerStatus || 500;
       console.error("All AI providers failed:", errMsg);
+      
       return new Response(
         JSON.stringify({ 
-          error: errMsg
+          error: errMsg,
+          technical_details: providerError,
+          status: errorStatusCode
         }), 
         { 
           status: errorStatusCode, 

@@ -335,7 +335,14 @@ const MeetingDetail = () => {
 
           if (data?.error) {
             console.error('Edge function data error:', data.error);
-            throw new Error(data.error);
+            
+            // The backend now returns detailed user-friendly error messages
+            // Extract the main message (before any technical details)
+            const errorMsg = typeof data.error === 'string' 
+              ? data.error.split('\n\n📋')[0].split('\n\nTip:')[0] // Get the main message
+              : 'Failed to generate minutes';
+            
+            throw new Error(errorMsg);
           }
 
           console.log('Minutes generated successfully!');
@@ -349,18 +356,42 @@ const MeetingDetail = () => {
           setShowViewMinutesDialog(true);
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
-          const msg = typeof (error?.message) === 'string' ? error.message : (typeof error === 'string' ? error : '');
-          const is402 = /Payment required|402/i.test(msg);
-          const is429 = /Rate limit|Too Many Requests|429/i.test(msg);
-          toast({
-            title: is402 ? 'AI credits required' : is429 ? 'Rate limit reached' : 'Auto-generation failed',
-            description: is402
-              ? 'Please add AI credits in Settings → Workspace → Usage and try again.'
-              : is429
-              ? 'Too many requests right now. Please wait a minute and retry.'
-              : msg || 'You can manually generate minutes from the Actions menu',
-            variant: 'destructive',
-          });
+          
+          // Extract error message
+          const msg = typeof error?.message === 'string' 
+            ? error.message 
+            : typeof error === 'string' 
+            ? error 
+            : 'Failed to generate minutes';
+          
+          // Check for specific error types
+          const is402 = /Payment required|💳|402/i.test(msg);
+          const is429 = /Rate limit|⏳|Too Many Requests|429/i.test(msg);
+          
+          // For rate limit errors, show the full helpful message from backend
+          if (is429) {
+            toast({
+              title: '⏳ Rate Limit Reached',
+              description: 'All AI providers are temporarily rate limited. Please wait 2-3 minutes and try generating minutes again from the Actions menu.',
+              variant: 'destructive',
+              duration: 8000, // Show longer for rate limit messages
+            });
+          } else if (is402) {
+            toast({
+              title: '💳 AI Credits Required',
+              description: 'Please add credits in Settings → Workspace → Usage, or add your own AI API keys in Settings.',
+              variant: 'destructive',
+              duration: 8000,
+            });
+          } else {
+            // Show the error message from backend (already user-friendly)
+            toast({
+              title: 'Auto-generation failed',
+              description: msg || 'You can manually generate minutes from the Actions menu.',
+              variant: 'destructive',
+              duration: 6000,
+            });
+          }
         } finally {
           setIsAutoGenerating(false);
         }

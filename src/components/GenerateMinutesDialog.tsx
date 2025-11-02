@@ -92,7 +92,11 @@ export const GenerateMinutesDialog = ({
       if (error) throw error;
       
       if (data?.error) {
-        throw new Error(data.error);
+        // Backend returns user-friendly error messages
+        const errorMsg = typeof data.error === 'string' 
+          ? data.error.split('\n\n📋')[0].split('\n\nTip:')[0] // Get main message
+          : 'Failed to generate minutes';
+        throw new Error(errorMsg);
       }
 
       setMinutes(data.minutes);
@@ -103,18 +107,20 @@ export const GenerateMinutesDialog = ({
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
+      
       const msg = error?.message || (typeof error === 'string' ? error : 'Could not generate minutes');
-      const is402 = /Payment required|402|insufficient_quota|exceeded your current quota/i.test(msg);
-      const is429 = /Rate limit|Too Many Requests|429/i.test(msg);
+      const is402 = /Payment required|💳|402|insufficient_quota|exceeded your current quota/i.test(msg);
+      const is429 = /Rate limit|⏳|Too Many Requests|429/i.test(msg);
       
       toast({
-        title: is402 ? 'AI credits required' : is429 ? 'Rate limit reached' : 'Generation failed',
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Generation Failed',
         description: is402 
-          ? 'Please add AI credits to your OpenAI account or wait for Lovable AI credits to refresh.'
+          ? 'Add credits in Settings → Workspace → Usage, or add your own OpenAI/Gemini API keys in Settings.'
           : is429
-          ? 'Too many requests. Please wait a minute and try again.'
+          ? 'All AI providers are temporarily rate limited. Please wait 2-3 minutes and try again.'
           : msg,
         variant: 'destructive',
+        duration: is429 || is402 ? 8000 : 5000, // Longer duration for actionable errors
       });
     } finally {
       setIsGenerating(false);
