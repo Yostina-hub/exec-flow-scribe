@@ -68,17 +68,34 @@ serve(async (req) => {
 
     console.log("✅ All signatures collected - triggering auto-distribution");
 
+    // Check if meeting_id exists
+    if (!sigRequest.meeting_id) {
+      console.error("Signature request has no meeting_id");
+      return new Response(
+        JSON.stringify({ error: "Signature request is not associated with a meeting" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get meeting and PDF details
     const { data: meeting, error: meetingError } = await supabase
       .from("meetings")
-      .select("*, pdf_url")
+      .select("*")
       .eq("id", sigRequest.meeting_id)
-      .single();
+      .maybeSingle();
 
-    if (meetingError || !meeting) {
-      console.error("Meeting not found:", meetingError);
+    if (meetingError) {
+      console.error("Error fetching meeting:", meetingError);
       return new Response(
-        JSON.stringify({ error: "Meeting not found" }),
+        JSON.stringify({ error: "Error fetching meeting", details: meetingError.message }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!meeting) {
+      console.error("Meeting not found for ID:", sigRequest.meeting_id);
+      return new Response(
+        JSON.stringify({ error: `Meeting not found (ID: ${sigRequest.meeting_id})` }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
