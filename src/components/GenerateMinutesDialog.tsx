@@ -115,12 +115,17 @@ export const GenerateMinutesDialog = ({
       toast({
         title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Generation Failed',
         description: is402 
-          ? 'Add credits in Settings → Workspace → Usage, or add your own OpenAI/Gemini API keys in Settings.'
+          ? 'Lovable AI credits exhausted. Go to Settings → AI Provider tab to add your own OpenAI or Gemini API keys, or wait and try again later.'
           : is429
-          ? 'All AI providers are temporarily rate limited. Please wait 2-3 minutes and try again.'
+          ? 'All AI providers are temporarily rate limited. Wait 2-3 minutes and try again, or add your own API keys in Settings → AI Provider tab.'
           : msg,
         variant: 'destructive',
-        duration: is429 || is402 ? 8000 : 5000, // Longer duration for actionable errors
+        duration: is429 || is402 ? 10000 : 5000,
+        action: (is402 || is429) ? (
+          <Button variant="outline" size="sm" onClick={() => window.location.href = '/settings'}>
+            Open Settings
+          </Button>
+        ) : undefined,
       });
     } finally {
       setIsGenerating(false);
