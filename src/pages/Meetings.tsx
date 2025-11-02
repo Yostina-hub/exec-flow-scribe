@@ -99,9 +99,38 @@ export default function Meetings() {
     
     const meetingsChannel = supabase
       .channel('meetings-changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, fetchMeetings)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'agenda_items' }, fetchMeetings)
-      .subscribe();
+      .on('postgres_changes', { 
+        event: 'INSERT', 
+        schema: 'public', 
+        table: 'meetings' 
+      }, (payload) => {
+        console.log('New meeting created:', payload);
+        fetchMeetings();
+      })
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'meetings' 
+      }, (payload) => {
+        console.log('Meeting updated:', payload);
+        fetchMeetings();
+      })
+      .on('postgres_changes', { 
+        event: 'DELETE', 
+        schema: 'public', 
+        table: 'meetings' 
+      }, (payload) => {
+        console.log('Meeting deleted:', payload);
+        fetchMeetings();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'agenda_items' 
+      }, fetchMeetings)
+      .subscribe((status) => {
+        console.log('Realtime subscription status:', status);
+      });
 
     return () => {
       supabase.removeChannel(meetingsChannel);
