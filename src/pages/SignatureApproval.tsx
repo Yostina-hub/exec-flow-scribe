@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SignaturePackageViewer } from '@/components/signoff/SignaturePackageViewer';
 import { SignOffDialog } from '@/components/signoff/SignOffDialog';
-import { ArrowLeft, FileSignature } from 'lucide-react';
+import { ArrowLeft, FileSignature, Download } from 'lucide-react';
 
 export default function SignatureApproval() {
   const { requestId } = useParams();
@@ -109,6 +109,72 @@ export default function SignatureApproval() {
     });
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      if (!signatureRequest?.meeting_id) {
+        toast({
+          title: 'Error',
+          description: 'Meeting ID not found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Get latest minutes version
+      const { data: latestMinutes } = await supabase
+        .from('minutes_versions')
+        .select('id')
+        .eq('meeting_id', signatureRequest.meeting_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!latestMinutes) {
+        toast({
+          title: 'Error',
+          description: 'No minutes found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Generate PDF
+      const { data: pdfData, error } = await supabase.functions.invoke('generate-branded-pdf', {
+        body: {
+          meeting_id: signatureRequest.meeting_id,
+          minutes_version_id: latestMinutes.id,
+          signature_request_id: requestId,
+          include_watermark: false,
+        },
+      });
+
+      if (error) throw error;
+
+      // Download the HTML
+      const blob = new Blob([pdfData.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `approved-minutes-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Downloaded',
+        description: 'Approved minutes saved to your device',
+      });
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast({
+        title: 'Download Failed',
+        description: error.message || 'Failed to generate PDF',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <Layout>
@@ -147,12 +213,20 @@ export default function SignatureApproval() {
               </p>
             </div>
           </div>
-          {canSign && (
-            <Button onClick={() => setSignOffOpen(true)} size="lg">
-              <FileSignature className="w-5 h-5 mr-2" />
-              Review & Sign
-            </Button>
-          )}
+          <div className="flex gap-2">
+            {signatureRequest.status === 'approved' && (
+              <Button onClick={handleDownloadPDF} size="lg" variant="outline">
+                <Download className="w-5 h-5 mr-2" />
+                Download Approved PDF
+              </Button>
+            )}
+            {canSign && (
+              <Button onClick={() => setSignOffOpen(true)} size="lg">
+                <FileSignature className="w-5 h-5 mr-2" />
+                Review & Sign
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Content */}

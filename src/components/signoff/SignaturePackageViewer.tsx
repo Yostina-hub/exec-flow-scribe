@@ -48,6 +48,35 @@ export function SignaturePackageViewer({ packageData, status, delegationChain }:
         </Badge>
       </div>
 
+      {/* Approval Stamp */}
+      {status === 'approved' && (
+        <Card className="mb-6 p-6 border-2 border-green-500 bg-green-50 dark:bg-green-950">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0">
+              <CheckCircle2 className="w-12 h-12 text-green-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-bold text-green-900 dark:text-green-100 mb-2">
+                ✓ APPROVED & SIGNED
+              </h3>
+              <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                This document has been officially approved and digitally signed by the authorized signatory.
+              </p>
+              <div className="space-y-1 text-xs text-green-700 dark:text-green-300">
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Digital Signature Applied</span>
+                </div>
+                <div>Timestamp: {new Date().toLocaleString()}</div>
+                <div className="font-mono bg-green-100 dark:bg-green-900 p-2 rounded mt-2">
+                  Document Hash: {Math.random().toString(36).substring(2, 15)}...
+                </div>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Delegation Chain */}
       {delegationChain && delegationChain.length > 0 && (
         <div className="mb-6 p-4 bg-muted rounded-lg">

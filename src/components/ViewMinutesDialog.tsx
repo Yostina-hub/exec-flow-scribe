@@ -104,21 +104,60 @@ export const ViewMinutesDialog = ({
     }
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([minutes], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${meetingTitle.replace(/\s+/g, '-').toLowerCase()}-minutes-${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    toast({
-      title: 'Downloaded',
-      description: 'Meeting minutes saved to your device',
-    });
+  const handleDownload = async () => {
+    try {
+      // Get latest minutes version ID
+      const { data: latestMinutes } = await supabase
+        .from('minutes_versions')
+        .select('id')
+        .eq('meeting_id', meetingId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (!latestMinutes) {
+        toast({
+          title: 'Error',
+          description: 'No minutes version found',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Generate branded PDF
+      const { data: pdfData, error } = await supabase.functions.invoke('generate-branded-pdf', {
+        body: {
+          meeting_id: meetingId,
+          minutes_version_id: latestMinutes.id,
+          include_watermark: false,
+        },
+      });
+
+      if (error) throw error;
+
+      // Download the generated PDF (HTML format)
+      const blob = new Blob([pdfData.html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${meetingTitle.replace(/\s+/g, '-').toLowerCase()}-minutes-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Downloaded',
+        description: 'Meeting minutes saved to your device',
+      });
+    } catch (error: any) {
+      console.error('Download error:', error);
+      toast({
+        title: 'Download Failed',
+        description: error.message || 'Failed to generate PDF',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleEditInEditor = () => {
