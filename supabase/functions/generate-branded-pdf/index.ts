@@ -30,7 +30,7 @@ serve(async (req) => {
       throw new Error("No authorization header");
     }
 
-    const { data: requestData }: { data: GeneratePDFRequest } = await req.json();
+    const requestData: GeneratePDFRequest = await req.json();
     const { meeting_id, minutes_version_id, brand_kit_id, signature_request_id, include_watermark } = requestData;
 
     // Fetch minutes content
