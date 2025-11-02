@@ -186,18 +186,45 @@ const triggerAIProcessingPipeline = async (meetingId: string) => {
 
     if (minutesError) {
       console.error('❌ Error generating minutes:', minutesError);
-      // Don't stop the pipeline for minutes error, continue with other processing
+      const msg = (minutesError as any)?.message || String(minutesError);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Minutes generation failed',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 9000,
+      });
       console.log('⚠️ Continuing with other AI processing tasks...');
     } else {
       console.log('✅ Minutes generated successfully');
     }
 
     // 2. Analyze sentiment
-    await supabase.functions.invoke('analyze-meeting-sentiment', {
+    const { error: sentimentError } = await supabase.functions.invoke('analyze-meeting-sentiment', {
       body: { meeting_id: meetingId }
     });
-
-    console.log('Sentiment analysis completed');
+    if (sentimentError) {
+      const msg = (sentimentError as any)?.message || String(sentimentError);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Sentiment analysis failed',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 9000,
+      });
+    } else {
+      console.log('Sentiment analysis completed');
+    }
 
     // 3. Generate executive briefs
     const { data: attendees } = await supabase
@@ -206,20 +233,54 @@ const triggerAIProcessingPipeline = async (meetingId: string) => {
       .eq('meeting_id', meetingId);
 
     if (attendees) {
-      await supabase.functions.invoke('generate-executive-brief', {
+      const { error: briefError } = await supabase.functions.invoke('generate-executive-brief', {
         body: { 
           meeting_id: meetingId,
           user_ids: attendees.map(a => a.user_id)
         }
       });
+      if (briefError) {
+        const msg = (briefError as any)?.message || String(briefError);
+        const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+        const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+        toast({
+          title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Executive brief failed',
+          description: is402
+            ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+            : is429
+            ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+            : msg,
+          variant: 'destructive',
+          duration: 9000,
+        });
+      } else {
+        console.log('Executive briefs generated');
+      }
     }
 
     console.log('Executive briefs generated');
 
     // 4. Generate coach hints
-    await supabase.functions.invoke('generate-coach-hints', {
+    const { error: coachError } = await supabase.functions.invoke('generate-coach-hints', {
       body: { meeting_id: meetingId }
     });
+    if (coachError) {
+      const msg = (coachError as any)?.message || String(coachError);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Coach hints failed',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 9000,
+      });
+    } else {
+      console.log('Coach hints generated');
+    }
 
     console.log('AI processing pipeline completed successfully');
 

@@ -63,7 +63,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setDecisionReplay(data);
       toast({ title: "Decision replay generated" });
     } catch (error: any) {
-      toast({ title: "Error generating replay", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error generating replay',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
@@ -84,7 +101,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setCatchupCard(data.catchup);
       toast({ title: "Catch-up card generated" });
     } catch (error: any) {
-      toast({ title: "Error generating catch-up", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error generating catch-up',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
@@ -101,7 +135,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setCoachHints(data.hints);
       toast({ title: "Executive coaching hints generated" });
     } catch (error: any) {
-      toast({ title: "Error generating hints", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error generating hints',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
@@ -118,7 +169,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setContextCapsule(data.capsule);
       toast({ title: "Context capsule generated" });
     } catch (error: any) {
-      toast({ title: "Error generating capsule", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error generating capsule',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
@@ -145,7 +213,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setRedactedDoc(data.document);
       toast({ title: "Redacted version created" });
     } catch (error: any) {
-      toast({ title: "Error generating redaction", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error generating redaction',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
@@ -167,7 +252,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setKnowledgeGraph(data);
       toast({ title: "Knowledge graph queried" });
     } catch (error: any) {
-      toast({ title: "Error querying graph", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error querying graph',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
@@ -195,7 +297,24 @@ export const AdvancedIntelligencePanel = ({ meetingId, userId }: AdvancedIntelli
       setSimulations(data.simulations);
       toast({ title: "Outcome simulations generated" });
     } catch (error: any) {
-      toast({ title: "Error simulating outcomes", description: error.message, variant: "destructive" });
+      const msg = error?.message || String(error);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Error simulating outcomes',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 10000,
+        action: (
+          <Button variant="outline" size="sm" onClick={() => (window.location.href = '/settings')}>
+            Open Settings
+          </Button>
+        ),
+      });
     } finally {
       setLoading(null);
     }
