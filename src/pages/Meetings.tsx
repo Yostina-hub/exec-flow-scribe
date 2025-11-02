@@ -103,39 +103,75 @@ export default function Meetings() {
         event: 'INSERT', 
         schema: 'public', 
         table: 'meetings' 
-      }, (payload) => {
-        console.log('New meeting created:', payload);
-        fetchMeetings();
+      }, async (payload) => {
+        console.log('🆕 New meeting created:', payload);
+        
+        // Fetch the new meeting with attendees and agenda counts
+        const { data: newMeeting } = await supabase
+          .from("meetings")
+          .select(`
+            *,
+            meeting_attendees(count),
+            agenda_items(count)
+          `)
+          .eq('id', payload.new.id)
+          .single();
+
+        if (newMeeting) {
+          const enrichedMeeting = {
+            ...newMeeting,
+            attendee_count: newMeeting.meeting_attendees?.[0]?.count || 0,
+            agenda_count: newMeeting.agenda_items?.[0]?.count || 0,
+          };
+          
+          // Add to the beginning of the list immediately
+          setMeetings(prev => [enrichedMeeting, ...prev]);
+          
+          toast({
+            title: "Meeting created",
+            description: `${newMeeting.title} has been added`,
+          });
+        }
       })
       .on('postgres_changes', { 
         event: 'UPDATE', 
         schema: 'public', 
         table: 'meetings' 
       }, (payload) => {
-        console.log('Meeting updated:', payload);
-        fetchMeetings();
+        console.log('📝 Meeting updated:', payload);
+        // Update the specific meeting in state
+        setMeetings(prev => 
+          prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m)
+        );
       })
       .on('postgres_changes', { 
         event: 'DELETE', 
         schema: 'public', 
         table: 'meetings' 
       }, (payload) => {
-        console.log('Meeting deleted:', payload);
-        fetchMeetings();
+        console.log('🗑️ Meeting deleted:', payload);
+        // Remove the meeting from state
+        setMeetings(prev => prev.filter(m => m.id !== payload.old.id));
       })
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'agenda_items' 
-      }, fetchMeetings)
+      }, () => {
+        console.log('📋 Agenda items changed, refreshing...');
+        fetchMeetings();
+      })
       .subscribe((status) => {
-        console.log('Realtime subscription status:', status);
+        console.log('📡 Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to meetings updates');
+        }
       });
 
     return () => {
       supabase.removeChannel(meetingsChannel);
     };
-  }, []);
+  }, [toast]);
 
 
   const fetchMeetings = async () => {
