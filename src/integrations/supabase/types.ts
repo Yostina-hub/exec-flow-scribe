@@ -187,6 +187,7 @@ export type Database = {
           created_at: string
           gemini_api_key: string | null
           id: string
+          openai_api_key: string | null
           provider: string
           updated_at: string
           user_id: string
@@ -195,6 +196,7 @@ export type Database = {
           created_at?: string
           gemini_api_key?: string | null
           id?: string
+          openai_api_key?: string | null
           provider?: string
           updated_at?: string
           user_id: string
@@ -203,6 +205,7 @@ export type Database = {
           created_at?: string
           gemini_api_key?: string | null
           id?: string
+          openai_api_key?: string | null
           provider?: string
           updated_at?: string
           user_id?: string

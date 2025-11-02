@@ -9,7 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Brain, Sparkles } from "lucide-react";
 
 export const AIProviderSettings = () => {
-  const [provider, setProvider] = useState<"lovable_ai" | "gemini">("lovable_ai");
+  const [provider, setProvider] = useState<"lovable_ai" | "openai" | "gemini">("lovable_ai");
+  const [openaiKey, setOpenaiKey] = useState("");
   const [geminiKey, setGeminiKey] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,7 +34,8 @@ export const AIProviderSettings = () => {
       if (error) throw error;
 
       if (data) {
-        setProvider(data.provider as "lovable_ai" | "gemini");
+        setProvider(data.provider as "lovable_ai" | "openai" | "gemini");
+        setOpenaiKey(data.openai_api_key || "");
         setGeminiKey(data.gemini_api_key || "");
       }
     } catch (error) {
@@ -62,6 +64,7 @@ export const AIProviderSettings = () => {
           .from("ai_provider_preferences")
           .update({
             provider,
+            openai_api_key: provider === "openai" ? openaiKey : null,
             gemini_api_key: provider === "gemini" ? geminiKey : null,
           })
           .eq("user_id", user.id);
@@ -74,6 +77,7 @@ export const AIProviderSettings = () => {
           .insert({
             user_id: user.id,
             provider,
+            openai_api_key: provider === "openai" ? openaiKey : null,
             gemini_api_key: provider === "gemini" ? geminiKey : null,
           });
 
@@ -115,7 +119,7 @@ export const AIProviderSettings = () => {
         </p>
       </div>
 
-      <RadioGroup value={provider} onValueChange={(value) => setProvider(value as "lovable_ai" | "gemini")}>
+      <RadioGroup value={provider} onValueChange={(value) => setProvider(value as "lovable_ai" | "openai" | "gemini")}>
         <div className="space-y-4">
           <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
             <RadioGroupItem value="lovable_ai" id="lovable_ai" className="mt-1" />
@@ -132,14 +136,45 @@ export const AIProviderSettings = () => {
           </div>
 
           <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
+            <RadioGroupItem value="openai" id="openai" className="mt-1" />
+            <div className="flex-1">
+              <Label htmlFor="openai" className="flex items-center gap-2 cursor-pointer">
+                <Sparkles className="h-5 w-5 text-green-600" />
+                <span className="font-semibold">OpenAI GPT-5 (Custom)</span>
+              </Label>
+              <p className="text-sm text-muted-foreground mt-1">
+                Use your own OpenAI API key for access to GPT-5, the most powerful language model.
+                Best for complex meeting analysis and multilingual content.
+              </p>
+              
+              {provider === "openai" && (
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="openai_key">OpenAI API Key</Label>
+                  <Input
+                    id="openai_key"
+                    type="password"
+                    placeholder="Enter your OpenAI API key (sk-...)"
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Get your API key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OpenAI Platform</a>
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-start space-x-3 rounded-lg border p-4 hover:bg-accent/50 transition-colors">
             <RadioGroupItem value="gemini" id="gemini" className="mt-1" />
             <div className="flex-1">
               <Label htmlFor="gemini" className="flex items-center gap-2 cursor-pointer">
-                <Sparkles className="h-5 w-5 text-primary" />
+                <Sparkles className="h-5 w-5 text-blue-600" />
                 <span className="font-semibold">Google Gemini (Custom)</span>
               </Label>
               <p className="text-sm text-muted-foreground mt-1">
                 Use your own Google Gemini API key for more control and access to different Gemini models.
+                Great for cost-effective AI processing with fast response times.
               </p>
               
               {provider === "gemini" && (
@@ -163,7 +198,10 @@ export const AIProviderSettings = () => {
       </RadioGroup>
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving || (provider === "gemini" && !geminiKey)}>
+        <Button 
+          onClick={handleSave} 
+          disabled={saving || (provider === "openai" && !openaiKey) || (provider === "gemini" && !geminiKey)}
+        >
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Preferences
         </Button>
