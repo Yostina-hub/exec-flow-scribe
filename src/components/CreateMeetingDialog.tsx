@@ -28,7 +28,7 @@ import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { ShareMeetingDialog } from "./ShareMeetingDialog";
-import { generateGoogleMeetLink, generateJitsiMeetLink } from "@/utils/videoConference";
+import { generateGoogleMeetLink, generateTMeetLink } from "@/utils/videoConference";
 
 interface Category {
   id: string;
@@ -136,8 +136,8 @@ export const CreateMeetingDialog = () => {
         const tempId = crypto.randomUUID();
         if (videoProvider === 'google_meet') {
           videoUrl = generateGoogleMeetLink(tempId);
-        } else if (videoProvider === 'jitsi_meet') {
-          videoUrl = generateJitsiMeetLink(title, tempId);
+        } else if (videoProvider === 'tmeet') {
+          videoUrl = generateTMeetLink(title, tempId);
         }
       }
 
@@ -328,13 +328,13 @@ export const CreateMeetingDialog = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="video_provider">Provider</Label>
-                    <Select name="video_provider" defaultValue="jitsi_meet">
+                    <Select name="video_provider" defaultValue="tmeet">
                       <SelectTrigger id="video_provider">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <SelectItem value="tmeet">TMeet</SelectItem>
                         <SelectItem value="google_meet">Google Meet</SelectItem>
-                        <SelectItem value="jitsi_meet">Jitsi Meet</SelectItem>
                         <SelectItem value="zoom">Zoom</SelectItem>
                         <SelectItem value="teams">Microsoft Teams</SelectItem>
                         <SelectItem value="other">Other</SelectItem>
@@ -354,7 +354,7 @@ export const CreateMeetingDialog = () => {
                 </div>
                 
                 <p className="text-xs text-muted-foreground">
-                  Leave link empty to auto-generate a Jitsi Meet room
+                  Leave link empty to auto-generate a TMeet room
                 </p>
               </div>
             )}

@@ -43,7 +43,7 @@ import { LiveTranscription } from "@/components/LiveTranscription";
 import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
 import { ContextPanel } from "@/components/ContextPanel";
 import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
-import { JitsiMeetEmbed } from "@/components/JitsiMeetEmbed";
+// Jitsi removed - using TMeet now
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
 import MeetingChatPanel from "@/components/MeetingChatPanel";
@@ -806,48 +806,26 @@ const MeetingDetail = () => {
 
               {isOnlineMeeting && hasVideoLink && (
                 <TabsContent value="video" className="space-y-4">
-                  {meeting.video_provider === 'jitsi_meet' ? (
-                    <>
-                      <div className="flex justify-end mb-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={() => window.open(meeting.video_conference_url, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                          Open in Jitsi (to login as moderator)
-                        </Button>
-                      </div>
-                      <JitsiMeetEmbed
-                        roomName={meeting.video_conference_url.split('/').pop() || meetingId}
-                        displayName={userFullName || userId || 'Guest'}
-                        width="100%"
-                        height="600px"
-                      />
-                    </>
-                  ) : (
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="text-center space-y-4">
-                          <Video className="h-12 w-12 mx-auto text-muted-foreground" />
-                          <div>
-                            <h3 className="font-semibold text-lg mb-2">Google Meet Session</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                              Google Meet cannot be embedded. Click below to join in a new tab.
-                            </p>
-                            <Button
-                              className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                              onClick={() => window.open(meeting.video_conference_url, '_blank')}
-                            >
-                              <Video className="h-4 w-4" />
-                              Join Google Meet
-                            </Button>
-                          </div>
+                  <Card>
+                    <CardContent className="p-6">
+                      <div className="text-center space-y-4">
+                        <Video className="h-12 w-12 mx-auto text-muted-foreground" />
+                        <div>
+                          <h3 className="font-semibold text-lg mb-2">Video Conference</h3>
+                          <p className="text-sm text-muted-foreground mb-4">
+                            Join the video conference by clicking below.
+                          </p>
+                          <Button
+                            className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+                            onClick={() => window.open(meeting.video_conference_url, '_blank')}
+                          >
+                            <Video className="h-4 w-4" />
+                            Join Meeting
+                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                      </div>
+                    </CardContent>
+                  </Card>
                 </TabsContent>
               )}
 

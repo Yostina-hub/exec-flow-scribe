@@ -142,7 +142,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
       // Generate video link if needed
       let videoUrl = formData.get("video_url") as string;
       if ((meetingType === 'online' || meetingType === 'hybrid') && !videoUrl) {
-        if (videoProvider === 'jitsi_meet') {
+        if (videoProvider === 'tmeet') {
           const roomName = `${title.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${Date.now().toString(36)}`;
           videoUrl = `https://meet.jit.si/${roomName}`;
         }
@@ -378,13 +378,13 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
               {showVideoFields && (
                 <div className="space-y-4 border rounded-lg p-4 bg-muted/30">
                   <Label>Video Conference</Label>
-                  <Select name="video_provider" defaultValue="jitsi_meet">
+                  <Select name="video_provider" defaultValue="tmeet">
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="tmeet">TMeet</SelectItem>
                       <SelectItem value="google_meet">Google Meet</SelectItem>
-                      <SelectItem value="jitsi_meet">Jitsi Meet</SelectItem>
                       <SelectItem value="zoom">Zoom</SelectItem>
                       <SelectItem value="teams">Microsoft Teams</SelectItem>
                     </SelectContent>

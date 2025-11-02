@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { generateJitsiMeetLink } from '@/utils/videoConference';
+import { generateTMeetLink } from '@/utils/videoConference';
 
 export default function GoogleOAuthCallback() {
   const [searchParams] = useSearchParams();
@@ -19,15 +19,15 @@ export default function GoogleOAuthCallback() {
       if (error) {
         toast({
           title: 'Authorization cancelled',
-          description: 'Using Jitsi Meet instead',
+          description: 'Using TMeet instead',
           variant: 'destructive',
         });
         
-        // Fall back to Jitsi
+        // Fall back to TMeet
         const pendingData = sessionStorage.getItem('pendingInstantMeeting');
         if (pendingData) {
           const meetingData = JSON.parse(pendingData);
-          await createMeetingWithJitsi(meetingData);
+          await createMeetingWithTMeet(meetingData);
         } else {
           navigate('/meetings');
         }
@@ -157,15 +157,15 @@ export default function GoogleOAuthCallback() {
         
         toast({
           title: 'Google Meet setup failed',
-          description: 'Creating meeting with Jitsi instead',
+          description: 'Creating meeting with TMeet instead',
           variant: 'destructive',
         });
 
-        // Fall back to Jitsi
+        // Fall back to TMeet
         const pendingData = sessionStorage.getItem('pendingInstantMeeting');
         if (pendingData) {
           const meetingData = JSON.parse(pendingData);
-          await createMeetingWithJitsi(meetingData);
+          await createMeetingWithTMeet(meetingData);
         } else {
           navigate('/meetings');
         }
@@ -175,12 +175,12 @@ export default function GoogleOAuthCallback() {
     handleCallback();
   }, [searchParams, navigate, toast]);
 
-  const createMeetingWithJitsi = async (meetingData: any) => {
+  const createMeetingWithTMeet = async (meetingData: any) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const videoUrl = generateJitsiMeetLink(meetingData.title, crypto.randomUUID());
+      const videoUrl = generateTMeetLink(meetingData.title, crypto.randomUUID());
 
       const { data: meeting, error: meetingError } = await supabase
         .from('meetings')
@@ -194,7 +194,7 @@ export default function GoogleOAuthCallback() {
           status: 'in_progress' as any,
           meeting_type: 'online' as any,
           video_conference_url: videoUrl,
-          video_provider: 'jitsi_meet' as any,
+          video_provider: 'tmeet' as any,
           timezone: 'Africa/Addis_Ababa',
           is_recurring: false,
         } as any)
@@ -214,7 +214,7 @@ export default function GoogleOAuthCallback() {
 
       navigate(`/meetings/${meeting.id}`);
     } catch (error) {
-      console.error('Failed to create Jitsi meeting:', error);
+      console.error('Failed to create TMeet meeting:', error);
       navigate('/meetings');
     }
   };
