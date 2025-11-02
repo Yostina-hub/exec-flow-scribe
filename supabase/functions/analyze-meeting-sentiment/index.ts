@@ -163,6 +163,49 @@ Return format:
         }
       }
 
+      // Final fallback: Lovable AI Gateway
+      if (!analysis) {
+        const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+        if (lovableKey) {
+          try {
+            console.log("Attempting Lovable AI for sentiment analysis");
+            const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${lovableKey}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                model: "google/gemini-2.5-flash",
+                messages: [
+                  { role: "system", content: "You are a meeting sentiment analyzer. Return only valid JSON with the required fields." },
+                  { role: "user", content: `Analyze this meeting segment for sentiment, risks, and compliance concerns. Return JSON only.\n\nText: \"${text}\"\n\nReturn format:\n{\n  \"topic\": \"main topic discussed\",\n  \"sentiment_score\": -1 to 1,\n  \"sentiment_label\": \"positive|neutral|negative|tension|optimistic|hesitant\",\n  \"confidence\": 0 to 1,\n  \"key_phrases\": [\"phrase1\", \"phrase2\"],\n  \"risk_indicators\": [\"risk1\", \"risk2\"],\n  \"compliance_concerns\": [\"concern1\", \"concern2\"]\n}` },
+                ],
+              }),
+            });
+
+            if (resp.ok) {
+              const data = await resp.json();
+              const content = data.choices?.[0]?.message?.content ?? "";
+              analysis = typeof content === "string" ? JSON.parse(content) : content;
+              console.log("Lovable AI analysis successful");
+            } else {
+              const status = resp.status;
+              const textBody = await resp.text();
+              console.error("Lovable AI gateway error:", status, textBody);
+              if (status === 429) {
+                return new Response(JSON.stringify({ error: "⏳ Rate Limit Exceeded\n\nAll AI providers are temporarily rate limited. This is usually temporary.\n\n📋 What to do:\n• Wait 2-3 minutes and try again\n• If this persists, check your API provider dashboards\n• Contact support if the issue continues\n\nTip: Consider adding multiple AI provider keys in Settings to have automatic fallbacks.", technical_details: "Lovable AI rate limit exceeded.", status: 429 }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
+              if (status === 402) {
+                return new Response(JSON.stringify({ error: "💳 Payment Required\n\nYour AI provider credits have been exhausted.\n\n📋 What to do:\n1. Go to Settings → Workspace → Usage\n2. Add credits to your Lovable AI workspace\n3. Or add your own OpenAI/Gemini API keys in Settings\n\nOnce done, try generating minutes again.", technical_details: "Lovable AI: Payment required - please add credits to your workspace.", status: 402 }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              }
+            }
+          } catch (e) {
+            console.error("Lovable AI fallback failed:", e);
+          }
+        }
+      }
+
       if (!analysis) {
         throw new Error("All AI providers failed");
       }
