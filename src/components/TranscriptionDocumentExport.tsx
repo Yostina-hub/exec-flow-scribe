@@ -17,91 +17,27 @@ export const TranscriptionDocumentExport = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
 
   const generateTranscriptDocument = async () => {
     setIsGenerating(true);
     try {
-      // Fetch all transcriptions for the meeting
-      const { data: transcriptions, error } = await supabase
-        .from('transcriptions')
-        .select('*')
-        .eq('meeting_id', meetingId)
-        .order('timestamp', { ascending: true });
+      // Call edge function to generate transcript PDF
+      const { data, error } = await supabase.functions.invoke('generate-transcript-pdf', {
+        body: { meetingId },
+      });
 
       if (error) throw error;
 
-      if (!transcriptions || transcriptions.length === 0) {
-        toast({
-          title: 'No Transcription Data',
-          description: 'No transcriptions available for this meeting.',
-          variant: 'destructive',
-        });
-        return;
+      if (!data?.html) {
+        throw new Error('No HTML content received from server');
       }
 
-      // Fetch meeting details
-      const { data: meeting } = await supabase
-        .from('meetings')
-        .select('start_time, end_time')
-        .eq('id', meetingId)
-        .single();
-
-      // Build the complete transcript document
-      let transcriptContent = `# Complete Meeting Transcription\n\n`;
-      transcriptContent += `**Meeting:** ${meetingTitle}\n`;
-      transcriptContent += `**Date:** ${new Date(meeting?.start_time || '').toLocaleDateString()}\n`;
-      transcriptContent += `**Time:** ${new Date(meeting?.start_time || '').toLocaleTimeString()} - ${new Date(meeting?.end_time || '').toLocaleTimeString()}\n`;
-      transcriptContent += `**Total Segments:** ${transcriptions.length}\n\n`;
-      transcriptContent += `---\n\n`;
-
-      // Group transcriptions by speaker
-      let currentSpeaker = '';
-      let currentBlock = '';
-      let currentTimestamp = '';
-
-      transcriptions.forEach((trans: any, index: number) => {
-        const speaker = trans.speaker_name || 'Unknown Speaker';
-        const timestamp = formatTimestamp(trans.timestamp);
-        const content = trans.content || '';
-        const confidence = trans.confidence ? ` (Confidence: ${(trans.confidence * 100).toFixed(0)}%)` : '';
-
-        // If speaker changed, write the previous block and start a new one
-        if (speaker !== currentSpeaker) {
-          if (currentBlock) {
-            transcriptContent += `**[${currentTimestamp}] ${currentSpeaker}:**\n${currentBlock}\n\n`;
-          }
-          currentSpeaker = speaker;
-          currentBlock = content;
-          currentTimestamp = timestamp;
-        } else {
-          // Same speaker, append to current block
-          currentBlock += ' ' + content;
-        }
-
-        // Write the last segment if it's the final transcription
-        if (index === transcriptions.length - 1) {
-          transcriptContent += `**[${currentTimestamp}] ${currentSpeaker}:**\n${currentBlock}\n\n`;
-        }
-      });
-
-      transcriptContent += `---\n\n`;
-      transcriptContent += `*Document generated on: ${new Date().toLocaleString()}*\n`;
-      transcriptContent += `*Total speaking segments: ${transcriptions.length}*\n`;
-
-      // Create and download the file
-      const blob = new Blob([transcriptContent], { type: 'text/markdown' });
+      // Create and download the PDF (as HTML that can be printed to PDF)
+      const blob = new Blob([data.html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = window.document.createElement('a');
       link.href = url;
-      const filename = `${meetingTitle.replace(/[^a-z0-9]/gi, '_')}_Transcript_${new Date().toISOString().split('T')[0]}.md`;
+      const filename = `${meetingTitle.replace(/[^a-z0-9]/gi, '_')}_Transcript_${new Date().toISOString().split('T')[0]}.html`;
       link.download = filename;
       window.document.body.appendChild(link);
       link.click();
@@ -110,7 +46,7 @@ export const TranscriptionDocumentExport = ({
 
       toast({
         title: 'Transcript Exported',
-        description: `Complete transcription saved as ${filename}`,
+        description: `Complete transcription saved as ${filename}. Open it and use browser's "Print to PDF" to save as PDF.`,
       });
     } catch (error: any) {
       console.error('Error generating transcript document:', error);
