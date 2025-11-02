@@ -4076,7 +4076,13 @@ export type Database = {
         | "actions"
         | "transcriptions"
         | "settings"
-      video_provider: "google_meet" | "jitsi_meet" | "zoom" | "teams" | "other"
+      video_provider:
+        | "google_meet"
+        | "jitsi_meet"
+        | "zoom"
+        | "teams"
+        | "other"
+        | "tmeet"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4224,7 +4230,14 @@ export const Constants = {
         "transcriptions",
         "settings",
       ],
-      video_provider: ["google_meet", "jitsi_meet", "zoom", "teams", "other"],
+      video_provider: [
+        "google_meet",
+        "jitsi_meet",
+        "zoom",
+        "teams",
+        "other",
+        "tmeet",
+      ],
     },
   },
 } as const
