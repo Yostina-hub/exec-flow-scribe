@@ -286,7 +286,11 @@ export const BrowserSpeechRecognition = ({
           });
         if (uploadError) {
           console.error('Audio upload error:', uploadError);
-          // don't throw; transcript may already be saved
+          toast({
+            title: 'Audio upload failed',
+            description: uploadError.message || 'Failed to save audio file',
+            variant: 'destructive',
+          });
         } else {
           // Save audio reference in meeting_media table
           const { error: mediaError } = await supabase
@@ -301,7 +305,14 @@ export const BrowserSpeechRecognition = ({
               uploaded_by: userId,
               checksum: `audio-${timestamp}`,
             });
-          if (mediaError) console.error('Media reference error:', mediaError);
+          if (mediaError) {
+            console.error('Media reference error:', mediaError);
+            toast({
+              title: 'Media reference failed',
+              description: mediaError.message || 'Failed to save media reference',
+              variant: 'destructive',
+            });
+          }
         }
       }
 
