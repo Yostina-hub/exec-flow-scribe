@@ -419,7 +419,15 @@ export default function Meetings() {
     filterMeetings(
       meetings
         .filter((m) => m.status !== "completed")
-        .map(formatMeetingCard)
+        .map((m) => {
+          const formatted = formatMeetingCard(m);
+          const prep = preparations[m.id];
+          return {
+            ...formatted,
+            readiness: prep?.readiness || 100,
+            missingItems: prep?.missingItems || [],
+          };
+        })
     ),
     meetings
   );
@@ -433,7 +441,20 @@ export default function Meetings() {
     meetings
   );
   
-  const allMeetingsFormatted = sortMeetings(filterMeetings(meetings.map(formatMeetingCard)), meetings);
+  const allMeetingsFormatted = sortMeetings(
+    filterMeetings(
+      meetings.map((m) => {
+        const formatted = formatMeetingCard(m);
+        const prep = preparations[m.id];
+        return {
+          ...formatted,
+          readiness: prep?.readiness || 100,
+          missingItems: prep?.missingItems || [],
+        };
+      })
+    ), 
+    meetings
+  );
 
   const criticalMeetings = upcomingMeetings.filter(m => {
     const prep = preparations[m.id];
@@ -478,13 +499,13 @@ export default function Meetings() {
             </div>
             <div className="flex gap-3">
               <InstantMeetingDialog />
-              <Button onClick={() => setShowSmartCreate(true)} size="lg" className="gap-2">
+              <Button 
+                onClick={() => setShowSmartCreate(true)} 
+                size="lg" 
+                className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              >
                 <Brain className="h-4 w-4" />
-                AI Create
-              </Button>
-              <Button onClick={generateAISuggestion} variant="outline" size="lg" className="gap-2">
-                <Wand2 className="h-4 w-4" />
-                Suggest
+                Quick Create
               </Button>
             </div>
           </div>
