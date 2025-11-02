@@ -44,6 +44,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
     recognition.continuous = true;
     recognition.interimResults = true;
+    recognition.maxAlternatives = 3; // Get multiple alternatives for better accuracy
     recognition.lang = language;
 
     recognition.onstart = () => {
@@ -67,12 +68,22 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
 
     recognition.onresult = (event: any) => {
       let interimTranscript = '';
+      let confidence = 0;
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcriptSegment = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          // Accumulate final results separately to avoid duplicates
-          finalTranscriptRef.current += transcriptSegment + ' ';
+        const result = event.results[i];
+        const transcriptSegment = result[0].transcript;
+        confidence = result[0].confidence || 0;
+
+        if (result.isFinal) {
+          // Add proper spacing and capitalize first letter
+          const trimmedSegment = transcriptSegment.trim();
+          if (trimmedSegment) {
+            // Add period if confidence is high and segment doesn't end with punctuation
+            const needsPunctuation = confidence > 0.8 && !/[.!?]$/.test(trimmedSegment);
+            const formattedSegment = trimmedSegment.charAt(0).toUpperCase() + trimmedSegment.slice(1);
+            finalTranscriptRef.current += formattedSegment + (needsPunctuation ? '. ' : ' ');
+          }
         } else {
           interimTranscript += transcriptSegment;
         }
