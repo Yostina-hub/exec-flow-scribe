@@ -490,7 +490,7 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
+              model: "google/gemini-2.5-flash-lite", // Fastest model for quick minute generation
               messages: [
                 { 
                   role: "system", 

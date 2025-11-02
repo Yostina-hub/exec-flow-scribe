@@ -60,6 +60,7 @@ import { MultiChannelDistribution } from "@/components/MultiChannelDistribution"
 import { IntegrationManager } from "@/components/IntegrationManager";
 import { TranscriptionDocumentExport } from "@/components/TranscriptionDocumentExport";
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
+import { LazyTabContent } from "@/components/LazyTabContent";
 import { MeetingAudioPlayback } from "@/components/MeetingAudioPlayback";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
@@ -293,8 +294,8 @@ const MeetingDetail = () => {
         console.log('Starting auto-generation of minutes...');
         
         toast({
-          title: 'Processing recording',
-          description: 'Automatically generating meeting minutes...',
+          title: '🚀 Generating Minutes',
+          description: 'Using fast AI model for quick results...',
         });
 
         try {
@@ -302,12 +303,8 @@ const MeetingDetail = () => {
           const { data: { session } } = await supabase.auth.getSession();
           if (!session) throw new Error('Not authenticated');
 
-          // Add a delay to ensure all transcriptions are saved
-          await new Promise(resolve => setTimeout(resolve, 3000));
-
-          // Proceed without client-side transcript existence check.
-          // Server function will validate availability of transcripts and handle messaging.
-          console.log('Skipping client transcript count; delegating check to generate-minutes');
+          // Removed delay - generate immediately for better performance
+          // Transcriptions are already saved by the recording component
 
           // Auto-save meeting status
           if (id) {
@@ -350,8 +347,8 @@ const MeetingDetail = () => {
           console.log('Minutes generated successfully!');
 
           toast({
-            title: 'Minutes generated',
-            description: 'Your meeting minutes are ready to view',
+            title: '✨ Minutes Ready',
+            description: 'Your meeting minutes have been generated',
           });
 
           // Auto-open the minutes viewer so users see the result immediately
@@ -878,35 +875,37 @@ const MeetingDetail = () => {
               </TabsContent>
 
               <TabsContent value="transcription" className="space-y-4">
-                <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquare className="h-5 w-5" />
-                        Live Transcription & Recording
-                      </CardTitle>
-                      <CardDescription>
-                        Real-time speech-to-text with speaker detection
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <BrowserSpeechRecognition 
-                        meetingId={meetingId}
-                        externalIsRecording={isRecording}
-                        isPaused={isPaused}
-                        onRecordingStart={startRecording}
-                        onRecordingStop={() => stopRecording()}
-                        onDurationChange={(s) => setRecordingSeconds(s)}
-                      />
-                    </CardContent>
-                  </Card>
-                  <MeetingAudioPlayback meetingId={meetingId} />
-                  <LiveTranscription 
-                    meetingId={meetingId} 
-                    isRecording={isRecording}
-                    currentUserName={userFullName || 'Unknown User'}
-                  />
-                </ProtectedElement>
+                <LazyTabContent>
+                  <ProtectedElement meetingId={meetingId} elementType="transcriptions">
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="h-5 w-5" />
+                          Live Transcription & Recording
+                        </CardTitle>
+                        <CardDescription>
+                          Real-time speech-to-text with speaker detection
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <BrowserSpeechRecognition 
+                          meetingId={meetingId}
+                          externalIsRecording={isRecording}
+                          isPaused={isPaused}
+                          onRecordingStart={startRecording}
+                          onRecordingStop={() => stopRecording()}
+                          onDurationChange={(s) => setRecordingSeconds(s)}
+                        />
+                      </CardContent>
+                    </Card>
+                    <MeetingAudioPlayback meetingId={meetingId} />
+                    <LiveTranscription 
+                      meetingId={meetingId} 
+                      isRecording={isRecording}
+                      currentUserName={userFullName || 'Unknown User'}
+                    />
+                  </ProtectedElement>
+                </LazyTabContent>
               </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
@@ -986,14 +985,16 @@ const MeetingDetail = () => {
 
 
               <TabsContent value="collaboration" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <LivePolling 
-                    meetingId={meetingId} 
-                    isHost={meeting?.created_by === userId} 
-                  />
-                  <CollaborativeNotes meetingId={meetingId} />
-                </div>
-                <MeetingBookmarks meetingId={meetingId} />
+                <LazyTabContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <LivePolling 
+                      meetingId={meetingId} 
+                      isHost={meeting?.created_by === userId} 
+                    />
+                    <CollaborativeNotes meetingId={meetingId} />
+                  </div>
+                  <MeetingBookmarks meetingId={meetingId} />
+                </LazyTabContent>
               </TabsContent>
 
 
@@ -1011,22 +1012,24 @@ const MeetingDetail = () => {
               </TabsContent>
 
               <TabsContent value="documents" className="space-y-6">
-                <ProtectedElement meetingId={meetingId} elementType="documents">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <TranscriptionDocumentExport 
-                      meetingId={meetingId} 
-                      meetingTitle={meeting?.title || 'Meeting'} 
-                    />
-                    <MeetingAudioPlayback meetingId={meetingId} />
-                  </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-6">
-                      <DocumentVersionControl meetingId={meetingId} />
-                      <MultiChannelDistribution meetingId={meetingId} />
+                <LazyTabContent>
+                  <ProtectedElement meetingId={meetingId} elementType="documents">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <TranscriptionDocumentExport 
+                        meetingId={meetingId} 
+                        meetingTitle={meeting?.title || 'Meeting'} 
+                      />
+                      <MeetingAudioPlayback meetingId={meetingId} />
                     </div>
-                    <IntegrationManager meetingId={meetingId} />
-                  </div>
-                </ProtectedElement>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <div className="space-y-6">
+                        <DocumentVersionControl meetingId={meetingId} />
+                        <MultiChannelDistribution meetingId={meetingId} />
+                      </div>
+                      <IntegrationManager meetingId={meetingId} />
+                    </div>
+                  </ProtectedElement>
+                </LazyTabContent>
               </TabsContent>
 
 
@@ -1036,34 +1039,36 @@ const MeetingDetail = () => {
               </TabsContent>
 
               <TabsContent value="signatures" className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="space-y-6">
-                    <LiveAudioRecorder 
-                      meetingId={meetingId}
-                      onUploadComplete={() => {
-                        toast({
-                          title: "Success",
-                          description: "Audio recording uploaded successfully",
-                        });
-                        fetchMeetingDetails();
-                      }}
-                    />
-                    <PDFGenerationPanel 
-                      meetingId={meetingId}
-                      hasPDF={workflowStatus.pdf === 'generated' || workflowStatus.pdf === 'signed' || workflowStatus.pdf === 'distributed'}
-                      pdfUrl={(meeting as any)?.pdf_url}
-                      minutesGenerated={workflowStatus.minutes === 'generated' || workflowStatus.minutes === 'reviewed' || workflowStatus.minutes === 'approved'}
-                      onPDFGenerated={() => {
-                        fetchMeetingDetails();
-                        toast({
-                          title: 'PDF Ready',
-                          description: 'You can now request signatures',
-                        });
-                      }}
-                    />
+                <LazyTabContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                      <LiveAudioRecorder 
+                        meetingId={meetingId}
+                        onUploadComplete={() => {
+                          toast({
+                            title: "Success",
+                            description: "Audio recording uploaded successfully",
+                          });
+                          fetchMeetingDetails();
+                        }}
+                      />
+                      <PDFGenerationPanel 
+                        meetingId={meetingId}
+                        hasPDF={workflowStatus.pdf === 'generated' || workflowStatus.pdf === 'signed' || workflowStatus.pdf === 'distributed'}
+                        pdfUrl={(meeting as any)?.pdf_url}
+                        minutesGenerated={workflowStatus.minutes === 'generated' || workflowStatus.minutes === 'reviewed' || workflowStatus.minutes === 'approved'}
+                        onPDFGenerated={() => {
+                          fetchMeetingDetails();
+                          toast({
+                            title: 'PDF Ready',
+                            description: 'You can now request signatures',
+                          });
+                        }}
+                      />
+                    </div>
+                    <MeetingSignaturesPanel meetingId={meetingId} />
                   </div>
-                  <MeetingSignaturesPanel meetingId={meetingId} />
-                </div>
+                </LazyTabContent>
               </TabsContent>
             </Tabs>
           </div>
