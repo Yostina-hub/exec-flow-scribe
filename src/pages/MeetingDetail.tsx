@@ -60,6 +60,7 @@ import { MultiChannelDistribution } from "@/components/MultiChannelDistribution"
 import { IntegrationManager } from "@/components/IntegrationManager";
 import { TranscriptionDocumentExport } from "@/components/TranscriptionDocumentExport";
 import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
+import { MeetingAudioPlayback } from "@/components/MeetingAudioPlayback";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
 import { AIPreparationAssistant } from "@/components/AIPreparationAssistant";
@@ -899,6 +900,7 @@ const MeetingDetail = () => {
                       />
                     </CardContent>
                   </Card>
+                  <MeetingAudioPlayback meetingId={meetingId} />
                   <LiveTranscription 
                     meetingId={meetingId} 
                     isRecording={isRecording}
@@ -1010,10 +1012,13 @@ const MeetingDetail = () => {
 
               <TabsContent value="documents" className="space-y-6">
                 <ProtectedElement meetingId={meetingId} elementType="documents">
-                  <TranscriptionDocumentExport 
-                    meetingId={meetingId} 
-                    meetingTitle={meeting?.title || 'Meeting'} 
-                  />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <TranscriptionDocumentExport 
+                      meetingId={meetingId} 
+                      meetingTitle={meeting?.title || 'Meeting'} 
+                    />
+                    <MeetingAudioPlayback meetingId={meetingId} />
+                  </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-6">
                       <DocumentVersionControl meetingId={meetingId} />
