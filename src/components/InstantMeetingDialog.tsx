@@ -28,7 +28,7 @@ import { generateGoogleMeetLink, generateTMeetLink } from '@/utils/videoConferen
 export function InstantMeetingDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [meetingType, setMeetingType] = useState<'video_conference' | 'virtual_room' | 'standard'>('video_conference');
+  const [meetingType, setMeetingType] = useState<'video_conference' | 'virtual_room'>('video_conference');
   const navigate = useNavigate();
 
   const handleCreateInstant = async (e: React.FormEvent) => {
