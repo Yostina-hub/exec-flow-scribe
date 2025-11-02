@@ -177,6 +177,50 @@ Return JSON:
       }
     }
 
+    // Final fallback: Lovable AI Gateway (OpenAI-compatible)
+    if (!coaching) {
+      const lovableKey = Deno.env.get("LOVABLE_API_KEY");
+      if (lovableKey) {
+        try {
+          console.log("🤖 Using Lovable AI (final fallback)");
+          const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${lovableKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { role: "system", content: "You are an executive meeting coach. Return only valid JSON with 'hints' array." },
+                { role: "user", content: `Generate executive coach hints for a meeting in progress:\n\nMeeting time remaining: ${Math.round(remaining / 60000)} minutes\nTotal agenda items: ${agenda?.length || 0}\nCompleted items: ${agenda?.filter(a => a.status === 'completed').length || 0}\nDecisions made: ${decisions?.length || 0}\nAttendees: ${JSON.stringify(attendees?.map(a => ({ name: a.profiles?.full_name })))}\n\nReturn JSON strictly in this shape:\n{\n  \"hints\": [\n    { \"hint_type\": \"time|participation|progress|decision\", \"hint_message\": \"actionable coaching message\", \"priority\": 0-10 }\n  ]\n}` },
+              ],
+              temperature: 0.7,
+            }),
+          });
+
+          if (resp.ok) {
+            const data = await resp.json();
+            const content = data.choices?.[0]?.message?.content ?? "";
+            coaching = typeof content === "string" ? JSON.parse(content) : content;
+            console.log("✅ Coach hints generated with Lovable AI");
+          } else {
+            const status = resp.status;
+            const text = await resp.text();
+            console.error("Lovable AI gateway error:", status, text);
+            if (status === 429) {
+              return new Response(JSON.stringify({ error: "Rate limit exceeded. Please retry in a minute." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+            if (status === 402) {
+              return new Response(JSON.stringify({ error: "Payment required. Please add credits to your AI workspace." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+            }
+          }
+        } catch (e) {
+          console.error("Lovable AI fallback failed:", e);
+        }
+      }
+    }
+
     if (!coaching) {
       throw new Error("All AI providers failed");
     }

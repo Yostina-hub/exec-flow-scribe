@@ -548,21 +548,44 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       console.warn('Version fetch error:', versionError);
     }
 
-    const nextVersion = (lastVersionRow?.version_number || 0) + 1;
+    let nextVersion = (lastVersionRow?.version_number || 0) + 1;
 
-    // Insert minutes record
-    const { error: insertError } = await supabase
-      .from('minutes_versions')
-      .insert({
-        meeting_id: meetingId,
-        version_number: nextVersion,
-        content: minutes,
-        created_by: user.id,
-        is_ratified: false,
-      });
+    // Insert minutes record with simple retry to avoid race on unique (meeting_id, version_number)
+    let inserted = false;
+    let attempts = 0;
+    while (!inserted && attempts < 3) {
+      const { error: insertError } = await supabase
+        .from('minutes_versions')
+        .insert({
+          meeting_id: meetingId,
+          version_number: nextVersion,
+          content: minutes,
+          created_by: user.id,
+          is_ratified: false,
+        });
 
-    if (insertError) {
-      console.error('Minutes insert error:', insertError);
+      if (!insertError) {
+        inserted = true;
+        break;
+      }
+
+      // If unique constraint violation, bump version and retry
+      const code = (insertError as any)?.code || (insertError as any)?.details || '';
+      const isUniqueViolation = typeof code === 'string' && code.includes('23505') ||
+        ((insertError as any)?.message || '').toLowerCase().includes('duplicate key value');
+
+      console.error('Minutes insert error (attempt ' + (attempts + 1) + '):', insertError);
+      if (isUniqueViolation) {
+        nextVersion += 1;
+        attempts += 1;
+        continue;
+      }
+
+      // Other errors: stop
+      throw new Error('Failed to save minutes');
+    }
+
+    if (!inserted) {
       throw new Error('Failed to save minutes');
     }
 
