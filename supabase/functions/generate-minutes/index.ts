@@ -534,19 +534,47 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       );
     }
 
-    // Update meeting with generated minutes
-    const { error: updateError } = await supabase
-      .from("meetings")
-      .update({
-        minutes_url: minutes,
-        status: "completed",
-        workflow_stage: 'minutes_ready'
-      })
-      .eq("id", meetingId);
+    // Persist generated minutes into meeting_minutes and update meeting status
+    // Compute next version number
+    const { data: lastVersionRow, error: versionError } = await supabase
+      .from('meeting_minutes')
+      .select('version')
+      .eq('meeting_id', meetingId)
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    if (updateError) {
-      console.error("Database update error:", updateError);
-      throw new Error("Failed to save minutes");
+    if (versionError) {
+      console.warn('Version fetch error:', versionError);
+    }
+
+    const nextVersion = (lastVersionRow?.version || 0) + 1;
+
+    // Insert minutes record
+    const { error: insertError } = await supabase
+      .from('meeting_minutes')
+      .insert({
+        meeting_id: meetingId,
+        content: minutes,
+        generated_by: user.id,
+        version: nextVersion,
+        is_final: false,
+      });
+
+    if (insertError) {
+      console.error('Minutes insert error:', insertError);
+      throw new Error('Failed to save minutes');
+    }
+
+    // Optionally update meeting status to completed (column exists in schema)
+    const { error: meetingStatusError } = await supabase
+      .from('meetings')
+      .update({ status: 'completed' })
+      .eq('id', meetingId);
+
+    if (meetingStatusError) {
+      console.warn('Meeting status update warning:', meetingStatusError);
+      // Do not throw; minutes saved successfully
     }
 
     return new Response(
