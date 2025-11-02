@@ -553,7 +553,7 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
     // Insert minutes record with simple retry to avoid race on unique (meeting_id, version_number)
     let inserted = false;
     let attempts = 0;
-    while (!inserted && attempts < 3) {
+    while (!inserted && attempts < 6) {
       const { error: insertError } = await supabase
         .from('minutes_versions')
         .insert({
@@ -569,19 +569,27 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
         break;
       }
 
-      // If unique constraint violation, bump version and retry
-      const code = (insertError as any)?.code || (insertError as any)?.details || '';
-      const isUniqueViolation = typeof code === 'string' && code.includes('23505') ||
-        ((insertError as any)?.message || '').toLowerCase().includes('duplicate key value');
+      const errStr = JSON.stringify(insertError);
+      console.error(`Minutes insert error (attempt ${attempts + 1}, version ${nextVersion}):`, errStr);
 
-      console.error('Minutes insert error (attempt ' + (attempts + 1) + '):', insertError);
+      const message = (insertError as any)?.message || '';
+      const details = (insertError as any)?.details || '';
+      const code = (insertError as any)?.code || '';
+      const isUniqueViolation =
+        (typeof code === 'string' && code.includes('23505')) ||
+        message.toLowerCase().includes('duplicate key value') ||
+        details.toLowerCase().includes('duplicate key value') ||
+        message.toLowerCase().includes('(meeting_id, version_number)');
+
       if (isUniqueViolation) {
         nextVersion += 1;
         attempts += 1;
+        // small backoff to avoid tight races
+        await new Promise((r) => setTimeout(r, 120));
         continue;
       }
 
-      // Other errors: stop
+      // Other errors: stop with detailed message
       throw new Error('Failed to save minutes');
     }
 
