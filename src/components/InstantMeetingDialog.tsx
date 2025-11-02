@@ -126,7 +126,11 @@ export function InstantMeetingDialog() {
       navigate(`/meetings/${meeting.id}`);
     } catch (error: any) {
       console.error('Error creating instant meeting:', error);
-      toast.error('Failed to create instant meeting: ' + error.message);
+      toast({
+        title: 'Failed to create instant meeting',
+        description: error.message,
+        variant: 'destructive',
+      });
     } finally {
       setLoading(false);
     }
