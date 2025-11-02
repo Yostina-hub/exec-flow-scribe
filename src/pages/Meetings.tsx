@@ -12,6 +12,15 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import {
   Search, Filter, Loader2, Calendar, Clock, Users, TrendingUp, Download, SortAsc,
   Brain, Sparkles, Zap, Target, AlertCircle, CheckCircle, ArrowRight, Copy, Wand2
 } from "lucide-react";
@@ -112,6 +121,8 @@ interface MeetingPreparation {
   aiSuggestions: string[];
 }
 
+const ITEMS_PER_PAGE = 8;
+
 export default function Meetings() {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -124,6 +135,9 @@ export default function Meetings() {
   const [aiInsights, setAiInsights] = React.useState<AIInsights | null>(null);
   const [preparations, setPreparations] = React.useState<Record<string, MeetingPreparation>>({});
   const [showSmartCreate, setShowSmartCreate] = React.useState(false);
+  const [currentPageUpcoming, setCurrentPageUpcoming] = React.useState(1);
+  const [currentPageCompleted, setCurrentPageCompleted] = React.useState(1);
+  const [currentPageAll, setCurrentPageAll] = React.useState(1);
 
   React.useEffect(() => {
     fetchMeetings();
@@ -461,6 +475,74 @@ export default function Meetings() {
     return prep?.status === 'critical' || prep?.status === 'needs-attention';
   });
 
+  // Pagination logic
+  const paginateData = (data: any[], currentPage: number) => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return data.slice(startIndex, endIndex);
+  };
+
+  const getTotalPages = (totalItems: number) => Math.ceil(totalItems / ITEMS_PER_PAGE);
+
+  const paginatedUpcoming = paginateData(upcomingMeetings, currentPageUpcoming);
+  const paginatedCompleted = paginateData(completedMeetings, currentPageCompleted);
+  const paginatedAll = paginateData(allMeetingsFormatted, currentPageAll);
+
+  const totalPagesUpcoming = getTotalPages(upcomingMeetings.length);
+  const totalPagesCompleted = getTotalPages(completedMeetings.length);
+  const totalPagesAll = getTotalPages(allMeetingsFormatted.length);
+
+  const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
+    if (totalPages <= 1) return null;
+
+    return (
+      <Pagination className="mt-6">
+        <PaginationContent>
+          <PaginationItem>
+            <PaginationPrevious 
+              onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+              className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+          
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+            if (
+              page === 1 ||
+              page === totalPages ||
+              (page >= currentPage - 1 && page <= currentPage + 1)
+            ) {
+              return (
+                <PaginationItem key={page}>
+                  <PaginationLink
+                    onClick={() => onPageChange(page)}
+                    isActive={currentPage === page}
+                    className="cursor-pointer"
+                  >
+                    {page}
+                  </PaginationLink>
+                </PaginationItem>
+              );
+            } else if (page === currentPage - 2 || page === currentPage + 2) {
+              return (
+                <PaginationItem key={page}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              );
+            }
+            return null;
+          })}
+
+          <PaginationItem>
+            <PaginationNext 
+              onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+              className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+            />
+          </PaginationItem>
+        </PaginationContent>
+      </Pagination>
+    );
+  };
+
   if (loading) {
     return (
       <Layout>
@@ -708,53 +790,56 @@ export default function Meetings() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {upcomingMeetings.map((meeting) => {
-                  const prep = preparations[meeting.id];
-                  return (
-                    <div key={meeting.id} className="relative group">
-                      <InlineMeetingCard
-                        id={meeting.id}
-                        title={meeting.title}
-                        date={meeting.date}
-                        time={meeting.time}
-                        duration={meeting.duration}
-                        location={meeting.location}
-                        attendees={meeting.attendees}
-                        status={meeting.status}
-                        agendaItems={meeting.agendaItems}
-                        meetingType={meeting.meetingType}
-                        videoConferenceUrl={meeting.videoConferenceUrl}
-                        createdBy={meeting.createdBy}
-                      />
-                      {prep && (
-                        <div className="absolute top-3 right-3 space-y-2">
-                          <Badge 
-                            variant={
-                              prep.status === 'excellent' ? 'default' : 
-                              prep.status === 'good' ? 'secondary' : 
-                              'destructive'
-                            }
-                            className="gap-1 shadow-lg"
-                          >
-                            <Brain className="h-3 w-3" />
-                            {prep.readiness}%
-                          </Badge>
-                        </div>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
-                        onClick={() => cloneMeeting(meeting.id)}
-                      >
-                        <Copy className="h-3 w-3" />
-                        Clone
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {paginatedUpcoming.map((meeting) => {
+                    const prep = preparations[meeting.id];
+                    return (
+                      <div key={meeting.id} className="relative group">
+                        <InlineMeetingCard
+                          id={meeting.id}
+                          title={meeting.title}
+                          date={meeting.date}
+                          time={meeting.time}
+                          duration={meeting.duration}
+                          location={meeting.location}
+                          attendees={meeting.attendees}
+                          status={meeting.status}
+                          agendaItems={meeting.agendaItems}
+                          meetingType={meeting.meetingType}
+                          videoConferenceUrl={meeting.videoConferenceUrl}
+                          createdBy={meeting.createdBy}
+                        />
+                        {prep && (
+                          <div className="absolute top-3 right-3 space-y-2">
+                            <Badge 
+                              variant={
+                                prep.status === 'excellent' ? 'default' : 
+                                prep.status === 'good' ? 'secondary' : 
+                                'destructive'
+                              }
+                              className="gap-1 shadow-lg"
+                            >
+                              <Brain className="h-3 w-3" />
+                              {prep.readiness}%
+                            </Badge>
+                          </div>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity gap-1"
+                          onClick={() => cloneMeeting(meeting.id)}
+                        >
+                          <Copy className="h-3 w-3" />
+                          Clone
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+                {renderPagination(currentPageUpcoming, totalPagesUpcoming, setCurrentPageUpcoming)}
+              </>
             )}
           </TabsContent>
 
@@ -767,31 +852,34 @@ export default function Meetings() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                {completedMeetings.map((meeting) => (
-                  <InlineMeetingCard
-                    key={meeting.id}
-                    id={meeting.id}
-                    title={meeting.title}
-                    date={meeting.date}
-                    time={meeting.time}
-                    duration={meeting.duration}
-                    location={meeting.location}
-                    attendees={meeting.attendees}
-                    status={meeting.status}
-                    agendaItems={meeting.agendaItems}
-                    meetingType={meeting.meetingType}
-                    videoConferenceUrl={meeting.videoConferenceUrl}
-                    createdBy={meeting.createdBy}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                  {paginatedCompleted.map((meeting) => (
+                    <InlineMeetingCard
+                      key={meeting.id}
+                      id={meeting.id}
+                      title={meeting.title}
+                      date={meeting.date}
+                      time={meeting.time}
+                      duration={meeting.duration}
+                      location={meeting.location}
+                      attendees={meeting.attendees}
+                      status={meeting.status}
+                      agendaItems={meeting.agendaItems}
+                      meetingType={meeting.meetingType}
+                      videoConferenceUrl={meeting.videoConferenceUrl}
+                      createdBy={meeting.createdBy}
+                    />
+                  ))}
+                </div>
+                {renderPagination(currentPageCompleted, totalPagesCompleted, setCurrentPageCompleted)}
+              </>
             )}
           </TabsContent>
 
           <TabsContent value="all" className="mt-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {allMeetingsFormatted.map((meeting) => (
+              {paginatedAll.map((meeting) => (
                 <InlineMeetingCard
                   key={meeting.id}
                   id={meeting.id}
@@ -809,6 +897,7 @@ export default function Meetings() {
                 />
               ))}
             </div>
+            {renderPagination(currentPageAll, totalPagesAll, setCurrentPageAll)}
           </TabsContent>
         </Tabs>
       </div>
