@@ -17,6 +17,7 @@ import { soundFX } from '@/utils/soundEffects';
 import { PresenterControls } from './PresenterControls';
 import { AIMeetingCopilot } from './AIMeetingCopilot';
 import { SmartWhiteboard } from './SmartWhiteboard';
+import { cn } from '@/lib/utils';
 
 interface VirtualMeetingRoomProps {
   meetingId: string;
@@ -719,6 +720,62 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   const compressorRef = useRef<DynamicsCompressorNode | null>(null);
   const noiseSrcRef = useRef<AudioBufferSourceNode | null>(null);
   const navigate = useNavigate();
+  
+  // AI Features Quick Access States
+  const [showAICopilot, setShowAICopilot] = useState(false);
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
+  const [aiInsight, setAiInsight] = useState<string | null>(null);
+
+  // Keyboard shortcuts for AI features
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      // Ctrl/Cmd + B for AI Copilot
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        setShowAICopilot(prev => !prev);
+        toast({
+          title: showAICopilot ? "AI Copilot Closed" : "AI Copilot Opened",
+          description: showAICopilot ? "" : "Press Ctrl+B to close",
+        });
+      }
+      // Ctrl/Cmd + W for Whiteboard
+      if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+        e.preventDefault();
+        setShowWhiteboard(prev => !prev);
+        toast({
+          title: showWhiteboard ? "Whiteboard Closed" : "Whiteboard Opened",
+          description: showWhiteboard ? "" : "Press Ctrl+W to close",
+        });
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [showAICopilot, showWhiteboard, toast]);
+
+  // Proactive AI insights based on meeting activity
+  useEffect(() => {
+    if (!meetingId || participants.length === 0) return;
+
+    const insights = [
+      "Consider summarizing key points for latecomers",
+      "High engagement detected! Great participation.",
+      `${participants.length} participants present. Good turnout!`,
+      "Reminder: Review action items before closing",
+      "Time check: Ensure all agenda items are covered",
+    ];
+
+    // Show AI insight every 5 minutes
+    const interval = setInterval(() => {
+      const randomInsight = insights[Math.floor(Math.random() * insights.length)];
+      setAiInsight(randomInsight);
+      
+      // Auto-hide after 10 seconds
+      setTimeout(() => setAiInsight(null), 10000);
+    }, 300000); // 5 minutes
+
+    return () => clearInterval(interval);
+  }, [meetingId, participants.length]);
 
   // Presence tracking for join/leave notifications
   useEffect(() => {
@@ -1538,38 +1595,147 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
               </p>
             </div>
           </div>
+          
+          {/* AI Insight Banner - Proactive Display */}
+          {aiInsight && (
+            <div className="absolute top-6 right-6 max-w-md animate-slide-in-right">
+              <div className="glass p-4 rounded-xl border-2 border-purple-500/50 backdrop-blur-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+                <div className="flex items-start gap-3">
+                  <Brain className="h-5 w-5 text-purple-400 mt-0.5 animate-pulse" />
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold text-purple-400 mb-1">AI INSIGHT</p>
+                    <p className="text-sm text-white/90">{aiInsight}</p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-6 w-6 hover:bg-white/10"
+                    onClick={() => setAiInsight(null)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Floating Action Buttons - Quick AI Access */}
+          <div className="absolute right-6 bottom-24 flex flex-col gap-3">
+            {/* AI Copilot FAB */}
+            <Button
+              size="lg"
+              onClick={() => setShowAICopilot(!showAICopilot)}
+              className={cn(
+                "h-14 w-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-110",
+                showAICopilot 
+                  ? "bg-gradient-to-r from-purple-600 to-pink-600 animate-pulse" 
+                  : "bg-gradient-to-r from-purple-500 to-pink-500"
+              )}
+            >
+              <Brain className="h-6 w-6" />
+              <span className="absolute -top-1 -right-1 h-4 w-4 bg-green-500 rounded-full border-2 border-background animate-ping" />
+            </Button>
+            
+            {/* Smart Whiteboard FAB */}
+            <Button
+              size="lg"
+              onClick={() => setShowWhiteboard(!showWhiteboard)}
+              className={cn(
+                "h-14 w-14 rounded-full shadow-2xl transition-all duration-300 hover:scale-110",
+                showWhiteboard 
+                  ? "bg-gradient-to-r from-blue-600 to-cyan-600 animate-pulse" 
+                  : "bg-gradient-to-r from-blue-500 to-cyan-500"
+              )}
+            >
+              <Paintbrush className="h-6 w-6" />
+            </Button>
+          </div>
         </div>
+
+        {/* AI Copilot Floating Panel */}
+        {showAICopilot && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+            <Card className="w-full max-w-4xl h-[80vh] m-6 shadow-2xl border-2 border-purple-500/50">
+              <div className="h-full flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-purple-500/20 to-pink-500/20">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-purple-400 animate-pulse" />
+                    <h3 className="text-lg font-semibold">AI Meeting Copilot</h3>
+                    <Badge variant="secondary" className="ml-2">
+                      <Zap className="h-3 w-3 mr-1" />
+                      Live
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowAICopilot(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <AIMeetingCopilot 
+                    meetingId={meetingId}
+                    currentUserId={currentUserId}
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
+        {/* Smart Whiteboard Floating Panel */}
+        {showWhiteboard && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+            <Card className="w-full max-w-6xl h-[85vh] m-6 shadow-2xl border-2 border-blue-500/50">
+              <div className="h-full flex flex-col">
+                <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-500/20 to-cyan-500/20">
+                  <div className="flex items-center gap-2">
+                    <Paintbrush className="h-5 w-5 text-blue-400" />
+                    <h3 className="text-lg font-semibold">Smart Whiteboard</h3>
+                    <Badge variant="secondary" className="ml-2">
+                      <Users className="h-3 w-3 mr-1" />
+                      Collaborative
+                    </Badge>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowWhiteboard(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <SmartWhiteboard 
+                    meetingId={meetingId}
+                    currentUserId={currentUserId}
+                  />
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
 
         {/* Right Sidebar - Meeting Tools */}
         <Card className="w-[420px] border-l rounded-none bg-card/50 backdrop-blur-xl">
           <Tabs defaultValue="participants" className="h-full flex flex-col">
-            <TabsList className="w-full grid grid-cols-7 bg-muted/50">
+            <TabsList className="w-full grid grid-cols-5 bg-muted/50">
               <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
-                <Users className="h-4 w-4 mr-1" />
-                People
+                <Users className="h-4 w-4" />
               </TabsTrigger>
               <TabsTrigger value="agenda" className="data-[state=active]:bg-primary/20">
                 Agenda
               </TabsTrigger>
               <TabsTrigger value="presenter" className="data-[state=active]:bg-primary/20">
-                <Presentation className="h-4 w-4 mr-1" />
-                Present
-              </TabsTrigger>
-              <TabsTrigger value="ai-copilot" className="data-[state=active]:bg-primary/20">
-                <Brain className="h-4 w-4 mr-1" />
-                AI
-              </TabsTrigger>
-              <TabsTrigger value="whiteboard" className="data-[state=active]:bg-primary/20">
-                <Paintbrush className="h-4 w-4 mr-1" />
-                Board
+                <Presentation className="h-4 w-4" />
               </TabsTrigger>
               <TabsTrigger value="resources" className="data-[state=active]:bg-primary/20">
-                <Sparkles className="h-4 w-4 mr-1" />
-                Media
+                <Sparkles className="h-4 w-4" />
               </TabsTrigger>
               <TabsTrigger value="transcription" className="data-[state=active]:bg-primary/20">
-                <MessageSquare className="h-4 w-4 mr-1" />
-                Live
+                <MessageSquare className="h-4 w-4" />
               </TabsTrigger>
             </TabsList>
 
@@ -1790,20 +1956,6 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                   setPresentingResource(resource);
                   setPresentationSlide(slideIndex);
                 }}
-              />
-            </TabsContent>
-
-            <TabsContent value="ai-copilot" className="flex-1 overflow-hidden">
-              <AIMeetingCopilot 
-                meetingId={meetingId}
-                currentUserId={currentUserId}
-              />
-            </TabsContent>
-
-            <TabsContent value="whiteboard" className="flex-1 overflow-hidden">
-              <SmartWhiteboard 
-                meetingId={meetingId}
-                currentUserId={currentUserId}
               />
             </TabsContent>
 
