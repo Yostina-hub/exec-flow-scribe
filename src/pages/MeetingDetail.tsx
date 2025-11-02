@@ -807,11 +807,7 @@ const MeetingDetail = () => {
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
-                <TabsTrigger value="ai-insights">AI Insights</TabsTrigger>
-                <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="audit">Audit Log</TabsTrigger>
-                <TabsTrigger value="system-test">🧪 System Test</TabsTrigger>
               </TabsList>
               </div>
 
@@ -985,12 +981,6 @@ const MeetingDetail = () => {
                 </Card>
               </TabsContent>
 
-              <TabsContent value="ai-insights" className="space-y-4">
-                <ProtectedElement meetingId={meetingId} elementType="ai_tools">
-                  <AIMinutesGenerator meetingId={meetingId} />
-                  <AIIntelligencePanel meetingId={meetingId} />
-                </ProtectedElement>
-              </TabsContent>
 
               <TabsContent value="collaboration" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1003,11 +993,6 @@ const MeetingDetail = () => {
                 <MeetingBookmarks meetingId={meetingId} />
               </TabsContent>
 
-              <TabsContent value="analytics" className="space-y-4">
-                <ProtectedElement meetingId={meetingId} elementType="analytics">
-                  <MeetingAnalytics meetingId={meetingId} />
-                </ProtectedElement>
-              </TabsContent>
 
               <TabsContent value="advanced" className="space-y-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1034,13 +1019,7 @@ const MeetingDetail = () => {
                 </ProtectedElement>
               </TabsContent>
 
-              <TabsContent value="audit" className="space-y-4">
-                <AuditLogViewer meetingId={meetingId} />
-              </TabsContent>
 
-              <TabsContent value="system-test" className="space-y-4">
-                <SystemTestPanel meetingId={meetingId} />
-              </TabsContent>
 
               <TabsContent value="chat" className="space-y-4">
                 <MeetingChatPanel meetingId={meetingId} />
