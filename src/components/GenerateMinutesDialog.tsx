@@ -39,16 +39,25 @@ export const GenerateMinutesDialog = ({
 
   const fetchExistingMinutes = async () => {
     try {
-      const { data, error } = await supabase
-        .from('meetings')
-        .select('minutes_url')
-        .eq('id', meetingId)
-        .single();
+      // Prefer the latest saved minutes version
+      const { data: latest, error } = await supabase
+        .from('minutes_versions')
+        .select('content, created_at')
+        .eq('meeting_id', meetingId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
 
-      if (error) throw error;
-
-      if (data?.minutes_url) {
-        setMinutes(data.minutes_url);
+      if (!error && latest?.content) {
+        setMinutes(latest.content);
+      } else {
+        // Fallback for legacy flows where raw markdown might be in meetings.minutes_url
+        const { data: m } = await supabase
+          .from('meetings')
+          .select('minutes_url')
+          .eq('id', meetingId)
+          .maybeSingle();
+        if (m?.minutes_url) setMinutes(m.minutes_url);
       }
     } catch (error) {
       console.error('Error fetching existing minutes:', error);

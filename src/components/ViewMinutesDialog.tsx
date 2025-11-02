@@ -40,17 +40,33 @@ export const ViewMinutesDialog = ({
   const fetchMinutes = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('meetings')
-        .select('minutes_url, title')
-        .eq('id', meetingId)
-        .single();
+      // Fetch latest saved minutes (preferred) and meeting title in parallel
+      const [latestMinutesRes, meetingRes] = await Promise.all([
+        supabase
+          .from('minutes_versions')
+          .select('content, created_at')
+          .eq('meeting_id', meetingId)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('meetings')
+          .select('title, minutes_url')
+          .eq('id', meetingId)
+          .single(),
+      ]);
 
-      if (error) throw error;
+      const { data: latestMinutes, error: minutesError } = latestMinutesRes as any;
+      const { data: meeting, error: meetingError } = meetingRes as any;
 
-      if (data?.minutes_url) {
-        setMinutes(data.minutes_url);
-        setMeetingTitle(data.title);
+      if (meetingError) throw meetingError;
+      setMeetingTitle(meeting?.title || '');
+
+      // Prefer minutes_versions.content; fallback to meetings.minutes_url if someone stored raw markdown there
+      const content: string = latestMinutes?.content || meeting?.minutes_url || '';
+
+      if (content) {
+        setMinutes(content);
       } else {
         toast({
           title: 'No Minutes Available',
