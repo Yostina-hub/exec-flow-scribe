@@ -14,8 +14,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const geminiApiKey = Deno.env.get("GEMINI_API_KEY")!;
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    if (!lovableApiKey) {
+      throw new Error("LOVABLE_API_KEY not configured");
+    }
 
     const { meeting_id, user_id } = await req.json();
 
@@ -46,10 +50,11 @@ serve(async (req) => {
       .limit(5);
 
     // Generate personalized capsule
+    console.log("Generating context capsule for user:", user_id, "meeting:", meeting_id);
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${geminiApiKey}`,
+        Authorization: `Bearer ${lovableApiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -85,7 +90,8 @@ Return JSON (must be readable in 90 seconds):
                 key_points: { type: "array", items: { type: "string" } },
                 suggested_contribution: { type: "string" }
               },
-              required: ["role_context", "key_points", "suggested_contribution"]
+              required: ["role_context", "key_points", "suggested_contribution"],
+              additionalProperties: false
             }
           }
         }],
@@ -93,12 +99,51 @@ Return JSON (must be readable in 90 seconds):
       }),
     });
 
-    const result = await aiResponse.json();
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      throw new Error("No tool call response from AI");
+    if (!aiResponse.ok) {
+      const status = aiResponse.status;
+      const errorText = await aiResponse.text();
+      console.error("Lovable AI error:", status, errorText);
+      
+      if (status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please retry in a minute." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" } }
+        );
+      }
+      if (status === 402) {
+        return new Response(
+          JSON.stringify({ error: "Payment required. Please add credits to your AI workspace." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      throw new Error(`AI gateway error: ${status} - ${errorText}`);
     }
-    const capsule = JSON.parse(toolCall.function.arguments);
+
+    const result = await aiResponse.json();
+    console.log("AI response received:", JSON.stringify(result).substring(0, 300));
+    
+    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+    let capsule;
+    
+    if (toolCall?.function?.arguments) {
+      // Tool calling worked
+      capsule = JSON.parse(toolCall.function.arguments);
+      console.log("✅ Extracted capsule from tool call");
+    } else {
+      // Fallback: try to extract from message content
+      console.warn("No tool call found, trying to extract from content");
+      const content = result.choices?.[0]?.message?.content || "";
+      console.log("Message content:", content.substring(0, 200));
+      
+      // Try to extract JSON from content
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        capsule = JSON.parse(jsonMatch[0]);
+        console.log("✅ Extracted capsule from message content");
+      } else {
+        throw new Error("No tool call response from AI and could not extract JSON from content");
+      }
+    }
 
     // Save capsule
     const { data: savedCapsule } = await supabase
