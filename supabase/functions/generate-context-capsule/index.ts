@@ -23,6 +23,14 @@ serve(async (req) => {
 
     const { meeting_id, user_id } = await req.json();
 
+    if (!meeting_id || !user_id) {
+      console.warn("Missing required fields:", { meeting_id, user_id });
+      return new Response(
+        JSON.stringify({ error: "meeting_id and user_id are required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     // Get user profile
     const { data: profile } = await supabase
       .from("profiles")
@@ -99,6 +107,8 @@ Return JSON (must be readable in 90 seconds):
       }),
     });
 
+    let capsule: any;
+
     if (!aiResponse.ok) {
       const status = aiResponse.status;
       const errorText = await aiResponse.text();
@@ -111,37 +121,85 @@ Return JSON (must be readable in 90 seconds):
         );
       }
       if (status === 402) {
-        return new Response(
-          JSON.stringify({ error: "Payment required. Please add credits to your AI workspace." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
+        // Fallback to direct Gemini API if available
+        const geminiApiKey = Deno.env.get("GEMINI_API_KEY");
+        if (!geminiApiKey) {
+          return new Response(
+            JSON.stringify({ error: "Payment required. Please add credits to your AI workspace or configure a Gemini API key." }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        console.log("⚡ Falling back to Gemini for context capsule generation");
+        const prompt = `Generate a 90-second pre-read for an attendee:
+
+Attendee: ${profile?.full_name}
+Title: ${profile?.title}
+Role: ${profile?.user_roles?.[0]?.roles?.name || 'Participant'}
+
+Meeting: "${meeting?.title}"
+Agenda: ${JSON.stringify(meeting?.agenda_items)}
+Their previous actions: ${JSON.stringify(previousActions)}
+Recent decisions: ${JSON.stringify(relatedDecisions)}
+
+Return JSON (must be readable in 90 seconds):
+{
+  "role_context": "why they're here based on their role",
+  "key_points": ["point1", "point2", "point3"],
+  "suggested_contribution": "one specific thing they should contribute"
+}`;
+        const geminiResp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }]}],
+            generationConfig: { responseMimeType: "application/json" }
+          })
+        });
+
+        if (!geminiResp.ok) {
+          const t = await geminiResp.text();
+          console.error("Gemini fallback error:", geminiResp.status, t);
+          return new Response(
+            JSON.stringify({ error: "All AI providers failed" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const gJson = await geminiResp.json();
+        const text = gJson?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          capsule = JSON.parse(jsonMatch[0]);
+          console.log("✅ Extracted capsule from Gemini fallback");
+        } else {
+          throw new Error("Gemini fallback did not return valid JSON");
+        }
+      } else {
+        throw new Error(`AI gateway error: ${status} - ${errorText}`);
       }
-      throw new Error(`AI gateway error: ${status} - ${errorText}`);
     }
 
-    const result = await aiResponse.json();
-    console.log("AI response received:", JSON.stringify(result).substring(0, 300));
-    
-    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
-    let capsule;
-    
-    if (toolCall?.function?.arguments) {
-      // Tool calling worked
-      capsule = JSON.parse(toolCall.function.arguments);
-      console.log("✅ Extracted capsule from tool call");
-    } else {
-      // Fallback: try to extract from message content
-      console.warn("No tool call found, trying to extract from content");
-      const content = result.choices?.[0]?.message?.content || "";
-      console.log("Message content:", content.substring(0, 200));
+    if (!capsule) {
+      const result = await aiResponse.json();
+      console.log("AI response received:", JSON.stringify(result).substring(0, 300));
       
-      // Try to extract JSON from content
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        capsule = JSON.parse(jsonMatch[0]);
-        console.log("✅ Extracted capsule from message content");
+      const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+      
+      if (toolCall?.function?.arguments) {
+        capsule = JSON.parse(toolCall.function.arguments);
+        console.log("✅ Extracted capsule from tool call");
       } else {
-        throw new Error("No tool call response from AI and could not extract JSON from content");
+        console.warn("No tool call found, trying to extract from content");
+        const content = result.choices?.[0]?.message?.content || "";
+        console.log("Message content:", content.substring(0, 200));
+        
+        const match = content.match(/\{[\s\S]*\}/);
+        if (match) {
+          capsule = JSON.parse(match[0]);
+          console.log("✅ Extracted capsule from message content");
+        } else {
+          throw new Error("No tool call response from AI and could not extract JSON from content");
+        }
       }
     }
 
