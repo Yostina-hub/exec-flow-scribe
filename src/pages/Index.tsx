@@ -205,19 +205,18 @@ export default function Index() {
   // Calculate dates with meetings for calendar
   const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
-  // Redirect guests to their dedicated dashboard
-  if (!guestLoading && isGuest) {
-    return <GuestDashboard />;
-  }
-
+  // Show neutral loading screen while checking guest status - no layout to prevent flash
   if (loading || guestLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
+  }
+
+  // Return null while navigation happens for guests - prevents any flash of regular dashboard
+  if (isGuest) {
+    return null;
   }
 
   return (
