@@ -520,6 +520,9 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       
       const errorStatusCode = providerStatus || 500;
       console.error("All AI providers failed:", errMsg);
+      // Add Retry-After header guidance on rate limit
+      const respHeaders: Record<string, string> = { ...corsHeaders, "Content-Type": "application/json" };
+      if (errorStatusCode === 429) respHeaders["Retry-After"] = "60";
       
       return new Response(
         JSON.stringify({ 
@@ -529,7 +532,7 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
         }), 
         { 
           status: errorStatusCode, 
-          headers: { ...corsHeaders, "Content-Type": "application/json" } 
+          headers: respHeaders 
         }
       );
     }
@@ -553,6 +556,8 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
     // Insert minutes record with simple retry to avoid race on unique (meeting_id, version_number)
     let inserted = false;
     let attempts = 0;
+    // Try with current user first; on RLS failure, fall back to meeting owner
+    let createdByCandidate: string = user.id;
     while (!inserted && attempts < 6) {
       const { error: insertError } = await supabase
         .from('minutes_versions')
@@ -560,7 +565,7 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
           meeting_id: meetingId,
           version_number: nextVersion,
           content: minutes,
-          created_by: user.id,
+          created_by: createdByCandidate,
           is_ratified: false,
         });
 
@@ -575,17 +580,32 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
       const message = (insertError as any)?.message || '';
       const details = (insertError as any)?.details || '';
       const code = (insertError as any)?.code || '';
+      const msgLower = message.toLowerCase();
+      const detailsLower = details.toLowerCase();
       const isUniqueViolation =
         (typeof code === 'string' && code.includes('23505')) ||
-        message.toLowerCase().includes('duplicate key value') ||
-        details.toLowerCase().includes('duplicate key value') ||
-        message.toLowerCase().includes('(meeting_id, version_number)');
+        msgLower.includes('duplicate key value') ||
+        detailsLower.includes('duplicate key value') ||
+        msgLower.includes('(meeting_id, version_number)');
+
+      // Handle RLS violation by retrying with meeting owner as creator
+      const isRlsViolation =
+        msgLower.includes('row-level security') ||
+        msgLower.includes('rls') ||
+        detailsLower.includes('row-level security');
 
       if (isUniqueViolation) {
         nextVersion += 1;
         attempts += 1;
         // small backoff to avoid tight races
         await new Promise((r) => setTimeout(r, 120));
+        continue;
+      }
+
+      if (isRlsViolation && createdByCandidate !== (meeting as any)?.created_by) {
+        createdByCandidate = (meeting as any).created_by;
+        attempts += 1;
+        await new Promise((r) => setTimeout(r, 80));
         continue;
       }
 

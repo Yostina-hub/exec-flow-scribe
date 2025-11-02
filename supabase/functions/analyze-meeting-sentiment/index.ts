@@ -194,10 +194,16 @@ Return format:
               const textBody = await resp.text();
               console.error("Lovable AI gateway error:", status, textBody);
               if (status === 429) {
-                return new Response(JSON.stringify({ error: "⏳ Rate Limit Exceeded\n\nAll AI providers are temporarily rate limited. This is usually temporary.\n\n📋 What to do:\n• Wait 2-3 minutes and try again\n• If this persists, check your API provider dashboards\n• Contact support if the issue continues\n\nTip: Consider adding multiple AI provider keys in Settings to have automatic fallbacks.", technical_details: "Lovable AI rate limit exceeded.", status: 429 }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                return new Response(
+                  JSON.stringify({ error: "⏳ Rate Limit Exceeded\n\nAll AI providers are temporarily rate limited. This is usually temporary.\n\n📋 What to do:\n• Wait 2-3 minutes and try again\n• If this persists, check your API provider dashboards\n• Contact support if the issue continues\n\nTip: Consider adding multiple AI provider keys in Settings to have automatic fallbacks.", technical_details: "Lovable AI rate limit exceeded.", status: 429 }),
+                  { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" } }
+                );
               }
               if (status === 402) {
-                return new Response(JSON.stringify({ error: "💳 Payment Required\n\nYour AI provider credits have been exhausted.\n\n📋 What to do:\n1. Go to Settings → Workspace → Usage\n2. Add credits to your Lovable AI workspace\n3. Or add your own OpenAI/Gemini API keys in Settings\n\nOnce done, try generating minutes again.", technical_details: "Lovable AI: Payment required - please add credits to your workspace.", status: 402 }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+                return new Response(
+                  JSON.stringify({ error: "💳 Payment Required\n\nYour AI provider credits have been exhausted.\n\n📋 What to do:\n1. Go to Settings → Workspace → Usage\n2. Add credits to your Lovable AI workspace\n3. Or add your own OpenAI/Gemini API keys in Settings\n\nOnce done, try generating minutes again.", technical_details: "Lovable AI: Payment required - please add credits to your workspace.", status: 402 }),
+                  { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+                );
               }
             }
           } catch (e) {

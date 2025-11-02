@@ -209,10 +209,16 @@ Return JSON:
             const text = await resp.text();
             console.error("Lovable AI gateway error:", status, text);
             if (status === 429) {
-              return new Response(JSON.stringify({ error: "Rate limit exceeded. Please retry in a minute." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              return new Response(
+                JSON.stringify({ error: "Rate limit exceeded. Please retry in a minute." }),
+                { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json", "Retry-After": "60" } }
+              );
             }
             if (status === 402) {
-              return new Response(JSON.stringify({ error: "Payment required. Please add credits to your AI workspace." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+              return new Response(
+                JSON.stringify({ error: "Payment required. Please add credits to your AI workspace." }),
+                { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+              );
             }
           }
         } catch (e) {
