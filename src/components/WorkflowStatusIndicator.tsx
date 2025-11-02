@@ -1,7 +1,8 @@
 import { Check, Clock, AlertCircle, FileText, FileSignature, Mail, Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 interface WorkflowStage {
   key: string;
@@ -109,15 +110,25 @@ export function WorkflowStatusIndicator({
   };
 
   return (
-    <Card>
+    <Card className="overflow-hidden border-2">
+      <CardHeader className="bg-gradient-to-r from-primary/10 to-background">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            >
+              <Loader2 className="h-5 w-5 text-primary" />
+            </motion.div>
+            Workflow Progress
+          </CardTitle>
+          <Badge variant={getStatusBadge(stages.find(s => s.status === 'in-progress')?.status || 'pending') as any}>
+            {stages.find(s => s.status === 'in-progress')?.label || 'Ready'}
+          </Badge>
+        </div>
+      </CardHeader>
       <CardContent className="pt-6">
         <div className="space-y-4">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">Workflow Progress</h3>
-            <Badge variant={getStatusBadge(stages.find(s => s.status === 'in-progress')?.status || 'pending') as any}>
-              {stages.find(s => s.status === 'in-progress')?.label || 'Ready'}
-            </Badge>
-          </div>
 
           <div className="relative">
             {/* Progress Line */}
@@ -133,15 +144,39 @@ export function WorkflowStatusIndicator({
             <div className="space-y-6">
               {stages.map((stage, index) => {
                 const Icon = stage.icon;
+                const isActive = stage.status === 'in-progress';
+                const isComplete = stage.status === 'completed';
+                
                 return (
-                  <div key={stage.key} className="relative flex items-start gap-4">
+                  <motion.div 
+                    key={stage.key} 
+                    className="relative flex items-start gap-4"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
                     {/* Icon Circle */}
-                    <div className={cn(
-                      "relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300",
-                      getStatusColor(stage.status)
-                    )}>
-                      <Icon className="h-5 w-5" />
-                    </div>
+                    <motion.div 
+                      className={cn(
+                        "relative z-10 flex h-12 w-12 items-center justify-center rounded-full border-2 transition-all duration-300",
+                        getStatusColor(stage.status),
+                        isActive && "shadow-lg shadow-primary/50"
+                      )}
+                      animate={isActive ? { scale: [1, 1.1, 1] } : {}}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    >
+                      {isComplete ? (
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ type: "spring", stiffness: 200 }}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </motion.div>
+                      ) : (
+                        <Icon className="h-5 w-5" />
+                      )}
+                    </motion.div>
 
                     {/* Content */}
                     <div className="flex-1 pt-2">
@@ -160,29 +195,41 @@ export function WorkflowStatusIndicator({
                         </p>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
           </div>
 
           {/* Overall Progress */}
-          <div className="mt-6 pt-4 border-t">
+          <motion.div 
+            className="mt-6 pt-4 border-t"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Overall Progress</span>
-              <span className="font-medium">
+              <motion.span 
+                className="font-medium"
+                key={stages.filter(s => s.status === 'completed').length}
+                initial={{ scale: 1.2, color: "hsl(var(--primary))" }}
+                animate={{ scale: 1, color: "hsl(var(--foreground))" }}
+              >
                 {Math.round((stages.filter(s => s.status === 'completed').length / stages.length) * 100)}%
-              </span>
+              </motion.span>
             </div>
             <div className="mt-2 h-2 w-full bg-muted rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-primary transition-all duration-500"
-                style={{ 
+              <motion.div 
+                className="h-full bg-primary"
+                initial={{ width: 0 }}
+                animate={{ 
                   width: `${(stages.filter(s => s.status === 'completed').length / stages.length) * 100}%` 
                 }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
               />
             </div>
-          </div>
+          </motion.div>
         </div>
       </CardContent>
     </Card>

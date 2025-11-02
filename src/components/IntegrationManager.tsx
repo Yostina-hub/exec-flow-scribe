@@ -114,11 +114,71 @@ export const IntegrationManager = ({ meetingId }: IntegrationManagerProps) => {
     }
   };
 
+  const syncWithTeams = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('teams-sync', {
+        body: {
+          meetingId,
+          action: 'create',
+          teamsData: {
+            accessToken: prompt('Enter Microsoft Teams access token:')
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Teams integration created',
+        description: 'Meeting synced with Microsoft Teams'
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Teams sync error:', error);
+      toast({
+        title: 'Teams sync failed',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const syncWithOutlook = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('outlook-sync', {
+        body: {
+          meetingId,
+          action: 'create',
+          outlookData: {
+            accessToken: prompt('Enter Outlook access token:')
+          }
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Outlook integration created',
+        description: 'Meeting synced with Outlook Calendar'
+      });
+
+      refetch();
+    } catch (error) {
+      console.error('Outlook sync error:', error);
+      toast({
+        title: 'Outlook sync failed',
+        variant: 'destructive'
+      });
+    }
+  };
+
   const integrationTypes = [
     { value: 'google_drive', label: 'Google Drive' },
     { value: 'google_meet', label: 'Google Meet' },
     { value: 'zoom', label: 'Zoom' },
     { value: 'teams', label: 'Microsoft Teams' },
+    { value: 'outlook', label: 'Outlook Calendar' },
+    { value: 'whatsapp', label: 'WhatsApp Business' },
     { value: 'slack', label: 'Slack' },
     { value: 'jira', label: 'Jira' },
     { value: 'asana', label: 'Asana' }
@@ -136,6 +196,17 @@ export const IntegrationManager = ({ meetingId }: IntegrationManagerProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <Button onClick={syncWithTeams} variant="outline" className="gap-2">
+            <Link className="h-4 w-4" />
+            Sync Teams
+          </Button>
+          <Button onClick={syncWithOutlook} variant="outline" className="gap-2">
+            <Link className="h-4 w-4" />
+            Sync Outlook
+          </Button>
+        </div>
+
         <Dialog open={integrationOpen} onOpenChange={setIntegrationOpen}>
           <DialogTrigger asChild>
             <Button className="w-full gap-2">
