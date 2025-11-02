@@ -94,8 +94,11 @@ Return JSON (must be readable in 90 seconds):
     });
 
     const result = await aiResponse.json();
-    const capsuleText = result.candidates?.[0]?.content?.parts?.[0]?.text;
-    const capsule = JSON.parse(capsuleText);
+    const toolCall = result.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      throw new Error("No tool call response from AI");
+    }
+    const capsule = JSON.parse(toolCall.function.arguments);
 
     // Save capsule
     const { data: savedCapsule } = await supabase
