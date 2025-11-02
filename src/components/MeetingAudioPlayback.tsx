@@ -32,12 +32,13 @@ export const MeetingAudioPlayback = ({ meetingId, onTimeUpdate }: MeetingAudioPl
     try {
       setLoading(true);
       
-      // List all files in the meeting folder
-      const { data, error } = await supabase.storage
-        .from('meeting-audio')
-        .list(meetingId, {
-          sortBy: { column: 'created_at', order: 'desc' }
-        });
+      // Fetch recordings from database instead of storage listing
+      const { data, error } = await supabase
+        .from('meeting_media')
+        .select('*')
+        .eq('meeting_id', meetingId)
+        .eq('media_type', 'audio')
+        .order('uploaded_at', { ascending: false });
 
       if (error) throw error;
 
@@ -46,13 +47,13 @@ export const MeetingAudioPlayback = ({ meetingId, onTimeUpdate }: MeetingAudioPl
         const recordingsWithUrls = data.map(file => {
           const { data: { publicUrl } } = supabase.storage
             .from('meeting-audio')
-            .getPublicUrl(`${meetingId}/${file.name}`);
+            .getPublicUrl(file.file_url);
 
           return {
-            name: file.name,
+            name: `Recording ${new Date(file.uploaded_at).toLocaleString()}`,
             url: publicUrl,
-            created_at: file.created_at,
-            size: file.metadata?.size || 0
+            created_at: file.uploaded_at,
+            size: file.file_size || 0
           };
         });
 
