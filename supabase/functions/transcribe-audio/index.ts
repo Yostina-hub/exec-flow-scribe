@@ -175,7 +175,16 @@ serve(async (req) => {
         if (!response.ok) {
           const errText = await response.text();
           console.error("Google Cloud API error:", response.status, errText);
-          throw new Error(`Google Cloud API failed: ${response.status}`);
+          
+          // Handle rate limits from Google Cloud
+          if (response.status === 429) {
+            console.warn("Google Cloud rate limited, will try OpenAI fallback");
+            // Don't throw, let it fall through to OpenAI
+          } else if (response.status === 403 && errText.includes('quota')) {
+            console.warn("Google Cloud quota exceeded, will try OpenAI fallback");
+          } else {
+            throw new Error(`Google Cloud API failed: ${response.status}`);
+          }
         }
 
         const result = await response.json();
@@ -284,19 +293,34 @@ serve(async (req) => {
 
       if (!response.ok) {
         const errText = await response.text();
-        console.error("OpenAI transcription error:", errText);
+        console.error("OpenAI transcription error:", response.status, errText);
+        
         if (response.status === 429) {
-          return new Response(JSON.stringify({ error: "Rate limits exceeded, please try again later." }), {
+          console.error("OpenAI rate limited - both providers exhausted");
+          return new Response(JSON.stringify({ 
+            error: "Transcription service rate limited. Please wait a moment and try again.",
+            retryAfter: 10,
+            provider: "openai"
+          }), {
             status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { 
+              ...corsHeaders, 
+              "Content-Type": "application/json",
+              "Retry-After": "10"
+            },
           });
         }
+        
         if (response.status === 402 || errText.includes("insufficient_quota")) {
-          return new Response(JSON.stringify({ error: "Payment required or quota exceeded for OpenAI API key." }), {
+          return new Response(JSON.stringify({ 
+            error: "Transcription service quota exceeded. Please check your API configuration.",
+            provider: "openai"
+          }), {
             status: 402,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
+        
         throw new Error("Failed to transcribe audio with OpenAI");
       }
 
@@ -311,9 +335,19 @@ serve(async (req) => {
       });
     }
     
-    // If no transcription provider available
-    if (!transcriptText && !googleCloudApiKey && !openaiApiKey) {
-      throw new Error("No transcription provider configured. Please add GOOGLE_CLOUD_API_KEY or OPENAI_API_KEY.");
+    // If no transcription provider available or all failed
+    if (!transcriptText) {
+      if (!googleCloudApiKey && !openaiApiKey) {
+        throw new Error("No transcription provider configured. Please add GOOGLE_CLOUD_API_KEY or OPENAI_API_KEY.");
+      }
+      console.warn("All transcription providers failed or returned empty result");
+      return new Response(JSON.stringify({ 
+        error: "All transcription providers failed. Please try again in a moment.",
+        details: "Both Google Cloud and OpenAI transcription services are unavailable or rate limited."
+      }), {
+        status: 503,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Validate and save transcription

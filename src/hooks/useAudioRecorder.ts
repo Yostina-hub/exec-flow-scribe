@@ -239,40 +239,51 @@ export const useAudioRecorder = (meetingId: string) => {
                   meetingId: normalizedMeetingId
                 });
                 
-                try {
-                  const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-                    body: { 
-                      audioBase64: base64Audio, 
-                      meetingId: normalizedMeetingId,
-                      language: language || 'auto',
-                      contentType
-                    }
-                  });
-
-                  if (error) {
-                    console.error('Transcription error response:', error);
-                    throw error;
-                  }
-                  
-                  console.log('Transcription successful:', {
-                    detectedLanguage: data?.detectedLanguage,
-                    confidenceScore: data?.confidenceScore,
-                    transcriptionLength: data?.transcription?.length
-                  });
-
-                  if (data?.transcription) {
-                    toast({
-                      title: 'Transcription received',
-                      description: `Language: ${data.detectedLanguage || 'auto'}`,
+                // Retry logic with exponential backoff
+                const maxRetries = 3;
+                let retryCount = 0;
+                let transcriptionSuccess = false;
+                
+                while (retryCount <= maxRetries && !transcriptionSuccess) {
+                  try {
+                    const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+                      body: { 
+                        audioBase64: base64Audio, 
+                        meetingId: normalizedMeetingId,
+                        language: language || 'auto',
+                        contentType
+                      }
                     });
+
+                    if (error) {
+                      // Check if it's a rate limit error
+                      if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+                        retryCount++;
+                        if (retryCount <= maxRetries) {
+                          const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10s
+                          console.log(`Rate limited, retrying in ${backoffDelay}ms (attempt ${retryCount}/${maxRetries})`);
+                          await new Promise(resolve => setTimeout(resolve, backoffDelay));
+                          continue;
+                        }
+                      }
+                      throw error;
+                    }
+
+                    if (data?.success) {
+                      console.log('Transcription result:', data.transcription.substring(0, 50));
+                      transcriptionSuccess = true;
+                    }
+                    break;
+                  } catch (err) {
+                    console.error('Transcription error:', err);
+                    if (retryCount >= maxRetries) {
+                      throw err;
+                    }
                   }
-                } catch (err: any) {
-                  console.error('Transcription error:', err);
-                  toast({
-                    title: 'Transcription failed',
-                    description: err?.message || 'Please check your settings and try again',
-                    variant: 'destructive',
-                  });
+                }
+                
+                if (!transcriptionSuccess) {
+                  console.warn('Transcription failed after retries, continuing recording');
                 }
               };
               reader.readAsDataURL(event.data);
