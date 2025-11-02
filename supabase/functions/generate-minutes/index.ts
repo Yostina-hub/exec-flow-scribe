@@ -466,6 +466,8 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
       .update({
         minutes_url: minutes,
         status: "completed",
+        minutes_status: 'generated',
+        workflow_stage: 'minutes_ready'
       })
       .eq("id", meetingId);
 

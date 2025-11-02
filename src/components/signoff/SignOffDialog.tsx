@@ -51,7 +51,35 @@ export function SignOffDialog({ open, onOpenChange, signatureRequestId, onSucces
 
         if (error) throw error;
 
-        toast({ title: 'Success', description: 'Minutes approved and signed' });
+        // Auto-trigger email distribution after successful sign-off
+        console.log('🚀 Triggering auto-distribution after sign-off');
+        try {
+          const { error: emailError } = await supabase.functions.invoke('auto-email-on-signoff', {
+            body: { signatureRequestId }
+          });
+          
+          if (emailError) {
+            console.error('Auto-email failed:', emailError);
+            // Don't fail the whole operation if email fails
+            toast({ 
+              title: 'Signed Successfully', 
+              description: 'Minutes approved. Email distribution may have failed - check Settings.',
+              variant: 'default'
+            });
+          } else {
+            toast({ 
+              title: 'Success', 
+              description: 'Minutes approved and distributed to all attendees via email' 
+            });
+          }
+        } catch (emailErr) {
+          console.error('Email distribution error:', emailErr);
+          toast({ 
+            title: 'Signed Successfully', 
+            description: 'Minutes approved but email sending requires SMTP configuration.',
+            variant: 'default'
+          });
+        }
       } else if (action === 'reject') {
         const { error } = await supabase
           .from('signature_requests')

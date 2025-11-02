@@ -86,6 +86,9 @@ import { HostManagementPanel } from "@/components/HostManagementPanel";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { GuestLayout } from "@/components/GuestLayout";
 import { GuestMeetingView } from "@/components/GuestMeetingView";
+import { WorkflowStatusIndicator } from "@/components/WorkflowStatusIndicator";
+import { PDFGenerationPanel } from "@/components/PDFGenerationPanel";
+import { SystemTestPanel } from "@/components/SystemTestPanel";
 
 interface AgendaItem {
   id: string;
@@ -173,6 +176,14 @@ const MeetingDetail = () => {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Workflow status state
+  const [workflowStatus, setWorkflowStatus] = useState({
+    transcription: 'pending' as 'pending' | 'in_progress' | 'completed' | 'failed',
+    minutes: 'pending' as 'pending' | 'generated' | 'reviewed' | 'approved',
+    pdf: 'pending' as 'pending' | 'generated' | 'signed' | 'distributed',
+    stage: 'created' as 'created' | 'recording' | 'transcribing' | 'minutes_ready' | 'pdf_ready' | 'awaiting_signatures' | 'completed'
+  });
   
   const meetingId = id || "demo-meeting-id";
   const meetingAccess = useMeetingAccess(id);
@@ -382,6 +393,16 @@ const MeetingDetail = () => {
       if (meetingError) throw meetingError;
 
       setMeeting(meetingData);
+
+      // Update workflow status from meeting data
+      if (meetingData) {
+        setWorkflowStatus({
+          transcription: (meetingData as any).transcription_status || 'pending',
+          minutes: (meetingData as any).minutes_status || 'pending',
+          pdf: (meetingData as any).pdf_status || 'pending',
+          stage: (meetingData as any).workflow_stage || 'created'
+        });
+      }
 
       // Format agenda items
       if (meetingData.agenda_items && meetingData.agenda_items.length > 0) {
@@ -748,6 +769,7 @@ const MeetingDetail = () => {
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
                 <TabsTrigger value="audit">Audit Log</TabsTrigger>
+                <TabsTrigger value="system-test">🧪 System Test</TabsTrigger>
               </TabsList>
               </div>
 
@@ -987,21 +1009,41 @@ const MeetingDetail = () => {
                 <AuditLogViewer meetingId={meetingId} />
               </TabsContent>
 
+              <TabsContent value="system-test" className="space-y-4">
+                <SystemTestPanel meetingId={meetingId} />
+              </TabsContent>
+
               <TabsContent value="chat" className="space-y-4">
                 <MeetingChatPanel meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="signatures" className="space-y-4">
-                <div className="space-y-4">
-                  <LiveAudioRecorder 
-                    meetingId={meetingId}
-                    onUploadComplete={() => {
-                      toast({
-                        title: "Success",
-                        description: "Audio recording uploaded successfully",
-                      });
-                    }}
-                  />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="space-y-6">
+                    <LiveAudioRecorder 
+                      meetingId={meetingId}
+                      onUploadComplete={() => {
+                        toast({
+                          title: "Success",
+                          description: "Audio recording uploaded successfully",
+                        });
+                        fetchMeetingDetails();
+                      }}
+                    />
+                    <PDFGenerationPanel 
+                      meetingId={meetingId}
+                      hasPDF={workflowStatus.pdf === 'generated' || workflowStatus.pdf === 'signed' || workflowStatus.pdf === 'distributed'}
+                      pdfUrl={(meeting as any)?.pdf_url}
+                      minutesGenerated={workflowStatus.minutes === 'generated' || workflowStatus.minutes === 'reviewed' || workflowStatus.minutes === 'approved'}
+                      onPDFGenerated={() => {
+                        fetchMeetingDetails();
+                        toast({
+                          title: 'PDF Ready',
+                          description: 'You can now request signatures',
+                        });
+                      }}
+                    />
+                  </div>
                   <MeetingSignaturesPanel meetingId={meetingId} />
                 </div>
               </TabsContent>
@@ -1010,6 +1052,14 @@ const MeetingDetail = () => {
 
           {/* Sidebar - Context Panel & Attendees */}
           <div className="space-y-6">
+            {/* Workflow Progress Indicator */}
+            <WorkflowStatusIndicator
+              transcriptionStatus={workflowStatus.transcription}
+              minutesStatus={workflowStatus.minutes}
+              pdfStatus={workflowStatus.pdf}
+              workflowStage={workflowStatus.stage}
+            />
+            
             <ContextPanel meetingId={meetingId} />
             <Card>
               <CardHeader>

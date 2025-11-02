@@ -363,10 +363,16 @@ serve(async (req) => {
       );
     }
 
-    console.log(`✅ Transcription saved successfully (${detectedLanguage})`);
-    console.log('Final transcription preview:', transcriptText.substring(0, 100));
+      console.log(`✅ Transcription saved successfully (${detectedLanguage})`);
+      console.log('Final transcription preview:', transcriptText.substring(0, 100));
+      
+      // Update meeting workflow status
+      await supabase.from("meetings").update({ 
+        transcription_status: 'completed',
+        workflow_stage: 'transcribing'
+      }).eq("id", normalizedMeetingId);
     
-    return new Response(
+      return new Response(
       JSON.stringify({
         success: true,
         transcription: transcriptText.trim(),
