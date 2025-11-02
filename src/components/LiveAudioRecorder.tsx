@@ -9,9 +9,10 @@ import { Mic, Square, Pause, Play, Trash2, Upload } from 'lucide-react';
 interface LiveAudioRecorderProps {
   meetingId: string;
   onUploadComplete?: () => void;
+  disabled?: boolean;
 }
 
-export function LiveAudioRecorder({ meetingId, onUploadComplete }: LiveAudioRecorderProps) {
+export function LiveAudioRecorder({ meetingId, onUploadComplete, disabled = false }: LiveAudioRecorderProps) {
   const { toast } = useToast();
   const [uploading, setUploading] = useState(false);
   
@@ -126,7 +127,7 @@ export function LiveAudioRecorder({ meetingId, onUploadComplete }: LiveAudioReco
 
             <div className="flex gap-2">
               {!isRecording && !audioBlob && (
-                <Button onClick={startRecording}>
+                <Button onClick={startRecording} disabled={disabled}>
                   <Mic className="h-4 w-4 mr-2" />
                   Start Recording
                 </Button>
@@ -166,6 +167,12 @@ export function LiveAudioRecorder({ meetingId, onUploadComplete }: LiveAudioReco
               )}
             </div>
           </div>
+
+          {disabled && !isRecording && !audioBlob && (
+            <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
+              Recording is disabled - meeting has been signed off or completed
+            </div>
+          )}
 
           {error && (
             <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">

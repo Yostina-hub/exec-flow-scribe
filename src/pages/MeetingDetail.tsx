@@ -1042,8 +1042,9 @@ const MeetingDetail = () => {
                 <LazyTabContent>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div className="space-y-6">
-                      <LiveAudioRecorder 
+                      <LiveAudioRecorder
                         meetingId={meetingId}
+                        disabled={meeting?.status === 'completed' || workflowStatus.pdf === 'signed'}
                         onUploadComplete={() => {
                           toast({
                             title: "Success",
