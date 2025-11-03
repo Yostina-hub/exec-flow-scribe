@@ -42,6 +42,7 @@ serve(async (req) => {
       headers: {
         'xi-api-key': ELEVENLABS_API_KEY,
         'Content-Type': 'application/json',
+        'accept': 'audio/mpeg',
       },
       body: JSON.stringify({
         text: text,
@@ -50,6 +51,7 @@ serve(async (req) => {
           stability: 0.5,
           similarity_boost: 0.75,
         },
+        output_format: 'mp3_44100_128'
       }),
     });
 
