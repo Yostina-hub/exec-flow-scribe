@@ -34,6 +34,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const isStartingRef = useRef(false);
   const restartTimerRef = useRef<number | null>(null);
   const lastStartAtRef = useRef<number>(0);
+  const lastEndAtRef = useRef<number>(0);
 
   // Check if browser supports speech recognition
   const isSupported = typeof window !== 'undefined' && 
@@ -137,14 +138,19 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Speech recognition ended');
       setIsListening(false);
       isListeningRef.current = false;
+      lastEndAtRef.current = Date.now();
+      
       // Auto-restart if we should still be listening (e.g., long Chrome sessions or brief silence)
       if (shouldBeListeningRef.current) {
         if (restartTimerRef.current) {
           clearTimeout(restartTimerRef.current);
           restartTimerRef.current = null;
         }
-        const since = Date.now() - lastStartAtRef.current;
-        const delay = Math.max(800, 1200 - since);
+        
+        // Calculate delay: at least 2 seconds, and ensure 2.5 seconds since last start
+        const sinceStart = Date.now() - lastStartAtRef.current;
+        const delay = Math.max(2000, 2500 - sinceStart);
+        
         restartTimerRef.current = window.setTimeout(() => {
           if (shouldBeListeningRef.current && !isListeningRef.current && !isStartingRef.current) {
             try {
@@ -193,8 +199,9 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     }
 
     const now = Date.now();
-    const elapsed = now - lastStartAtRef.current;
-    const delay = elapsed < 800 ? 800 - elapsed : 0;
+    const sinceLastEnd = now - lastEndAtRef.current;
+    const sinceLastStart = now - lastStartAtRef.current;
+    const delay = Math.max(0, 1500 - Math.min(sinceLastEnd, sinceLastStart));
 
     console.log('startListening called with language:', lang || language, 'delay', delay);
     setShouldBeListening(true);
