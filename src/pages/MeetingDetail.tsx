@@ -172,6 +172,7 @@ const MeetingDetail = () => {
   const [userId, setUserId] = useState<string>("");
   const [userFullName, setUserFullName] = useState<string>("");
   const [meeting, setMeeting] = useState<any>(null);
+  const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const [loading, setLoading] = useState(true);
@@ -285,7 +286,13 @@ const MeetingDetail = () => {
     const autoGenerateMinutes = async () => {
       const wasRecording = wasRecordingRef.current;
       
-      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating, recordingSeconds });
+      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting });
+      
+      // Skip auto-generation for virtual room meetings - they handle it internally
+      if (isVirtualRoomMeeting) {
+        wasRecordingRef.current = isRecording;
+        return;
+      }
       
       // Check if recording just stopped (was recording, now not recording)
       if (wasRecording && !isRecording && !isAutoGenerating) {
@@ -401,7 +408,7 @@ const MeetingDetail = () => {
     };
 
     autoGenerateMinutes();
-  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds]);
+  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting]);
 
   const fetchMeetingDetails = async () => {
     try {
@@ -423,6 +430,12 @@ const MeetingDetail = () => {
       if (meetingError) throw meetingError;
 
       setMeeting(meetingData);
+
+      // Check if this is a virtual room meeting - auto-open virtual room
+      if (meetingData.meeting_type === 'virtual_room') {
+        setIsVirtualRoomMeeting(true);
+        setShowVirtualRoom(true);
+      }
 
       // Update workflow status from meeting data
       if (meetingData) {
@@ -534,12 +547,17 @@ const MeetingDetail = () => {
       return null;
     }
     
+    // For virtual_room type meetings, don't allow closing back to standard view
+    const handleClose = isVirtualRoomMeeting 
+      ? () => navigate('/meetings') 
+      : () => setShowVirtualRoom(false);
+    
     return (
       <VirtualMeetingRoom
         meetingId={meetingId}
         isHost={meeting.created_by === userId}
         currentUserId={userId}
-        onCloseRoom={() => setShowVirtualRoom(false)}
+        onCloseRoom={handleClose}
       />
     );
   }
@@ -553,6 +571,13 @@ const MeetingDetail = () => {
         onLaunchRoom={() => setShowVirtualRoom(true)}
       />
     );
+  }
+
+  // For virtual_room meetings that haven't shown the room yet, show it immediately
+  // This prevents showing standard meeting interface for virtual_room types
+  if (isVirtualRoomMeeting && !showVirtualRoom && meeting && userId && !isMeetingCompleted) {
+    setShowVirtualRoom(true);
+    return null; // Will re-render with virtual room
   }
 
   const meetingTitle = meeting?.title || "Executive Strategy Review";
