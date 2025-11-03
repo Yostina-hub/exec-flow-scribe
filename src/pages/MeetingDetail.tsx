@@ -884,6 +884,7 @@ const MeetingDetail = () => {
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
                 <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="signatures">Audio to Minutes</TabsTrigger>
               </TabsList>
               </div>
 
