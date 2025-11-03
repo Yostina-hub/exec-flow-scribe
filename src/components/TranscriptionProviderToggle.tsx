@@ -12,7 +12,7 @@ interface TranscriptionProviderToggleProps {
 }
 
 export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionProviderToggleProps) => {
-  const [provider, setProvider] = useState<"lovable_ai" | "openai" | "browser" | "openai_realtime">("lovable_ai");
+  const [provider, setProvider] = useState<"lemat" | "openai">("lemat");
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
@@ -32,7 +32,9 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
         .maybeSingle();
 
       if (data) {
-        setProvider(data.provider as "lovable_ai" | "openai" | "browser" | "openai_realtime");
+        // Map old providers to new ones
+        const mappedProvider = ["lovable_ai", "browser"].includes(data.provider) ? "lemat" : "openai";
+        setProvider(mappedProvider as "lemat" | "openai");
       }
     } catch (error) {
       console.error("Error fetching provider:", error);
@@ -42,7 +44,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
   };
 
   const handleProviderChange = async (newProvider: string) => {
-    const typedProvider = newProvider as "lovable_ai" | "openai" | "browser" | "openai_realtime";
+    const typedProvider = newProvider as "lemat" | "openai";
     setProvider(typedProvider);
     
     try {
@@ -56,15 +58,18 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
         .eq("user_id", user.id)
         .maybeSingle();
 
+      // Map to actual backend provider
+      const backendProvider = typedProvider === "lemat" ? "lovable_ai" : "openai_realtime";
+      
       if (existing) {
         await supabase
           .from("transcription_preferences")
-          .update({ provider: typedProvider })
+          .update({ provider: backendProvider })
           .eq("user_id", user.id);
       } else {
         await supabase
           .from("transcription_preferences")
-          .insert({ user_id: user.id, provider: typedProvider });
+          .insert({ user_id: user.id, provider: backendProvider });
       }
 
       toast({
@@ -86,10 +91,8 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
 
   const getProviderDisplayName = (p: string) => {
     switch (p) {
-      case "lovable_ai": return "Lemat AI";
-      case "browser": return "Lemat";
-      case "openai_realtime": return "OpenAI Realtime";
-      case "openai": return "OpenAI Whisper";
+      case "lemat": return "Lemat";
+      case "openai": return "OpenAI";
       default: return "Unknown";
     }
   };
@@ -112,41 +115,15 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
       <CardContent>
         <RadioGroup value={provider} onValueChange={handleProviderChange} className="space-y-3">
           <div className="flex items-start space-x-3 rounded-lg border border-primary/20 p-3 hover:bg-accent/50 transition-colors">
-            <RadioGroupItem value="lovable_ai" id="toggle-lovable_ai" className="mt-0.5" />
+            <RadioGroupItem value="lemat" id="toggle-lemat" className="mt-0.5" />
             <div className="flex-1">
-              <Label htmlFor="toggle-lovable_ai" className="cursor-pointer flex items-center gap-2">
+              <Label htmlFor="toggle-lemat" className="cursor-pointer flex items-center gap-2">
                 <Brain className="h-4 w-4 text-primary" />
-                <span className="font-medium">Lemat AI</span>
+                <span className="font-medium">Lemat</span>
                 <Badge variant="default" className="text-xs">Default</Badge>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Fast, accurate AI-powered transcription
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start space-x-3 rounded-lg border p-3 hover:bg-accent/50 transition-colors">
-            <RadioGroupItem value="browser" id="toggle-browser" className="mt-0.5" />
-            <div className="flex-1">
-              <Label htmlFor="toggle-browser" className="cursor-pointer flex items-center gap-2">
-                <Mic className="h-4 w-4" />
-                <span className="font-medium">Lemat</span>
-              </Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Browser-based, no API key needed
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-start space-x-3 rounded-lg border p-3 hover:bg-accent/50 transition-colors">
-            <RadioGroupItem value="openai_realtime" id="toggle-realtime" className="mt-0.5" />
-            <div className="flex-1">
-              <Label htmlFor="toggle-realtime" className="cursor-pointer flex items-center gap-2">
-                <Zap className="h-4 w-4 text-orange-500" />
-                <span className="font-medium">OpenAI Realtime</span>
-              </Label>
-              <p className="text-xs text-muted-foreground mt-1">
-                Real-time streaming transcription
+                Fast AI-powered transcription, no API key needed
               </p>
             </div>
           </div>
@@ -156,10 +133,10 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
             <div className="flex-1">
               <Label htmlFor="toggle-openai" className="cursor-pointer flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-purple-500" />
-                <span className="font-medium">OpenAI Whisper</span>
+                <span className="font-medium">OpenAI</span>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                High-accuracy batch transcription
+                Real-time & batch transcription (requires API key)
               </p>
             </div>
           </div>
