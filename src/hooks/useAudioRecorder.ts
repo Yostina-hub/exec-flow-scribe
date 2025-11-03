@@ -77,8 +77,45 @@ export const useAudioRecorder = (meetingId: string) => {
           .eq('id', meetingId);
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: true
+      // Preflight checks to avoid common NotFoundError causes
+      if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          title: 'Microphone unsupported',
+          description: 'Your browser does not support audio recording APIs.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Check for available input devices before requesting access
+      let audioInputs: MediaDeviceInfo[] = [];
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        audioInputs = devices.filter((d) => d.kind === 'audioinput');
+      } catch (e) {
+        console.warn('enumerateDevices failed (may require permission first):', e);
+      }
+
+      if (audioInputs.length === 0) {
+        // No visible microphones to the browser
+        toast({
+          title: 'Recording failed',
+          description: 'No microphone detected. Check OS privacy settings and browser site permissions.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const preferredDeviceId = audioInputs[0]?.deviceId;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: preferredDeviceId ? { ideal: preferredDeviceId } : undefined,
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+        } as MediaTrackConstraints,
       });
 
       const supported = pickSupportedMimeType();
