@@ -532,10 +532,22 @@ const MeetingDetail = () => {
     );
   }
 
+  // For virtual room type meetings, ONLY show virtual room interface - no standard meeting UI
+  if (isVirtualRoomMeeting && meeting && userId) {
+    return (
+      <VirtualMeetingRoom
+        meetingId={meetingId}
+        isHost={meeting.created_by === userId}
+        currentUserId={userId}
+        onCloseRoom={() => navigate('/meetings')}
+      />
+    );
+  }
+
   // Check if meeting is completed - prevent rejoining
   const isMeetingCompleted = meeting?.status === 'completed';
   
-  // Show Virtual Meeting Room
+  // Show Virtual Meeting Room for standard meetings that opt to use virtual room
   if (showVirtualRoom && meeting && userId) {
     if (isMeetingCompleted) {
       toast({
