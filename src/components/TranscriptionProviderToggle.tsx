@@ -123,7 +123,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
                 <Badge variant="default" className="text-xs">Default</Badge>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Fast and reliable browser-based transcription
+                Fast and reliable transcription
               </p>
             </div>
           </div>
