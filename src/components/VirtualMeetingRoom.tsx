@@ -18,6 +18,7 @@ import { PresenterControls } from './PresenterControls';
 import { AIMeetingCopilot } from './AIMeetingCopilot';
 import { SmartWhiteboard } from './SmartWhiteboard';
 import { AdvancedHostControls } from './AdvancedHostControls';
+import { useParticipantControls } from '@/hooks/useParticipantControls';
 import { cn } from '@/lib/utils';
 
 interface VirtualMeetingRoomProps {
@@ -726,6 +727,35 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
   const [showAICopilot, setShowAICopilot] = useState(false);
   const [showWhiteboard, setShowWhiteboard] = useState(false);
   const [aiInsight, setAiInsight] = useState<string | null>(null);
+
+  // Enable participant controls (receive host commands)
+  useParticipantControls({
+    meetingId,
+    currentUserId,
+    onMute: (muted) => {
+      if (muted) {
+        toast({
+          title: "Muted by Host",
+          description: "Your microphone has been muted by the host",
+        });
+      }
+    },
+    onVideoDisable: (disabled) => {
+      if (disabled) {
+        toast({
+          title: "Video Disabled by Host",
+          description: "Your video has been disabled by the host",
+        });
+      }
+    },
+    onSuspend: () => {
+      toast({
+        title: "Suspended",
+        description: "You have been temporarily suspended by the host",
+        variant: "destructive"
+      });
+    }
+  });
 
   // Keyboard shortcuts for AI features
   useEffect(() => {
