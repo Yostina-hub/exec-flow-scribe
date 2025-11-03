@@ -397,8 +397,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       </Card>
 
       {/* Audio Upload Options */}
-      {(currentStep === 'upload' || !minutes) && (
-        <div className="space-y-4">
+      <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle>Upload Audio File</CardTitle>
@@ -471,7 +470,6 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
             </Card>
           )}
         </div>
-      )}
 
       {/* Transcription Display */}
       {transcription && (
