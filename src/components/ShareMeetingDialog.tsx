@@ -55,6 +55,7 @@ export function ShareMeetingDialog({
   const [copied, setCopied] = useState(false);
   const [email, setEmail] = useState('');
   const [sending, setSending] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<User[]>([]);
   const [customEmails, setCustomEmails] = useState<string[]>([]);
@@ -68,7 +69,10 @@ export function ShareMeetingDialog({
         .order('full_name');
       if (data) setUsers(data);
     };
-    if (open) fetchUsers();
+    if (open) {
+      fetchUsers();
+      setEmailSent(false); // Reset when dialog opens
+    }
   }, [open]);
 
   const meetingUrl = `${window.location.origin}/meetings/${meetingId}`;
@@ -164,6 +168,7 @@ export function ShareMeetingDialog({
 
       if (successful > 0) {
         toast.success(`Invitations sent to ${successful} recipient${successful > 1 ? 's' : ''}`);
+        setEmailSent(true); // Mark email as sent
       }
       if (failed > 0) {
         toast.error(`Failed to send to ${failed} recipient${failed > 1 ? 's' : ''}`);
@@ -345,6 +350,17 @@ export function ShareMeetingDialog({
               {sending ? 'Sending...' : `Send to ${selectedUsers.length + customEmails.length} recipient${selectedUsers.length + customEmails.length !== 1 ? 's' : ''}`}
             </Button>
           </div>
+
+          {/* Close Button - Shows after successful send */}
+          {emailSent && (
+            <Button
+              onClick={() => onOpenChange(false)}
+              variant="outline"
+              className="w-full"
+            >
+              Close
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>
