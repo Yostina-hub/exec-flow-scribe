@@ -88,6 +88,12 @@ export function useUserPermissions() {
   };
 
   const canAccessRoute = (route: string): boolean => {
+    // Admin-only routes
+    const adminOnlyRoutes = ['/actions', '/notifications', '/integration-test'];
+    if (adminOnlyRoutes.includes(route)) {
+      return isAdmin;
+    }
+
     // Admins can access everything
     if (isAdmin) return true;
 
@@ -97,7 +103,6 @@ export function useUserPermissions() {
       '/analytics': { resource: 'reports', action: 'view' },
       '/reports': { resource: 'reports', action: 'view' },
       '/settings': { resource: 'settings', action: 'manage' },
-      '/integration-test': { resource: 'system', action: 'manage' },
     };
 
     const permission = routePermissions[route];
