@@ -77,8 +77,7 @@ export const useAudioRecorder = (meetingId: string) => {
         await supabase
           .from('meetings')
           .update({ 
-            status: 'in_progress',
-            actual_start_time: new Date().toISOString()
+            status: 'in_progress'
           })
           .eq('id', meetingId);
       }
@@ -398,8 +397,7 @@ export const useAudioRecorder = (meetingId: string) => {
         await supabase
           .from('meetings')
           .update({ 
-            status: 'completed',
-            actual_end_time: new Date().toISOString()
+            status: 'completed'
           })
           .eq('id', meetingId);
       }
