@@ -45,6 +45,8 @@ export const BrowserSpeechRecognition = ({
   const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
   const [savedAudios, setSavedAudios] = useState<Array<{ id: string; url: string; created_at: string; duration: number }>>([]);
   const { toast } = useToast();
+  const onDurationChangeRef = useRef(onDurationChange);
+  useEffect(() => { onDurationChangeRef.current = onDurationChange; }, [onDurationChange]);
   
   // Audio recording hook for archiving
   const {
@@ -185,12 +187,12 @@ export const BrowserSpeechRecognition = ({
   }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout | undefined;
+    let interval: any;
     if (externalIsRecording && !isPaused) {
       interval = setInterval(() => {
         setRecordingDuration(prev => {
           const next = prev + 1;
-          onDurationChange?.(next);
+          onDurationChangeRef.current?.(next);
           return next;
         });
       }, 1000);
@@ -198,7 +200,7 @@ export const BrowserSpeechRecognition = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [externalIsRecording, isPaused, onDurationChange]);
+  }, [externalIsRecording, isPaused]);
 
   // Auto-save transcript every ~5s while recording (no audio upload, text only)
   const lastSavedLenRef = useRef(0);
