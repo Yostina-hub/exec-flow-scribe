@@ -200,11 +200,11 @@ const Auth = () => {
 
           {/* Auth Card - Executive Edition */}
           <div className="animate-scale-in w-full lg:w-auto">
-            <Card className="border-2 border-emerald-400/30 bg-white/98 backdrop-blur-2xl shadow-lg lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] rounded-2xl lg:rounded-3xl relative overflow-hidden">
+            <Card className="border-2 border-emerald-400/30 bg-white backdrop-blur-2xl shadow-lg lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] rounded-2xl lg:rounded-3xl relative overflow-hidden">
               {/* Card Glow Effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
               
-              <CardHeader className="space-y-4 px-6 sm:px-8 pt-6 lg:pt-8 pb-4 lg:pb-6 relative">
+              <CardHeader className="space-y-4 px-6 sm:px-8 pt-6 lg:pt-8 pb-4 lg:pb-6 relative z-10">
                 <div className="flex items-center justify-center lg:justify-start gap-3">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl blur-xl opacity-50 animate-pulse" />
@@ -219,11 +219,11 @@ const Auth = () => {
                     <p className="text-sm lg:text-base text-emerald-600 font-bold tracking-wide">Executive Edition</p>
                   </div>
                 </div>
-                <CardDescription className="text-base lg:text-lg text-slate-700 font-medium text-center lg:text-left">
+                <CardDescription className="text-base lg:text-lg !text-slate-800 font-medium text-center lg:text-left">
                   Secure access to your organization's intelligence platform
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-6 sm:px-6 lg:px-6 pb-6 lg:pb-8">
+              <CardContent className="px-6 sm:px-6 lg:px-6 pb-6 lg:pb-8 relative z-10">
                 <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-10 lg:h-auto">
                     <TabsTrigger value="signin" className="text-sm lg:text-base text-slate-700 font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
@@ -233,7 +233,7 @@ const Auth = () => {
                   <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="email" className="text-sm lg:text-base text-slate-800 font-semibold">Email</Label>
+                        <Label htmlFor="email" className="text-sm lg:text-base !text-slate-900 font-semibold">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -245,7 +245,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="password" className="text-sm lg:text-base text-slate-800 font-semibold">Password</Label>
+                        <Label htmlFor="password" className="text-sm lg:text-base !text-slate-900 font-semibold">Password</Label>
                         <Input
                           id="password"
                           type="password"
@@ -269,7 +269,7 @@ const Auth = () => {
                   <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="fullname" className="text-sm lg:text-base text-slate-800 font-semibold">Full Name</Label>
+                        <Label htmlFor="fullname" className="text-sm lg:text-base !text-slate-900 font-semibold">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -281,7 +281,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-slate-800 font-semibold">Title</Label>
+                        <Label htmlFor="usertitle" className="text-sm lg:text-base !text-slate-900 font-semibold">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
@@ -292,7 +292,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-slate-800 font-semibold">Email</Label>
+                        <Label htmlFor="signup-email" className="text-sm lg:text-base !text-slate-900 font-semibold">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -304,7 +304,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-slate-800 font-semibold">Password</Label>
+                        <Label htmlFor="signup-password" className="text-sm lg:text-base !text-slate-900 font-semibold">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
