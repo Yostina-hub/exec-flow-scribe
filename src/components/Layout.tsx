@@ -2,9 +2,11 @@ import { ReactNode } from "react";
 import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud, Bell } from "lucide-react";
 import { QuickSearch } from "@/components/QuickSearch";
 import { NotificationBell } from "@/components/NotificationBell";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sidebar,
   SidebarContent,
@@ -109,14 +111,41 @@ function AppSidebar() {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    // Mobile mini-app layout with bottom navigation
+    return (
+      <>
+        <div className="min-h-screen flex flex-col w-full pb-16">
+          <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b mobile-safe-top">
+            <div className="flex h-14 items-center gap-3 px-4">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary" />
+              <h1 className="text-lg font-bold">MeetingHub</h1>
+              <div className="flex-1" />
+              <NotificationBell />
+              <QuickSearch />
+            </div>
+          </header>
+
+          <main className="flex-1 overflow-auto">
+            {children}
+          </main>
+        </div>
+        <MobileBottomNav />
+      </>
+    );
+  }
+
+  // Desktop layout with sidebar
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         
         <div className="flex-1 flex flex-col w-full">
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mobile-safe-top">
-            <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-3 md:px-4">
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 items-center gap-4 px-4">
               <SidebarTrigger />
               <div className="flex-1" />
               <NotificationBell />
@@ -124,7 +153,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
           </header>
 
-          <main className="flex-1 p-3 md:p-4 lg:p-6 mobile-safe-bottom">
+          <main className="flex-1 p-6">
             {children}
           </main>
         </div>

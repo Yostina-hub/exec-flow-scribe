@@ -2,12 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Mobile app-like optimizations */
+/* Mobile mini-app optimizations */
 @layer base {
-  /* Prevent pull-to-refresh on mobile */
+  /* Prevent pull-to-refresh and improve scrolling on mobile */
   body {
     overscroll-behavior-y: contain;
     -webkit-overflow-scrolling: touch;
+    -webkit-tap-highlight-color: transparent;
   }
   
   /* Improve tap targets for mobile */
@@ -15,6 +16,11 @@
     button, a, [role="button"] {
       min-height: 44px;
       min-width: 44px;
+    }
+    
+    /* Remove default mobile styles */
+    input, textarea, select {
+      font-size: 16px; /* Prevents zoom on iOS */
     }
   }
   
@@ -26,12 +32,35 @@
     }
     
     .mobile-safe-top {
-      padding-top: max(1rem, env(safe-area-inset-top));
+      padding-top: max(0.5rem, env(safe-area-inset-top));
     }
     
     .mobile-safe-bottom {
-      padding-bottom: max(1rem, env(safe-area-inset-bottom));
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
     }
+  }
+  
+  /* Smooth app-like transitions */
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  /* App-like card styles */
+  .app-card {
+    @apply bg-gradient-to-br from-background to-muted/30 rounded-2xl shadow-lg border border-border/50 overflow-hidden;
+  }
+  
+  /* Touch-friendly spacing */
+  .touch-spacing {
+    @apply p-4 space-y-3;
+  }
+  
+  /* Haptic feedback simulation */
+  .haptic-light {
+    @apply active:scale-95 transition-transform duration-100;
   }
 }
 
