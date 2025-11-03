@@ -30,17 +30,23 @@ export const useAudioRecording = (): AudioRecordingHook => {
     try {
       setError(null);
       
-      // Request microphone access with 24kHz sample rate
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          sampleRate: 24000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-        } 
-      });
+      // Request microphone access with permissive constraints and safe fallback
+      let stream: MediaStream | null = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+      } catch (e: any) {
+        console.warn('Primary getUserMedia failed, falling back to audio: true', e?.name || e);
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      }
       
+      if (!stream) throw new Error('Microphone stream not available');
       streamRef.current = stream;
       audioChunksRef.current = [];
 
@@ -96,7 +102,13 @@ export const useAudioRecording = (): AudioRecordingHook => {
       
     } catch (err: any) {
       console.error('Error starting recording:', err);
-      setError(err.message || 'Failed to access microphone');
+      let message = 'Failed to access microphone';
+      const name = err?.name || '';
+      if (name === 'NotAllowedError') message = 'Microphone permission denied. Please allow access in your browser.';
+      else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') message = 'No microphone found or it is in use by another app.';
+      else if (name === 'OverconstrainedError') message = 'Your device cannot satisfy the requested audio settings. Using defaults failed.';
+      else if (name === 'SecurityError') message = 'Microphone access is blocked by browser security (possibly iframe). Open in a new tab or allow microphone.';
+      setError(message);
       setIsRecording(false);
     }
   }, []);
