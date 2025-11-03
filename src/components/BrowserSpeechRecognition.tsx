@@ -192,6 +192,7 @@ export const BrowserSpeechRecognition = ({
                 
                 // Start PCM capture for Browser Whisper if in whisper mode
                 if (whisperMode) {
+                  console.log('Starting PCM capture for Browser Whisper, whisperMode:', whisperMode);
                   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                   const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
                   audioContextRef.current = audioCtx;
@@ -209,7 +210,7 @@ export const BrowserSpeechRecognition = ({
                   
                   sourceRef.current.connect(processorRef.current);
                   processorRef.current.connect(audioCtx.destination);
-                  console.log('PCM capture started for Browser Whisper');
+                  console.log('PCM capture started for Browser Whisper, chunks will accumulate');
                 }
               } catch (err) {
                 console.error('Failed to start audio recording:', err);
@@ -258,9 +259,17 @@ export const BrowserSpeechRecognition = ({
 
   // Live Browser Whisper transcription loop using PCM data
   useEffect(() => {
-    if (!externalIsRecording || isPaused || !whisperMode) return;
+    if (!externalIsRecording || isPaused || !whisperMode) {
+      console.log('Whisper loop skipped:', { externalIsRecording, isPaused, whisperMode });
+      return;
+    }
+    
+    console.log('Starting Browser Whisper transcription loop');
     const interval = setInterval(async () => {
-      if (transcribingRef.current || pcmChunksRef.current.length === 0) return;
+      const chunkCount = pcmChunksRef.current.length;
+      console.log('Whisper loop tick, PCM chunks:', chunkCount, 'transcribing:', transcribingRef.current);
+      
+      if (transcribingRef.current || chunkCount === 0) return;
       transcribingRef.current = true;
       
       try {
@@ -289,27 +298,37 @@ export const BrowserSpeechRecognition = ({
             if (offset <= 0) break;
           }
           
+          console.log('Calling Browser Whisper with segment size:', segment.length);
+          
           // Transcribe directly from PCM using browserWhisper's model
           const { initBrowserWhisper } = await import('@/utils/browserWhisper');
           const model = await initBrowserWhisper();
+          console.log('Browser Whisper model loaded, transcribing...');
           const result = await model(segment);
           const text = (result?.text as string) || '';
+          
+          console.log('Browser Whisper result:', text);
           
           if (text && text.trim()) {
             setWhisperTranscript((prev) => {
               const cleaned = text.trim();
               if (prev.endsWith(cleaned)) return prev;
-              return prev ? `${prev} ${cleaned}` : cleaned;
+              const updated = prev ? `${prev} ${cleaned}` : cleaned;
+              console.log('Updated whisper transcript:', updated);
+              return updated;
             });
           }
         }
       } catch (e) {
-        console.warn('Browser Whisper transcription failed', e);
+        console.error('Browser Whisper transcription failed', e);
       } finally {
         transcribingRef.current = false;
       }
     }, 3000);
-    return () => clearInterval(interval);
+    return () => {
+      console.log('Stopping Browser Whisper transcription loop');
+      clearInterval(interval);
+    };
   }, [externalIsRecording, isPaused, whisperMode]);
 
   // Auto-save transcript every ~5s while recording (no audio upload, text only)
