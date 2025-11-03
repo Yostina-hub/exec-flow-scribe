@@ -443,61 +443,86 @@ ${prompt}`
       }
     }
 
-    // Try Lovable AI as fallback
+    // Try Lovable AI as fallback (OpenAI-compatible format)
     if (lovableApiKey && !minutes) {
       try {
-        console.log("🤖 Using Lovable AI as fallback");
+        console.log("🤖 Using Lovable AI (google/gemini-2.5-flash) as fallback");
         const lovableResponse = await fetch(
           "https://ai.gateway.lovable.dev/v1/chat/completions",
           {
             method: "POST",
             headers: {
+              "Authorization": `Bearer ${lovableApiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              contents: [{
-                parts: [{
-                  text: `You are an expert meeting minutes specialist. Create comprehensive, natural documentation capturing every detail.
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { 
+                  role: "system", 
+                  content: `You are an expert meeting minutes specialist who creates comprehensive, natural-sounding documentation. You have mastered the art of capturing every detail while maintaining engaging, professional prose.
 
-${detectedLang === 'am' ? `🇪🇹 AMHARIC REQUIREMENTS:
-• Write entirely in Ge'ez script - NEVER use Latin letters
-• Use Ethiopian punctuation: ። (end), ፣ (comma), ፦ (colon), ፤ (semicolon)
+🎯 YOUR APPROACH:
+• Act as a skilled human note-taker who attended the meeting
+• Capture EVERY detail, nuance, and context from the discussion
+• Write in a natural, flowing style that engages readers
+• Include complete information - don't summarize or abbreviate excessively
+• Show the progression of ideas and how decisions were reached
+• Preserve speaker intentions, reasoning, and important quotes
+• Connect topics naturally to show the meeting's narrative flow
+• Make minutes thorough yet readable - like skilled human documentation
+
+✅ QUALITY STANDARDS:
+• Completeness: Include all discussions, questions, answers, and details
+• Accuracy: Only information from the transcript - no additions or assumptions
+• Natural flow: Varied sentences, smooth transitions, engaging prose
+• Context: Background, reasoning, and full picture of discussions
+• Professional yet conversational: Formal but not robotic
+• Detailed: Comprehensive coverage without missing minor but relevant points
+
+${detectedLang === 'am' ? `🇪🇹 AMHARIC MASTERY:
+You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) business writing with these non-negotiable requirements:
+• Write in natural, flowing Ge'ez script exclusively - NEVER use Latin letters
+• Use proper Ethiopian punctuation consistently: ። (sentence end), ፣ (comma), ፤ (semicolon), ፦ (colon before lists/elaborations), ፥ (section separator)
 • Every sentence MUST end with ።
-• Use SOV word order and formal business Amharic
-• Write naturally like an educated Ethiopian professional` : 'Write in the transcript language. Never romanize or transliterate.'}
-
-CRITICAL: Only document what is EXPLICITLY in the transcript - no assumptions.
-
-${prompt}`
-                }]
-              }],
-              generationConfig: {
-                temperature: 0.3,
-                maxOutputTokens: 4096,
-              }
+• Use Subject-Object-Verb (SOV) word order naturally
+• Employ professional honorifics and business terminology
+• Write with the skill and naturalness of an educated Ethiopian professional
+• Vary sentence structure and length for natural rhythm
+• Connect ideas smoothly with appropriate Amharic transitions
+• Make it indistinguishable from high-quality human-written Amharic documentation
+• BUT CRITICALLY: Only document what was actually discussed in the transcript` : 'Preserve the transcript language and script exactly. Write with native fluency in that language. Never romanize or transliterate. Only document what is explicitly in the transcript.'}` 
+                },
+                { role: "user", content: prompt },
+              ],
+              max_tokens: 5000,
+              temperature: 0.3,
             }),
           }
         );
 
         if (lovableResponse.ok) {
           const lovableData = await lovableResponse.json();
-          minutes = lovableData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          minutes = lovableData.choices?.[0]?.message?.content || "";
           console.log("✅ Minutes generated with Lovable AI (Fallback)");
         } else {
           const statusCode = lovableResponse.status;
           const errorText = await lovableResponse.text();
-          console.error(`Gemini API error (${statusCode}):`, errorText);
+          console.error(`Lovable AI error (${statusCode}):`, errorText);
           
           if (statusCode === 429) {
             providerStatus = 429;
-            providerError = "Gemini API rate limit exceeded. Trying fallback...";
+            providerError = "Lovable AI rate limit exceeded. Trying OpenAI...";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "Lovable AI: Payment required. Trying OpenAI...";
           } else {
-            providerError = `Gemini API: ${errorText}`;
+            providerError = `Lovable AI: ${errorText}`;
           }
         }
       } catch (e) {
-        console.error("Gemini API provider failed:", e);
-        providerError = `Gemini API: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        console.error("Lovable AI provider failed:", e);
+        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
 
