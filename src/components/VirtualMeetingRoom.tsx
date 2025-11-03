@@ -1163,8 +1163,7 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
       await supabase
         .from('meetings')
         .update({ 
-          status: 'in_progress',
-          actual_start_time: new Date().toISOString()
+          status: 'in_progress'
         })
         .eq('id', meetingId);
     }
