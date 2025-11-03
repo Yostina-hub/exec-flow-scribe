@@ -237,25 +237,42 @@ export const BrowserSpeechRecognition = ({
 
       // If we have audio but no text → server-side transcription fallback
       if (audioFile && !finalText) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(audioFile);
-        });
+        try {
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(audioFile);
+          });
 
-        const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-          body: {
-            audioBase64: base64,
-            meetingId,
-            language: selectedLanguage || 'auto',
-            contentType: audioFile.type || 'audio/webm'
+          const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+            body: {
+              audioBase64: base64,
+              meetingId,
+              language: selectedLanguage || 'auto',
+              contentType: audioFile.type || 'audio/webm'
+            }
+          });
+
+          if (error) {
+            console.warn('Server-side transcription failed:', error);
+            // Don't throw - just log and continue without transcription
+            toast({
+              title: 'Transcription unavailable',
+              description: 'Audio saved but transcription service is temporarily unavailable. Your recording is safe.',
+              variant: 'default',
+            });
+          } else if (data?.transcription) {
+            finalText = data.transcription as string;
           }
-        });
-
-        if (error) throw error;
-        if (data?.transcription) {
-          finalText = data.transcription as string;
+        } catch (transcribeError) {
+          console.warn('Transcription error:', transcribeError);
+          // Continue without transcription - audio will still be saved
+          toast({
+            title: 'Transcription skipped',
+            description: 'Could not transcribe audio, but your recording is saved.',
+            variant: 'default',
+          });
         }
       }
 
