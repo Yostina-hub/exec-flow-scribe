@@ -380,9 +380,9 @@ export const LiveTranscription = ({ meetingId, isRecording, currentUserName }: L
                       <span className="text-xs text-muted-foreground">
                         {formatTime(transcript.timestamp)}
                       </span>
-                      {transcript.confidence_score && (
+                      {((transcript as any).confidence_score ?? (transcript as any).confidence) != null && (
                         <span className="text-xs text-muted-foreground">
-                          {Math.round(transcript.confidence_score * 100)}% confidence
+                          {Math.round(((transcript as any).confidence_score ?? (transcript as any).confidence) * 100)}% confidence
                         </span>
                       )}
                     </div>
