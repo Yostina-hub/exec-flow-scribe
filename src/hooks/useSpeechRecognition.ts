@@ -32,6 +32,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const keepAliveIntervalRef = useRef<number | null>(null);
   const isListeningRef = useRef(false);
   const isStartingRef = useRef(false); // Prevent race conditions
+  const lastRestartTimeRef = useRef(0); // Track last restart to prevent rapid loops
+  const restartCooldownMs = 2000; // 2 second cooldown between restarts
 
   // Check if browser supports speech recognition
   const isSupported = typeof window !== 'undefined' && 
@@ -99,7 +101,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.error('Speech recognition error:', event.error);
       let msg: string | null = null;
       if (event.error === 'no-speech') {
-        msg = 'No speech detected. Trying again...';
+        // Don't show error for no-speech, it's common during pauses
+        msg = null;
       } else if (event.error === 'audio-capture') {
         msg = 'Microphone not found. Please check your microphone.';
       } else if (event.error === 'not-allowed') {
@@ -108,9 +111,20 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         msg = 'Network issue. Trying to reconnect...';
       }
       if (msg) setError(msg);
-      // Auto-recover on common transient errors
-      const recoverable = ['no-speech', 'network', 'aborted'].includes(event.error);
+      
+      // Only auto-recover on network/aborted, NOT on no-speech (causes loops)
+      const recoverable = ['network', 'aborted'].includes(event.error);
       if (recoverable && shouldBeListeningRef.current && !isStartingRef.current) {
+        const now = Date.now();
+        const timeSinceLastRestart = now - lastRestartTimeRef.current;
+        
+        if (timeSinceLastRestart < restartCooldownMs) {
+          console.log('Restart cooldown active, skipping restart');
+          isStartingRef.current = false;
+          return;
+        }
+        
+        lastRestartTimeRef.current = now;
         isStartingRef.current = true;
         try { recognitionRef.current?.stop(); } catch {}
         setTimeout(() => {
@@ -124,7 +138,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
           } else {
             isStartingRef.current = false;
           }
-        }, 300);
+        }, 500);
       }
     };
 
@@ -132,8 +146,20 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Speech recognition ended');
       setIsListening(false);
       isListeningRef.current = false;
-      // Auto-restart if we should still be listening (e.g., long Chrome sessions or brief silence)
+      
+      // Auto-restart if we should still be listening (e.g., long Chrome sessions)
       if (shouldBeListeningRef.current && !isStartingRef.current) {
+        const now = Date.now();
+        const timeSinceLastRestart = now - lastRestartTimeRef.current;
+        
+        // Prevent rapid restart loops
+        if (timeSinceLastRestart < restartCooldownMs) {
+          console.log('Restart cooldown active, skipping auto-restart');
+          isStartingRef.current = false;
+          return;
+        }
+        
+        lastRestartTimeRef.current = now;
         isStartingRef.current = true;
         setTimeout(() => {
           if (shouldBeListeningRef.current && !isListeningRef.current) {
@@ -146,7 +172,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
           } else {
             isStartingRef.current = false;
           }
-        }, 200);
+        }, 500);
       }
     };
 
