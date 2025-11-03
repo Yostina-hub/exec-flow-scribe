@@ -12,34 +12,51 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice = 'alloy' } = await req.json();
+    const { text, voice = 'onyx' } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      throw new Error('OpenAI API key not configured');
+    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
+    if (!ELEVENLABS_API_KEY) {
+      throw new Error('ElevenLabs API key not configured');
     }
 
-    const response = await fetch('https://api.openai.com/v1/audio/speech', {
+    // Map OpenAI voices to ElevenLabs voice IDs
+    const voiceMap: Record<string, string> = {
+      'alloy': '9BWtsMINqrJLrRacOk9x', // Aria
+      'echo': 'pqHfZKP75CvOlQylNhV4', // Bill
+      'fable': 'TX3LPaxmHKxFdv7VOQHJ', // Liam
+      'onyx': 'N2lVS1w4EtoT3dr4eOWO', // Callum (deep voice)
+      'nova': 'EXAVITQu4vr4xnSDxMaL', // Sarah
+      'shimmer': 'pFZP5JQG7iQjIQuC4Bku', // Lily
+    };
+
+    const voiceId = voiceMap[voice] || 'N2lVS1w4EtoT3dr4eOWO'; // Default to Callum (professional voice)
+
+    console.log(`Generating speech with ElevenLabs - Voice: ${voiceId}, Text length: ${text.length}`);
+
+    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'xi-api-key': ELEVENLABS_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'tts-1-hd',
-        input: text,
-        voice: voice,
-        response_format: 'mp3',
+        text: text,
+        model_id: 'eleven_turbo_v2_5', // Fast, high-quality model
+        voice_settings: {
+          stability: 0.5,
+          similarity_boost: 0.75,
+        },
       }),
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'Failed to generate speech');
+      const errorText = await response.text();
+      console.error('ElevenLabs API error:', response.status, errorText);
+      throw new Error(`ElevenLabs API error: ${errorText}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();
