@@ -1179,7 +1179,6 @@ const MeetingDetail = () => {
                   variant="outline" 
                   className="w-full justify-start gap-2"
                   onClick={() => navigate(`/meetings/${id}/minutes`)}
-                  disabled={!meeting?.minutes_url}
                 >
                   <FileText className="h-4 w-4" />
                   Open Minutes Editor
