@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
 import { PDFGenerationPanel } from './PDFGenerationPanel';
-import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ReactMarkdown from 'react-markdown';
@@ -25,8 +25,11 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
   const [transcription, setTranscription] = useState<string>('');
   const [hasPDF, setHasPDF] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string>();
+  const [hasTranscriptPDF, setHasTranscriptPDF] = useState(false);
+  const [transcriptPdfUrl, setTranscriptPdfUrl] = useState<string>();
   const [progress, setProgress] = useState(0);
   const [latestAudioUrl, setLatestAudioUrl] = useState<string>();
+  const [isGeneratingTranscriptPDF, setIsGeneratingTranscriptPDF] = useState(false);
 
   useEffect(() => {
     checkExistingData();
@@ -85,8 +88,69 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       if (audioData && audioData.length > 0) {
         setLatestAudioUrl(audioData[0].file_url);
       }
+
+      // Check for transcript PDF
+      const { data: transcriptPdf } = await supabase
+        .from('meeting_media')
+        .select('file_url')
+        .eq('meeting_id', meetingId)
+        .eq('media_type', 'transcript_pdf')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (transcriptPdf && transcriptPdf.length > 0) {
+        setHasTranscriptPDF(true);
+        setTranscriptPdfUrl(transcriptPdf[0].file_url);
+      }
     } catch (error) {
       console.error('Error checking existing data:', error);
+    }
+  };
+
+  const generateTranscriptPDF = async () => {
+    try {
+      setIsGeneratingTranscriptPDF(true);
+      
+      const { data, error } = await supabase.functions.invoke('generate-transcript-pdf', {
+        body: { meetingId },
+      });
+
+      if (error) throw error;
+
+      // Save the PDF URL
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      const { error: insertError } = await supabase
+        .from('meeting_media')
+        .insert({
+          meeting_id: meetingId,
+          media_type: 'transcript_pdf',
+          file_url: data.pdfUrl,
+          uploaded_by: user.id,
+          checksum: '',
+        });
+
+      if (insertError) throw insertError;
+
+      setHasTranscriptPDF(true);
+      setTranscriptPdfUrl(data.pdfUrl);
+
+      toast({
+        title: 'Transcript PDF Generated',
+        description: 'Transcription has been saved as PDF',
+      });
+
+      checkExistingData();
+    } catch (error: any) {
+      console.error('Error generating transcript PDF:', error);
+      toast({
+        title: 'PDF Generation Failed',
+        description: error.message || 'Could not generate transcript PDF',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsGeneratingTranscriptPDF(false);
     }
   };
 
@@ -287,10 +351,45 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
               <Badge variant="success">Complete</Badge>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <ScrollArea className="h-[200px] w-full rounded-md border p-4">
               <p className="text-sm whitespace-pre-wrap">{transcription}</p>
             </ScrollArea>
+            
+            {hasTranscriptPDF ? (
+              <div className="flex items-center justify-between p-4 rounded-lg bg-success/10 border border-success/20">
+                <div className="flex items-center gap-3">
+                  <CheckCircle className="h-5 w-5 text-success" />
+                  <span className="font-medium">Transcript PDF Ready</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(transcriptPdfUrl, '_blank')}
+                >
+                  Download PDF
+                </Button>
+              </div>
+            ) : (
+              <Button
+                onClick={generateTranscriptPDF}
+                disabled={isGeneratingTranscriptPDF}
+                variant="secondary"
+                className="w-full"
+              >
+                {isGeneratingTranscriptPDF ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Generating PDF...
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Generate Transcript PDF
+                  </>
+                )}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
