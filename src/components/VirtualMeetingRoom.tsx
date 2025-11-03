@@ -1315,13 +1315,42 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
 
       toast({
         title: "Meeting Ended",
-        description: "All participants have been notified",
+        description: "Generating minutes for virtual room...",
       });
+
+      // Auto-generate minutes for virtual room
+      console.log('VirtualRoom: Auto-generating minutes...');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const { data, error } = await supabase.functions.invoke('generate-virtual-room-minutes', {
+            body: { meetingId },
+            headers: {
+              Authorization: `Bearer ${session.access_token}`
+            }
+          });
+
+          if (error) {
+            console.error('VirtualRoom: Minutes generation error:', error);
+          } else if (data?.error) {
+            console.error('VirtualRoom: Minutes generation failed:', data.error);
+          } else {
+            console.log('VirtualRoom: Minutes generated successfully');
+            toast({
+              title: "✨ Minutes Ready",
+              description: "Virtual room minutes have been generated",
+            });
+          }
+        }
+      } catch (minutesError) {
+        console.error('VirtualRoom: Minutes generation exception:', minutesError);
+        // Don't block room closure on minutes error
+      }
 
       // Close the room
       setTimeout(() => {
         onCloseRoom?.();
-      }, 2000);
+      }, 2500);
     } catch (e: any) {
       console.error('VirtualRoom: End meeting failed:', e);
       toast({
