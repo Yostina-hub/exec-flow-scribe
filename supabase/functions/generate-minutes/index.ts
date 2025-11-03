@@ -286,16 +286,26 @@ Never romanize or transliterate non-Latin scripts.`;
 // Generate minutes using selected AI provider with enhanced natural language instructions
     const prompt = `🎯 YOUR MISSION: Create comprehensive, natural-sounding meeting minutes that capture EVERY detail and nuance from the discussion.
 
+⚠️ CRITICAL PRIORITY ORDER - CAPTURE IN THIS SEQUENCE:
+1. **MEETING OPENER'S INTRODUCTION** - The very first statements by who opened/introduced the meeting, their welcome remarks, and the purpose they stated
+2. **MAIN AGENDA TOPICS** - Each major topic discussed in the order it was presented
+3. **DISCUSSION DETAILS** - ALL points raised, questions asked, answers given, viewpoints expressed
+4. **DECISIONS & OUTCOMES** - Every decision made and conclusion reached
+5. **ACTION ITEMS** - All tasks assigned with complete context
+6. **CLOSING REMARKS** - Final statements and next steps
+
 ⚠️ COMPLETENESS & ACCURACY RULES:
-1. Capture ALL information from the transcript - don't skip any details, however minor
-2. Include ALL speaker contributions, questions, answers, and clarifications
-3. Preserve the natural flow and sequence of the conversation
-4. Include context, reasoning, and background mentioned by speakers
-5. Capture emotional tone, emphasis, and speaker intentions when relevant
-6. Record ALL numbers, dates, names, and specific details mentioned
-7. Include tangential discussions if they add context
-8. Write in a natural, conversational but professional tone
-9. NEVER add information not in the transcript - only expand on what's there
+1. **START with meeting opener** - Capture who opened the meeting and their initial remarks word-for-word importance
+2. Capture ALL information from the transcript - don't skip any details, however minor
+3. Include ALL speaker contributions, questions, answers, and clarifications
+4. Preserve the natural flow and sequence of the conversation
+5. Include context, reasoning, and background mentioned by speakers
+6. Capture emotional tone, emphasis, and speaker intentions when relevant
+7. Record ALL numbers, dates, names, and specific details mentioned
+8. Include tangential discussions if they add context
+9. Write in a natural, conversational but professional tone
+10. NEVER add information not in the transcript - only expand on what's there
+11. **Give special attention to opening and main discussion points** - these should be most comprehensive
 
 ✍️ WRITING STYLE REQUIREMENTS:
 • Write as a skilled human note-taker would - natural, fluid, complete
@@ -306,6 +316,7 @@ Never romanize or transliterate non-Latin scripts.`;
 • Make it engaging and readable while maintaining professionalism
 • Vary paragraph lengths for natural rhythm
 • Use specific quotes when they capture important points
+• **Dedicate substantial detail to opening statements and core discussion topics**
 
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
@@ -332,13 +343,21 @@ ${pollsList || 'No polls conducted'}
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
 📊 REQUIRED SECTIONS (be thorough and complete):
-1. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (3-5 detailed sentences)
-2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - DETAILED coverage of ALL topics discussed, including context, different viewpoints, questions raised, and explanations given
-3. የተወሰኑ ውሳኔዎች (Decisions Made) - ALL decisions with full context about how they were reached
-4. 🗳️ የምርጫ ውጤቶች (Poll Results) - Complete poll information with context
-5. የተግባር እቅዶች (Action Items) - ALL actions mentioned with full details
-6. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
-7. ተጨማሪ ሐሳቦች (Additional Notes) - Other relevant points, context, or observations
+1. **የስብሰባ መግቢያ** (Meeting Opening) - WHO opened the meeting, their introduction, welcome remarks, and stated purpose (MUST be comprehensive - this sets the stage)
+2. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (4-6 detailed sentences minimum)
+3. **ዋና ዋና የውይይት ነጥቦች** (Key Discussion Points) - DETAILED coverage of ALL topics discussed in order presented, including:
+   • Who introduced each topic and why
+   • Context provided by speakers
+   • Different viewpoints and perspectives expressed
+   • Questions raised and answers given
+   • Explanations and reasoning shared
+   • Specific examples or data mentioned
+   (This should be the LONGEST, MOST DETAILED section)
+4. የተወሰኑ ውሳኔዎች (Decisions Made) - ALL decisions with full context about how they were reached
+5. 🗳️ የምርጫ ውጤቶች (Poll Results) - Complete poll information with context
+6. የተግባር እቅዶች (Action Items) - ALL actions mentioned with full details
+7. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
+8. ተጨማሪ ሐሳቦች (Additional Notes) - Other relevant points, context, or observations
 
 ${detectedLang === 'am' ? '✍️ CRITICAL AMHARIC REQUIREMENTS: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas within sentences. Use ፦ before introducing lists or elaborations. Use ፤ for separating related clauses. Write in natural, flowing formal Amharic using proper SOV structure. Make it read like a skilled Amharic writer documented the meeting - natural, complete, and professional.' : ''}
 
@@ -408,7 +427,7 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
                 },
                 { role: "user", content: prompt },
               ],
-              max_completion_tokens: 2500,
+              max_completion_tokens: 5000, // Increased for comprehensive minutes with all details
             }),
           }
         );
@@ -488,7 +507,7 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
               ],
               generationConfig: { 
                 temperature: 0.8, // Slightly higher for more natural, varied language
-                maxOutputTokens: 3500, // Increased for more comprehensive coverage
+                maxOutputTokens: 6000, // Increased significantly for comprehensive, detailed coverage
                 topP: 0.95,
                 topK: 40
               },
