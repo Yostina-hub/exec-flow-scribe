@@ -202,6 +202,43 @@ const MeetingDetail = () => {
     resumeRecording 
   } = useAudioRecorder(meetingId);
 
+  // Real-time updates for meeting data
+  useEffect(() => {
+    if (!id) return;
+    
+    const channel = supabase
+      .channel(`meeting-${id}-updates`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'meetings',
+          filter: `id=eq.${id}`
+        },
+        () => {
+          fetchMeetingDetails();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'meeting_attendees',
+          filter: `meeting_id=eq.${id}`
+        },
+        () => {
+          fetchMeetingDetails();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [id]);
+
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
