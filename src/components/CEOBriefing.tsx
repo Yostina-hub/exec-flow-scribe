@@ -197,11 +197,28 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
 
       if (error) {
         console.warn('TTS not available:', error);
+        // Try browser Speech Synthesis API as fallback
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          try {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.onend = () => {
+              setIsNarrating(false);
+              narratingRef.current = false;
+              if (currentSlide < slides.length - 1) {
+                setTimeout(() => setCurrentSlide(prev => prev + 1), 1000);
+              }
+            };
+            window.speechSynthesis.speak(utter);
+            setVoiceError('Using device voice for narration.');
+            return; // handled via browser TTS
+          } catch (e) {
+            console.warn('Web Speech fallback failed:', e);
+          }
+        }
         setVoiceError('Voice narration unavailable. Continuing without audio.');
         setIsNarrating(false);
         narratingRef.current = false;
         setVoiceEnabled(false);
-        // Don't throw - just continue without voice
         return;
       }
 

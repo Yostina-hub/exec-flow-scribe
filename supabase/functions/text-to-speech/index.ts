@@ -58,7 +58,13 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('ElevenLabs API error:', response.status, errorText);
-      throw new Error(`ElevenLabs API error: ${errorText}`);
+      const isQuota = errorText.includes('quota_exceeded');
+      const isInvalid = errorText.includes('invalid_api_key');
+      const status = isQuota ? 402 : isInvalid ? 401 : response.status;
+      return new Response(
+        JSON.stringify({ error: 'ElevenLabs API error', details: errorText }),
+        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const arrayBuffer = await response.arrayBuffer();
