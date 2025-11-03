@@ -13,7 +13,7 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-    try {
+  try {
     const { audioBase64, meetingId, language, contentType } = await req.json();
     
     console.log('Transcription request received:', {
@@ -26,6 +26,7 @@ serve(async (req) => {
     if (!audioBase64 || !meetingId) {
       throw new Error("Audio data and meeting ID are required");
     }
+
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     function stringToUUID(input: string) {
       const s = String(input);
@@ -127,166 +128,164 @@ serve(async (req) => {
     let usedProvider = "";
 
     // Determine provider order based on preference
+    // Always prioritize Google Cloud (Gemini) unless user explicitly selects OpenAI
     const providers: Array<'google' | 'openai'> = [];
     
     if (preferredProvider === 'openai' || preferredProvider === 'openai_realtime') {
       // User explicitly wants OpenAI
       if (openaiApiKey) providers.push('openai');
-      if (googleCloudApiKey) providers.push('google');
+      if (googleCloudApiKey) providers.push('google'); // Fallback to Gemini
     } else {
-      // Default: Try Google Cloud first (better for Amharic), then OpenAI
+      // Default: Use Google Cloud (Gemini) as PRIMARY as requested
       if (googleCloudApiKey) providers.push('google');
       if (openaiApiKey) providers.push('openai');
     }
     
-    console.log('Provider order:', providers);
+    console.log('🎯 Provider order (Gemini PRIMARY):', providers);
 
     // Try providers in order
     for (const provider of providers) {
       if (transcriptText) break; // Skip if we already got a transcription
       
       if (provider === 'google' && googleCloudApiKey) {
-    if (googleCloudApiKey) {
-      console.log('Using Google Cloud Speech-to-Text API');
-      
-      try {
-        // Convert audio to base64 for Google Cloud API
-        const audioContent = btoa(String.fromCharCode(...binaryAudio));
-        
-        // Determine language code for Google Cloud
-        let languageCode = "am-ET"; // Default to Amharic (Ethiopia)
-        if (language === 'ar') {
-          languageCode = "ar-SA"; // Arabic (Saudi Arabia)
-        } else if (language && language !== 'auto' && language !== 'am') {
-          languageCode = language;
-        }
-        
-        console.log('Google Cloud language code:', languageCode);
-        
-        // Build Google Cloud request body dynamically
-        const ct = (contentType && typeof contentType === 'string') ? contentType.toLowerCase() : 'audio/webm';
-        const determineGcpEncoding = (ct: string) => {
-          if (ct.includes('webm')) return 'WEBM_OPUS';
-          if (ct.includes('ogg')) return 'OGG_OPUS';
-          if (ct.includes('wav')) return 'LINEAR16';
-          if (ct.includes('mp3')) return 'MP3';
-          return 'ENCODING_UNSPECIFIED';
-        };
-        const encoding = determineGcpEncoding(ct);
-
-        const gcpConfig: Record<string, any> = {
-          languageCode,
-          enableAutomaticPunctuation: true,
-          encoding,
-        };
-        if (encoding === 'LINEAR16') {
-          gcpConfig.sampleRateHertz = 24000;
-        }
-        if (language === 'auto') {
-          gcpConfig.alternativeLanguageCodes = ['am-ET', 'ar-SA', 'en-US'];
-        }
-        if (languageCode === 'am-ET') {
-          gcpConfig.speechContexts = [
-            { phrases: ['እንዴት', 'ነው', 'እሺ', 'ስለዚህ', 'እባክህ', 'በጣም'], boost: 15.0 },
-          ];
-        }
-
-        const requestBody = {
-          config: gcpConfig,
-          audio: { content: audioContent },
-        };
-        
-        const response = await fetch(
-          `https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(requestBody),
-          }
-        );
-
-        if (!response.ok) {
-          const errText = await response.text();
-          console.error("Google Cloud API error:", response.status, errText);
+        try {
+          console.log('🎙️ Trying Google Cloud Speech-to-Text (Gemini-based) - PRIMARY');
           
-          // Handle rate limits from Google Cloud
-          if (response.status === 429) {
-            console.warn("Google Cloud rate limited, will try OpenAI fallback");
-            // Don't throw, let it fall through to OpenAI
-          } else if (response.status === 403 && errText.includes('quota')) {
-            console.warn("Google Cloud quota exceeded, will try OpenAI fallback");
+          // Convert audio to base64 for Google Cloud API
+          const audioContent = btoa(String.fromCharCode(...binaryAudio));
+          
+          // Determine language code for Google Cloud
+          let languageCode = "am-ET"; // Default to Amharic (Ethiopia)
+          if (language === 'ar') {
+            languageCode = "ar-SA"; // Arabic (Saudi Arabia)
+          } else if (language && language !== 'auto' && language !== 'am') {
+            languageCode = language;
+          }
+          
+          console.log('Google Cloud language code:', languageCode);
+          
+          // Build Google Cloud request body dynamically
+          const ct = (contentType && typeof contentType === 'string') ? contentType.toLowerCase() : 'audio/webm';
+          const determineGcpEncoding = (ct: string) => {
+            if (ct.includes('webm')) return 'WEBM_OPUS';
+            if (ct.includes('ogg')) return 'OGG_OPUS';
+            if (ct.includes('wav')) return 'LINEAR16';
+            if (ct.includes('mp3')) return 'MP3';
+            return 'ENCODING_UNSPECIFIED';
+          };
+          const encoding = determineGcpEncoding(ct);
+
+          const gcpConfig: Record<string, any> = {
+            languageCode,
+            enableAutomaticPunctuation: true,
+            encoding,
+          };
+          if (encoding === 'LINEAR16') {
+            gcpConfig.sampleRateHertz = 24000;
+          }
+          if (language === 'auto') {
+            gcpConfig.alternativeLanguageCodes = ['am-ET', 'ar-SA', 'en-US'];
+          }
+          if (languageCode === 'am-ET') {
+            gcpConfig.speechContexts = [
+              { phrases: ['እንዴት', 'ነው', 'እሺ', 'ስለዚህ', 'እባክህ', 'በጣም'], boost: 15.0 },
+            ];
+          }
+
+          const requestBody = {
+            config: gcpConfig,
+            audio: { content: audioContent },
+          };
+          
+          const response = await fetch(
+            `https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestBody),
+            }
+          );
+
+          if (!response.ok) {
+            const errText = await response.text();
+            console.error("Google Cloud API error:", response.status, errText);
+            
+            // Handle rate limits from Google Cloud
+            if (response.status === 429) {
+              console.warn("Google Cloud rate limited, trying fallback");
+            } else if (response.status === 403 && errText.includes('quota')) {
+              console.warn("Google Cloud quota exceeded, trying fallback");
+            }
+            // Don't throw, continue to next provider
           } else {
-            throw new Error(`Google Cloud API failed: ${response.status}`);
-          }
-        }
+            const result = await response.json();
+            console.log('Google Cloud API response:', JSON.stringify(result).substring(0, 200));
+            
+            if (result.results && result.results.length > 0) {
+              transcriptText = result.results
+                .map((r: any) => r.alternatives[0]?.transcript || "")
+                .join(" ")
+                .trim();
+              detectedLanguage = languageCode.split('-')[0];
+              
+              usedProvider = 'google';
+              console.log('✅ Google Cloud (Gemini) transcription successful:', {
+                textLength: transcriptText.length,
+                detectedLanguage,
+                preview: transcriptText.substring(0, 100)
+              });
 
-        const result = await response.json();
-        console.log('Google Cloud API response:', JSON.stringify(result).substring(0, 200));
-        
-        if (result.results && result.results.length > 0) {
-          transcriptText = result.results
-            .map((r: any) => r.alternatives[0]?.transcript || "")
-            .join(" ")
-            .trim();
-          detectedLanguage = languageCode.split('-')[0]; // Extract language from code
-          
-          usedProvider = 'google';
-          console.log('✅ Google Cloud transcription successful:', {
-            textLength: transcriptText.length,
-            detectedLanguage,
-            preview: transcriptText.substring(0, 100)
-          });
+              // Ensure Amharic output uses Ge'ez script
+              const hasGeEz = /[\u1200-\u137F]/.test(transcriptText);
+              const hasArabic = /[\u0600-\u06FF]/.test(transcriptText);
+              const hasLatin = /[A-Za-z]/.test(transcriptText);
+              console.log('GCP script detection:', { hasGeEz, hasArabic, hasLatin });
 
-          // Ensure Amharic output uses Ge'ez script; if not, retry with stronger bias
-          const hasGeEz = /[\u1200-\u137F]/.test(transcriptText);
-          const hasArabic = /[\u0600-\u06FF]/.test(transcriptText);
-          const hasLatin = /[A-Za-z]/.test(transcriptText);
-          console.log('GCP script detection:', { hasGeEz, hasArabic, hasLatin });
+              if (languageCode === 'am-ET' && !hasGeEz) {
+                console.log('Retrying GCP with stronger Amharic bias');
+                const forcedBody: any = {
+                  config: {
+                    languageCode: 'am-ET',
+                    encoding: gcpConfig.encoding,
+                    enableAutomaticPunctuation: true,
+                    speechContexts: [
+                      { phrases: ['እንዴት', 'ነው', 'እሺ', 'እባክህ', 'ስለዚህ', 'ዛሬ', 'ሰላም'], boost: 20.0 },
+                    ],
+                  },
+                  audio: { content: audioContent },
+                };
+                if (gcpConfig.encoding === 'LINEAR16') forcedBody.config.sampleRateHertz = 24000;
 
-          if (languageCode === 'am-ET' && !hasGeEz) {
-            console.log('Retrying GCP with stronger Amharic bias and no alternatives');
-            const forcedBody: any = {
-              config: {
-                languageCode: 'am-ET',
-                encoding: gcpConfig.encoding,
-                enableAutomaticPunctuation: true,
-                speechContexts: [
-                  { phrases: ['እንዴት', 'ነው', 'እሺ', 'እባክህ', 'ስለዚህ', 'ዛሬ', 'ሰላም'], boost: 20.0 },
-                ],
-              },
-              audio: { content: audioContent },
-            };
-            if (gcpConfig.encoding === 'LINEAR16') forcedBody.config.sampleRateHertz = 24000;
+                const retryResp = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(forcedBody),
+                });
 
-            const retryResp = await fetch(`https://speech.googleapis.com/v1/speech:recognize?key=${googleCloudApiKey}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(forcedBody),
-            });
-
-            if (retryResp.ok) {
-              const retryData = await retryResp.json();
-              const retryText = (retryData.results || []).map((r: any) => r.alternatives?.[0]?.transcript || '').join(' ').trim();
-              const retryHasGeEz = /[\u1200-\u137F]/.test(retryText);
-              console.log('GCP retry result:', { retryHasGeEz, retryPreview: retryText.substring(0, 100) });
-              if (retryHasGeEz && retryText) {
-                transcriptText = retryText;
-                detectedLanguage = 'am';
+                if (retryResp.ok) {
+                  const retryData = await retryResp.json();
+                  const retryText = (retryData.results || []).map((r: any) => r.alternatives?.[0]?.transcript || '').join(' ').trim();
+                  const retryHasGeEz = /[\u1200-\u137F]/.test(retryText);
+                  console.log('GCP retry result:', { retryHasGeEz, retryPreview: retryText.substring(0, 100) });
+                  if (retryHasGeEz && retryText) {
+                    transcriptText = retryText;
+                    detectedLanguage = 'am';
+                  }
+                } else {
+                  console.warn('GCP retry failed:', await retryResp.text());
+                }
               }
             } else {
-              console.warn('GCP retry failed:', await retryResp.text());
+              console.log('No transcription results from Google Cloud');
             }
           }
-        } else {
-          console.log('No transcription results from Google Cloud');
+        } catch (gcError) {
+          console.error("❌ Google Cloud transcription failed:", gcError);
+          // Continue to next provider
         }
-      } catch (gcError) {
-        console.error("❌ Google Cloud transcription failed:", gcError);
-        // Continue to next provider
-      }
-    } else if (provider === 'openai' && openaiApiKey) {
+      } else if (provider === 'openai' && openaiApiKey) {
         try {
-          console.log('🎙️ Trying OpenAI Whisper API');
+          console.log('🎙️ Trying OpenAI Whisper API (Fallback)');
           
           const formData = new FormData();
           const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
@@ -328,11 +327,10 @@ serve(async (req) => {
             const statusCode = response.status;
             console.error(`❌ OpenAI transcription error (${statusCode}):`, errText);
             
-            // Handle rate limiting - continue to next provider if available
+            // Handle rate limiting
             if (statusCode === 429) {
               console.warn("⚠️ OpenAI rate limited");
               if (providers.indexOf('openai') === providers.length - 1) {
-                // This was the last provider
                 return new Response(JSON.stringify({ 
                   error: "⏳ Rate Limit Exceeded\n\nAll transcription providers are temporarily rate limited.\n\nPlease wait 2-3 minutes and try again.",
                   retryAfter: 120,
@@ -346,7 +344,6 @@ serve(async (req) => {
                   },
                 });
               }
-              // Continue to next provider
               continue;
             }
             
@@ -379,9 +376,10 @@ serve(async (req) => {
             textLength: transcriptText.length,
             firstChars: transcriptText.substring(0, 50)
           });
-      } catch (openaiError) {
-        console.error("❌ OpenAI transcription failed:", openaiError);
-        // Continue to next provider
+        } catch (openaiError) {
+          console.error("❌ OpenAI transcription failed:", openaiError);
+          // Continue to next provider
+        }
       }
     }
     
@@ -453,16 +451,16 @@ serve(async (req) => {
       );
     }
 
-      console.log(`✅ Transcription saved successfully using ${usedProvider} (${detectedLanguage})`);
-      console.log('Final transcription preview:', transcriptText.substring(0, 100));
-      
-      // Update meeting workflow status
-      await supabase.from("meetings").update({ 
-        transcription_status: 'completed',
-        workflow_stage: 'transcribing'
-      }).eq("id", normalizedMeetingId);
+    console.log(`✅ Transcription saved successfully using ${usedProvider} (${detectedLanguage})`);
+    console.log('Final transcription preview:', transcriptText.substring(0, 100));
     
-      return new Response(
+    // Update meeting workflow status
+    await supabase.from("meetings").update({ 
+      transcription_status: 'completed',
+      workflow_stage: 'transcribing'
+    }).eq("id", normalizedMeetingId);
+  
+    return new Response(
       JSON.stringify({
         success: true,
         transcription: transcriptText.trim(),
