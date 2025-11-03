@@ -1142,48 +1142,33 @@ export type Database = {
         Row: {
           auto_backup_enabled: boolean | null
           auto_save_minutes_as_docs: boolean | null
-          auto_sync_notebooks: boolean | null
           auto_upload_recordings: boolean | null
           backup_folder_id: string | null
           created_at: string
           default_folder_id: string | null
-          google_drive_enabled: boolean | null
           id: string
-          teledrive_access_token: string | null
-          teledrive_api_host: string | null
-          teledrive_enabled: boolean | null
           updated_at: string
           user_id: string
         }
         Insert: {
           auto_backup_enabled?: boolean | null
           auto_save_minutes_as_docs?: boolean | null
-          auto_sync_notebooks?: boolean | null
           auto_upload_recordings?: boolean | null
           backup_folder_id?: string | null
           created_at?: string
           default_folder_id?: string | null
-          google_drive_enabled?: boolean | null
           id?: string
-          teledrive_access_token?: string | null
-          teledrive_api_host?: string | null
-          teledrive_enabled?: boolean | null
           updated_at?: string
           user_id: string
         }
         Update: {
           auto_backup_enabled?: boolean | null
           auto_save_minutes_as_docs?: boolean | null
-          auto_sync_notebooks?: boolean | null
           auto_upload_recordings?: boolean | null
           backup_folder_id?: string | null
           created_at?: string
           default_folder_id?: string | null
-          google_drive_enabled?: boolean | null
           id?: string
-          teledrive_access_token?: string | null
-          teledrive_api_host?: string | null
-          teledrive_enabled?: boolean | null
           updated_at?: string
           user_id?: string
         }
@@ -1957,7 +1942,6 @@ export type Database = {
           meeting_id: string
           metadata: Json | null
           mime_type: string | null
-          storage_provider: string | null
           updated_at: string
           uploaded_by: string
         }
@@ -1974,7 +1958,6 @@ export type Database = {
           meeting_id: string
           metadata?: Json | null
           mime_type?: string | null
-          storage_provider?: string | null
           updated_at?: string
           uploaded_by: string
         }
@@ -1991,7 +1974,6 @@ export type Database = {
           meeting_id?: string
           metadata?: Json | null
           mime_type?: string | null
-          storage_provider?: string | null
           updated_at?: string
           uploaded_by?: string
         }

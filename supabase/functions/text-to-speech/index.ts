@@ -12,59 +12,34 @@ serve(async (req) => {
   }
 
   try {
-    const { text, voice = 'onyx' } = await req.json();
+    const { text, voice = 'alloy' } = await req.json();
 
     if (!text) {
       throw new Error('Text is required');
     }
 
-    const ELEVENLABS_API_KEY = Deno.env.get('ELEVENLABS_API_KEY');
-    if (!ELEVENLABS_API_KEY) {
-      throw new Error('ElevenLabs API key not configured');
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    if (!OPENAI_API_KEY) {
+      throw new Error('OpenAI API key not configured');
     }
 
-    // Map OpenAI voices to ElevenLabs voice IDs
-    const voiceMap: Record<string, string> = {
-      'alloy': '9BWtsMINqrJLrRacOk9x', // Aria
-      'echo': 'pqHfZKP75CvOlQylNhV4', // Bill
-      'fable': 'TX3LPaxmHKxFdv7VOQHJ', // Liam
-      'onyx': 'N2lVS1w4EtoT3dr4eOWO', // Callum (deep voice)
-      'nova': 'EXAVITQu4vr4xnSDxMaL', // Sarah
-      'shimmer': 'pFZP5JQG7iQjIQuC4Bku', // Lily
-    };
-
-    const voiceId = voiceMap[voice] || 'N2lVS1w4EtoT3dr4eOWO'; // Default to Callum (professional voice)
-
-    console.log(`Generating speech with ElevenLabs - Voice: ${voiceId}, Text length: ${text.length}`);
-
-    const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    const response = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
-        'xi-api-key': ELEVENLABS_API_KEY,
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
-        'accept': 'audio/mpeg',
       },
       body: JSON.stringify({
-        text: text,
-        model_id: 'eleven_turbo_v2_5', // Fast, high-quality model
-        voice_settings: {
-          stability: 0.5,
-          similarity_boost: 0.75,
-        },
-        output_format: 'mp3_44100_128'
+        model: 'tts-1-hd',
+        input: text,
+        voice: voice,
+        response_format: 'mp3',
       }),
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error('ElevenLabs API error:', response.status, errorText);
-      const isQuota = errorText.includes('quota_exceeded');
-      const isInvalid = errorText.includes('invalid_api_key');
-      const status = isQuota ? 402 : isInvalid ? 401 : response.status;
-      return new Response(
-        JSON.stringify({ error: 'ElevenLabs API error', details: errorText }),
-        { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      const error = await response.json();
+      throw new Error(error.error?.message || 'Failed to generate speech');
     }
 
     const arrayBuffer = await response.arrayBuffer();

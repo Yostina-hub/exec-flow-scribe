@@ -41,133 +41,16 @@ export default function MinutesEditor() {
   const [latestMinutesVersionId, setLatestMinutesVersionId] = useState<string | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [hasDraft, setHasDraft] = useState(false);
-
-  // Network status monitoring
-  useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      toast({
-        title: 'Back Online',
-        description: 'Connection restored. Auto-save will resume.',
-      });
-    };
-    
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast({
-        title: 'Offline Mode',
-        description: 'Your changes are being saved locally as drafts.',
-        variant: 'destructive',
-      });
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
 
   useEffect(() => {
     if (meetingId) {
       fetchMeetingData();
-      checkForDraft();
     }
   }, [meetingId]);
 
-  const checkForDraft = () => {
-    if (!meetingId) return;
-    
-    const draftKey = `minutes-draft-${meetingId}`;
-    const draft = localStorage.getItem(draftKey);
-    
-    if (draft) {
-      try {
-        const draftData = JSON.parse(draft);
-        const draftAge = Date.now() - draftData.timestamp;
-        
-        // Only offer drafts less than 24 hours old
-        if (draftAge < 24 * 60 * 60 * 1000) {
-          setHasDraft(true);
-        } else {
-          localStorage.removeItem(draftKey);
-        }
-      } catch (error) {
-        console.error('Error reading draft:', error);
-        localStorage.removeItem(draftKey);
-      }
-    }
-  };
-
-  const restoreDraft = () => {
-    if (!meetingId) return;
-    
-    const draftKey = `minutes-draft-${meetingId}`;
-    const draft = localStorage.getItem(draftKey);
-    
-    if (draft) {
-      try {
-        const draftData = JSON.parse(draft);
-        setMinutes(draftData.content);
-        setHasDraft(false);
-        toast({
-          title: 'Draft Restored',
-          description: 'Your unsaved changes have been recovered.',
-        });
-      } catch (error) {
-        console.error('Error restoring draft:', error);
-      }
-    }
-  };
-
-  const discardDraft = () => {
-    if (!meetingId) return;
-    
-    const draftKey = `minutes-draft-${meetingId}`;
-    localStorage.removeItem(draftKey);
-    setHasDraft(false);
-    toast({
-      title: 'Draft Discarded',
-      description: 'Local draft has been removed.',
-    });
-  };
-
-  const saveDraftToLocalStorage = useCallback((content: string) => {
-    if (!meetingId) return;
-    
-    const draftKey = `minutes-draft-${meetingId}`;
-    const draftData = {
-      content,
-      timestamp: Date.now(),
-    };
-    
-    try {
-      localStorage.setItem(draftKey, JSON.stringify(draftData));
-    } catch (error) {
-      console.error('Error saving draft to localStorage:', error);
-    }
-  }, [meetingId]);
-
-  const clearDraft = useCallback(() => {
-    if (!meetingId) return;
-    const draftKey = `minutes-draft-${meetingId}`;
-    localStorage.removeItem(draftKey);
-  }, [meetingId]);
-
-  // Immediate local draft save on every change
+  // Auto-save with debouncing
   useEffect(() => {
-    if (minutes && meetingId) {
-      saveDraftToLocalStorage(minutes);
-    }
-  }, [minutes, meetingId, saveDraftToLocalStorage]);
-
-  // Auto-save to backend with debouncing
-  useEffect(() => {
-    if (!minutes || !meetingId || !isOnline) return;
+    if (!minutes || !meetingId) return;
     
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -182,7 +65,7 @@ export default function MinutesEditor() {
         clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [minutes, meetingId, isOnline]);
+  }, [minutes, meetingId]);
 
   const fetchMeetingData = async () => {
     try {
@@ -316,11 +199,6 @@ export default function MinutesEditor() {
   };
 
   const handleSaveMinutes = async (isAutoSave = false) => {
-    if (!isOnline && isAutoSave) {
-      // Don't attempt auto-save when offline
-      return;
-    }
-
     try {
       setIsSaving(true);
       
@@ -351,9 +229,6 @@ export default function MinutesEditor() {
 
       setLastSaved(new Date());
       setLatestMinutesVersionId(newVersion.id);
-      
-      // Clear draft after successful save
-      clearDraft();
 
       if (!isAutoSave) {
         toast({
@@ -368,7 +243,7 @@ export default function MinutesEditor() {
       if (!isAutoSave) {
         toast({
           title: 'Error',
-          description: 'Failed to save minutes. Your work is saved locally.',
+          description: 'Failed to save minutes',
           variant: 'destructive',
         });
       }
@@ -544,32 +419,6 @@ export default function MinutesEditor() {
   return (
     <Layout>
       <div className="h-full flex flex-col">
-        {/* Draft Recovery Banner */}
-        {hasDraft && (
-          <div className="bg-yellow-500/10 border-b border-yellow-500/20 px-6 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-yellow-500" />
-              <span className="text-sm font-medium">Unsaved draft found from previous session</span>
-            </div>
-            <div className="flex gap-2">
-              <Button size="sm" variant="outline" onClick={discardDraft}>
-                Discard
-              </Button>
-              <Button size="sm" onClick={restoreDraft}>
-                Restore Draft
-              </Button>
-            </div>
-          </div>
-        )}
-
-        {/* Offline Mode Banner */}
-        {!isOnline && (
-          <div className="bg-destructive/10 border-b border-destructive/20 px-6 py-3 flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-destructive" />
-            <span className="text-sm font-medium">Offline Mode - Changes saved locally only</span>
-          </div>
-        )}
-
         {/* Enhanced Header */}
         <div className="flex items-center justify-between p-6 border-b bg-gradient-to-r from-background via-background to-primary/5 backdrop-blur supports-[backdrop-filter]:bg-background/95">
           <div className="flex items-center gap-4">
@@ -599,21 +448,13 @@ export default function MinutesEditor() {
                 <Badge variant="outline" className="text-xs">
                   {wordCount} words
                 </Badge>
-                {lastSaved && isOnline && (
+                {lastSaved && (
                   <>
                     <span className="text-xs text-muted-foreground">•</span>
-                    <div className="flex items-center gap-1 text-xs text-green-600">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Clock className="w-3 h-3" />
                       Auto-saved {lastSaved.toLocaleTimeString()}
                     </div>
-                  </>
-                )}
-                {!isOnline && (
-                  <>
-                    <span className="text-xs text-muted-foreground">•</span>
-                    <Badge variant="destructive" className="text-xs">
-                      Draft Only
-                    </Badge>
                   </>
                 )}
               </div>

@@ -63,12 +63,6 @@ export const useAudioRecorder = (meetingId: string) => {
   const pcmChunksRef = useRef<Float32Array[]>([]);
   const normalizedMeetingId = normalizeMeetingId(meetingId);
 
-  // Throttle server-side transcription to avoid rate limits
-  const lastServerTranscribeRef = useRef(0);
-  const transcribeCooldownMs = 20000; // minimum 20s between server transcriptions
-  const transcribeInFlightRef = useRef(false);
-  const rateLimitedUntilRef = useRef(0);
-
   const startRecording = useCallback(async () => {
     try {
       // Update meeting status to "in_progress" when recording starts
@@ -77,7 +71,8 @@ export const useAudioRecorder = (meetingId: string) => {
         await supabase
           .from('meetings')
           .update({ 
-            status: 'in_progress'
+            status: 'in_progress',
+            actual_start_time: new Date().toISOString()
           })
           .eq('id', meetingId);
       }
@@ -229,23 +224,7 @@ export const useAudioRecorder = (meetingId: string) => {
                 if (saveErr) throw saveErr;
               }
             } else if (provider === 'openai') {
-              // Use server-side transcription (OpenAI Whisper) - throttled to avoid 429s
-              const now = Date.now();
-              if (
-                transcribeInFlightRef.current ||
-                now - lastServerTranscribeRef.current < transcribeCooldownMs ||
-                now < rateLimitedUntilRef.current
-              ) {
-                console.log('Skipping server transcription due to cooldown/in-flight/rate-limit', {
-                  inFlight: transcribeInFlightRef.current,
-                  sinceLastMs: now - lastServerTranscribeRef.current,
-                  waitMs: Math.max(0, rateLimitedUntilRef.current - now),
-                });
-                return;
-              }
-              lastServerTranscribeRef.current = now;
-              transcribeInFlightRef.current = true;
-
+              // Use server-side transcription (OpenAI Whisper)
               const reader = new FileReader();
               reader.onloadend = async () => {
                 const base64Audio = (reader.result as string).split(',')[1];
@@ -277,9 +256,8 @@ export const useAudioRecorder = (meetingId: string) => {
                     });
 
                     if (error) {
-                      const msg = (error as any)?.message || String(error);
-                      // Rate limit handling
-                      if (msg.includes('rate limit') || msg.includes('429')) {
+                      // Check if it's a rate limit error
+                      if (error.message?.includes('rate limit') || error.message?.includes('429')) {
                         retryCount++;
                         if (retryCount <= maxRetries) {
                           const backoffDelay = Math.min(1000 * Math.pow(2, retryCount), 10000); // Max 10s
@@ -287,25 +265,19 @@ export const useAudioRecorder = (meetingId: string) => {
                           await new Promise(resolve => setTimeout(resolve, backoffDelay));
                           continue;
                         }
-                        // Global cooldown to prevent further chunk submissions
-                        rateLimitedUntilRef.current = Date.now() + 10000;
-                        toast({
-                          title: 'Transcription rate-limited',
-                          description: 'Please wait a few seconds and try again.',
-                        });
                       }
                       throw error;
                     }
 
                     if (data?.success) {
-                      console.log('Transcription result:', String(data.transcription || '').substring(0, 50));
+                      console.log('Transcription result:', data.transcription.substring(0, 50));
                       transcriptionSuccess = true;
                     }
                     break;
                   } catch (err) {
                     console.error('Transcription error:', err);
                     if (retryCount >= maxRetries) {
-                      break;
+                      throw err;
                     }
                   }
                 }
@@ -314,9 +286,6 @@ export const useAudioRecorder = (meetingId: string) => {
                   console.warn('Transcription failed after retries, continuing recording');
                 }
               };
-              reader.addEventListener('loadend', () => {
-                transcribeInFlightRef.current = false;
-              });
               reader.readAsDataURL(event.data);
             }
           } catch (err: any) {
@@ -397,7 +366,8 @@ export const useAudioRecorder = (meetingId: string) => {
         await supabase
           .from('meetings')
           .update({ 
-            status: 'completed'
+            status: 'completed',
+            actual_end_time: new Date().toISOString()
           })
           .eq('id', meetingId);
       }

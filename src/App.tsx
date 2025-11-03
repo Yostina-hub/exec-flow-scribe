@@ -70,13 +70,13 @@ const App = () => (
               <Route path="/notebooks" element={<ProtectedRoute><NotebooksLibrary /></ProtectedRoute>} />
               <Route path="/notebook" element={<ProtectedRoute><Notebook /></ProtectedRoute>} />
               <Route path="/signature/:requestId" element={<ProtectedRoute><SignatureApproval /></ProtectedRoute>} />
-              <Route path="/actions" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Actions /></RequirePermission></ProtectedRoute>} />
+              <Route path="/actions" element={<ProtectedRoute><Actions /></ProtectedRoute>} />
               <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
               <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Notifications /></RequirePermission></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Administration /></RequirePermission></ProtectedRoute>} />
-              <Route path="/integration-test" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><IntegrationTest /></RequirePermission></ProtectedRoute>} />
+              <Route path="/integration-test" element={<ProtectedRoute><IntegrationTest /></ProtectedRoute>} />
               <Route path="/document" element={<DocumentViewer />} />
               <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

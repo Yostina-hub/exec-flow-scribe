@@ -9,25 +9,14 @@ export const initBrowserWhisper = async () => {
   transcriberPromise = (async () => {
     console.log('Initializing browser-based Whisper model...');
     try {
-      try {
-        const pipe = await pipeline(
-          'automatic-speech-recognition',
-          'onnx-community/whisper-tiny',
-          { device: 'webgpu' }
-        );
-        console.log('Browser Whisper model initialized (WebGPU)');
-        transcriber = pipe;
-        return pipe;
-      } catch (gpuErr) {
-        console.warn('WebGPU init failed, falling back to CPU/wasm', gpuErr);
-        const pipe = await pipeline(
-          'automatic-speech-recognition',
-          'onnx-community/whisper-tiny'
-        );
-        console.log('Browser Whisper model initialized (CPU/wasm)');
-        transcriber = pipe;
-        return pipe;
-      }
+      const pipe = await pipeline(
+        'automatic-speech-recognition',
+        'onnx-community/whisper-tiny.en',
+        { device: 'webgpu' }
+      );
+      console.log('Browser Whisper model initialized');
+      transcriber = pipe;
+      return pipe;
     } finally {
       transcriberPromise = null; // clear promise after resolve/reject
     }

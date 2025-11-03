@@ -2,11 +2,9 @@ import { ReactNode } from "react";
 import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud, Bell } from "lucide-react";
 import { QuickSearch } from "@/components/QuickSearch";
 import { NotificationBell } from "@/components/NotificationBell";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
-import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Sidebar,
   SidebarContent,
@@ -111,51 +109,26 @@ function AppSidebar() {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const isMobile = useIsMobile();
-
-  // Mobile mini-app layout with bottom navigation
   return (
-    <>
-      {/* Mobile Layout */}
-      <div className={`${isMobile ? 'flex' : 'hidden'} min-h-screen flex-col w-full pb-16`}>
-        <header className="sticky top-0 z-40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b mobile-safe-top">
-          <div className="flex h-14 items-center gap-3 px-4">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex-shrink-0" />
-            <h1 className="text-lg font-bold">MeetingHub</h1>
-            <div className="flex-1" />
-            <NotificationBell />
-            <QuickSearch />
-          </div>
-        </header>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full">
+        <AppSidebar />
+        
+        <div className="flex-1 flex flex-col w-full">
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex h-14 lg:h-14 items-center gap-2 lg:gap-4 px-3 lg:px-4">
+              <SidebarTrigger />
+              <div className="flex-1" />
+              <NotificationBell />
+              <QuickSearch />
+            </div>
+          </header>
 
-        <main className="flex-1 overflow-auto">
-          {children}
-        </main>
-      </div>
-      
-      {isMobile && <MobileBottomNav />}
-
-      {/* Desktop Layout */}
-      <SidebarProvider>
-        <div className={`${isMobile ? 'hidden' : 'flex'} min-h-screen w-full`}>
-          <AppSidebar />
-          
-          <div className="flex-1 flex flex-col w-full">
-            <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              <div className="flex h-14 items-center gap-4 px-4">
-                <SidebarTrigger />
-                <div className="flex-1" />
-                <NotificationBell />
-                <QuickSearch />
-              </div>
-            </header>
-
-            <main className="flex-1 p-6">
-              {children}
-            </main>
-          </div>
+          <main className="flex-1 p-3 lg:p-6">
+            {children}
+          </main>
         </div>
-      </SidebarProvider>
-    </>
+      </div>
+    </SidebarProvider>
   );
 };

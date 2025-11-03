@@ -175,44 +175,33 @@ const triggerAIProcessingPipeline = async (meetingId: string) => {
       return;
     }
 
-    // Check if minutes already exist to avoid duplicate generation
-    const { data: existingMinutes } = await supabase
-      .from('minutes_versions')
-      .select('id')
-      .eq('meeting_id', meetingId)
-      .maybeSingle();
-
-    // 1. Generate minutes only if they don't exist
-    if (!existingMinutes) {
-      console.log('📝 Generating meeting minutes...');
-      const { data: minutesData, error: minutesError } = await supabase.functions.invoke('generate-minutes', {
-        body: { meeting_id: meetingId },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`
-        }
-      });
-
-      if (minutesError) {
-        console.error('❌ Error generating minutes:', minutesError);
-        const msg = (minutesError as any)?.message || String(minutesError);
-        const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
-        const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
-        toast({
-          title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Minutes generation failed',
-          description: is402
-            ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
-            : is429
-            ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
-            : msg,
-          variant: 'destructive',
-          duration: 9000,
-        });
-        console.log('⚠️ Continuing with other AI processing tasks...');
-      } else {
-        console.log('✅ Minutes generated successfully');
+    // 1. Generate minutes with proper authorization and error handling
+    console.log('📝 Generating meeting minutes...');
+    const { data: minutesData, error: minutesError } = await supabase.functions.invoke('generate-minutes', {
+      body: { meeting_id: meetingId },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
       }
+    });
+
+    if (minutesError) {
+      console.error('❌ Error generating minutes:', minutesError);
+      const msg = (minutesError as any)?.message || String(minutesError);
+      const is402 = /Payment required|402|credits|Payment Required|💳/i.test(msg);
+      const is429 = /Rate limit|429|Too Many Requests|⏳/i.test(msg);
+      toast({
+        title: is402 ? '💳 AI Credits Required' : is429 ? '⏳ Rate Limit Reached' : 'Minutes generation failed',
+        description: is402
+          ? 'Go to Settings → AI Provider to add your OpenAI/Gemini API keys, or wait and try again.'
+          : is429
+          ? 'Temporarily rate limited. Wait 2–3 minutes and try again.'
+          : msg,
+        variant: 'destructive',
+        duration: 9000,
+      });
+      console.log('⚠️ Continuing with other AI processing tasks...');
     } else {
-      console.log('✅ Minutes already exist, skipping generation');
+      console.log('✅ Minutes generated successfully');
     }
 
     // 2. Analyze sentiment

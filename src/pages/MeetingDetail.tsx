@@ -202,43 +202,6 @@ const MeetingDetail = () => {
     resumeRecording 
   } = useAudioRecorder(meetingId);
 
-  // Real-time updates for meeting data
-  useEffect(() => {
-    if (!id) return;
-    
-    const channel = supabase
-      .channel(`meeting-${id}-updates`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'meetings',
-          filter: `id=eq.${id}`
-        },
-        () => {
-          fetchMeetingDetails();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'meeting_attendees',
-          filter: `meeting_id=eq.${id}`
-        },
-        () => {
-          fetchMeetingDetails();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [id]);
-
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -356,7 +319,8 @@ const MeetingDetail = () => {
             await supabase
               .from('meetings')
               .update({ 
-                status: 'completed'
+                status: 'completed',
+                actual_end_time: new Date().toISOString()
               })
               .eq('id', id);
           }
@@ -735,7 +699,8 @@ const MeetingDetail = () => {
                           await supabase
                             .from('meetings')
                             .update({ 
-                              status: 'completed'
+                              status: 'completed',
+                              actual_end_time: new Date().toISOString()
                             })
                             .eq('id', id);
                           
@@ -1214,6 +1179,7 @@ const MeetingDetail = () => {
                   variant="outline" 
                   className="w-full justify-start gap-2"
                   onClick={() => navigate(`/meetings/${id}/minutes`)}
+                  disabled={!meeting?.minutes_url}
                 >
                   <FileText className="h-4 w-4" />
                   Open Minutes Editor

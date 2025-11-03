@@ -174,7 +174,6 @@ export const IntegrationManager = ({ meetingId }: IntegrationManagerProps) => {
 
   const integrationTypes = [
     { value: 'google_drive', label: 'Google Drive' },
-    { value: 'teledrive', label: 'TeleDrive (Telegram)' },
     { value: 'google_meet', label: 'Google Meet' },
     { value: 'zoom', label: 'Zoom' },
     { value: 'teams', label: 'Microsoft Teams' },

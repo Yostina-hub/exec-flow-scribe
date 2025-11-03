@@ -8,7 +8,6 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { transcribeAudioBrowser } from '@/utils/browserWhisper';
 
 interface BrowserSpeechRecognitionProps {
   meetingId: string;
@@ -19,23 +18,14 @@ interface BrowserSpeechRecognitionProps {
   onDurationChange?: (seconds: number) => void;
 }
 
-// Internal recording state for standalone usage
-const useInternalRecording = (externalIsRecording?: boolean) => {
-  const [internalRecording, setInternalRecording] = useState(false);
-  const isRecording = externalIsRecording !== undefined ? externalIsRecording : internalRecording;
-  return { isRecording, setInternalRecording };
-};
-
 export const BrowserSpeechRecognition = ({ 
   meetingId, 
-  externalIsRecording,
+  externalIsRecording = false,
   isPaused = false,
   onRecordingStart,
   onRecordingStop,
   onDurationChange
 }: BrowserSpeechRecognitionProps) => {
-  const { isRecording, setInternalRecording } = useInternalRecording(externalIsRecording);
-  
   const {
     transcript,
     isListening,
@@ -55,23 +45,8 @@ export const BrowserSpeechRecognition = ({
   const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
   const [savedAudios, setSavedAudios] = useState<Array<{ id: string; url: string; created_at: string; duration: number }>>([]);
   const { toast } = useToast();
-  const onDurationChangeRef = useRef(onDurationChange);
-  useEffect(() => { onDurationChangeRef.current = onDurationChange; }, [onDurationChange]);
   
-  // Browser Whisper state - use PCM capture instead of blobs
-  const [whisperTranscript, setWhisperTranscript] = useState('');
-  const pcmChunksRef = useRef<Float32Array[]>([]);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const processorRef = useRef<ScriptProcessorNode | null>(null);
-  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
-  const transcribingRef = useRef(false);
-  const whisperMode = !isSupported || selectedLanguage === 'am-ET';
-  
-  // Audio recording hook for archiving (no PCM callback needed)
-  const handleChunk = (_chunk: Blob) => {
-    // No-op: PCM capture happens separately
-  };
-
+  // Audio recording hook for archiving
   const {
     startRecording: startAudioRecording,
     stopRecording: stopAudioRecording,
@@ -80,10 +55,10 @@ export const BrowserSpeechRecognition = ({
     clearRecording: clearAudioRecording,
     audioBlob,
     error: audioError
-  } = useAudioRecording({ onChunk: handleChunk });
+  } = useAudioRecording();
 
-  // Track previous recording and pause states
-  const prevRecordingRef = useRef(isRecording);
+  // Track previous external recording and pause states
+  const prevExternalRef = useRef(externalIsRecording);
   const prevPausedRef = useRef(isPaused);
 
   // Get current user info and fetch saved audios
@@ -139,38 +114,23 @@ export const BrowserSpeechRecognition = ({
     }
   };
 
-  // Sync with recording and pause state
+  // Sync with external recording and pause state
   useEffect(() => {
     const sync = async () => {
-      const prevRecording = prevRecordingRef.current;
+      const prevExternal = prevExternalRef.current;
       const prevPaused = prevPausedRef.current;
   
-      console.log('Sync state:', { isRecording, isPaused, isListening, prevRecording, prevPaused });
+      console.log('Sync state:', { externalIsRecording, isPaused, isListening, prevExternal, prevPaused });
   
-      if (!isRecording) {
+      if (!externalIsRecording) {
         // Recording stopped → save once on falling edge
-        if (prevRecording) {
+        if (prevExternal) {
           console.log('Stopping recording and saving...');
           if (isListening) stopListening();
-          // Clean up PCM capture
-          try {
-            processorRef.current?.disconnect();
-            sourceRef.current?.disconnect();
-            await audioContextRef.current?.close();
-          } catch (e) {
-            console.warn('Error cleaning up PCM capture:', e);
-          }
-          processorRef.current = null;
-          sourceRef.current = null;
-          audioContextRef.current = null;
-          pcmChunksRef.current = [];
-          
           const audioFile = await stopAudioRecording();
-          const displayText = (whisperMode ? whisperTranscript : transcript).trim();
-          if (displayText || audioFile) {
+          if (transcript.trim() || audioFile) {
             await handleSave(audioFile);
             resetTranscript();
-            setWhisperTranscript('');
           }
         }
       } else {
@@ -184,43 +144,17 @@ export const BrowserSpeechRecognition = ({
           }
         } else {
           // Active and not paused → ensure listening
-          if (!isListening || !prevRecording) {
-            console.log('Starting/resuming recording...', { isListening, prevRecording });
+          if (!isListening || !prevExternal) {
+            console.log('Starting/resuming recording...', { isListening, prevExternal });
             // New session start (rising edge) → clear and start
-            if (!prevRecording) {
+            if (!prevExternal) {
               console.log('New recording session - clearing and starting fresh');
               resetTranscript();
-              setWhisperTranscript('');
               setRecordingDuration(0);
               clearAudioRecording();
-              pcmChunksRef.current = [];
-              
               try {
                 await startAudioRecording();
                 console.log('Audio recording started');
-                
-                // Start PCM capture for Browser Whisper if in whisper mode
-                if (whisperMode) {
-                  console.log('Starting PCM capture for Browser Whisper, whisperMode:', whisperMode);
-                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
-                  audioContextRef.current = audioCtx;
-                  sourceRef.current = audioCtx.createMediaStreamSource(stream);
-                  processorRef.current = audioCtx.createScriptProcessor(4096, 1, 1);
-                  
-                  processorRef.current.onaudioprocess = (e) => {
-                    const input = e.inputBuffer.getChannelData(0);
-                    pcmChunksRef.current.push(new Float32Array(input));
-                    const maxChunks = 200; // ~30s at 24kHz
-                    if (pcmChunksRef.current.length > maxChunks) {
-                      pcmChunksRef.current.splice(0, pcmChunksRef.current.length - maxChunks);
-                    }
-                  };
-                  
-                  sourceRef.current.connect(processorRef.current);
-                  processorRef.current.connect(audioCtx.destination);
-                  console.log('PCM capture started for Browser Whisper, chunks will accumulate');
-                }
               } catch (err) {
                 console.error('Failed to start audio recording:', err);
                 toast({
@@ -243,20 +177,20 @@ export const BrowserSpeechRecognition = ({
       }
   
       // Update previous flags
-      prevRecordingRef.current = isRecording;
+      prevExternalRef.current = externalIsRecording;
       prevPausedRef.current = isPaused;
     };
 
     void sync();
-  }, [isRecording, isPaused, isListening, selectedLanguage]);
+  }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
 
   useEffect(() => {
-    let interval: any;
-    if (isRecording && !isPaused) {
+    let interval: NodeJS.Timeout | undefined;
+    if (externalIsRecording && !isPaused) {
       interval = setInterval(() => {
         setRecordingDuration(prev => {
           const next = prev + 1;
-          onDurationChangeRef.current?.(next);
+          onDurationChange?.(next);
           return next;
         });
       }, 1000);
@@ -264,111 +198,7 @@ export const BrowserSpeechRecognition = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isRecording, isPaused]);
-
-  // Live Browser Whisper transcription loop using PCM data
-  useEffect(() => {
-    if (!isRecording || isPaused || !whisperMode) {
-      console.log('Whisper loop skipped:', { isRecording, isPaused, whisperMode });
-      return;
-    }
-    
-    console.log('Starting Browser Whisper transcription loop');
-    const interval = setInterval(async () => {
-      const chunkCount = pcmChunksRef.current.length;
-      console.log('Whisper loop tick, PCM chunks:', chunkCount, 'transcribing:', transcribingRef.current);
-      
-      if (transcribingRef.current || chunkCount === 0) return;
-      transcribingRef.current = true;
-      
-      try {
-        // Get last 8 seconds of PCM data
-        const sampleRate = 24000;
-        const windowSeconds = 8;
-        const neededSamples = sampleRate * windowSeconds;
-        
-        let remaining = neededSamples;
-        const selected: Float32Array[] = [];
-        for (let i = pcmChunksRef.current.length - 1; i >= 0 && remaining > 0; i--) {
-          const chunk = pcmChunksRef.current[i];
-          selected.push(chunk);
-          remaining -= chunk.length;
-        }
-        
-        if (selected.length > 0) {
-          const total = Math.min(neededSamples, selected.reduce((sum, c) => sum + c.length, 0));
-          const segment = new Float32Array(total);
-          let offset = total;
-          for (let i = 0; i < selected.length; i++) {
-            const chunk = selected[i];
-            const write = Math.min(chunk.length, offset);
-            segment.set(chunk.subarray(chunk.length - write), offset - write);
-            offset -= write;
-            if (offset <= 0) break;
-          }
-          
-          console.log('Calling Browser Whisper with segment size:', segment.length);
-          
-          // Encode PCM segment into a small WAV and reuse the robust browserWhisper util
-          const encodeWav = (pcm: Float32Array, sr: number) => {
-            const bytesPerSample = 2; // 16-bit PCM
-            const blockAlign = 1 * bytesPerSample;
-            const buffer = new ArrayBuffer(44 + pcm.length * bytesPerSample);
-            const view = new DataView(buffer);
-            const writeString = (offset: number, s: string) => {
-              for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
-            };
-            // RIFF header
-            writeString(0, 'RIFF');
-            view.setUint32(4, 36 + pcm.length * bytesPerSample, true);
-            writeString(8, 'WAVE');
-            // fmt chunk
-            writeString(12, 'fmt ');
-            view.setUint32(16, 16, true); // PCM
-            view.setUint16(20, 1, true); // format = 1 PCM
-            view.setUint16(22, 1, true); // channels = 1
-            view.setUint32(24, sr, true); // sample rate
-            view.setUint32(28, sr * blockAlign, true); // byte rate
-            view.setUint16(32, blockAlign, true); // block align
-            view.setUint16(34, bytesPerSample * 8, true); // bits per sample
-            // data chunk
-            writeString(36, 'data');
-            view.setUint32(40, pcm.length * bytesPerSample, true);
-            // PCM samples
-            let offset = 44;
-            for (let i = 0; i < pcm.length; i++, offset += 2) {
-              let s = Math.max(-1, Math.min(1, pcm[i]));
-              s = s < 0 ? s * 0x8000 : s * 0x7fff;
-              view.setInt16(offset, s, true);
-            }
-            return new Blob([view], { type: 'audio/wav' });
-          };
-
-          const wavBlob = encodeWav(segment, sampleRate);
-          const text = await transcribeAudioBrowser(wavBlob);
-          console.log('Browser Whisper result (util):', text);
-          
-          if (text && text.trim()) {
-            setWhisperTranscript((prev) => {
-              const cleaned = text.trim();
-              if (prev.endsWith(cleaned)) return prev;
-              const updated = prev ? `${prev} ${cleaned}` : cleaned;
-              console.log('Updated whisper transcript:', updated);
-              return updated;
-            });
-          }
-        }
-      } catch (e) {
-        console.error('Browser Whisper transcription failed', e);
-      } finally {
-        transcribingRef.current = false;
-      }
-    }, 3000);
-    return () => {
-      console.log('Stopping Browser Whisper transcription loop');
-      clearInterval(interval);
-    };
-  }, [isRecording, isPaused, whisperMode]);
+  }, [externalIsRecording, isPaused, onDurationChange]);
 
   // Auto-save transcript every ~5s while recording (no audio upload, text only)
   const lastSavedLenRef = useRef(0);
@@ -396,104 +226,36 @@ export const BrowserSpeechRecognition = ({
     return () => clearInterval(autosave);
   }, [isListening, transcript, meetingId, userName, selectedLanguage]);
 
-  // Autosave for Browser Whisper mode
-  useEffect(() => {
-    if (!whisperMode || !isRecording || isPaused) return;
-    const autosave = setInterval(async () => {
-      const text = whisperTranscript.trim();
-      if (text && text.length - lastSavedLenRef.current >= 10) {
-        try {
-          await supabase.functions.invoke('save-transcription', {
-            body: {
-              meetingId,
-              content: text.slice(lastSavedLenRef.current),
-              timestamp: new Date().toISOString(),
-              speaker: userName,
-              detectedLanguage: selectedLanguage,
-            },
-          });
-          lastSavedLenRef.current = text.length;
-        } catch (e) {
-          console.warn('Autosave (whisper) failed:', e);
-        }
-      }
-    }, 2000);
-    return () => clearInterval(autosave);
-  }, [whisperMode, whisperTranscript, isRecording, isPaused, meetingId, userName, selectedLanguage]);
 
   const handleSave = async (audioFile?: Blob | null) => {
-    const displayText = (whisperMode ? whisperTranscript : transcript).trim();
-    if (!displayText && !audioFile) return;
+    if (!transcript.trim() && !audioFile) return;
     if (isSaving) return; // Prevent duplicate saves
 
     setIsSaving(true);
     try {
-      let finalText = displayText;
+      let finalText = transcript.trim();
 
-      // If we have audio but no text → prefer Web Speech API; only fall back to server if not supported
-      if (audioFile && !finalText && !isSupported) {
-        try {
-          const base64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(audioFile);
-          });
+      // If we have audio but no text → server-side transcription fallback
+      if (audioFile && !finalText) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(audioFile);
+        });
 
-          // Attempt server-side transcription once; handle rate limits gracefully
-          const attemptTranscription = async () => {
-            return await supabase.functions.invoke('transcribe-audio', {
-              body: {
-                audioBase64: base64,
-                meetingId,
-                language: selectedLanguage || 'auto',
-                contentType: audioFile.type || 'audio/webm'
-              }
-            });
-          };
-
-          let { data, error } = await attemptTranscription();
-
-          if (error) {
-            const msg = (error as any)?.message ? String((error as any).message) : String(error);
-            // Try to extract retryAfter from error payload if present
-            let retryAfter = 0;
-            const m = msg.match(/"retryAfter"\s*:\s*(\d+)/);
-            if (m && m[1]) retryAfter = parseInt(m[1], 10);
-
-            if (msg.includes('429') || /rate limit/i.test(msg)) {
-              // Inform user and wait once before a single retry
-              const waitSec = retryAfter > 0 ? retryAfter : 10;
-              toast({
-                title: 'Transcription rate-limited',
-                description: `Retrying in ${waitSec}s... Your audio will still be saved.`,
-              });
-              await new Promise((r) => setTimeout(r, waitSec * 1000));
-              const retry = await attemptTranscription();
-              data = retry.data;
-              error = retry.error as any;
-            }
+        const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+          body: {
+            audioBase64: base64,
+            meetingId,
+            language: selectedLanguage || 'auto',
+            contentType: audioFile.type || 'audio/webm'
           }
+        });
 
-          if (error) {
-            console.warn('Server-side transcription failed:', error);
-            // Don't throw - just log and continue without transcription
-            toast({
-              title: 'Transcription unavailable',
-              description: 'Audio saved but transcription service is temporarily unavailable. Your recording is safe.',
-              variant: 'default',
-            });
-          } else if (data?.transcription) {
-            finalText = data.transcription as string;
-          }
-        } catch (transcribeError) {
-          console.warn('Transcription error:', transcribeError);
-          // Continue without transcription - audio will still be saved
-          toast({
-            title: 'Transcription skipped',
-            description: 'Could not transcribe audio, but your recording is saved.',
-            variant: 'default',
-          });
+        if (error) throw error;
+        if (data?.transcription) {
+          finalText = data.transcription as string;
         }
       }
 
@@ -572,8 +334,6 @@ export const BrowserSpeechRecognition = ({
 
   const handleClear = () => {
     resetTranscript();
-    setWhisperTranscript('');
-    pcmChunksRef.current = [];
     setRecordingDuration(0);
     clearAudioRecording();
   };
@@ -640,7 +400,7 @@ export const BrowserSpeechRecognition = ({
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          {isRecording && !isPaused && (
+          {externalIsRecording && !isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
@@ -652,7 +412,7 @@ export const BrowserSpeechRecognition = ({
                   {formatDuration(recordingDuration)}
                 </span>
               </div>
-              {!isListening && !whisperMode && (
+              {!isListening && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   Starting speech recognition...
                 </p>
@@ -660,7 +420,7 @@ export const BrowserSpeechRecognition = ({
             </div>
           )}
 
-          {isRecording && isPaused && (
+          {externalIsRecording && isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="warning" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white" />
@@ -675,7 +435,7 @@ export const BrowserSpeechRecognition = ({
             </div>
           )}
 
-          {!isRecording && (
+          {!externalIsRecording && (
             <div className="text-center py-4">
               <p className="text-muted-foreground">
                 Use the <strong>"Start Recording"</strong> button above to begin transcription
@@ -685,11 +445,11 @@ export const BrowserSpeechRecognition = ({
         </div>
 
         <div className="min-h-[200px] max-h-[400px] overflow-y-auto bg-muted rounded-lg p-4">
-          {(whisperMode ? whisperTranscript : transcript) ? (
+          {transcript ? (
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Badge variant="secondary" className="mt-1">{userName}</Badge>
-                <p className="text-lg leading-relaxed flex-1">{whisperMode ? whisperTranscript : transcript}</p>
+                <p className="text-lg leading-relaxed flex-1">{transcript}</p>
               </div>
             </div>
           ) : (

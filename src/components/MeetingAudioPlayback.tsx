@@ -149,7 +149,7 @@ export const MeetingAudioPlayback = ({ meetingId, onTimeUpdate }: MeetingAudioPl
             <div className="grid gap-2">
               {recordings.map((recording, index) => (
                 <button
-                  key={`${recording.created_at}-${index}`}
+                  key={recording.name}
                   onClick={() => setSelectedRecording(recording)}
                   className={`text-left p-3 rounded-lg border transition-colors ${
                     selectedRecording?.name === recording.name

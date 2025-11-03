@@ -331,54 +331,44 @@ export default function Meetings() {
   return (
     <Layout>
       <div className="space-y-6 pb-20">
-        {/* Executive Header */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 p-8 border border-blue-500/20 animate-fade-in">
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
-          
-          <div className="relative z-10 flex items-center justify-between">
-            <div className="space-y-3">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <Calendar className="h-4 w-4 text-blue-400" />
-                <span className="text-sm font-medium">Meeting Management</span>
-              </div>
-              
-              <h1 className="text-4xl lg:text-5xl font-black font-['Space_Grotesk']">
-                Meetings
-              </h1>
-              
-              <p className="text-muted-foreground text-lg">
-                {upcomingMeetings.length} upcoming · {completedMeetings.length} completed · {allMeetingsFormatted.length} total
-              </p>
-            </div>
-            
-            <div className="flex gap-2">
-              <CreateMeetingDialog />
-              <InstantMeetingDialog />
-            </div>
+        {/* Simple Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Calendar className="h-8 w-8" />
+              Meetings
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Manage your meetings
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <CreateMeetingDialog />
+            <InstantMeetingDialog />
           </div>
         </div>
 
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search meetings by title or location..."
+            placeholder="Search meetings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-12 h-12 text-base bg-background/50 backdrop-blur-sm border-2 hover:border-primary/50 transition-colors"
+            className="pl-10"
           />
         </div>
 
-        {/* Meetings Tabs - Executive Style */}
+        {/* Meetings Tabs */}
         <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 h-12 bg-muted/50 backdrop-blur-sm border-2">
-            <TabsTrigger value="upcoming" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white font-semibold">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="upcoming">
               Upcoming ({upcomingMeetings.length})
             </TabsTrigger>
-            <TabsTrigger value="completed" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white font-semibold">
+            <TabsTrigger value="completed">
               Completed ({completedMeetings.length})
             </TabsTrigger>
-            <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white font-semibold">
+            <TabsTrigger value="all">
               All ({allMeetingsFormatted.length})
             </TabsTrigger>
           </TabsList>

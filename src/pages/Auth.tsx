@@ -125,16 +125,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
-      {/* Enhanced Animated Background - Executive Grade */}
-      <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-600/20 via-cyan-500/15 to-emerald-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-purple-600/15 via-pink-500/10 to-blue-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-blue-950/30 to-slate-950">
+      {/* Animated Background Elements - Reduced on mobile */}
+      <div className="absolute inset-0 hidden lg:block">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-500/25 to-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse delay-1000" />
+        <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-cyan-500/15 to-sky-500/15 rounded-full blur-3xl animate-pulse delay-2000" />
       </div>
 
-      {/* Grid Pattern Overlay */}
-      <div className="absolute inset-0 bg-grid-white/10 [mask-image:linear-gradient(0deg,transparent,black,transparent)]" />
+      {/* Simplified mobile background */}
+      <div className="absolute inset-0 lg:hidden bg-gradient-to-br from-blue-500/10 to-cyan-500/5" />
 
       {/* Floating Particles - Hidden on mobile for performance */}
       <div className="absolute inset-0 overflow-hidden hidden lg:block">
@@ -154,86 +154,74 @@ const Auth = () => {
 
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent hidden lg:block" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 lg:p-4">
-        <div className="w-full max-w-md lg:max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto">
-          {/* Hero Section - Executive Focus */}
-          <div className="text-white space-y-8 animate-fade-in hidden lg:block pr-12">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 backdrop-blur-xl border border-emerald-400/50 shadow-xl shadow-emerald-500/20">
-              <Sparkles className="h-5 w-5 text-emerald-300 animate-pulse" />
-              <span className="text-base font-bold text-white tracking-wide">Enterprise Meeting Intelligence</span>
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-0 lg:p-4">
+        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto">
+          {/* Hero Section */}
+          <div className="text-white space-y-8 animate-fade-in hidden lg:block">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 backdrop-blur-md border border-blue-400/40 shadow-lg shadow-blue-500/20">
+              <Sparkles className="h-4 w-4 text-cyan-300 animate-pulse" />
+              <span className="text-sm font-semibold text-white">Next-Gen Meeting Platform</span>
             </div>
 
-            <h1 className="text-7xl font-black leading-[1.1] font-['Space_Grotesk'] drop-shadow-2xl">
-              <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
-                Digital Meeting
-              </span>
-              <span className="block bg-gradient-to-r from-emerald-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mt-2">
-                Excellence
+            <h1 className="text-6xl font-bold leading-tight font-['Space_Grotesk'] drop-shadow-lg">
+              <span className="text-white">Transform Your</span>
+              <span className="block text-white drop-shadow-2xl">
+                Executive Meetings
               </span>
             </h1>
 
-            <p className="text-xl text-blue-100/90 leading-relaxed drop-shadow-lg font-medium max-w-xl">
-              Transform executive meetings with AI-powered intelligence. Real-time transcription, automated minutes, and actionable insights for organizational excellence.
+            <p className="text-xl text-white leading-relaxed drop-shadow-md font-semibold">
+              AI-powered transcription, real-time insights, and intelligent automation for the modern executive office.
             </p>
 
-            <div className="grid grid-cols-3 gap-6 pt-12">
+            <div className="grid grid-cols-3 gap-6 pt-8">
               {[
-                { icon: Zap, label: "Real-Time AI", desc: "Instant transcription & translation", color: "from-yellow-500 to-orange-500" },
-                { icon: Shield, label: "Enterprise Secure", desc: "Bank-grade encryption", color: "from-blue-500 to-cyan-500" },
-                { icon: TrendingUp, label: "Executive Analytics", desc: "Decision intelligence", color: "from-emerald-500 to-teal-500" },
+                { icon: Zap, label: "Real-time AI", desc: "Live transcription" },
+                { icon: Shield, label: "Enterprise Grade", desc: "Bank-level security" },
+                { icon: TrendingUp, label: "Smart Analytics", desc: "Actionable insights" },
               ].map((feature, i) => (
                 <div 
                   key={i} 
-                  className="group relative p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:-translate-y-1 cursor-pointer"
-                  style={{ animationDelay: `${i * 100}ms` }}
+                  className="p-5 rounded-xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-md border border-white/20 hover:border-cyan-400/50 hover:shadow-xl hover:shadow-cyan-500/20 transition-all duration-300 hover:scale-105 cursor-pointer group"
                 >
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                  <div className={`relative p-3 w-fit rounded-xl bg-gradient-to-br ${feature.color} shadow-lg group-hover:shadow-2xl transition-all duration-500 mb-4`}>
-                    <feature.icon className="h-6 w-6 text-white drop-shadow-lg" />
-                  </div>
-                  <h3 className="relative font-bold text-lg mb-2 text-white drop-shadow-md">{feature.label}</h3>
-                  <p className="relative text-sm text-blue-100/80 font-medium leading-relaxed">{feature.desc}</p>
+                  <feature.icon className="h-7 w-7 text-cyan-300 group-hover:text-emerald-300 transition-colors mb-3 drop-shadow-lg" />
+                  <h3 className="font-bold text-base mb-1.5 text-white drop-shadow-md">{feature.label}</h3>
+                  <p className="text-sm text-white/90 font-medium">{feature.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Auth Card - Executive Edition */}
-          <div className="animate-scale-in w-full lg:w-auto">
-            <Card className="border-2 border-emerald-400/30 bg-white backdrop-blur-2xl shadow-lg lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] rounded-2xl lg:rounded-3xl relative overflow-hidden">
-              {/* Card Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
-              
-              <CardHeader className="space-y-4 px-6 sm:px-8 pt-6 lg:pt-8 pb-4 lg:pb-6 relative z-10">
-                <div className="flex items-center justify-center lg:justify-start gap-3">
-                  <div className="relative">
-                    <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl blur-xl opacity-50 animate-pulse" />
-                    <div className="relative h-14 w-14 lg:h-16 lg:w-16 rounded-2xl bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-500 flex items-center justify-center shadow-2xl animate-glow">
-                      <Sparkles className="h-7 w-7 lg:h-8 lg:w-8 text-white" />
-                    </div>
+          {/* Auth Card */}
+          <div className="animate-scale-in w-full lg:w-auto h-full lg:h-auto">
+            <Card className="border-0 lg:border lg:border-cyan-200/50 bg-white/95 backdrop-blur-xl shadow-none lg:shadow-2xl lg:shadow-cyan-500/20 lg:rounded-2xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center py-8 lg:py-0">
+              <CardHeader className="space-y-3 lg:space-y-4 px-4 sm:px-6 pt-6 lg:pt-6 pb-4 lg:pb-6">
+                <div className="flex items-center justify-center lg:justify-start gap-2 lg:gap-3">
+                  <div className="h-10 w-10 lg:h-14 lg:w-14 rounded-lg lg:rounded-xl bg-gradient-to-br from-blue-500 via-cyan-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/50 animate-glow">
+                    <Sparkles className="h-5 w-5 lg:h-7 lg:w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl lg:text-4xl font-black font-['Space_Grotesk'] bg-gradient-to-r from-emerald-600 via-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                    <h1 className="text-xl lg:text-3xl font-bold font-['Space_Grotesk'] bg-gradient-to-r from-gray-900 via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
                       MeetingHub
                     </h1>
-                    <p className="text-sm lg:text-base text-emerald-600 font-bold tracking-wide">Executive Edition</p>
+                    <p className="text-[10px] lg:text-sm text-cyan-600 font-medium">Executive Suite</p>
                   </div>
                 </div>
-                <CardDescription className="text-base lg:text-lg !text-slate-800 font-medium text-center lg:text-left">
-                  Secure access to your organization's intelligence platform
+                <CardDescription className="text-sm lg:text-base text-gray-600 font-medium text-center lg:text-left">
+                  Access your AI-powered executive dashboard
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-6 sm:px-6 lg:px-6 pb-6 lg:pb-8 relative z-10">
+              <CardContent className="px-4 sm:px-6 lg:px-6 pb-6 lg:pb-8">
                 <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-10 lg:h-auto">
-                    <TabsTrigger value="signin" className="text-sm lg:text-base text-slate-700 font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="text-sm lg:text-base text-slate-700 font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
+                    <TabsTrigger value="signin" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="email" className="text-sm lg:text-base !text-slate-900 font-semibold">Email</Label>
+                        <Label htmlFor="email" className="text-sm lg:text-base text-gray-700 font-medium">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -241,18 +229,18 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="password" className="text-sm lg:text-base !text-slate-900 font-semibold">Password</Label>
+                        <Label htmlFor="password" className="text-sm lg:text-base text-gray-700 font-medium">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
@@ -269,7 +257,7 @@ const Auth = () => {
                   <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="fullname" className="text-sm lg:text-base !text-slate-900 font-semibold">Full Name</Label>
+                        <Label htmlFor="fullname" className="text-sm lg:text-base text-gray-700 font-medium">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -277,22 +265,22 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="usertitle" className="text-sm lg:text-base !text-slate-900 font-semibold">Title</Label>
+                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-gray-700 font-medium">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-email" className="text-sm lg:text-base !text-slate-900 font-semibold">Email</Label>
+                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-gray-700 font-medium">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -300,18 +288,18 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-password" className="text-sm lg:text-base !text-slate-900 font-semibold">Password</Label>
+                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-gray-700 font-medium">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
@@ -325,17 +313,17 @@ const Auth = () => {
                       
                       <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-slate-300" />
+                          <span className="w-full border-t border-gray-300" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-white px-2 text-slate-600 font-medium">Or</span>
+                          <span className="bg-white px-2 text-gray-500">Or</span>
                         </div>
                       </div>
 
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full h-11 lg:h-10 text-sm lg:text-base border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
+                        className="w-full h-11 lg:h-10 text-sm lg:text-base border-2 hover:bg-gray-50"
                         onClick={() => navigate('/guest-signup')}
                       >
                         Request Guest Access
