@@ -123,7 +123,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
                 <Badge variant="default" className="text-xs">Default</Badge>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Browser-based Web Speech API, no API key needed
+                Fast and reliable browser-based transcription
               </p>
             </div>
           </div>
@@ -136,7 +136,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
                 <span className="font-medium">OpenAI</span>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Real-time & batch transcription (requires API key)
+                Advanced AI transcription with real-time processing
               </p>
             </div>
           </div>
