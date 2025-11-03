@@ -19,8 +19,10 @@ import {
   Sparkles,
   Calendar,
   TrendingUp,
-  Zap
+  Zap,
+  Send
 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -34,8 +36,18 @@ export default function DriveIntegration() {
     auto_upload_recordings: true,
     auto_save_minutes_as_docs: true,
     auto_backup_enabled: false,
+    google_drive_enabled: true,
+    teledrive_enabled: false,
+    auto_sync_notebooks: false,
   });
   const [accessToken, setAccessToken] = useState<string | null>(null);
+  const [teledriveConnected, setTeledriveConnected] = useState(false);
+  const [showTeledriveDialog, setShowTeledriveDialog] = useState(false);
+  const [teledriveApiHost, setTeledriveApiHost] = useState("");
+  const [teledrivePhone, setTeledrivePhone] = useState("");
+  const [teledrivePassword, setTeledrivePassword] = useState("");
+  const [teledriveApiId, setTeledriveApiId] = useState("");
+  const [teledriveApiHash, setTeledriveApiHash] = useState("");
 
   useEffect(() => {
     loadSettings();
@@ -63,10 +75,52 @@ export default function DriveIntegration() {
 
     if (data) {
       setSettings({
-        auto_upload_recordings: data.auto_upload_recordings,
-        auto_save_minutes_as_docs: data.auto_save_minutes_as_docs,
-        auto_backup_enabled: data.auto_backup_enabled,
+        auto_upload_recordings: data.auto_upload_recordings ?? true,
+        auto_save_minutes_as_docs: data.auto_save_minutes_as_docs ?? true,
+        auto_backup_enabled: data.auto_backup_enabled ?? false,
+        google_drive_enabled: data.google_drive_enabled ?? true,
+        teledrive_enabled: data.teledrive_enabled ?? false,
+        auto_sync_notebooks: data.auto_sync_notebooks ?? false,
       });
+      
+      if (data.teledrive_access_token) {
+        setTeledriveConnected(true);
+      }
+    }
+  };
+
+  const connectTeleDrive = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.functions.invoke('teledrive-auth', {
+        body: {
+          action: 'login',
+          apiHost: teledriveApiHost,
+          phoneNumber: teledrivePhone,
+          password: teledrivePassword,
+          apiId: teledriveApiId,
+          apiHash: teledriveApiHash,
+        }
+      });
+
+      if (error) throw error;
+
+      setTeledriveConnected(true);
+      setShowTeledriveDialog(false);
+      toast({
+        title: "TeleDrive connected",
+        description: "Your TeleDrive account has been linked successfully.",
+      });
+      
+      loadSettings();
+    } catch (error: any) {
+      toast({
+        title: "Connection failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -183,12 +237,20 @@ export default function DriveIntegration() {
                 AI-powered meeting material organization with intelligent automation
               </p>
             </div>
-            {!accessToken && (
-              <Button onClick={connectGoogleDrive} size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all hover-scale">
-                <Cloud className="h-5 w-5" />
-                Connect Google Drive
-              </Button>
-            )}
+            <div className="flex gap-3">
+              {!accessToken && (
+                <Button onClick={connectGoogleDrive} size="lg" className="gap-2 shadow-lg hover:shadow-xl transition-all hover-scale">
+                  <Cloud className="h-5 w-5" />
+                  Connect Google Drive
+                </Button>
+              )}
+              {!teledriveConnected && (
+                <Button onClick={() => setShowTeledriveDialog(true)} size="lg" variant="outline" className="gap-2 shadow-lg hover:shadow-xl transition-all hover-scale">
+                  <Send className="h-5 w-5" />
+                  Connect TeleDrive
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -404,6 +466,55 @@ export default function DriveIntegration() {
                     }
                   />
                 </div>
+
+                <div className="h-px bg-border my-4" />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Enable Google Drive</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Sync files to Google Drive
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.google_drive_enabled}
+                    onCheckedChange={(checked) => 
+                      updateSettings('google_drive_enabled', checked)
+                    }
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Enable TeleDrive</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Sync files to TeleDrive (Telegram storage)
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.teledrive_enabled}
+                    onCheckedChange={(checked) => 
+                      updateSettings('teledrive_enabled', checked)
+                    }
+                  />
+                </div>
+
+                <div className="h-px bg-border my-4" />
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Auto-sync Notebook Files</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically upload all notebook files to cloud storage
+                    </p>
+                  </div>
+                  <Switch
+                    checked={settings.auto_sync_notebooks}
+                    onCheckedChange={(checked) => 
+                      updateSettings('auto_sync_notebooks', checked)
+                    }
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -434,6 +545,71 @@ export default function DriveIntegration() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* TeleDrive Connection Dialog */}
+        <Dialog open={showTeledriveDialog} onOpenChange={setShowTeledriveDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Send className="h-5 w-5 text-primary" />
+                Connect TeleDrive
+              </DialogTitle>
+              <DialogDescription>
+                Enter your TeleDrive credentials to enable Telegram cloud storage
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>API Host</Label>
+                <Input
+                  value={teledriveApiHost}
+                  onChange={(e) => setTeledriveApiHost(e.target.value)}
+                  placeholder="https://your-teledrive-instance.com"
+                />
+              </div>
+              <div>
+                <Label>Phone Number</Label>
+                <Input
+                  value={teledrivePhone}
+                  onChange={(e) => setTeledrivePhone(e.target.value)}
+                  placeholder="+1234567890"
+                />
+              </div>
+              <div>
+                <Label>Password</Label>
+                <Input
+                  type="password"
+                  value={teledrivePassword}
+                  onChange={(e) => setTeledrivePassword(e.target.value)}
+                  placeholder="Your TeleDrive password"
+                />
+              </div>
+              <div>
+                <Label>Telegram API ID</Label>
+                <Input
+                  value={teledriveApiId}
+                  onChange={(e) => setTeledriveApiId(e.target.value)}
+                  placeholder="Get from my.telegram.org"
+                />
+              </div>
+              <div>
+                <Label>Telegram API Hash</Label>
+                <Input
+                  value={teledriveApiHash}
+                  onChange={(e) => setTeledriveApiHash(e.target.value)}
+                  placeholder="Get from my.telegram.org"
+                />
+              </div>
+              <Button 
+                onClick={connectTeleDrive} 
+                disabled={loading || !teledriveApiHost || !teledrivePhone || !teledrivePassword}
+                className="w-full"
+              >
+                {loading ? "Connecting..." : "Connect TeleDrive"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </Layout>
   );
