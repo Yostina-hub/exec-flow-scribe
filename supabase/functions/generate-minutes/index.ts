@@ -283,16 +283,29 @@ Generate the minutes in the SAME LANGUAGE as the transcript.
 If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
 Never romanize or transliterate non-Latin scripts.`;
 
-// Generate minutes using selected AI provider
-    const prompt = `🎯 YOUR MISSION: Generate accurate meeting minutes that reflect ONLY what was actually discussed.
+// Generate minutes using selected AI provider with enhanced natural language instructions
+    const prompt = `🎯 YOUR MISSION: Create comprehensive, natural-sounding meeting minutes that capture EVERY detail and nuance from the discussion.
 
-⚠️ CRITICAL FIDELITY RULES - YOU MUST FOLLOW:
-1. ONLY include information EXPLICITLY stated in the transcript below
-2. DO NOT add assumptions, external knowledge, or fabricated content
-3. DO NOT invent discussions, decisions, or action items not in the transcript
-4. If information is missing or unclear, acknowledge it rather than making it up
-5. Every statement in your summary must trace back to specific words in the transcript
-6. When in doubt: OMIT rather than FABRICATE
+⚠️ COMPLETENESS & ACCURACY RULES:
+1. Capture ALL information from the transcript - don't skip any details, however minor
+2. Include ALL speaker contributions, questions, answers, and clarifications
+3. Preserve the natural flow and sequence of the conversation
+4. Include context, reasoning, and background mentioned by speakers
+5. Capture emotional tone, emphasis, and speaker intentions when relevant
+6. Record ALL numbers, dates, names, and specific details mentioned
+7. Include tangential discussions if they add context
+8. Write in a natural, conversational but professional tone
+9. NEVER add information not in the transcript - only expand on what's there
+
+✍️ WRITING STYLE REQUIREMENTS:
+• Write as a skilled human note-taker would - natural, fluid, complete
+• Use varied sentence structures to avoid robotic repetition
+• Connect ideas smoothly with transitions
+• Include speaker perspectives and reasoning processes
+• Capture the "story" of the meeting, not just bullet points
+• Make it engaging and readable while maintaining professionalism
+• Vary paragraph lengths for natural rhythm
+• Use specific quotes when they capture important points
 
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
@@ -307,7 +320,7 @@ ${recordingSeconds !== null ? `Recording Time: ${Math.floor(recordingSeconds / 6
 📝 PLANNED AGENDA:
 ${agendaList || 'No agenda items'}
 
-🗣️ ACTUAL TRANSCRIPT (YOUR ONLY SOURCE OF TRUTH):
+🗣️ COMPLETE TRANSCRIPT - READ EVERY WORD CAREFULLY:
 ${fullTranscript || 'No transcript available'}
 
 ✅ RECORDED DECISIONS:
@@ -318,17 +331,25 @@ ${pollsList || 'No polls conducted'}
 
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
-📊 REQUIRED SECTIONS (only include if information exists in transcript):
-1. የስብሰባ ማጠቃለያ (Executive Summary) - 2-3 sentences based ONLY on transcript
-2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - ONLY topics actually discussed
-3. የተወሰኑ ውሳኔዎች (Decisions Made) - ONLY decisions explicitly stated
-4. 🗳️ የምርጫ ውጤቶች (Poll Results) - Include all poll questions and voting results if polls exist
-5. የተግባር እቅዶች (Action Items) - ONLY actions explicitly mentioned
-6. ቀጣይ እርምጃዎች (Next Steps) - ONLY if mentioned in transcript
+📊 REQUIRED SECTIONS (be thorough and complete):
+1. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (3-5 detailed sentences)
+2. ዋና ዋና የውይይት ነጥቦች (Key Discussion Points) - DETAILED coverage of ALL topics discussed, including context, different viewpoints, questions raised, and explanations given
+3. የተወሰኑ ውሳኔዎች (Decisions Made) - ALL decisions with full context about how they were reached
+4. 🗳️ የምርጫ ውጤቶች (Poll Results) - Complete poll information with context
+5. የተግባር እቅዶች (Action Items) - ALL actions mentioned with full details
+6. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
+7. ተጨማሪ ሐሳቦች (Additional Notes) - Other relevant points, context, or observations
 
-${detectedLang === 'am' ? '✍️ CRITICAL: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas. Use ፦ before lists. Write in formal Amharic using SOV structure.' : ''}
+${detectedLang === 'am' ? '✍️ CRITICAL AMHARIC REQUIREMENTS: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas within sentences. Use ፦ before introducing lists or elaborations. Use ፤ for separating related clauses. Write in natural, flowing formal Amharic using proper SOV structure. Make it read like a skilled Amharic writer documented the meeting - natural, complete, and professional.' : ''}
 
-Format as a professional markdown document.${languageInstruction}`;
+📝 FINAL REMINDERS:
+• Be thorough - err on the side of including more detail rather than less
+• Make it readable and engaging - avoid dry bullet points
+• Connect ideas naturally - show how topics relate to each other
+• Capture the complete picture - context, decisions, reasoning, outcomes
+• Write as if you were actually in the meeting taking comprehensive notes
+
+Format as a professional markdown document with clear sections and natural prose.${languageInstruction}`;
 
     let minutes = "";
     let providerError = "";
@@ -348,30 +369,42 @@ Format as a professional markdown document.${languageInstruction}`;
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "gpt-5-2025-08-07",
+              model: "gpt-5-2025-08-07", // High-quality model for comprehensive minutes
               messages: [
                 { 
                   role: "system", 
-                  content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
+                  content: `You are an expert meeting minutes specialist who creates comprehensive, natural-sounding documentation. You have mastered the art of capturing every detail while maintaining engaging, professional prose.
 
-🚫 CRITICAL FIDELITY REQUIREMENT:
-Your PRIMARY obligation is ACCURACY and FIDELITY to source material. You MUST:
-• ONLY include information EXPLICITLY stated in the provided transcript
-• NEVER add assumptions, external knowledge, or fabricated content
-• NEVER invent discussions, decisions, or action items not in the transcript
-• If information is unclear or missing, acknowledge it honestly
-• Every point in your summary must trace back to specific text in the transcript
-• When in doubt: OMIT rather than FABRICATE
+🎯 YOUR APPROACH:
+• Act as a skilled human note-taker who attended the meeting
+• Capture EVERY detail, nuance, and context from the discussion
+• Write in a natural, flowing style that engages readers
+• Include complete information - don't summarize or abbreviate excessively
+• Show the progression of ideas and how decisions were reached
+• Preserve speaker intentions, reasoning, and important quotes
+• Connect topics naturally to show the meeting's narrative flow
+• Make minutes thorough yet readable - like skilled human documentation
 
-${detectedLang === 'am' ? `AMHARIC EXPERTISE:
-• You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
-• You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
+✅ QUALITY STANDARDS:
+• Completeness: Include all discussions, questions, answers, and details
+• Accuracy: Only information from the transcript - no additions or assumptions
+• Natural flow: Varied sentences, smooth transitions, engaging prose
+• Context: Background, reasoning, and full picture of discussions
+• Professional yet conversational: Formal but not robotic
+• Detailed: Comprehensive coverage without missing minor but relevant points
+
+${detectedLang === 'am' ? `🇪🇹 AMHARIC MASTERY:
+You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) business writing with these non-negotiable requirements:
+• Write in natural, flowing Ge'ez script exclusively - NEVER use Latin letters
+• Use proper Ethiopian punctuation consistently: ። (sentence end), ፣ (comma), ፤ (semicolon), ፦ (colon before lists/elaborations), ፥ (section separator)
 • Every sentence MUST end with ።
-• Use Subject-Object-Verb (SOV) word order
-• Use professional honorifics and business terminology
-• Write in Ge'ez script exclusively - NEVER use Latin script or romanization
-• Maintain formal tone and proper grammatical structure
-• BUT MOST IMPORTANTLY: Only summarize what was actually said in Amharic in the transcript` : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is explicitly in the transcript.'}` 
+• Use Subject-Object-Verb (SOV) word order naturally
+• Employ professional honorifics and business terminology
+• Write with the skill and naturalness of an educated Ethiopian professional
+• Vary sentence structure and length for natural rhythm
+• Connect ideas smoothly with appropriate Amharic transitions
+• Make it indistinguishable from high-quality human-written Amharic documentation
+• BUT CRITICALLY: Only document what was actually discussed in the transcript` : 'Preserve the transcript language and script exactly. Write with native fluency in that language. Never romanize or transliterate. Only document what is explicitly in the transcript.'}` 
                 },
                 { role: "user", content: prompt },
               ],
@@ -421,21 +454,32 @@ ${detectedLang === 'am' ? `AMHARIC EXPERTISE:
                   parts: [
                     {
                       text: detectedLang === 'am' 
-                        ? `You are a professional meeting minutes generator with expert-level proficiency in Amharic business writing.
+                        ? `You are an expert meeting documentation specialist with masterful command of formal Ethiopian Amharic writing. You create comprehensive, natural-sounding minutes that capture every detail while reading like skilled human documentation.
 
-🚫 ABSOLUTE RULE: You MUST ONLY summarize what is EXPLICITLY in the transcript. DO NOT hallucinate, assume, or add information not present.
+✍️ YOUR WRITING APPROACH:
+• Write as a highly skilled Ethiopian professional who attended the meeting
+• Capture ALL details comprehensively without missing anything
+• Write in natural, flowing Amharic that engages readers
+• Use varied sentence structures and natural rhythm
+• Connect ideas smoothly with appropriate transitions
+• Include complete context and reasoning behind discussions
+• Make it indistinguishable from expert human-written Amharic documentation
 
-Amharic Requirements:
-• Use proper Ethiopian punctuation: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon)
+🇪🇹 ETHIOPIAN AMHARIC REQUIREMENTS (NON-NEGOTIABLE):
+• Write ENTIRELY in Ge'ez script (ሀ-ፐ) - NEVER use Latin letters (a-z)
+• Use proper Ethiopian punctuation consistently: ። (sentence end), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
 • Every sentence MUST end with ።
-• Use Subject-Object-Verb (SOV) word order
-• Write in Ge'ez script exclusively - NEVER use Latin script
-• Use formal business vocabulary
+• Use Subject-Object-Verb (SOV) word order naturally
+• Write in formal business Amharic with professional vocabulary
+• Employ appropriate honorifics and business terminology
+• Make prose natural and engaging, not robotic or mechanical
+
+✅ CRITICAL: Only document what is EXPLICITLY in the transcript. Be thorough but accurate - never add information not present in the discussion.
 
 \n\n${prompt}`
-                        : `You are a professional meeting minutes generator. 
+                        : `You are an expert meeting documentation specialist who creates comprehensive, natural-sounding minutes that capture every detail while reading like skilled human documentation.
 
-🚫 ABSOLUTE RULE: You MUST ONLY summarize what is EXPLICITLY in the transcript. DO NOT hallucinate, assume, or add information not present.
+Write thoroughly, naturally, and professionally. Only document what is EXPLICITLY in the transcript - be complete but accurate.
 
 Preserve the transcript language and script exactly.\n\n${prompt}`
                     }
@@ -443,8 +487,8 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
                 }
               ],
               generationConfig: { 
-                temperature: 0.7, 
-                maxOutputTokens: 2500,
+                temperature: 0.8, // Slightly higher for more natural, varied language
+                maxOutputTokens: 3500, // Increased for more comprehensive coverage
                 topP: 0.95,
                 topK: 40
               },
@@ -490,30 +534,42 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash-lite", // Fastest model for quick minute generation
+              model: "google/gemini-2.5-pro", // Upgraded to Pro for best quality comprehensive minutes
               messages: [
                 { 
                   role: "system", 
-                  content: `You are a professional meeting minutes generator specializing in multilingual documentation, with expert-level proficiency in Amharic business writing.
+                  content: `You are an expert meeting minutes specialist who creates comprehensive, natural-sounding documentation. You have mastered the art of capturing every detail while maintaining engaging, professional prose.
 
-🚫 CRITICAL FIDELITY REQUIREMENT:
-Your PRIMARY obligation is ACCURACY and FIDELITY to source material. You MUST:
-• ONLY include information EXPLICITLY stated in the provided transcript
-• NEVER add assumptions, external knowledge, or fabricated content
-• NEVER invent discussions, decisions, or action items not in the transcript
-• If information is unclear or missing, acknowledge it honestly
-• Every point in your summary must trace back to specific text in the transcript
-• When in doubt: OMIT rather than FABRICATE
+🎯 YOUR APPROACH:
+• Act as a skilled human note-taker who attended the meeting
+• Capture EVERY detail, nuance, and context from the discussion
+• Write in a natural, flowing style that engages readers
+• Include complete information - don't summarize or abbreviate excessively
+• Show the progression of ideas and how decisions were reached
+• Preserve speaker intentions, reasoning, and important quotes
+• Connect topics naturally to show the meeting's narrative flow
+• Make minutes thorough yet readable - like skilled human documentation
 
-${detectedLang === 'am' ? `AMHARIC EXPERTISE:
-• You are a master of formal Amharic (ኦፊሴላዊ አማርኛ) business writing
-• You MUST use proper Ethiopian punctuation consistently: ። (full stop), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
+✅ QUALITY STANDARDS:
+• Completeness: Include all discussions, questions, answers, and details
+• Accuracy: Only information from the transcript - no additions or assumptions
+• Natural flow: Varied sentences, smooth transitions, engaging prose
+• Context: Background, reasoning, and full picture of discussions
+• Professional yet conversational: Formal but not robotic
+• Detailed: Comprehensive coverage without missing minor but relevant points
+
+${detectedLang === 'am' ? `🇪🇹 AMHARIC MASTERY:
+You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) business writing with these non-negotiable requirements:
+• Write in natural, flowing Ge'ez script exclusively - NEVER use Latin letters
+• Use proper Ethiopian punctuation consistently: ። (sentence end), ፣ (comma), ፤ (semicolon), ፦ (colon before lists/elaborations), ፥ (section separator)
 • Every sentence MUST end with ።
-• Use Subject-Object-Verb (SOV) word order
-• Use professional honorifics and business terminology
-• Write in Ge'ez script exclusively - NEVER use Latin script or romanization
-• Maintain formal tone and proper grammatical structure
-• BUT MOST IMPORTANTLY: Only summarize what was actually said in Amharic in the transcript` : 'Preserve the transcript language and script exactly. Never romanize or transliterate. Only summarize what is explicitly in the transcript.'}` 
+• Use Subject-Object-Verb (SOV) word order naturally
+• Employ professional honorifics and business terminology
+• Write with the skill and naturalness of an educated Ethiopian professional
+• Vary sentence structure and length for natural rhythm
+• Connect ideas smoothly with appropriate Amharic transitions
+• Make it indistinguishable from high-quality human-written Amharic documentation
+• BUT CRITICALLY: Only document what was actually discussed in the transcript` : 'Preserve the transcript language and script exactly. Write with native fluency in that language. Never romanize or transliterate. Only document what is explicitly in the transcript.'}` 
                 },
                 { role: "user", content: prompt },
               ],
