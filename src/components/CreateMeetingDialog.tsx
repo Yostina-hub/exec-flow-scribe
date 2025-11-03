@@ -458,7 +458,14 @@ export const CreateMeetingDialog = () => {
     {createdMeeting && (
       <ShareMeetingDialog
         open={showShareDialog}
-        onOpenChange={setShowShareDialog}
+        onOpenChange={(isOpen) => {
+          setShowShareDialog(isOpen);
+          if (!isOpen) {
+            // Re-open create meeting dialog when share dialog closes
+            setOpen(true);
+            setCreatedMeeting(null);
+          }
+        }}
         meetingId={createdMeeting.id}
         meetingTitle={createdMeeting.title}
         meetingDate={createdMeeting.formattedDate}

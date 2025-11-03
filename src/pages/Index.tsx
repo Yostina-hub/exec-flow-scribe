@@ -1,10 +1,7 @@
 import { Layout } from "@/components/Layout";
-import { SmartDashboardCard } from "@/components/SmartDashboardCard";
+import { ExecutiveDashboard } from "@/components/ExecutiveDashboard";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
-import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { CEOBriefing } from "@/components/CEOBriefing";
-import { WhatsAppIntegration } from "@/components/WhatsAppIntegration";
-import { UrgentMessagesPanel } from "@/components/UrgentMessagesPanel";
 import { GuestAccessStatus } from "@/components/GuestAccessStatus";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import GuestDashboard from "./GuestDashboard";
@@ -50,8 +47,30 @@ export default function Index() {
   useEffect(() => {
     checkUserRole();
     fetchData();
+    
+    // Real-time clock
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
+    
+    // Real-time data updates
+    const meetingsChannel = supabase
+      .channel('dashboard-meetings')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    const actionsChannel = supabase
+      .channel('dashboard-actions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'action_items' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    
+    return () => {
+      clearInterval(timer);
+      supabase.removeChannel(meetingsChannel);
+      supabase.removeChannel(actionsChannel);
+    };
   }, []);
 
   // Open briefing on every SIGNED_IN event
@@ -301,64 +320,14 @@ export default function Index() {
         {/* Guest Access Status */}
         <GuestAccessStatus />
 
-        {/* Smart Action Cards */}
-        <div className="grid gap-3 lg:gap-6 grid-cols-1 lg:grid-cols-3">
-          <SmartDashboardCard
-            title="Today's Meetings"
-            description={`${todayMeetingsCount} meeting${todayMeetingsCount !== 1 ? 's' : ''} scheduled`}
-            icon={Calendar}
-            gradient="from-blue-500/10 to-blue-500/5"
-            stats={[
-              { label: "Next meeting", value: meetings[0] ? format(new Date(meetings[0].start_time), "h:mm a") : "None" },
-              { label: "Total today", value: todayMeetingsCount.toString() },
-            ]}
-            actions={[
-              { 
-                label: "View All", 
-                onClick: () => navigate('/meetings'),
-                variant: 'outline',
-                icon: Calendar,
-              },
-            ]}
-          />
-
-          <SmartDashboardCard
-            title="Action Items"
-            description={`${pendingActionsCount} items pending`}
-            icon={Target}
-            gradient="from-green-500/10 to-green-500/5"
-            stats={[
-              { label: "Pending", value: pendingActionsCount.toString() },
-              { label: "Due soon", value: actions.filter(a => new Date(a.due_date) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)).length.toString() },
-            ]}
-            actions={[
-              { 
-                label: "View Tasks", 
-                onClick: () => navigate('/actions'),
-                variant: 'outline',
-                icon: CheckSquare,
-              },
-            ]}
-          />
-
-          <SmartDashboardCard
-            title="Meeting Insights"
-            description="View analytics"
-            icon={TrendingUp}
-            gradient="from-purple-500/10 to-purple-500/5"
-            stats={[
-              { label: "This week", value: meetings.length.toString() },
-              { label: "Total", value: meetings.length.toString() },
-            ]}
-            actions={[
-              { 
-                label: "View Report", 
-                onClick: () => navigate('/analytics'),
-                icon: FileText,
-              },
-            ]}
-          />
-        </div>
+        {/* Executive Dashboard Component */}
+        <ExecutiveDashboard
+          meetings={meetings}
+          actions={actions}
+          completionRate={completionRate}
+          totalActions={totalActions}
+          loading={loading}
+        />
 
         {/* Quick Calendar Widget */}
         <div className="grid gap-6 lg:grid-cols-3 animate-fade-in">
@@ -516,64 +485,94 @@ export default function Index() {
           </Card>
         </div>
 
-        {/* Upcoming Meetings with Enhanced Design */}
+        {/* Upcoming Meetings Section - Integrated with Executive Design */}
         {meetings.length > 0 && (
-          <div className="space-y-4 lg:space-y-6 animate-fade-in">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
-              <div>
-                <h2 className="text-xl lg:text-3xl font-bold font-['Space_Grotesk'] flex items-center gap-2 lg:gap-3">
-                  <Rocket className="h-5 w-5 lg:h-8 lg:w-8 text-purple-500" />
-                  Upcoming Meetings
-                </h2>
-                <p className="text-xs lg:text-sm text-muted-foreground mt-1 lg:mt-2">Quick access to your scheduled meetings</p>
-              </div>
-              
-              <div className="relative w-full lg:w-80">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search meetings..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 bg-background/50 backdrop-blur-sm border-2"
-                />
-              </div>
-            </div>
+          <Card className="border-0 bg-gradient-to-br from-background to-muted/20 backdrop-blur-xl overflow-hidden hover:shadow-xl transition-all duration-300 animate-fade-in">
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/5 to-pink-500/5 animate-pulse" />
             
-            {filteredMeetings.length > 0 ? (
-              <div className="grid gap-3 lg:gap-4 grid-cols-1 lg:grid-cols-3">
-                {filteredMeetings.map((meeting, index) => {
-                const startTime = new Date(meeting.start_time);
-                const endTime = new Date(meeting.end_time);
-                const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
-                
-                return (
-                  <div 
-                    key={meeting.id}
-                    className="animate-scale-in"
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <InlineMeetingCard 
-                      id={meeting.id}
-                      title={meeting.title}
-                      date={formatMeetingDate(meeting.start_time)}
-                      time={format(startTime, "h:mm a")}
-                      duration={`${duration} min`}
-                      location={meeting.location || "TBD"}
-                      attendees={0}
-                      status="upcoming"
-                      agendaItems={0}
-                    />
+            <CardHeader className="relative">
+              <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 shadow-lg">
+                    <Rocket className="h-6 w-6 text-white" />
                   </div>
-                );
-              })}
+                  <div>
+                    <CardTitle className="text-2xl font-['Space_Grotesk']">Today's Schedule</CardTitle>
+                    <p className="text-sm text-muted-foreground">{meetings.length} meetings</p>
+                  </div>
+                </div>
+                
+                <div className="relative w-full lg:w-80">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="Search meetings..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-background/50 backdrop-blur-sm border-2"
+                  />
+                </div>
               </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">No meetings found matching "{searchQuery}"</p>
-              </Card>
-            )}
-          </div>
+            </CardHeader>
+            
+            <CardContent className="relative">
+              {filteredMeetings.length > 0 ? (
+                <div className="grid gap-3 lg:grid-cols-2">
+                  {filteredMeetings.map((meeting, index) => {
+                    const startTime = new Date(meeting.start_time);
+                    const endTime = new Date(meeting.end_time);
+                    const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
+                    
+                    return (
+                      <div
+                        key={meeting.id}
+                        className="p-4 rounded-xl bg-gradient-to-br from-background to-muted/30 border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 cursor-pointer group animate-fade-in"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                        onClick={() => navigate(`/meetings/${meeting.id}`)}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="font-semibold text-base group-hover:text-primary transition-colors flex-1">
+                            {meeting.title}
+                          </h4>
+                          <Badge 
+                            variant="secondary"
+                            className={`${
+                              meeting.status === 'completed' ? 'bg-emerald-500/10 text-emerald-600' :
+                              meeting.status === 'in_progress' ? 'bg-blue-500/10 text-blue-600' :
+                              'bg-gray-500/10 text-gray-600'
+                            } border-0 shrink-0`}
+                          >
+                            {meeting.status}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5" />
+                            {format(startTime, "h:mm a")}
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Activity className="h-3.5 w-3.5" />
+                            {duration} min
+                          </div>
+                          {meeting.location && (
+                            <div className="flex items-center gap-1.5">
+                              <Users className="h-3.5 w-3.5" />
+                              {meeting.location}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <Search className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+                  <p className="text-muted-foreground">No meetings found matching "{searchQuery}"</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         )}
 
         {/* Active Actions with Modern Cards */}
@@ -643,12 +642,6 @@ export default function Index() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Communication Panels */}
-      <div className="grid gap-4 md:grid-cols-2 animate-fade-in pb-6">
-        <UrgentMessagesPanel />
-        <WhatsAppIntegration />
       </div>
 
       {/* CEO Briefing Dialog */}

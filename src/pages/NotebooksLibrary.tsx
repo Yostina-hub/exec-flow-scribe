@@ -5,7 +5,7 @@ import { Layout } from "@/components/Layout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Grid3x3, List, ChevronDown, FileText, Loader2 } from "lucide-react";
+import { Plus, Grid3x3, List, ChevronDown, FileText, Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { CreateNotebookDialog } from "@/components/CreateNotebookDialog";
@@ -33,6 +33,26 @@ const NotebooksLibrary = () => {
 
   useEffect(() => {
     loadNotebooks();
+    
+    // Real-time updates for notebooks
+    const channel = supabase
+      .channel('notebooks-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'notebooks'
+        },
+        () => {
+          loadNotebooks();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const loadNotebooks = async () => {
@@ -114,41 +134,59 @@ const NotebooksLibrary = () => {
   return (
     <Layout>
       <div className="min-h-screen bg-background animate-fade-in">
-        {/* Header */}
-        <div className="border-b bg-gradient-to-r from-card/80 via-card/50 to-card/80 backdrop-blur-sm">
+        {/* Executive Header */}
+        <div className="border-b bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm">
           <div className="container mx-auto px-6 py-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 animate-fade-in">
               <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <FileText className="h-6 w-6 text-white" />
+                <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-xl hover-scale transition-all">
+                  <FileText className="h-7 w-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold tracking-tight">NotebookLM</h1>
-                  <p className="text-sm text-muted-foreground mt-0.5">AI-powered research workspace</p>
+                  <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">NotebookLM Library</h1>
+                  <p className="text-sm text-muted-foreground mt-1.5 flex items-center gap-2">
+                    <Sparkles className="h-3.5 w-3.5 text-purple-500" />
+                    AI-powered research and analysis workspace
+                  </p>
                 </div>
               </div>
-              <Button onClick={() => setShowCreateDialog(true)} size="lg" className="gap-2 shadow-md hover:shadow-lg transition-all hover-scale">
-                <Plus className="h-5 w-5" />
-                Create new
-              </Button>
+              <div className="flex items-center gap-3">
+                <Badge variant="secondary" className="px-3 py-1.5 text-sm">
+                  {notebooks.length} {notebooks.length === 1 ? "Notebook" : "Notebooks"}
+                </Badge>
+                <Button 
+                  onClick={() => setShowCreateDialog(true)} 
+                  size="lg" 
+                  className="gap-2 shadow-lg hover:shadow-xl transition-all hover-scale bg-gradient-to-r from-primary to-primary/90"
+                >
+                  <Plus className="h-5 w-5" />
+                  Create New
+                </Button>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between animate-fade-in" style={{ animationDelay: '0.1s' }}>
               <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="my">My notebooks</TabsTrigger>
-                  <TabsTrigger value="featured">Featured notebooks</TabsTrigger>
+                <TabsList className="bg-background/60 backdrop-blur-sm border shadow-sm">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground">
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger value="my" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground">
+                    My notebooks
+                  </TabsTrigger>
+                  <TabsTrigger value="featured" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground">
+                    Featured
+                  </TabsTrigger>
                 </TabsList>
               </Tabs>
 
               <div className="flex items-center gap-2">
-                <div className="flex items-center border rounded-lg">
+                <div className="flex items-center border rounded-lg bg-background/60 backdrop-blur-sm shadow-sm">
                   <Button
                     variant={viewMode === "grid" ? "secondary" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("grid")}
-                    className="rounded-r-none"
+                    className="rounded-r-none hover-scale transition-all"
                   >
                     <Grid3x3 className="h-4 w-4" />
                   </Button>
@@ -156,7 +194,7 @@ const NotebooksLibrary = () => {
                     variant={viewMode === "list" ? "secondary" : "ghost"}
                     size="sm"
                     onClick={() => setViewMode("list")}
-                    className="rounded-l-none"
+                    className="rounded-l-none hover-scale transition-all"
                   >
                     <List className="h-4 w-4" />
                   </Button>
@@ -164,21 +202,23 @@ const NotebooksLibrary = () => {
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      {sortBy === "recent" && "Most recent"}
-                      {sortBy === "oldest" && "Oldest"}
-                      {sortBy === "title" && "Title"}
-                      <ChevronDown className="h-4 w-4 ml-2" />
+                    <Button variant="outline" size="sm" className="gap-2 bg-background/60 backdrop-blur-sm shadow-sm hover-scale transition-all">
+                      <span className="font-medium">
+                        {sortBy === "recent" && "Most recent"}
+                        {sortBy === "oldest" && "Oldest"}
+                        {sortBy === "title" && "Title"}
+                      </span>
+                      <ChevronDown className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="bg-popover z-50">
-                    <DropdownMenuItem onClick={() => setSortBy("recent")}>
+                  <DropdownMenuContent align="end" className="bg-popover/95 backdrop-blur-sm z-50">
+                    <DropdownMenuItem onClick={() => setSortBy("recent")} className="cursor-pointer">
                       Most recent
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortBy("oldest")}>
+                    <DropdownMenuItem onClick={() => setSortBy("oldest")} className="cursor-pointer">
                       Oldest
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setSortBy("title")}>
+                    <DropdownMenuItem onClick={() => setSortBy("title")} className="cursor-pointer">
                       Title
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -191,12 +231,12 @@ const NotebooksLibrary = () => {
         {/* Content */}
         <div className="container mx-auto px-6 py-8">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="flex flex-col items-center justify-center py-32 gap-4 animate-fade-in">
               <div className="relative">
-                <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+                <div className="absolute inset-0 bg-primary/20 blur-3xl animate-pulse" />
               </div>
-              <p className="text-muted-foreground animate-pulse">Loading notebooks...</p>
+              <p className="text-lg text-muted-foreground animate-pulse font-medium">Loading notebooks...</p>
             </div>
           ) : notebooks.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 text-center animate-scale-in">
@@ -216,9 +256,12 @@ const NotebooksLibrary = () => {
             <>
               {/* Featured Notebooks */}
               {activeTab !== "my" && featuredNotebooks.length > 0 && (
-                <div className="mb-12">
-                  <h2 className="text-xl font-semibold mb-4">Featured notebooks</h2>
-                  <div className="rounded-lg border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="mb-12 animate-fade-in">
+                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    Featured notebooks
+                  </h2>
+                  <div className="rounded-xl border bg-gradient-to-b from-card to-card/50 overflow-hidden shadow-md hover:shadow-xl transition-all">
                     <Table>
                       <TableHeader>
                         <TableRow className="bg-muted/50">
@@ -261,11 +304,11 @@ const NotebooksLibrary = () => {
               )}
 
               {/* Recent Notebooks */}
-              <div>
+              <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
                 <h2 className="text-xl font-semibold mb-4">
                   {activeTab === "my" ? "My notebooks" : "Recent notebooks"}
                 </h2>
-                <div className="rounded-lg border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div className="rounded-xl border bg-gradient-to-b from-card to-card/50 overflow-hidden shadow-md hover:shadow-xl transition-all">
                   <Table>
                     <TableHeader>
                       <TableRow className="bg-muted/50">
