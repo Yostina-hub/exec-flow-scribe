@@ -240,7 +240,7 @@ export default function Index() {
 
   return (
     <Layout>
-      <div className="space-y-4 lg:space-y-8 pb-16 lg:pb-20">
+      <div className="space-y-4 lg:space-y-8 pb-20 md:pb-16 lg:pb-20">
         {/* Animated Hero Section */}
         <div className="relative overflow-hidden rounded-xl lg:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 p-4 lg:p-8 border border-purple-500/20 animate-fade-in">
           <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />

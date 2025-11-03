@@ -115,8 +115,8 @@ export const Layout = ({ children }: LayoutProps) => {
         <AppSidebar />
         
         <div className="flex-1 flex flex-col w-full">
-          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="flex h-14 lg:h-14 items-center gap-2 lg:gap-4 px-3 lg:px-4">
+          <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 mobile-safe-top">
+            <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-3 md:px-4">
               <SidebarTrigger />
               <div className="flex-1" />
               <NotificationBell />
@@ -124,7 +124,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
           </header>
 
-          <main className="flex-1 p-3 lg:p-6">
+          <main className="flex-1 p-3 md:p-4 lg:p-6 mobile-safe-bottom">
             {children}
           </main>
         </div>
