@@ -82,8 +82,9 @@ Only return the translated text without any explanations or additional comments.
 
   } catch (error) {
     console.error("Translation error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Translation failed";
     return new Response(
-      JSON.stringify({ error: error.message || "Translation failed" }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
