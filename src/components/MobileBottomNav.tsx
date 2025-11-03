@@ -37,7 +37,7 @@ export function MobileBottomNav() {
   const visibleMoreNav = moreNavItems.filter(item => canAccessRoute(item.href));
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border/50 md:hidden mobile-safe-bottom shadow-lg">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-lg border-t border-border/50 mobile-safe-bottom shadow-lg">
       <div className="grid grid-cols-5 h-16">
         {visibleMainNav.map((item) => {
           const isActive = location.pathname === item.href;
