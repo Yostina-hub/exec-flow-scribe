@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power, Square, Music, Brain, Paintbrush } from 'lucide-react';
+import { Mic, MicOff, Video, VideoOff, Hand, MessageSquare, Clock, Users, Sparkles, Activity, Zap, Image, Presentation, Star, Crown, Lightbulb, X, Power, Square, Music, Brain, Paintbrush, Shield } from 'lucide-react';
 import * as THREE from 'three';
 import { LiveTranscription } from './LiveTranscription';
 import { BrowserSpeechRecognition } from './BrowserSpeechRecognition';
@@ -17,6 +17,7 @@ import { soundFX } from '@/utils/soundEffects';
 import { PresenterControls } from './PresenterControls';
 import { AIMeetingCopilot } from './AIMeetingCopilot';
 import { SmartWhiteboard } from './SmartWhiteboard';
+import { AdvancedHostControls } from './AdvancedHostControls';
 import { cn } from '@/lib/utils';
 
 interface VirtualMeetingRoomProps {
@@ -1750,10 +1751,15 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
         {/* Right Sidebar - Meeting Tools */}
         <Card className="w-[420px] border-l rounded-none bg-card/50 backdrop-blur-xl">
           <Tabs defaultValue="participants" className="h-full flex flex-col">
-            <TabsList className="w-full grid grid-cols-5 bg-muted/50">
+            <TabsList className="w-full grid grid-cols-6 bg-muted/50">
               <TabsTrigger value="participants" className="data-[state=active]:bg-primary/20">
                 <Users className="h-4 w-4" />
               </TabsTrigger>
+              {isHost && (
+                <TabsTrigger value="controls" className="data-[state=active]:bg-primary/20">
+                  <Shield className="h-4 w-4" />
+                </TabsTrigger>
+              )}
               <TabsTrigger value="agenda" className="data-[state=active]:bg-primary/20">
                 Agenda
               </TabsTrigger>
@@ -1767,6 +1773,19 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
                 <MessageSquare className="h-4 w-4" />
               </TabsTrigger>
             </TabsList>
+
+            {/* Advanced Host Controls Tab */}
+            {isHost && (
+              <TabsContent value="controls" className="flex-1 overflow-hidden p-4">
+                <AdvancedHostControls
+                  meetingId={meetingId}
+                  isHost={isHost}
+                  participants={participants}
+                  currentUserId={currentUserId}
+                  onlineUsers={onlineUsers}
+                />
+              </TabsContent>
+            )}
 
             <TabsContent value="participants" className="flex-1 overflow-hidden">
               <ScrollArea className="h-full p-4">
