@@ -235,28 +235,15 @@ export const BrowserSpeechRecognition = ({
     try {
       let finalText = transcript.trim();
 
-      // If we have audio but no text → server-side transcription fallback
-      if (audioFile && !finalText) {
-        const base64 = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-          reader.onerror = reject;
-          reader.readAsDataURL(audioFile);
+      // Browser-only mode: skip server transcription, only save if we have text
+      if (!finalText && audioFile) {
+        toast({
+          title: 'No transcription detected',
+          description: 'Please speak clearly and try again',
+          variant: 'destructive',
         });
-
-        const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-          body: {
-            audioBase64: base64,
-            meetingId,
-            language: selectedLanguage || 'auto',
-            contentType: audioFile.type || 'audio/webm'
-          }
-        });
-
-        if (error) throw error;
-        if (data?.transcription) {
-          finalText = data.transcription as string;
-        }
+        setIsSaving(false);
+        return;
       }
 
       // Save transcription text (either browser-recognized or server-side)
