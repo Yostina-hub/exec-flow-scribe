@@ -49,22 +49,18 @@ export const BrowserSpeechRecognition = ({
   const onDurationChangeRef = useRef(onDurationChange);
   useEffect(() => { onDurationChangeRef.current = onDurationChange; }, [onDurationChange]);
   
-  // Browser Whisper state
+  // Browser Whisper state - use PCM capture instead of blobs
   const [whisperTranscript, setWhisperTranscript] = useState('');
-  const chunkQueueRef = useRef<Blob[]>([]);
-  const lastMimeRef = useRef<string>('audio/webm');
+  const pcmChunksRef = useRef<Float32Array[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const transcribingRef = useRef(false);
   const whisperMode = !isSupported || selectedLanguage === 'am-ET';
   
-  // Audio recording hook for archiving
-  const handleChunk = (chunk: Blob) => {
-    if (!whisperMode) return;
-    chunkQueueRef.current.push(chunk);
-    lastMimeRef.current = (chunk as any).type || lastMimeRef.current;
-    const maxChunks = 12; // keep roughly last ~12s
-    if (chunkQueueRef.current.length > maxChunks) {
-      chunkQueueRef.current.splice(0, chunkQueueRef.current.length - maxChunks);
-    }
+  // Audio recording hook for archiving (no PCM callback needed)
+  const handleChunk = (_chunk: Blob) => {
+    // No-op: PCM capture happens separately
   };
 
   const {
@@ -147,10 +143,25 @@ export const BrowserSpeechRecognition = ({
         if (prevExternal) {
           console.log('Stopping recording and saving...');
           if (isListening) stopListening();
+          // Clean up PCM capture
+          try {
+            processorRef.current?.disconnect();
+            sourceRef.current?.disconnect();
+            await audioContextRef.current?.close();
+          } catch (e) {
+            console.warn('Error cleaning up PCM capture:', e);
+          }
+          processorRef.current = null;
+          sourceRef.current = null;
+          audioContextRef.current = null;
+          pcmChunksRef.current = [];
+          
           const audioFile = await stopAudioRecording();
-          if (transcript.trim() || audioFile) {
+          const displayText = (whisperMode ? whisperTranscript : transcript).trim();
+          if (displayText || audioFile) {
             await handleSave(audioFile);
             resetTranscript();
+            setWhisperTranscript('');
           }
         }
       } else {
@@ -170,11 +181,36 @@ export const BrowserSpeechRecognition = ({
             if (!prevExternal) {
               console.log('New recording session - clearing and starting fresh');
               resetTranscript();
+              setWhisperTranscript('');
               setRecordingDuration(0);
               clearAudioRecording();
+              pcmChunksRef.current = [];
+              
               try {
                 await startAudioRecording();
                 console.log('Audio recording started');
+                
+                // Start PCM capture for Browser Whisper if in whisper mode
+                if (whisperMode) {
+                  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                  const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
+                  audioContextRef.current = audioCtx;
+                  sourceRef.current = audioCtx.createMediaStreamSource(stream);
+                  processorRef.current = audioCtx.createScriptProcessor(4096, 1, 1);
+                  
+                  processorRef.current.onaudioprocess = (e) => {
+                    const input = e.inputBuffer.getChannelData(0);
+                    pcmChunksRef.current.push(new Float32Array(input));
+                    const maxChunks = 200; // ~30s at 24kHz
+                    if (pcmChunksRef.current.length > maxChunks) {
+                      pcmChunksRef.current.splice(0, pcmChunksRef.current.length - maxChunks);
+                    }
+                  };
+                  
+                  sourceRef.current.connect(processorRef.current);
+                  processorRef.current.connect(audioCtx.destination);
+                  console.log('PCM capture started for Browser Whisper');
+                }
               } catch (err) {
                 console.error('Failed to start audio recording:', err);
                 toast({
@@ -220,28 +256,59 @@ export const BrowserSpeechRecognition = ({
     };
   }, [externalIsRecording, isPaused]);
 
-  // Live Browser Whisper transcription loop
+  // Live Browser Whisper transcription loop using PCM data
   useEffect(() => {
     if (!externalIsRecording || isPaused || !whisperMode) return;
     const interval = setInterval(async () => {
-      if (transcribingRef.current) return;
-      if (chunkQueueRef.current.length === 0) return;
+      if (transcribingRef.current || pcmChunksRef.current.length === 0) return;
       transcribingRef.current = true;
+      
       try {
-        const blob = new Blob([...chunkQueueRef.current], { type: lastMimeRef.current });
-        const text = await transcribeAudioBrowser(blob);
-        if (text) {
-          setWhisperTranscript((prev) => {
-            if (prev.endsWith(text)) return prev; // basic dedupe
-            return prev ? `${prev} ${text}` : text;
-          });
+        // Get last 8 seconds of PCM data
+        const sampleRate = 24000;
+        const windowSeconds = 8;
+        const neededSamples = sampleRate * windowSeconds;
+        
+        let remaining = neededSamples;
+        const selected: Float32Array[] = [];
+        for (let i = pcmChunksRef.current.length - 1; i >= 0 && remaining > 0; i--) {
+          const chunk = pcmChunksRef.current[i];
+          selected.push(chunk);
+          remaining -= chunk.length;
+        }
+        
+        if (selected.length > 0) {
+          const total = Math.min(neededSamples, selected.reduce((sum, c) => sum + c.length, 0));
+          const segment = new Float32Array(total);
+          let offset = total;
+          for (let i = 0; i < selected.length; i++) {
+            const chunk = selected[i];
+            const write = Math.min(chunk.length, offset);
+            segment.set(chunk.subarray(chunk.length - write), offset - write);
+            offset -= write;
+            if (offset <= 0) break;
+          }
+          
+          // Transcribe directly from PCM using browserWhisper's model
+          const { initBrowserWhisper } = await import('@/utils/browserWhisper');
+          const model = await initBrowserWhisper();
+          const result = await model(segment);
+          const text = (result?.text as string) || '';
+          
+          if (text && text.trim()) {
+            setWhisperTranscript((prev) => {
+              const cleaned = text.trim();
+              if (prev.endsWith(cleaned)) return prev;
+              return prev ? `${prev} ${cleaned}` : cleaned;
+            });
+          }
         }
       } catch (e) {
         console.warn('Browser Whisper transcription failed', e);
       } finally {
         transcribingRef.current = false;
       }
-    }, 2000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [externalIsRecording, isPaused, whisperMode]);
 
@@ -448,7 +515,7 @@ export const BrowserSpeechRecognition = ({
   const handleClear = () => {
     resetTranscript();
     setWhisperTranscript('');
-    chunkQueueRef.current = [];
+    pcmChunksRef.current = [];
     setRecordingDuration(0);
     clearAudioRecording();
   };
