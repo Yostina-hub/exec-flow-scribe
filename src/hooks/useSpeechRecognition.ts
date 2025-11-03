@@ -46,12 +46,6 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
     recognition.interimResults = true;
     recognition.maxAlternatives = 5; // Increased for better accuracy
     recognition.lang = language;
-    
-    // Enhanced configuration for better accuracy
-    if ('grammars' in recognition) {
-      // @ts-ignore - grammars property exists but not in types
-      recognition.grammars = null; // Use default grammar for better general accuracy
-    }
 
     recognition.onstart = () => {
       console.log('Speech recognition started');
