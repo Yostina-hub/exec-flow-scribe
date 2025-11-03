@@ -8,6 +8,7 @@ import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { transcribeAudioBrowser } from '@/utils/browserWhisper';
 
 interface BrowserSpeechRecognitionProps {
   meetingId: string;
@@ -48,7 +49,24 @@ export const BrowserSpeechRecognition = ({
   const onDurationChangeRef = useRef(onDurationChange);
   useEffect(() => { onDurationChangeRef.current = onDurationChange; }, [onDurationChange]);
   
+  // Browser Whisper state
+  const [whisperTranscript, setWhisperTranscript] = useState('');
+  const chunkQueueRef = useRef<Blob[]>([]);
+  const lastMimeRef = useRef<string>('audio/webm');
+  const transcribingRef = useRef(false);
+  const whisperMode = !isSupported || selectedLanguage === 'am-ET';
+  
   // Audio recording hook for archiving
+  const handleChunk = (chunk: Blob) => {
+    if (!whisperMode) return;
+    chunkQueueRef.current.push(chunk);
+    lastMimeRef.current = (chunk as any).type || lastMimeRef.current;
+    const maxChunks = 12; // keep roughly last ~12s
+    if (chunkQueueRef.current.length > maxChunks) {
+      chunkQueueRef.current.splice(0, chunkQueueRef.current.length - maxChunks);
+    }
+  };
+
   const {
     startRecording: startAudioRecording,
     stopRecording: stopAudioRecording,
@@ -57,7 +75,7 @@ export const BrowserSpeechRecognition = ({
     clearRecording: clearAudioRecording,
     audioBlob,
     error: audioError
-  } = useAudioRecording();
+  } = useAudioRecording({ onChunk: handleChunk });
 
   // Track previous external recording and pause states
   const prevExternalRef = useRef(externalIsRecording);
@@ -202,6 +220,31 @@ export const BrowserSpeechRecognition = ({
     };
   }, [externalIsRecording, isPaused]);
 
+  // Live Browser Whisper transcription loop
+  useEffect(() => {
+    if (!externalIsRecording || isPaused || !whisperMode) return;
+    const interval = setInterval(async () => {
+      if (transcribingRef.current) return;
+      if (chunkQueueRef.current.length === 0) return;
+      transcribingRef.current = true;
+      try {
+        const blob = new Blob([...chunkQueueRef.current], { type: lastMimeRef.current });
+        const text = await transcribeAudioBrowser(blob);
+        if (text) {
+          setWhisperTranscript((prev) => {
+            if (prev.endsWith(text)) return prev; // basic dedupe
+            return prev ? `${prev} ${text}` : text;
+          });
+        }
+      } catch (e) {
+        console.warn('Browser Whisper transcription failed', e);
+      } finally {
+        transcribingRef.current = false;
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [externalIsRecording, isPaused, whisperMode]);
+
   // Auto-save transcript every ~5s while recording (no audio upload, text only)
   const lastSavedLenRef = useRef(0);
   useEffect(() => {
@@ -228,14 +271,39 @@ export const BrowserSpeechRecognition = ({
     return () => clearInterval(autosave);
   }, [isListening, transcript, meetingId, userName, selectedLanguage]);
 
+  // Autosave for Browser Whisper mode
+  useEffect(() => {
+    if (!whisperMode || !externalIsRecording || isPaused) return;
+    const autosave = setInterval(async () => {
+      const text = whisperTranscript.trim();
+      if (text && text.length - lastSavedLenRef.current >= 10) {
+        try {
+          await supabase.functions.invoke('save-transcription', {
+            body: {
+              meetingId,
+              content: text.slice(lastSavedLenRef.current),
+              timestamp: new Date().toISOString(),
+              speaker: userName,
+              detectedLanguage: selectedLanguage,
+            },
+          });
+          lastSavedLenRef.current = text.length;
+        } catch (e) {
+          console.warn('Autosave (whisper) failed:', e);
+        }
+      }
+    }, 2000);
+    return () => clearInterval(autosave);
+  }, [whisperMode, whisperTranscript, externalIsRecording, isPaused, meetingId, userName, selectedLanguage]);
 
   const handleSave = async (audioFile?: Blob | null) => {
-    if (!transcript.trim() && !audioFile) return;
+    const displayText = (whisperMode ? whisperTranscript : transcript).trim();
+    if (!displayText && !audioFile) return;
     if (isSaving) return; // Prevent duplicate saves
 
     setIsSaving(true);
     try {
-      let finalText = transcript.trim();
+      let finalText = displayText;
 
       // If we have audio but no text → prefer Web Speech API; only fall back to server if not supported
       if (audioFile && !finalText && !isSupported) {
@@ -379,6 +447,8 @@ export const BrowserSpeechRecognition = ({
 
   const handleClear = () => {
     resetTranscript();
+    setWhisperTranscript('');
+    chunkQueueRef.current = [];
     setRecordingDuration(0);
     clearAudioRecording();
   };
@@ -490,11 +560,11 @@ export const BrowserSpeechRecognition = ({
         </div>
 
         <div className="min-h-[200px] max-h-[400px] overflow-y-auto bg-muted rounded-lg p-4">
-          {transcript ? (
+          {(whisperMode ? whisperTranscript : transcript) ? (
             <div className="space-y-3">
               <div className="flex items-start gap-3">
                 <Badge variant="secondary" className="mt-1">{userName}</Badge>
-                <p className="text-lg leading-relaxed flex-1">{transcript}</p>
+                <p className="text-lg leading-relaxed flex-1">{whisperMode ? whisperTranscript : transcript}</p>
               </div>
             </div>
           ) : (

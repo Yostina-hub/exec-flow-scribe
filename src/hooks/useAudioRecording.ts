@@ -13,7 +13,7 @@ export interface AudioRecordingHook {
   error: string | null;
 }
 
-export const useAudioRecording = (): AudioRecordingHook => {
+export const useAudioRecording = (opts?: { onChunk?: (chunk: Blob) => void }): AudioRecordingHook => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -62,6 +62,7 @@ export const useAudioRecording = (): AudioRecordingHook => {
       mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           audioChunksRef.current.push(event.data);
+          try { opts?.onChunk?.(event.data); } catch {}
         }
       };
 
