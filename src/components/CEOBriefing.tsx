@@ -133,7 +133,11 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       }
     } catch (error: any) {
       console.error('Failed to generate briefing:', error);
-      toast.error('Failed to generate executive briefing')
+      toast({
+        title: "Error",
+        description: "Failed to generate executive briefing",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
@@ -192,11 +196,12 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
       });
 
       if (error) {
-        console.error('TTS error:', error);
-        setVoiceError('Voice narration unavailable. Please check API configuration.');
+        console.warn('TTS not available:', error);
+        setVoiceError('Voice narration unavailable. Continuing without audio.');
         setIsNarrating(false);
         narratingRef.current = false;
         setVoiceEnabled(false);
+        // Don't throw - just continue without voice
         return;
       }
 
@@ -231,9 +236,10 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
         }
       } catch (playError: any) {
         console.error('Autoplay error:', playError);
-        // If autoplay is blocked, show a user-friendly message
+        // If autoplay is blocked, disable voice silently
         if (playError.name === 'NotAllowedError') {
-          toast.error('Click anywhere to enable audio playback');
+          setVoiceError('Audio autoplay blocked. Click speaker icon to enable.');
+          setVoiceEnabled(false);
           // Retry play on next user interaction
           const retryPlay = async () => {
             try {
@@ -249,20 +255,12 @@ export function CEOBriefing({ open, onClose }: CEOBriefingProps) {
         narratingRef.current = false;
       }
     } catch (error: any) {
-      console.error('Narration error:', error);
+      console.warn('Narration not available:', error);
       setIsNarrating(false);
       narratingRef.current = false;
       setVoiceEnabled(false);
-      
-      if (error.message?.includes('quota')) {
-        setVoiceError('Voice quota exceeded. Please check your OpenAI billing.');
-        toast.error('Voice narration quota exceeded');
-      } else if (error.message?.includes('API key')) {
-        setVoiceError('OpenAI API key not configured.');
-        toast.error('Voice narration requires API key configuration');
-      } else {
-        setVoiceError('Voice narration unavailable.');
-      }
+      setVoiceError('Voice narration unavailable. Continuing without audio.');
+      // Don't throw or show intrusive error - presentation continues without voice
     }
   };
 
