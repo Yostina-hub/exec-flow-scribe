@@ -154,8 +154,8 @@ const Auth = () => {
 
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent hidden lg:block" />
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-0 lg:p-4">
-        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto">
+      <div className="relative z-10 min-h-screen flex items-center justify-center p-4 lg:p-4">
+        <div className="w-full max-w-md lg:max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto">
           {/* Hero Section - Executive Focus */}
           <div className="text-white space-y-8 animate-fade-in hidden lg:block pr-12">
             <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 backdrop-blur-xl border border-emerald-400/50 shadow-xl shadow-emerald-500/20">
@@ -199,12 +199,12 @@ const Auth = () => {
           </div>
 
           {/* Auth Card - Executive Edition */}
-          <div className="animate-scale-in w-full lg:w-auto h-full lg:h-auto">
-            <Card className="border-0 lg:border-2 lg:border-emerald-400/30 bg-white/98 backdrop-blur-2xl shadow-none lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] lg:rounded-3xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center py-8 lg:py-0 relative overflow-hidden">
+          <div className="animate-scale-in w-full lg:w-auto">
+            <Card className="border-2 border-emerald-400/30 bg-white/98 backdrop-blur-2xl shadow-lg lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] rounded-2xl lg:rounded-3xl relative overflow-hidden">
               {/* Card Glow Effect */}
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
               
-              <CardHeader className="space-y-4 px-4 sm:px-8 pt-8 lg:pt-8 pb-4 lg:pb-6 relative">
+              <CardHeader className="space-y-4 px-6 sm:px-8 pt-6 lg:pt-8 pb-4 lg:pb-6 relative">
                 <div className="flex items-center justify-center lg:justify-start gap-3">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl blur-xl opacity-50 animate-pulse" />
@@ -223,7 +223,7 @@ const Auth = () => {
                   Secure access to your organization's intelligence platform
                 </CardDescription>
               </CardHeader>
-              <CardContent className="px-4 sm:px-6 lg:px-6 pb-6 lg:pb-8">
+              <CardContent className="px-6 sm:px-6 lg:px-6 pb-6 lg:pb-8">
                 <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-10 lg:h-auto">
                     <TabsTrigger value="signin" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
