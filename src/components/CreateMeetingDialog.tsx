@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -27,7 +28,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
-import { ShareMeetingDialog } from "./ShareMeetingDialog";
 import { generateGoogleMeetLink, generateTMeetLink } from "@/utils/videoConference";
 import { MeetingTypeSelector } from "./MeetingTypeSelector";
 
@@ -38,14 +38,13 @@ interface Category {
 }
 
 export const CreateMeetingDialog = () => {
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [meetingType, setMeetingType] = useState<'video_conference' | 'virtual_room' | 'standard'>('standard');
-  const [showShareDialog, setShowShareDialog] = useState(false);
-  const [createdMeeting, setCreatedMeeting] = useState<any>(null);
 
   useEffect(() => {
     if (open) {
@@ -192,17 +191,12 @@ export const CreateMeetingDialog = () => {
 
       toast.success("Meeting created successfully");
       
-      // Store meeting details and show share dialog
-      setCreatedMeeting({
-        ...meeting,
-        formattedDate: format(startTime, 'PPP'),
-        formattedTime: format(startTime, 'p'),
-      });
       setOpen(false);
-      setShowShareDialog(true);
       setDate(undefined);
       setIsRecurring(false);
-      // Meeting will appear automatically via realtime subscription
+      
+      // Navigate to meeting detail page
+      navigate(`/meetings/${meeting.id}`);
     } catch (error: any) {
       toast.error("Failed to create meeting: " + error.message);
     } finally {
@@ -454,25 +448,6 @@ export const CreateMeetingDialog = () => {
         </form>
       </DialogContent>
     </Dialog>
-
-    {createdMeeting && (
-      <ShareMeetingDialog
-        open={showShareDialog}
-        onOpenChange={(isOpen) => {
-          setShowShareDialog(isOpen);
-          if (!isOpen) {
-            // Re-open create meeting dialog when share dialog closes
-            setOpen(true);
-            setCreatedMeeting(null);
-          }
-        }}
-        meetingId={createdMeeting.id}
-        meetingTitle={createdMeeting.title}
-        meetingDate={createdMeeting.formattedDate}
-        meetingTime={createdMeeting.formattedTime}
-        videoConferenceUrl={createdMeeting.video_conference_url}
-      />
-    )}
-  </>
+    </>
   );
 };
