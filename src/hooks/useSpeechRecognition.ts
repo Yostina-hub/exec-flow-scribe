@@ -31,6 +31,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const shouldBeListeningRef = useRef(false);
   const keepAliveIntervalRef = useRef<number | null>(null);
   const isListeningRef = useRef(false);
+  const isStartingRef = useRef(false); // Prevent race conditions
 
   // Check if browser supports speech recognition
   const isSupported = typeof window !== 'undefined' && 
@@ -51,6 +52,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Speech recognition started');
       setIsListening(true);
       isListeningRef.current = true;
+      isStartingRef.current = false; // Clear starting flag
       setError(null);
       // Keep-alive: Chrome auto-stops after ~60s; force restart via onend
       if (keepAliveIntervalRef.current) {
@@ -58,7 +60,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         keepAliveIntervalRef.current = null;
       }
       keepAliveIntervalRef.current = window.setInterval(() => {
-        if (shouldBeListeningRef.current) {
+        if (shouldBeListeningRef.current && !isStartingRef.current) {
           try {
             recognition.stop(); // onend will trigger; external controller will restart
           } catch {}
@@ -108,11 +110,19 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       if (msg) setError(msg);
       // Auto-recover on common transient errors
       const recoverable = ['no-speech', 'network', 'aborted'].includes(event.error);
-      if (recoverable && shouldBeListeningRef.current) {
+      if (recoverable && shouldBeListeningRef.current && !isStartingRef.current) {
+        isStartingRef.current = true;
         try { recognitionRef.current?.stop(); } catch {}
         setTimeout(() => {
-          try { recognitionRef.current?.start(); } catch (err) {
-            console.error('Error restarting after error:', err);
+          if (shouldBeListeningRef.current && !isListeningRef.current) {
+            try { 
+              recognitionRef.current?.start(); 
+            } catch (err) {
+              console.error('Error restarting after error:', err);
+              isStartingRef.current = false;
+            }
+          } else {
+            isStartingRef.current = false;
           }
         }, 300);
       }
@@ -123,10 +133,18 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       setIsListening(false);
       isListeningRef.current = false;
       // Auto-restart if we should still be listening (e.g., long Chrome sessions or brief silence)
-      if (shouldBeListeningRef.current) {
+      if (shouldBeListeningRef.current && !isStartingRef.current) {
+        isStartingRef.current = true;
         setTimeout(() => {
-          try { recognitionRef.current?.start(); } catch (err) {
-            console.error('Error auto-restarting recognition:', err);
+          if (shouldBeListeningRef.current && !isListeningRef.current) {
+            try { 
+              recognitionRef.current?.start(); 
+            } catch (err) {
+              console.error('Error auto-restarting recognition:', err);
+              isStartingRef.current = false;
+            }
+          } else {
+            isStartingRef.current = false;
           }
         }, 200);
       }
@@ -156,14 +174,16 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       setLanguage(lang);
     }
 
-    if (isListeningRef.current) {
-      console.log('Recognition already active, skipping start');
+    if (isListeningRef.current || isStartingRef.current) {
+      console.log('Recognition already active or starting, skipping start');
       return;
     }
 
     console.log('startListening called with language:', lang || language);
     setShouldBeListening(true);
     shouldBeListeningRef.current = true;
+    isStartingRef.current = true;
+    
     try {
       if (recognitionRef.current) {
         console.log('Starting speech recognition...');
@@ -171,9 +191,11 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       } else {
         console.error('Recognition ref is null');
         setError('Speech recognition not initialized');
+        isStartingRef.current = false;
       }
     } catch (err: any) {
       console.error('Error starting recognition:', err);
+      isStartingRef.current = false;
       // If already started, ignore the error
       if (err.message?.includes('already started')) {
         console.log('Recognition already started, continuing...');
@@ -186,6 +208,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const stopListening = useCallback(() => {
     setShouldBeListening(false);
     shouldBeListeningRef.current = false;
+    isStartingRef.current = false; // Clear starting flag
     if (keepAliveIntervalRef.current) {
       clearInterval(keepAliveIntervalRef.current);
       keepAliveIntervalRef.current = null;
