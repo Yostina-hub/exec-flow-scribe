@@ -100,63 +100,30 @@ serve(async (req) => {
       ?.map((d: any) => `- ${d.decision_text}`)
       .join("\n") || "No decisions recorded";
 
-    const prompt = `Generate comprehensive, professional meeting minutes for a virtual room meeting with exceptional writing quality.
-
-✍️ GRAMMAR & WRITING EXCELLENCE (CRITICAL):
-• Perfect grammar - zero errors, proper subject-verb agreement, consistent tenses
-• Professional, polished language - executive-level sophistication
-• Complete sentences with proper punctuation throughout
-• Precise, professional vocabulary
-• Active voice preference for clarity
-• Consistent past tense for completed discussions
-• Clear pronouns with explicit antecedents
-• Proofread mentally before output - this is professional documentation
-
-📝 ENHANCED DESCRIPTIVE STANDARDS:
-• Use rich, descriptive language that provides vivid understanding
-• Explain WHY decisions were made with full contextual background, not just WHAT
-• Detail reasoning, rationale, evidence, and thought processes behind discussions
-• Describe conversation dynamics (collaborative, analytical, constructive, strategic)
-• Elaborate on HOW ideas evolved and were refined during deliberations
-• Use professional transitions to show logical relationships between topics
-• Provide comprehensive background when speakers reference prior context
-• Add analytical depth - explain implications, significance, potential impacts
-• Include contextual details and stakeholder perspectives
-• Use descriptive adjectives and adverbs to enrich the narrative
-• Expand on key points - explain importance and connections, not just list items
-
-✅ PUNCTUATION EXCELLENCE:
-• Use proper punctuation consistently and flawlessly
-• End every sentence with appropriate punctuation (. ! ?)
-• Use commas correctly for clauses, series, improved readability
-• Use colons (:) to introduce lists or elaborations
-• Use semicolons (;) for related independent clauses
-• Use quotation marks for direct quotes
-• Format lists with proper bullets or numbering
-• Create clear paragraph breaks between topics
+    const prompt = `Generate comprehensive meeting minutes for a virtual room meeting.
 
 🎯 MEETING CONTEXT:
 Title: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
-Meeting Type: Virtual Room (3D Immersive Experience)
+Meeting Type: Virtual Room (3D Immersive)
 
-📝 PLANNED AGENDA:
+📝 AGENDA:
 ${agendaList}
 
-🗣️ COMPLETE TRANSCRIPT:
-${fullTranscript || 'No transcript available - generate comprehensive draft based on agenda and decisions'}
+🗣️ TRANSCRIPT:
+${fullTranscript || 'No transcript available - generate draft based on agenda'}
 
-✅ RECORDED DECISIONS:
+✅ DECISIONS:
 ${decisionsList}
 
-📊 REQUIRED SECTIONS (comprehensive and well-written):
-1. **Executive Summary** - 4-6 sophisticated, information-rich sentences capturing complete meeting overview. Use varied structures, professional transitions, perfect grammar. This must be exceptionally well-written.
-2. **Key Discussion Points** - Detailed, descriptive coverage of ALL topics discussed. Include who introduced topics, context provided, different perspectives, questions and answers, reasoning shared. Use narrative prose, not bullet points.
-3. **Decisions Made** - ALL decisions with comprehensive context about how they were reached, rationale, implications, and stakeholder input.
-4. **Action Items** - ALL actions with full details: who, what, when, why, expected outcomes, success criteria.
-5. **Next Steps** - Future plans and follow-ups discussed with comprehensive context and timeline.
+📊 REQUIRED SECTIONS:
+1. Executive Summary (2-3 sentences)
+2. Key Discussion Points
+3. Decisions Made
+4. Action Items
+5. Next Steps
 
-Format as professional markdown with clear headers (##), well-structured paragraphs, proper punctuation, and sophisticated narrative prose that flows smoothly.`;
+Format as professional markdown. Be concise and accurate.`;
 
     // Use Lovable AI for generation
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -180,7 +147,7 @@ Format as professional markdown with clear headers (##), well-structured paragra
         messages: [
           { 
             role: "system", 
-            content: "You are a professional meeting minutes generator specializing in virtual room meetings. Generate grammatically perfect, professionally polished minutes with rich descriptive detail, proper punctuation, and executive-level writing quality. Focus on accuracy and only include information explicitly stated in the transcript. Use sophisticated vocabulary, varied sentence structures, and comprehensive explanations."
+            content: "You are a professional meeting minutes generator specializing in virtual room meetings. Focus on accuracy and only include information explicitly stated in the transcript." 
           },
           { role: "user", content: prompt }
         ],

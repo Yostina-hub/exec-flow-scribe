@@ -246,7 +246,7 @@ If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
 Never romanize or transliterate non-Latin scripts.`;
 
 // Generate minutes using selected AI provider with enhanced natural language instructions
-    const prompt = `🎯 YOUR MISSION: Create comprehensive, professional meeting minutes that demonstrate exceptional writing quality, grammatical excellence, and rich descriptive detail.
+    const prompt = `🎯 YOUR MISSION: Create comprehensive, natural-sounding meeting minutes that capture EVERY detail and nuance from the discussion.
 
 ⚠️ CRITICAL PRIORITY ORDER - CAPTURE IN THIS SEQUENCE:
 1. **MEETING OPENER'S INTRODUCTION** - The very first statements by who opened/introduced the meeting, their welcome remarks, and the purpose they stated
@@ -269,69 +269,39 @@ Never romanize or transliterate non-Latin scripts.`;
 10. NEVER add information not in the transcript - only expand on what's there
 11. **Give special attention to opening and main discussion points** - these should be most comprehensive
 
-✍️ GRAMMAR & LANGUAGE EXCELLENCE (CRITICAL):
-• **Perfect grammar** - Zero grammatical errors, proper subject-verb agreement
-• **Consistent verb tenses** - Maintain past tense throughout; use present tense only for ongoing actions
-• **Complete sentences** - No fragments, run-ons, or comma splices
-• **Proper word choice** - Use precise, professional vocabulary; avoid informal language
-• **Parallel structure** - Maintain consistency in lists and series
-• **Clear pronouns** - Ensure all pronouns have clear antecedents
-• **Active voice preference** - Use active voice for clarity; passive only when appropriate
-• **Spelling accuracy** - Perfect spelling throughout, including proper nouns
-• **Professional tone** - Formal but accessible; avoid colloquialisms
-• **Proofread mentally** - Before outputting, mentally review for any errors
-
-✍️ WRITING STYLE REQUIREMENTS - PROFESSIONAL EXCELLENCE:
-• Write as a skilled executive assistant would - polished, eloquent, comprehensive
-• Use varied, sophisticated sentence structures that flow naturally
-• Connect ideas smoothly with professional transitional phrases
-• Include speaker perspectives, reasoning processes, and analytical insights
-• Capture the "narrative arc" of the meeting, not just data points
-• Make it engaging and readable while maintaining executive-level professionalism
-• Vary paragraph lengths strategically for optimal readability
-• Use direct quotes judiciously when they capture critical points effectively
-• Write with confidence and authority - this is official documentation
+✍️ WRITING STYLE REQUIREMENTS:
+• Write as a skilled human note-taker would - natural, fluid, complete
+• Use varied sentence structures to avoid robotic repetition
+• Connect ideas smoothly with transitions
+• Include speaker perspectives and reasoning processes
+• Capture the "story" of the meeting, not just bullet points
+• Make it engaging and readable while maintaining professionalism
+• Vary paragraph lengths for natural rhythm
+• Use specific quotes when they capture important points
 • **Dedicate substantial detail to opening statements and core discussion topics**
-• **Make every paragraph purposeful and information-rich**
 
-📝 ENHANCED DESCRIPTIVE WRITING STANDARDS:
-• Use sophisticated, descriptive language that creates vivid understanding
-• Explain WHY decisions were made with full contextual background, not just WHAT
-• Detail the reasoning, rationale, evidence, and thought processes behind discussions
-• Describe the tone, dynamics, and nature of conversations (constructive debate, collaborative problem-solving, strategic analysis, etc.)
-• Elaborate on HOW ideas evolved, developed, and were refined during deliberations
-• Use professional transitional phrases to show causal and logical relationships between topics
-• Provide comprehensive background information when speakers reference prior context
-• Make each section tell a complete, cohesive story with clear beginning, development, and conclusion
-• **Add analytical depth** - explain implications, significance, and potential impacts
-• **Include contextual details** - organizational background, strategic considerations, stakeholder perspectives
-• **Use descriptive adjectives and adverbs** - make the narrative rich and informative
-• **Expand on key points** - don't just list items; explain their importance and connections
+📝 DESCRIPTIVE WRITING STANDARDS:
+• Use rich, descriptive language that paints a clear picture
+• Explain WHY decisions were made, not just WHAT was decided
+• Include the reasoning, rationale, and thought process behind discussions
+• Describe the tone and nature of conversations (constructive, intense, collaborative, etc.)
+• Add context about HOW ideas were developed during the meeting
+• Use transitional phrases to show relationships between topics
+• Provide background information when speakers reference it
+• Make each section tell a complete story with beginning, middle, and conclusion
 
-✅ PUNCTUATION & FORMATTING EXCELLENCE (NON-NEGOTIABLE):
-• Use proper punctuation consistently and flawlessly throughout every sentence
+✅ PUNCTUATION & FORMATTING EXCELLENCE:
+• Use proper punctuation consistently throughout
 • End every complete sentence with appropriate punctuation (. ! ?)
-• Use commas correctly to separate clauses, items in series, and improve readability
-• Use colons (:) professionally to introduce lists, explanations, or elaborate on points
-• Use semicolons (;) appropriately to connect related independent clauses
-• Use quotation marks ("") for all direct quotes from speakers
-• Use em dashes (—) strategically for emphasis, clarification, or parenthetical information
-• Use parentheses ( ) for supplementary information or clarifications
-• Format lists with proper bullet points (•) or numbering (1., 2., 3.)
-• Create clear, logical paragraph breaks between different topics or sub-topics
-• Use markdown headers (##) to organize major sections hierarchically
-• **For Amharic: Use Ethiopian punctuation marks ። ፣ ፤ ፦ ፥ consistently and correctly**
-• **Ensure no punctuation errors** - this is professional documentation
-
-🎓 EXECUTIVE SUMMARY EXCELLENCE:
-• The Executive Summary must be **exceptionally well-written and comprehensive**
-• Write 5-8 substantial, information-rich sentences that capture the complete meeting
-• Use sophisticated, professional language that conveys authority
-• Include: meeting purpose, key topics discussed, major decisions reached, critical action items, overall outcomes
-• Make it stand-alone readable - someone should understand the meeting fully from this summary
-• Use varied sentence structures and transitional phrases for smooth flow
-• Ensure perfect grammar, punctuation, and professional tone
-• This section represents your best writing - make it exemplary
+• Use commas to separate clauses and improve readability
+• Use colons (:) to introduce lists or elaborate on points
+• Use semicolons (;) to connect related independent clauses
+• Use quotation marks for direct quotes from speakers
+• Use em dashes (—) for emphasis or clarification
+• Format lists with proper bullet points or numbering
+• Create clear paragraph breaks for different topics
+• Use headers (##) to organize major sections
+• **For Amharic: Use Ethiopian punctuation marks ። ፣ ፤ ፦ ፥ consistently**
 
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
