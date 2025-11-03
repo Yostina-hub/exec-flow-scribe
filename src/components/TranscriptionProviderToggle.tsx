@@ -87,7 +87,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
   const getProviderDisplayName = (p: string) => {
     switch (p) {
       case "lovable_ai": return "Lemat AI";
-      case "browser": return "Web Speech API";
+      case "browser": return "Lemat";
       case "openai_realtime": return "OpenAI Realtime";
       case "openai": return "OpenAI Whisper";
       default: return "Unknown";
@@ -130,7 +130,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
             <div className="flex-1">
               <Label htmlFor="toggle-browser" className="cursor-pointer flex items-center gap-2">
                 <Mic className="h-4 w-4" />
-                <span className="font-medium">Web Speech API</span>
+                <span className="font-medium">Lemat</span>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
                 Browser-based, no API key needed
