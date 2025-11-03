@@ -193,6 +193,12 @@ export class OpenAIRealtimeClient {
   private pendingTranscriptionTimer: number | null = null;
   private builtinTranscriptionReceived: boolean = false;
 
+  // Throttle fallback server transcriptions to avoid rate limits
+  private lastServerTranscribeTs: number = 0;
+  private transcribeInFlight: boolean = false;
+  private serverCooldownMs: number = 20000; // 20s between fallback calls
+  private rateLimitedUntil: number = 0; // epoch ms until which we should not call server
+
   constructor(
     onTranscript: (text: string, speaker?: string) => void,
     onError: (error: string) => void,
@@ -517,6 +523,23 @@ export class OpenAIRealtimeClient {
     // Fallback server transcription using Whisper with Amharic script enforcement
   
     try {
+      // Cooldown/Rate-limit guards
+      const now = Date.now();
+      if (
+        this.transcribeInFlight ||
+        now - this.lastServerTranscribeTs < this.serverCooldownMs ||
+        now < this.rateLimitedUntil
+      ) {
+        console.log('⏳ Skipping fallback transcription (cooldown/in-flight/rate-limited)', {
+          inFlight: this.transcribeInFlight,
+          sinceLastMs: now - this.lastServerTranscribeTs,
+          waitMs: Math.max(0, this.rateLimitedUntil - now),
+        });
+        return;
+      }
+      this.transcribeInFlight = true;
+      this.lastServerTranscribeTs = now;
+
       console.log(`📝 Transcribing ${this.audioChunks.length} audio chunks...`);
       
       // Validate audio data
@@ -582,8 +605,15 @@ export class OpenAIRealtimeClient {
       });
       
       if (error) {
-        console.error('❌ Transcription error:', error);
-        this.onError('Transcription failed. Please try again.');
+        const msg = (error as any)?.message ? String((error as any).message) : String(error);
+        console.error('❌ Transcription error:', msg);
+        if (msg.includes('429') || msg.toLowerCase().includes('rate limit')) {
+          // Back off globally for 10s to avoid hammering the provider
+          this.rateLimitedUntil = Date.now() + 10000;
+          this.onError('Transcription rate-limited. Please wait a few seconds.');
+        } else {
+          this.onError('Transcription failed. Please try again.');
+        }
         return;
       }
       
@@ -617,6 +647,7 @@ export class OpenAIRealtimeClient {
     } finally {
       // Always clear chunks to prevent memory buildup
       this.audioChunks = [];
+      this.transcribeInFlight = false;
     }
   }
 
