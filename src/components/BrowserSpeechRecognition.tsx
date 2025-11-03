@@ -309,14 +309,44 @@ export const BrowserSpeechRecognition = ({
           
           console.log('Calling Browser Whisper with segment size:', segment.length);
           
-          // Transcribe directly from PCM using browserWhisper's model
-          const { initBrowserWhisper } = await import('@/utils/browserWhisper');
-          const model = await initBrowserWhisper();
-          console.log('Browser Whisper model loaded, transcribing...');
-          const result = await model(segment);
-          const text = (result?.text as string) || '';
-          
-          console.log('Browser Whisper result:', text);
+          // Encode PCM segment into a small WAV and reuse the robust browserWhisper util
+          const encodeWav = (pcm: Float32Array, sr: number) => {
+            const bytesPerSample = 2; // 16-bit PCM
+            const blockAlign = 1 * bytesPerSample;
+            const buffer = new ArrayBuffer(44 + pcm.length * bytesPerSample);
+            const view = new DataView(buffer);
+            const writeString = (offset: number, s: string) => {
+              for (let i = 0; i < s.length; i++) view.setUint8(offset + i, s.charCodeAt(i));
+            };
+            // RIFF header
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + pcm.length * bytesPerSample, true);
+            writeString(8, 'WAVE');
+            // fmt chunk
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); // PCM
+            view.setUint16(20, 1, true); // format = 1 PCM
+            view.setUint16(22, 1, true); // channels = 1
+            view.setUint32(24, sr, true); // sample rate
+            view.setUint32(28, sr * blockAlign, true); // byte rate
+            view.setUint16(32, blockAlign, true); // block align
+            view.setUint16(34, bytesPerSample * 8, true); // bits per sample
+            // data chunk
+            writeString(36, 'data');
+            view.setUint32(40, pcm.length * bytesPerSample, true);
+            // PCM samples
+            let offset = 44;
+            for (let i = 0; i < pcm.length; i++, offset += 2) {
+              let s = Math.max(-1, Math.min(1, pcm[i]));
+              s = s < 0 ? s * 0x8000 : s * 0x7fff;
+              view.setInt16(offset, s, true);
+            }
+            return new Blob([view], { type: 'audio/wav' });
+          };
+
+          const wavBlob = encodeWav(segment, sampleRate);
+          const text = await transcribeAudioBrowser(wavBlob);
+          console.log('Browser Whisper result (util):', text);
           
           if (text && text.trim()) {
             setWhisperTranscript((prev) => {
@@ -622,7 +652,7 @@ export const BrowserSpeechRecognition = ({
                   {formatDuration(recordingDuration)}
                 </span>
               </div>
-              {!isListening && (
+              {!isListening && !whisperMode && (
                 <p className="text-xs text-amber-600 dark:text-amber-400">
                   Starting speech recognition...
                 </p>
