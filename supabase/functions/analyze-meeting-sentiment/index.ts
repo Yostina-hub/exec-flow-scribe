@@ -29,8 +29,8 @@ serve(async (req) => {
 
     if (!transcripts || transcripts.length === 0) {
       return new Response(
-        JSON.stringify({ success: true, sentiments: [], info: "No transcripts found; skipping sentiment analysis." }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "No transcripts found" }),
+        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 

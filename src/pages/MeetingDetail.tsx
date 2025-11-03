@@ -93,7 +93,6 @@ import { GuestMeetingView } from "@/components/GuestMeetingView";
 import { WorkflowStatusIndicator } from "@/components/WorkflowStatusIndicator";
 import { PDFGenerationPanel } from "@/components/PDFGenerationPanel";
 import { SystemTestPanel } from "@/components/SystemTestPanel";
-import { IframePermissionNotice } from "@/components/IframePermissionNotice";
 
 interface AgendaItem {
   id: string;
@@ -614,7 +613,6 @@ const MeetingDetail = () => {
   }
 
 
-
   // Show Host Management Panel
   if (showHostPanel && meeting && userId && meeting.created_by === userId) {
     return (
@@ -820,7 +818,6 @@ const MeetingDetail = () => {
                   </div>
                 </div>
               </div>
-              <IframePermissionNotice feature="microphone" />
               <div className="flex gap-3">
                 {!isRecording ? (
                   <Button 

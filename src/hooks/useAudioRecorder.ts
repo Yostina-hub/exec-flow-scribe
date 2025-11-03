@@ -77,93 +77,9 @@ export const useAudioRecorder = (meetingId: string) => {
           .eq('id', meetingId);
       }
 
-      // Preflight checks to avoid common NotFoundError causes
-      if (!('mediaDevices' in navigator) || !navigator.mediaDevices.getUserMedia) {
-        toast({
-          title: 'Microphone unsupported',
-          description: 'Your browser does not support audio recording APIs.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Check for available input devices (may return empty before permission)
-      let audioInputs: MediaDeviceInfo[] = [];
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        audioInputs = devices.filter((d) => d.kind === 'audioinput');
-        console.info('Mic diagnostics:', {
-          secure: window.isSecureContext,
-          inIframe: window.top !== window,
-          audioInputs: audioInputs.map(d => ({ label: d.label || '(no label)', deviceId: d.deviceId.slice(0, 6) + '…' })),
-        });
-      } catch (e) {
-        console.warn('enumerateDevices failed (may require permission first):', e);
-      }
-
-      const preferredDeviceId = audioInputs[0]?.deviceId;
-
-      // Optional Permissions API probe (not supported everywhere)
-      let permissionState: PermissionState | null = null;
-      try {
-        const perm: any = await (navigator as any).permissions?.query({ name: 'microphone' as any });
-        permissionState = perm?.state ?? null;
-      } catch {}
-
-      // Try multiple constraint sets to avoid NotFoundError/OverconstrainedError
-      let acquired: MediaStream | null = null;
-      let lastError: any = null;
-      const candidates: MediaStreamConstraints[] = [
-        {
-          audio: {
-            deviceId: preferredDeviceId ? { ideal: preferredDeviceId } : undefined,
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            channelCount: 1,
-          } as MediaTrackConstraints,
-        },
-        { audio: true },
-        { audio: { deviceId: 'default' as any } as any },
-      ];
-
-      for (const c of candidates) {
-        try {
-          acquired = await navigator.mediaDevices.getUserMedia(c);
-          break;
-        } catch (e) {
-          lastError = e;
-        }
-      }
-
-      if (!acquired) {
-        let description = 'Could not access microphone.';
-        if (lastError instanceof DOMException) {
-          switch (lastError.name) {
-            case 'NotAllowedError':
-              description = 'Microphone permission denied. Allow access in browser site settings.';
-              // Extra hint for embedded previews
-              if (window.top !== window) {
-                description += ' Tip: open the preview in a new tab — some browsers block mic in embedded iframes.';
-              }
-              break;
-            case 'NotFoundError':
-              description = audioInputs.length === 0
-                ? 'No microphone detected. Check OS privacy settings and browser site permissions.'
-                : 'Requested input not available. Try selecting a different microphone in system settings.';
-              break;
-            case 'OverconstrainedError':
-              description = 'No microphone met the requested constraints.';
-              break;
-            default:
-              description = (lastError as any).message || description;
-          }
-        }
-        toast({ title: 'Recording failed', description, variant: 'destructive' });
-        return;
-      }
-
-      const stream = acquired;
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: true
+      });
 
       const supported = pickSupportedMimeType();
       const options: MediaRecorderOptions | undefined = supported ? { mimeType: supported } : undefined;
@@ -414,34 +330,9 @@ export const useAudioRecorder = (meetingId: string) => {
       });
     } catch (error) {
       console.error('Error starting recording:', error);
-      
-      let errorMessage = 'Could not access microphone';
-      
-      if (error instanceof DOMException) {
-        switch (error.name) {
-          case 'NotFoundError':
-            errorMessage = 'No microphone found. Please connect a microphone and try again.';
-            break;
-          case 'NotAllowedError':
-            errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.';
-            break;
-          case 'NotReadableError':
-            errorMessage = 'Microphone is already in use by another application.';
-            break;
-          case 'OverconstrainedError':
-            errorMessage = 'No microphone found that meets the requirements.';
-            break;
-          case 'AbortError':
-            errorMessage = 'Microphone access was aborted.';
-            break;
-          default:
-            errorMessage = `Microphone error: ${error.message}`;
-        }
-      }
-      
       toast({
         title: 'Recording failed',
-        description: errorMessage,
+        description: 'Could not access microphone',
         variant: 'destructive',
       });
     }
