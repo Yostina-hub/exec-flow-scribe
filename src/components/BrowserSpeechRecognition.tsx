@@ -245,14 +245,40 @@ export const BrowserSpeechRecognition = ({
             reader.readAsDataURL(audioFile);
           });
 
-          const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-            body: {
-              audioBase64: base64,
-              meetingId,
-              language: selectedLanguage || 'auto',
-              contentType: audioFile.type || 'audio/webm'
+          // Attempt server-side transcription once; handle rate limits gracefully
+          const attemptTranscription = async () => {
+            return await supabase.functions.invoke('transcribe-audio', {
+              body: {
+                audioBase64: base64,
+                meetingId,
+                language: selectedLanguage || 'auto',
+                contentType: audioFile.type || 'audio/webm'
+              }
+            });
+          };
+
+          let { data, error } = await attemptTranscription();
+
+          if (error) {
+            const msg = (error as any)?.message ? String((error as any).message) : String(error);
+            // Try to extract retryAfter from error payload if present
+            let retryAfter = 0;
+            const m = msg.match(/"retryAfter"\s*:\s*(\d+)/);
+            if (m && m[1]) retryAfter = parseInt(m[1], 10);
+
+            if (msg.includes('429') || /rate limit/i.test(msg)) {
+              // Inform user and wait once before a single retry
+              const waitSec = retryAfter > 0 ? retryAfter : 10;
+              toast({
+                title: 'Transcription rate-limited',
+                description: `Retrying in ${waitSec}s... Your audio will still be saved.`,
+              });
+              await new Promise((r) => setTimeout(r, waitSec * 1000));
+              const retry = await attemptTranscription();
+              data = retry.data;
+              error = retry.error as any;
             }
-          });
+          }
 
           if (error) {
             console.warn('Server-side transcription failed:', error);

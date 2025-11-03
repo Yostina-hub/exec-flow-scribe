@@ -608,9 +608,13 @@ export class OpenAIRealtimeClient {
         const msg = (error as any)?.message ? String((error as any).message) : String(error);
         console.error('❌ Transcription error:', msg);
         if (msg.includes('429') || msg.toLowerCase().includes('rate limit')) {
-          // Back off globally for 10s to avoid hammering the provider
-          this.rateLimitedUntil = Date.now() + 10000;
-          this.onError('Transcription rate-limited. Please wait a few seconds.');
+          // Extract retryAfter from error payload if available
+          let retryAfter = 10;
+          const m = msg.match(/"retryAfter"\s*:\s*(\d+)/);
+          if (m && m[1]) retryAfter = parseInt(m[1], 10) || 10;
+          // Back off globally to avoid hammering the provider
+          this.rateLimitedUntil = Date.now() + retryAfter * 1000;
+          this.onError(`Transcription rate-limited. Please wait ~${retryAfter}s.`);
         } else {
           this.onError('Transcription failed. Please try again.');
         }
