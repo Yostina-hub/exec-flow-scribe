@@ -461,8 +461,7 @@ export const CreateMeetingDialog = () => {
         onOpenChange={(isOpen) => {
           setShowShareDialog(isOpen);
           if (!isOpen) {
-            // Re-open create meeting dialog when share dialog closes
-            setOpen(true);
+            // Just close and clear - meeting will appear via realtime
             setCreatedMeeting(null);
           }
         }}
