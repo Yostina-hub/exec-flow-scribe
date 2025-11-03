@@ -235,8 +235,8 @@ export const BrowserSpeechRecognition = ({
     try {
       let finalText = transcript.trim();
 
-      // If we have audio but no text → server-side transcription fallback
-      if (audioFile && !finalText) {
+      // If we have audio but no text → prefer Web Speech API; only fall back to server if not supported
+      if (audioFile && !finalText && !isSupported) {
         try {
           const base64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
