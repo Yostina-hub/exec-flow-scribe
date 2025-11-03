@@ -212,8 +212,12 @@ export const TranscriptionSettings = () => {
               <option value="sw">Swahili</option>
               <option value="so">Somali</option>
             </select>
-            <p className="text-xs text-muted-foreground">
-              Auto-detect automatically identifies the language and speakers. All transcriptions are stored with speaker identification and timestamps.
+            <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-3 rounded border border-blue-200 dark:border-blue-800">
+              <strong>💡 Multilingual Support:</strong><br/>
+              • <strong>Auto-detect (Recommended):</strong> Best for meetings with mixed languages. Automatically identifies languages and speakers.<br/>
+              • <strong>Specific Language:</strong> Choose if the entire meeting will be in one language for optimal accuracy.<br/>
+              • <strong>Lemat & OpenAI Realtime:</strong> Support seamless multilingual transcription without manual switching.<br/>
+              • <strong>Browser-based:</strong> Works with one language at a time - use auto-detect mode for best results.
             </p>
           </div>
 

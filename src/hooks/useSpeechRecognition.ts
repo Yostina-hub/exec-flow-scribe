@@ -23,7 +23,7 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const [transcript, setTranscript] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [language, setLanguage] = useState('am-ET');
+  const [language, setLanguage] = useState('en-US'); // Default to English for broadest compatibility
   const [shouldBeListening, setShouldBeListening] = useState(false);
   
   const recognitionRef = useRef<any>(null);

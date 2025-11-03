@@ -37,7 +37,7 @@ export const BrowserSpeechRecognition = ({
     setLanguage,
   } = useSpeechRecognition();
 
-  const [selectedLanguage, setSelectedLanguage] = useState('am-ET');
+  const [selectedLanguage, setSelectedLanguage] = useState('auto');
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
@@ -171,7 +171,9 @@ export const BrowserSpeechRecognition = ({
             
             // Always try to start listening when recording is active and not paused
             console.log('Starting speech recognition with language:', selectedLanguage);
-            startListening(selectedLanguage);
+            // Use en-US as default for auto-detect (most universal)
+            const langCode = selectedLanguage === 'auto' ? 'en-US' : selectedLanguage;
+            startListening(langCode);
           }
         }
       }
@@ -381,6 +383,7 @@ export const BrowserSpeechRecognition = ({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="auto">🌍 Auto-Detect (Multilingual)</SelectItem>
               <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
               <SelectItem value="en-US">English (US)</SelectItem>
               <SelectItem value="en-GB">English (UK)</SelectItem>
@@ -397,6 +400,11 @@ export const BrowserSpeechRecognition = ({
               <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
             </SelectContent>
           </Select>
+          {selectedLanguage === 'auto' && (
+            <p className="text-xs text-muted-foreground bg-blue-50 dark:bg-blue-950/20 p-2 rounded border border-blue-200 dark:border-blue-800">
+              <strong>Note:</strong> Browser speech recognition works best with one language. For true multilingual support with automatic language detection, use <strong>OpenAI Realtime</strong> or <strong>Lemat</strong> in Settings → Transcription.
+            </p>
+          )}
         </div>
 
         <div className="flex flex-col items-center gap-6">
