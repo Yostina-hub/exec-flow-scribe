@@ -31,6 +31,9 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
   const shouldBeListeningRef = useRef(false);
   const keepAliveIntervalRef = useRef<number | null>(null);
   const isListeningRef = useRef(false);
+  const isStartingRef = useRef(false);
+  const restartTimerRef = useRef<number | null>(null);
+  const lastStartAtRef = useRef<number>(0);
 
   // Check if browser supports speech recognition
   const isSupported = typeof window !== 'undefined' && 
@@ -51,6 +54,8 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Speech recognition started');
       setIsListening(true);
       isListeningRef.current = true;
+      isStartingRef.current = false;
+      lastStartAtRef.current = Date.now();
       setError(null);
       // Keep-alive: Chrome auto-stops after ~60s; force restart via onend
       if (keepAliveIntervalRef.current) {
@@ -106,15 +111,25 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
         msg = 'Network issue. Trying to reconnect...';
       }
       if (msg) setError(msg);
-      // Auto-recover on common transient errors
+      // Auto-recover on common transient errors with debounce
       const recoverable = ['no-speech', 'network', 'aborted'].includes(event.error);
       if (recoverable && shouldBeListeningRef.current) {
         try { recognitionRef.current?.stop(); } catch {}
-        setTimeout(() => {
-          try { recognitionRef.current?.start(); } catch (err) {
-            console.error('Error restarting after error:', err);
+        if (restartTimerRef.current) {
+          clearTimeout(restartTimerRef.current);
+          restartTimerRef.current = null;
+        }
+        restartTimerRef.current = window.setTimeout(() => {
+          if (shouldBeListeningRef.current && !isListeningRef.current && !isStartingRef.current) {
+            try {
+              isStartingRef.current = true;
+              recognitionRef.current?.start();
+            } catch (err) {
+              console.error('Error restarting after error:', err);
+              isStartingRef.current = false;
+            }
           }
-        }, 300);
+        }, 1000);
       }
     };
 
@@ -124,11 +139,23 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       isListeningRef.current = false;
       // Auto-restart if we should still be listening (e.g., long Chrome sessions or brief silence)
       if (shouldBeListeningRef.current) {
-        setTimeout(() => {
-          try { recognitionRef.current?.start(); } catch (err) {
-            console.error('Error auto-restarting recognition:', err);
+        if (restartTimerRef.current) {
+          clearTimeout(restartTimerRef.current);
+          restartTimerRef.current = null;
+        }
+        const since = Date.now() - lastStartAtRef.current;
+        const delay = Math.max(800, 1200 - since);
+        restartTimerRef.current = window.setTimeout(() => {
+          if (shouldBeListeningRef.current && !isListeningRef.current && !isStartingRef.current) {
+            try {
+              isStartingRef.current = true;
+              recognitionRef.current?.start();
+            } catch (err) {
+              console.error('Error auto-restarting recognition:', err);
+              isStartingRef.current = false;
+            }
           }
-        }, 200);
+        }, delay);
       }
     };
 
@@ -160,26 +187,45 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       console.log('Recognition already active, skipping start');
       return;
     }
+    if (isStartingRef.current) {
+      console.log('Recognition is starting, skipping duplicate start');
+      return;
+    }
 
-    console.log('startListening called with language:', lang || language);
+    const now = Date.now();
+    const elapsed = now - lastStartAtRef.current;
+    const delay = elapsed < 800 ? 800 - elapsed : 0;
+
+    console.log('startListening called with language:', lang || language, 'delay', delay);
     setShouldBeListening(true);
     shouldBeListeningRef.current = true;
-    try {
-      if (recognitionRef.current) {
-        console.log('Starting speech recognition...');
-        recognitionRef.current.start();
-      } else {
-        console.error('Recognition ref is null');
-        setError('Speech recognition not initialized');
+
+    const doStart = () => {
+      try {
+        if (recognitionRef.current) {
+          console.log('Starting speech recognition...');
+          isStartingRef.current = true;
+          recognitionRef.current.start();
+        } else {
+          console.error('Recognition ref is null');
+          setError('Speech recognition not initialized');
+        }
+      } catch (err: any) {
+        console.error('Error starting recognition:', err);
+        isStartingRef.current = false;
+        // If already started, ignore the error
+        if (err.message?.includes('already started')) {
+          console.log('Recognition already started, continuing...');
+        } else {
+          setError(`Failed to start speech recognition: ${err.message || 'Unknown error'}`);
+        }
       }
-    } catch (err: any) {
-      console.error('Error starting recognition:', err);
-      // If already started, ignore the error
-      if (err.message?.includes('already started')) {
-        console.log('Recognition already started, continuing...');
-      } else {
-        setError(`Failed to start speech recognition: ${err.message || 'Unknown error'}`);
-      }
+    };
+
+    if (delay > 0) {
+      window.setTimeout(doStart, delay);
+    } else {
+      doStart();
     }
   }, [isSupported, language]);
 
@@ -190,12 +236,17 @@ export const useSpeechRecognition = (): UseSpeechRecognitionReturn => {
       clearInterval(keepAliveIntervalRef.current);
       keepAliveIntervalRef.current = null;
     }
+    if (restartTimerRef.current) {
+      clearTimeout(restartTimerRef.current);
+      restartTimerRef.current = null;
+    }
     try {
       recognitionRef.current?.stop();
     } catch (err) {
       console.error('Error stopping recognition:', err);
     } finally {
       isListeningRef.current = false;
+      isStartingRef.current = false;
     }
   }, []);
 
