@@ -1,15 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
 import { PDFGenerationPanel } from './PDFGenerationPanel';
-import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download } from 'lucide-react';
+import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download, Upload } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ReactMarkdown from 'react-markdown';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
 
 interface AudioToMinutesWorkflowProps {
   meetingId: string;
@@ -30,6 +31,8 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
   const [progress, setProgress] = useState(0);
   const [latestAudioUrl, setLatestAudioUrl] = useState<string>();
   const [isGeneratingTranscriptPDF, setIsGeneratingTranscriptPDF] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     checkExistingData();
@@ -104,6 +107,97 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       }
     } catch (error) {
       console.error('Error checking existing data:', error);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a'];
+    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|m4a)$/i)) {
+      toast({
+        title: 'Invalid File',
+        description: 'Please upload an audio file (MP3, WAV, WEBM, OGG, M4A)',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate file size (max 25MB)
+    if (file.size > 25 * 1024 * 1024) {
+      toast({
+        title: 'File Too Large',
+        description: 'Audio file must be less than 25MB',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Upload to storage
+      const fileName = `${meetingId}-${Date.now()}-${file.name}`;
+      const filePath = `${meetingId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('meeting-audio')
+        .upload(filePath, file, {
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('meeting-audio')
+        .getPublicUrl(filePath);
+
+      // Generate checksum
+      const arrayBuffer = await file.arrayBuffer();
+      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+
+      // Save to database
+      const { error: insertError } = await supabase
+        .from('meeting_media')
+        .insert({
+          meeting_id: meetingId,
+          uploaded_by: user.id,
+          file_url: publicUrl,
+          media_type: 'audio',
+          format: file.name.split('.').pop() || 'unknown',
+          file_size: file.size,
+          checksum,
+        });
+
+      if (insertError) throw insertError;
+
+      setLatestAudioUrl(publicUrl);
+      
+      toast({
+        title: 'Upload Complete',
+        description: 'Audio file uploaded successfully. Click "Process Audio" to transcribe.',
+      });
+
+      checkExistingData();
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast({
+        title: 'Upload Failed',
+        description: error.message || 'Failed to upload audio file',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -302,9 +396,49 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         </CardContent>
       </Card>
 
-      {/* Audio Recorder */}
+      {/* Audio Upload Options */}
       {(currentStep === 'upload' || !minutes) && (
         <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Upload Audio File</CardTitle>
+              <CardDescription>
+                Upload a pre-recorded audio file (MP3, WAV, WEBM, OGG, M4A - max 25MB)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2">
+                <Input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="audio/*,.mp3,.wav,.webm,.ogg,.m4a"
+                  onChange={handleFileUpload}
+                  disabled={isUploading}
+                  className="flex-1"
+                />
+                <Button
+                  variant="outline"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  {isUploading ? 'Uploading...' : 'Choose File'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-background px-2 text-muted-foreground">
+                Or record new audio
+              </span>
+            </div>
+          </div>
+
           <LiveAudioRecorder
             meetingId={meetingId}
             onUploadComplete={() => {
