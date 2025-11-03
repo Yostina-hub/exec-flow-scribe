@@ -59,7 +59,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
         .maybeSingle();
 
       // Map to actual backend provider
-      const backendProvider = typedProvider === "lemat" ? "lovable_ai" : "openai_realtime";
+      const backendProvider = typedProvider === "lemat" ? "browser" : "openai_realtime";
       
       if (existing) {
         await supabase
@@ -123,7 +123,7 @@ export const TranscriptionProviderToggle = ({ onProviderChange }: TranscriptionP
                 <Badge variant="default" className="text-xs">Default</Badge>
               </Label>
               <p className="text-xs text-muted-foreground mt-1">
-                Fast AI-powered transcription, no API key needed
+                Browser-based Web Speech API, no API key needed
               </p>
             </div>
           </div>
