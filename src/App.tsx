@@ -16,6 +16,7 @@ import MeetingDetail from "./pages/MeetingDetail";
 import MinutesEditor from "./pages/MinutesEditor";
 import SignatureApproval from "./pages/SignatureApproval";
 import QuickParticipant from "./pages/QuickParticipant";
+import QuickJoinMeeting from "./pages/QuickJoinMeeting";
 import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/admin" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Administration /></RequirePermission></ProtectedRoute>} />
               <Route path="/integration-test" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><IntegrationTest /></RequirePermission></ProtectedRoute>} />
               <Route path="/document" element={<DocumentViewer />} />
+              <Route path="/quick-join" element={<QuickJoinMeeting />} />
               <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
