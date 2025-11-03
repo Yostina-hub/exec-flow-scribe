@@ -219,21 +219,21 @@ const Auth = () => {
                     <p className="text-sm lg:text-base text-emerald-600 font-bold tracking-wide">Executive Edition</p>
                   </div>
                 </div>
-                <CardDescription className="text-base lg:text-lg text-gray-700 font-semibold text-center lg:text-left">
+                <CardDescription className="text-base lg:text-lg text-slate-700 font-medium text-center lg:text-left">
                   Secure access to your organization's intelligence platform
                 </CardDescription>
               </CardHeader>
               <CardContent className="px-6 sm:px-6 lg:px-6 pb-6 lg:pb-8">
                 <Tabs defaultValue="signin" className="w-full">
                   <TabsList className="grid w-full grid-cols-2 bg-gray-100 border border-gray-200 h-10 lg:h-auto">
-                    <TabsTrigger value="signin" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
+                    <TabsTrigger value="signin" className="text-sm lg:text-base text-slate-700 font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className="text-sm lg:text-base text-slate-700 font-medium data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="email" className="text-sm lg:text-base text-gray-700 font-medium">Email</Label>
+                        <Label htmlFor="email" className="text-sm lg:text-base text-slate-800 font-semibold">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -241,18 +241,18 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="password" className="text-sm lg:text-base text-gray-700 font-medium">Password</Label>
+                        <Label htmlFor="password" className="text-sm lg:text-base text-slate-800 font-semibold">Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
@@ -269,7 +269,7 @@ const Auth = () => {
                   <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="fullname" className="text-sm lg:text-base text-gray-700 font-medium">Full Name</Label>
+                        <Label htmlFor="fullname" className="text-sm lg:text-base text-slate-800 font-semibold">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -277,22 +277,22 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-gray-700 font-medium">Title</Label>
+                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-slate-800 font-semibold">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-gray-700 font-medium">Email</Label>
+                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-slate-800 font-semibold">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -300,18 +300,18 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-gray-700 font-medium">Password</Label>
+                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-slate-800 font-semibold">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-white/95 border-gray-300 text-gray-900 placeholder:text-gray-500 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className="h-10 lg:h-10 text-sm lg:text-base bg-white border-slate-300 text-slate-900 placeholder:text-slate-500 focus:border-cyan-500 focus:ring-cyan-500/20"
                         />
                       </div>
                       <Button 
@@ -325,17 +325,17 @@ const Auth = () => {
                       
                       <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-gray-300" />
+                          <span className="w-full border-t border-slate-300" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-white px-2 text-gray-500">Or</span>
+                          <span className="bg-white px-2 text-slate-600 font-medium">Or</span>
                         </div>
                       </div>
 
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full h-11 lg:h-10 text-sm lg:text-base border-2 hover:bg-gray-50"
+                        className="w-full h-11 lg:h-10 text-sm lg:text-base border-2 border-slate-300 text-slate-700 hover:bg-slate-50 font-medium"
                         onClick={() => navigate('/guest-signup')}
                       >
                         Request Guest Access
