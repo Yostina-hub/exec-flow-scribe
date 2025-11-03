@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Clock, Star } from 'lucide-react';
+import { Clock, Star, Languages } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Separator } from '@/components/ui/separator';
 import { useOpenAIRealtime } from '@/hooks/useOpenAIRealtime';
@@ -15,6 +15,8 @@ interface Transcription {
   speaker_name: string | null;
   timestamp: string;
   confidence_score: number | null;
+  translation?: string;
+  isTranslating?: boolean;
 }
 
 interface LiveTranscriptionProps {
@@ -75,6 +77,7 @@ export const LiveTranscription = ({ meetingId, isRecording, currentUserName }: L
   const [allSpeakers, setAllSpeakers] = useState<string[]>([]);
   const switchedRef = useState(false)[0] as unknown as { current: boolean };
   const { toast } = useToast();
+  const [translating, setTranslating] = useState<Set<string>>(new Set());
 
   const normalizedId = normalizeMeetingId(meetingId);
   
@@ -177,6 +180,47 @@ export const LiveTranscription = ({ meetingId, isRecording, currentUserName }: L
       toast({
         title: 'Highlight added',
         description: 'Important moment tagged',
+      });
+    }
+  };
+
+  const handleTranslate = async (transcriptionId: string, content: string) => {
+    if (translating.has(transcriptionId)) return;
+
+    setTranslating(prev => new Set(prev).add(transcriptionId));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-transcript', {
+        body: { text: content, targetLanguage: 'en' }
+      });
+
+      if (error) throw error;
+
+      if (data?.translatedText) {
+        setTranscriptions(prev =>
+          prev.map(t =>
+            t.id === transcriptionId
+              ? { ...t, translation: data.translatedText }
+              : t
+          )
+        );
+        toast({
+          title: 'Translation complete',
+          description: 'Text translated to English',
+        });
+      }
+    } catch (error: any) {
+      console.error('Translation error:', error);
+      toast({
+        title: 'Translation failed',
+        description: error.message || 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setTranslating(prev => {
+        const next = new Set(prev);
+        next.delete(transcriptionId);
+        return next;
       });
     }
   };
@@ -342,17 +386,39 @@ export const LiveTranscription = ({ meetingId, isRecording, currentUserName }: L
                         </span>
                       )}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="opacity-0 group-hover:opacity-100 transition-opacity gap-2"
-                      onClick={() => handleHighlight(transcript.id, transcript.content)}
-                    >
-                      <Star className="h-3 w-3" />
-                      Highlight
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity gap-2"
+                        onClick={() => handleTranslate(transcript.id, transcript.content)}
+                        disabled={translating.has(transcript.id) || !!transcript.translation}
+                      >
+                        <Languages className="h-3 w-3" />
+                        {translating.has(transcript.id) ? 'Translating...' : transcript.translation ? 'Translated' : 'Translate'}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity gap-2"
+                        onClick={() => handleHighlight(transcript.id, transcript.content)}
+                      >
+                        <Star className="h-3 w-3" />
+                        Highlight
+                      </Button>
+                    </div>
                   </div>
-                  <p className="text-sm leading-relaxed">{transcript.content}</p>
+                  <div className="space-y-2">
+                    <p className="text-sm leading-relaxed">{transcript.content}</p>
+                    {transcript.translation && (
+                      <div className="pl-4 border-l-2 border-blue-500/50">
+                        <p className="text-xs text-muted-foreground mb-1">English Translation:</p>
+                        <p className="text-sm leading-relaxed text-blue-600 dark:text-blue-400">
+                          {transcript.translation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 {index < transcriptions.length - 1 && <Separator className="my-2" />}
               </div>
