@@ -177,9 +177,13 @@ async function generateDocumentHash(content: string): Promise<string> {
 function generatePDFHTML(params: any): string {
   const { meeting, minutesVersion, brandKit, exhibits, decisions, actions, approvalStamp, watermark } = params;
 
-  const primaryColor = brandKit?.color_primary || "#2563eb";
-  const accentColor = brandKit?.color_accent || "#0ea5e9";
+  const primaryColor = brandKit?.color_primary || "#6366f1";
+  const secondaryColor = brandKit?.color_secondary || "#8b5cf6";
+  const accentColor = brandKit?.color_accent || "#ec4899";
   const orgName = brandKit?.organization_name || "Organization";
+  
+  const docHash = approvalStamp?.hash?.substring(0, 12) || 'UNVERIFIED';
+  const qrCodeData = `https://verify.docs/${docHash}`;
 
   // Parse minutes content to format it better
   const formattedContent = minutesVersion.content
@@ -202,17 +206,24 @@ function generatePDFHTML(params: any): string {
 
   return `
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${meeting.title} - Meeting Minutes</title>
+  <meta name="description" content="${meeting.title} - Official Meeting Minutes Document">
+  <meta name="document-hash" content="${docHash}">
+  <title>${meeting.title} - Official Minutes</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700&display=swap');
     
     @page { 
-      margin: 2cm; 
+      margin: 1.5cm 2cm;
       size: A4;
+      @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-size: 9pt;
+        color: #94a3b8;
+      }
     }
     
     * {
@@ -223,13 +234,12 @@ function generatePDFHTML(params: any): string {
     
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      line-height: 1.6;
-      color: #1f2937;
-      background: #ffffff;
-      font-size: 11pt;
-      ${watermark ? `
-        position: relative;
-      ` : ''}
+      line-height: 1.7;
+      color: #0f172a;
+      background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+      font-size: 10.5pt;
+      position: relative;
+      overflow-x: hidden;
     }
     
     ${watermark ? `
@@ -239,266 +249,509 @@ function generatePDFHTML(params: any): string {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) rotate(-45deg);
-      font-size: 72pt;
-      color: rgba(0, 0, 0, 0.05);
-      z-index: -1;
+      font-size: 120pt;
+      font-weight: 900;
+      background: linear-gradient(135deg, ${primaryColor}15 0%, ${accentColor}08 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      z-index: 0;
       white-space: nowrap;
-      font-weight: 700;
+      opacity: 0.3;
+      letter-spacing: 8px;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+    
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, ${accentColor}10 0%, transparent 70%);
+      border-radius: 50%;
+      z-index: 0;
+      pointer-events: none;
     }
     ` : ''}
     
     .document-container {
-      max-width: 800px;
+      max-width: 820px;
       margin: 0 auto;
+      position: relative;
+      z-index: 1;
     }
     
-    /* Header Section */
+    /* Decorative Elements */
+    .corner-ornament {
+      position: absolute;
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, ${primaryColor}20 0%, transparent 70%);
+      border-radius: 0 0 100% 0;
+      top: 0;
+      right: 0;
+      pointer-events: none;
+    }
+    
+    /* Header Section with Ultra-Modern Design */
     .header {
-      background: linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 100%);
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 50%, ${accentColor} 100%);
       color: white;
-      padding: 40px;
-      border-radius: 8px;
-      margin-bottom: 40px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 48px;
+      border-radius: 16px;
+      margin-bottom: 48px;
+      box-shadow: 0 20px 60px -10px ${primaryColor}40, 0 0 0 1px ${primaryColor}20;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .header::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%);
+      border-radius: 50%;
     }
     
     .header-content {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      position: relative;
+      z-index: 2;
     }
     
     .logo-section {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: 24px;
     }
     
     .logo { 
-      max-width: 120px;
+      max-width: 140px;
       height: auto;
-      filter: brightness(0) invert(1);
+      filter: brightness(0) invert(1) drop-shadow(0 4px 8px rgba(0,0,0,0.1));
     }
     
+    .org-info { flex: 1; }
+    
     .org-name { 
-      font-size: 28pt;
+      font-family: 'Playfair Display', serif;
+      font-size: 32pt;
       font-weight: 700;
-      letter-spacing: -0.5px;
+      letter-spacing: -1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 6px;
     }
     
     .document-type {
-      font-size: 14pt;
-      font-weight: 300;
-      opacity: 0.9;
-      margin-top: 4px;
+      font-size: 13pt;
+      font-weight: 400;
+      opacity: 0.95;
+      letter-spacing: 2px;
+      text-transform: uppercase;
     }
     
-    /* Meeting Info Card */
+    .header-meta {
+      text-align: right;
+      font-size: 9pt;
+      opacity: 0.9;
+      background: rgba(255,255,255,0.1);
+      padding: 12px 16px;
+      border-radius: 8px;
+      backdrop-filter: blur(10px);
+    }
+    
+    .doc-id {
+      font-weight: 600;
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    
+    /* Meeting Info Card with Glassmorphism */
     .meeting-info {
-      background: #f8fafc;
-      border-left: 4px solid ${primaryColor};
-      padding: 24px;
-      margin-bottom: 32px;
-      border-radius: 4px;
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      position: relative;
+      padding: 32px;
+      margin-bottom: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    
+    .meeting-info::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      padding: 2px;
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
     }
     
     .meeting-title { 
-      font-size: 20pt;
-      font-weight: 600;
-      color: ${primaryColor};
-      margin-bottom: 12px;
+      font-size: 22pt;
+      font-weight: 700;
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
     }
     
     .meeting-meta {
-      display: flex;
-      gap: 24px;
-      flex-wrap: wrap;
-      font-size: 10pt;
-      color: #64748b;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
     }
     
     .meeting-meta-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      background: linear-gradient(135deg, ${primaryColor}08 0%, ${accentColor}05 100%);
+      padding: 12px 16px;
+      border-radius: 8px;
+      border-left: 3px solid ${primaryColor};
+      font-size: 9.5pt;
     }
     
     .meeting-meta-item strong {
-      color: #334155;
+      display: block;
+      color: ${primaryColor};
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      font-size: 8pt;
+      letter-spacing: 0.5px;
     }
     
-    /* Approval Stamp */
+    .meeting-meta-item span {
+      color: #1e293b;
+      font-weight: 500;
+    }
+    
+    /* Ultra-Modern Approval Stamp */
     .approval-stamp {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      background: linear-gradient(135deg, #10b981 0%, #06b6d4 50%, #059669 100%);
       color: white;
-      padding: 24px;
-      margin: 32px 0;
-      border-radius: 8px;
-      box-shadow: 0 4px 6px rgba(16, 185, 129, 0.2);
+      padding: 32px;
+      margin: 40px 0;
+      border-radius: 16px;
+      box-shadow: 0 20px 50px -10px rgba(16, 185, 129, 0.4), 0 0 0 1px rgba(16, 185, 129, 0.2);
       page-break-inside: avoid;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .approval-stamp::before {
+      content: '✓';
+      position: absolute;
+      top: -30px;
+      right: -30px;
+      font-size: 200pt;
+      opacity: 0.08;
+      font-weight: 900;
+      line-height: 1;
     }
     
     .stamp-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      position: relative;
+      z-index: 1;
     }
     
     .stamp-icon {
-      width: 32px;
-      height: 32px;
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.25);
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18pt;
+      font-size: 28pt;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
+    .stamp-title-section { flex: 1; margin-left: 16px; }
+    
     .stamp-title { 
-      font-weight: 700;
-      font-size: 14pt;
+      font-weight: 800;
+      font-size: 16pt;
       letter-spacing: 0.5px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 4px;
+    }
+    
+    .stamp-subtitle {
+      font-size: 10pt;
+      opacity: 0.9;
+      font-weight: 400;
     }
     
     .stamp-details {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      font-size: 9pt;
-      opacity: 0.95;
+      gap: 16px;
+      position: relative;
+      z-index: 1;
     }
     
     .stamp-detail-item {
-      background: rgba(255, 255, 255, 0.15);
-      padding: 8px 12px;
-      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 14px 16px;
+      border-radius: 10px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.3);
     }
     
     .stamp-detail-label {
-      font-weight: 600;
-      margin-bottom: 2px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.9;
     }
     
-    /* Content Sections */
+    .stamp-detail-value {
+      font-size: 10pt;
+      font-weight: 500;
+    }
+    
+    .verification-qr {
+      position: absolute;
+      right: 32px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: white;
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    /* Content Sections with Modern Design */
     .section { 
-      margin: 40px 0;
+      margin: 48px 0;
       page-break-inside: avoid;
+      position: relative;
     }
     
     .section-title {
-      font-size: 16pt;
-      font-weight: 600;
-      color: ${primaryColor};
-      border-bottom: 3px solid ${accentColor};
-      padding-bottom: 8px;
-      margin-bottom: 20px;
+      font-size: 18pt;
+      font-weight: 700;
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      border-bottom: 3px solid;
+      border-image: linear-gradient(90deg, ${primaryColor} 0%, ${accentColor} 100%) 1;
+      padding-bottom: 12px;
+      margin-bottom: 24px;
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
+      position: relative;
+    }
+    
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -3px;
+      left: 0;
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, ${accentColor} 0%, transparent 100%);
     }
     
     .section-number {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
-      background: ${accentColor};
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 100%);
       color: white;
-      border-radius: 50%;
-      font-size: 12pt;
-      font-weight: 600;
+      border-radius: 12px;
+      font-size: 14pt;
+      font-weight: 700;
+      box-shadow: 0 4px 12px ${primaryColor}40;
     }
     
-    /* Minutes Content */
+    /* Minutes Content with Enhanced Typography */
     .minutes-content {
       background: white;
-      padding: 24px;
-      border-radius: 4px;
-      border: 1px solid #e2e8f0;
+      padding: 32px;
+      border-radius: 12px;
+      border: 2px solid #e2e8f0;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+      position: relative;
+    }
+    
+    .minutes-content::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, ${primaryColor} 0%, ${accentColor} 100%);
+      border-radius: 12px 12px 0 0;
     }
     
     .content-h1 {
-      font-size: 16pt;
-      font-weight: 600;
+      font-size: 17pt;
+      font-weight: 700;
       color: ${primaryColor};
-      margin: 24px 0 12px 0;
-      padding-top: 16px;
-      border-top: 2px solid #e2e8f0;
+      margin: 32px 0 16px 0;
+      padding: 16px 0 8px 16px;
+      border-left: 4px solid ${accentColor};
+      background: linear-gradient(90deg, ${primaryColor}08 0%, transparent 100%);
+      border-radius: 0 8px 8px 0;
     }
     
     .content-h1:first-child {
       margin-top: 0;
-      padding-top: 0;
-      border-top: none;
     }
     
     .content-h2 {
       font-size: 13pt;
       font-weight: 600;
-      color: #334155;
-      margin: 20px 0 10px 0;
+      color: #475569;
+      margin: 24px 0 12px 0;
+      padding-left: 12px;
+      border-left: 3px solid ${accentColor}60;
     }
     
     .content-p {
-      margin: 8px 0;
+      margin: 10px 0;
       text-align: justify;
-      line-height: 1.8;
+      line-height: 1.9;
+      color: #334155;
+      hyphens: auto;
     }
     
     .content-li {
-      margin: 6px 0 6px 24px;
-      list-style-type: disc;
-      line-height: 1.7;
+      margin: 8px 0 8px 32px;
+      list-style-type: none;
+      line-height: 1.8;
+      position: relative;
+      padding-left: 8px;
     }
     
-    /* Decision Cards */
-    .decision-card, .action-card {
-      background: white;
-      border: 1px solid #e2e8f0;
-      border-left: 4px solid ${primaryColor};
-      padding: 16px;
-      margin: 16px 0;
-      border-radius: 4px;
+    .content-li::before {
+      content: '▸';
+      position: absolute;
+      left: -20px;
+      color: ${accentColor};
+      font-weight: 700;
+    }
+    
+    /* Modern Decision & Action Cards */
+    .decision-card {
+      background: linear-gradient(135deg, #ffffff 0%, #fefce8 100%);
+      border: 2px solid #fbbf24;
+      border-left: 6px solid #f59e0b;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 12px;
       page-break-inside: avoid;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 4px 16px rgba(251, 191, 36, 0.15);
+      position: relative;
     }
     
-    .decision-card:hover, .action-card:hover {
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+    .action-card {
+      background: linear-gradient(135deg, #ffffff 0%, #dbeafe 100%);
+      border: 2px solid #60a5fa;
+      border-left: 6px solid #3b82f6;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 12px;
+      page-break-inside: avoid;
+      box-shadow: 0 4px 16px rgba(96, 165, 250, 0.15);
+      position: relative;
+    }
+    
+    .decision-card::before {
+      content: '⚡';
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 24pt;
+      opacity: 0.15;
+    }
+    
+    .action-card::before {
+      content: '✓';
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      font-size: 24pt;
+      opacity: 0.15;
     }
     
     .card-title {
-      font-weight: 600;
-      font-size: 11pt;
-      color: #1f2937;
-      margin-bottom: 8px;
+      font-weight: 700;
+      font-size: 12pt;
+      color: #0f172a;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid currentColor;
+      opacity: 0.9;
+    }
+    
+    .decision-card .card-title {
+      color: #b45309;
+    }
+    
+    .action-card .card-title {
+      color: #1e40af;
     }
     
     .card-content {
-      color: #4b5563;
+      color: #334155;
       font-size: 10pt;
-      margin: 8px 0;
-      line-height: 1.6;
+      margin: 12px 0;
+      line-height: 1.8;
     }
     
     .card-meta {
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px solid #f1f5f9;
-      font-size: 9pt;
-      color: #64748b;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 2px dashed #cbd5e1;
     }
     
     .card-meta-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      background: rgba(255,255,255,0.7);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 9pt;
+    }
+    
+    .card-meta-item strong {
+      display: block;
+      font-weight: 600;
+      color: #0f172a;
+      margin-bottom: 2px;
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     
     .status-badge {
@@ -517,50 +770,77 @@ function generatePDFHTML(params: any): string {
     .priority-medium { color: #f59e0b; font-weight: 600; }
     .priority-low { color: #10b981; font-weight: 600; }
     
-    /* Exhibit Cards */
+    /* Exhibit Cards with Modern Design */
     .exhibit-card {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      padding: 16px;
-      margin: 12px 0;
-      border-radius: 4px;
+      background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%);
+      border: 2px solid #cbd5e1;
+      border-left: 6px solid ${secondaryColor};
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 12px;
       page-break-inside: avoid;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      transition: all 0.3s ease;
     }
     
     .exhibit-header {
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 8px;
+      gap: 16px;
+      margin-bottom: 12px;
     }
     
     .exhibit-badge {
-      background: ${accentColor};
+      background: linear-gradient(135deg, ${secondaryColor} 0%, ${accentColor} 100%);
       color: white;
-      padding: 4px 12px;
-      border-radius: 4px;
-      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 8px;
+      font-weight: 700;
       font-size: 9pt;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px ${secondaryColor}40;
     }
     
     .exhibit-title {
-      font-weight: 600;
-      color: #1f2937;
-      font-size: 10pt;
+      font-weight: 700;
+      color: #0f172a;
+      font-size: 11pt;
     }
     
     .exhibit-details {
-      color: #64748b;
+      background: rgba(255,255,255,0.7);
+      padding: 12px;
+      border-radius: 8px;
       font-size: 9pt;
-      margin-top: 4px;
     }
     
-    /* Footer */
+    .exhibit-details div {
+      margin: 6px 0;
+      color: #475569;
+    }
+    
+    .exhibit-details strong {
+      color: #1e293b;
+      margin-right: 6px;
+    }
+    
+    /* Enhanced Footer */
     .footer {
-      margin-top: 60px;
-      padding-top: 24px;
-      border-top: 2px solid #e2e8f0;
-      text-align: center;
+      margin-top: 80px;
+      padding: 32px 0;
+      border-top: 3px solid;
+      border-image: linear-gradient(90deg, ${primaryColor} 0%, ${accentColor} 100%) 1;
+      position: relative;
+    }
+    
+    .footer::before {
+      content: '';
+      position: absolute;
+      top: -3px;
+      left: 0;
+      width: 120px;
+      height: 3px;
+      background: linear-gradient(90deg, ${accentColor} 0%, transparent 100%);
     }
     
     .footer-content {
@@ -569,29 +849,64 @@ function generatePDFHTML(params: any): string {
       align-items: center;
       font-size: 9pt;
       color: #64748b;
+      margin-bottom: 20px;
     }
     
     .footer-left {
       text-align: left;
     }
     
+    .footer-left strong {
+      color: ${primaryColor};
+      font-size: 10pt;
+    }
+    
     .footer-right {
       text-align: right;
+      font-size: 8pt;
+      opacity: 0.8;
     }
     
     .confidential-notice {
-      background: #fef2f2;
-      border: 1px solid #fecaca;
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+      border: 2px solid #fca5a5;
       color: #991b1b;
-      padding: 12px;
-      border-radius: 4px;
-      margin-top: 16px;
+      padding: 16px 20px;
+      border-radius: 10px;
+      margin-top: 20px;
       font-size: 9pt;
       text-align: center;
-      font-weight: 500;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.1);
+      letter-spacing: 0.3px;
     }
     
-    /* Print Styles */
+    .document-hash {
+      text-align: center;
+      margin-top: 16px;
+      padding: 12px;
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+    }
+    
+    .document-hash strong {
+      color: ${primaryColor};
+      font-size: 8pt;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .document-hash code {
+      display: block;
+      margin-top: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 8pt;
+      color: #475569;
+      word-break: break-all;
+    }
+    
+    /* Print Styles for Perfect Output */
     @media print {
       body {
         background: white;
@@ -599,20 +914,31 @@ function generatePDFHTML(params: any): string {
       .page-break {
         page-break-before: always;
       }
+      .approval-stamp, .decision-card, .action-card, .exhibit-card {
+        page-break-inside: avoid;
+      }
+      @page {
+        margin: 1.5cm 2cm;
+      }
     }
   </style>
 </head>
 <body>
+  <div class="corner-ornament"></div>
   <div class="document-container">
-    <!-- Header -->
+    <!-- Ultra-Modern Header -->
     <div class="header">
       <div class="header-content">
         <div class="logo-section">
           ${brandKit?.logo_url ? `<img src="${brandKit.logo_url}" class="logo" alt="${orgName} Logo" />` : ''}
-          <div>
+          <div class="org-info">
             <div class="org-name">${orgName}</div>
-            <div class="document-type">Meeting Minutes</div>
+            <div class="document-type">Official Meeting Minutes</div>
           </div>
+        </div>
+        <div class="header-meta">
+          <div class="doc-id">DOC-${docHash.toUpperCase()}</div>
+          <div>${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
         </div>
       </div>
     </div>
@@ -649,31 +975,36 @@ function generatePDFHTML(params: any): string {
     </div>
 
     ${approvalStamp ? `
-    <!-- Approval Stamp -->
+    <!-- Modern Approval Stamp -->
     <div class="approval-stamp">
       <div class="stamp-header">
-        <div class="stamp-icon">✓</div>
-        <div class="stamp-title">APPROVED & DIGITALLY SIGNED</div>
+        <div>
+          <div class="stamp-icon">✓</div>
+        </div>
+        <div class="stamp-title-section">
+          <div class="stamp-title">OFFICIALLY APPROVED & SIGNED</div>
+          <div class="stamp-subtitle">This document has been digitally verified</div>
+        </div>
       </div>
       <div class="stamp-details">
         <div class="stamp-detail-item">
           <div class="stamp-detail-label">Approved By</div>
-          <div>${approvalStamp.approved_by}</div>
+          <div class="stamp-detail-value">${approvalStamp.approved_by}</div>
         </div>
         <div class="stamp-detail-item">
           <div class="stamp-detail-label">Timestamp</div>
-          <div>${new Date(approvalStamp.approved_at).toLocaleString('en-US', {
+          <div class="stamp-detail-value">${new Date(approvalStamp.approved_at).toLocaleString('en-US', {
             dateStyle: 'medium',
-            timeStyle: 'medium'
+            timeStyle: 'short'
           })}</div>
         </div>
         <div class="stamp-detail-item">
-          <div class="stamp-detail-label">Document Version</div>
-          <div>v${approvalStamp.version_number}</div>
+          <div class="stamp-detail-label">Version</div>
+          <div class="stamp-detail-value">v${approvalStamp.version_number}</div>
         </div>
         <div class="stamp-detail-item">
-          <div class="stamp-detail-label">Document Hash</div>
-          <div style="font-family: monospace; font-size: 7pt; word-break: break-all;">${approvalStamp.hash.substring(0, 32)}...</div>
+          <div class="stamp-detail-label">Security Hash</div>
+          <div class="stamp-detail-value" style="font-family: monospace; font-size: 7pt; word-break: break-all;">${approvalStamp.hash.substring(0, 24)}...</div>
         </div>
       </div>
     </div>
@@ -778,26 +1109,31 @@ function generatePDFHTML(params: any): string {
     </div>
     ` : ''}
 
-    <!-- Footer -->
+    <!-- Enhanced Footer -->
     <div class="footer">
       <div class="footer-content">
         <div class="footer-left">
           <div><strong>${orgName}</strong></div>
-          <div>Meeting Minutes Report</div>
+          <div>Official Meeting Minutes Document</div>
         </div>
         <div class="footer-right">
           <div>Generated: ${new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
-            day: 'numeric',
+            day: 'numeric'
+          })}</div>
+          <div>Time: ${new Date().toLocaleTimeString('en-US', {
             hour: '2-digit',
             minute: '2-digit'
           })}</div>
-          <div>Page 1 of 1</div>
         </div>
       </div>
       <div class="confidential-notice">
-        🔒 CONFIDENTIAL - This document contains sensitive information intended only for authorized recipients
+        🔒 CONFIDENTIAL & PROPRIETARY - This document contains sensitive information for authorized recipients only
+      </div>
+      <div class="document-hash">
+        <strong>Document Verification Code:</strong>
+        <code>${docHash.toUpperCase()}-${new Date().getFullYear()}</code>
       </div>
     </div>
   </div>
