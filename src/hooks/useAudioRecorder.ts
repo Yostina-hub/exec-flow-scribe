@@ -330,9 +330,34 @@ export const useAudioRecorder = (meetingId: string) => {
       });
     } catch (error) {
       console.error('Error starting recording:', error);
+      
+      let errorMessage = 'Could not access microphone';
+      
+      if (error instanceof DOMException) {
+        switch (error.name) {
+          case 'NotFoundError':
+            errorMessage = 'No microphone found. Please connect a microphone and try again.';
+            break;
+          case 'NotAllowedError':
+            errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.';
+            break;
+          case 'NotReadableError':
+            errorMessage = 'Microphone is already in use by another application.';
+            break;
+          case 'OverconstrainedError':
+            errorMessage = 'No microphone found that meets the requirements.';
+            break;
+          case 'AbortError':
+            errorMessage = 'Microphone access was aborted.';
+            break;
+          default:
+            errorMessage = `Microphone error: ${error.message}`;
+        }
+      }
+      
       toast({
         title: 'Recording failed',
-        description: 'Could not access microphone',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

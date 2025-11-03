@@ -155,11 +155,33 @@ export const BrowserSpeechRecognition = ({
               try {
                 await startAudioRecording();
                 console.log('Audio recording started');
-              } catch (err) {
+              } catch (err: any) {
                 console.error('Failed to start audio recording:', err);
+                
+                let errorMessage = 'Failed to access microphone. Please check permissions.';
+                
+                if (err instanceof DOMException) {
+                  switch (err.name) {
+                    case 'NotFoundError':
+                      errorMessage = 'No microphone found. Please connect a microphone and try again.';
+                      break;
+                    case 'NotAllowedError':
+                      errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.';
+                      break;
+                    case 'NotReadableError':
+                      errorMessage = 'Microphone is already in use by another application.';
+                      break;
+                    case 'OverconstrainedError':
+                      errorMessage = 'No microphone found that meets the requirements.';
+                      break;
+                    default:
+                      errorMessage = err.message || 'Failed to access microphone. Please check permissions.';
+                  }
+                }
+                
                 toast({
                   title: 'Microphone Error',
-                  description: 'Failed to access microphone. Please check permissions.',
+                  description: errorMessage,
                   variant: 'destructive',
                 });
               }

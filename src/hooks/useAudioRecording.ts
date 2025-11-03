@@ -96,7 +96,34 @@ export const useAudioRecording = (): AudioRecordingHook => {
       
     } catch (err: any) {
       console.error('Error starting recording:', err);
-      setError(err.message || 'Failed to access microphone');
+      
+      let errorMessage = 'Failed to access microphone';
+      
+      if (err instanceof DOMException) {
+        switch (err.name) {
+          case 'NotFoundError':
+            errorMessage = 'No microphone found. Please connect a microphone and try again.';
+            break;
+          case 'NotAllowedError':
+            errorMessage = 'Microphone permission denied. Please allow microphone access in your browser settings.';
+            break;
+          case 'NotReadableError':
+            errorMessage = 'Microphone is already in use by another application.';
+            break;
+          case 'OverconstrainedError':
+            errorMessage = 'No microphone found that meets the requirements.';
+            break;
+          case 'AbortError':
+            errorMessage = 'Microphone access was aborted.';
+            break;
+          default:
+            errorMessage = err.message || 'Failed to access microphone';
+        }
+      } else {
+        errorMessage = err.message || 'Failed to access microphone';
+      }
+      
+      setError(errorMessage);
       setIsRecording(false);
     }
   }, []);
