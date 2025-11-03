@@ -19,14 +19,23 @@ interface BrowserSpeechRecognitionProps {
   onDurationChange?: (seconds: number) => void;
 }
 
+// Internal recording state for standalone usage
+const useInternalRecording = (externalIsRecording?: boolean) => {
+  const [internalRecording, setInternalRecording] = useState(false);
+  const isRecording = externalIsRecording !== undefined ? externalIsRecording : internalRecording;
+  return { isRecording, setInternalRecording };
+};
+
 export const BrowserSpeechRecognition = ({ 
   meetingId, 
-  externalIsRecording = false,
+  externalIsRecording,
   isPaused = false,
   onRecordingStart,
   onRecordingStop,
   onDurationChange
 }: BrowserSpeechRecognitionProps) => {
+  const { isRecording, setInternalRecording } = useInternalRecording(externalIsRecording);
+  
   const {
     transcript,
     isListening,
@@ -73,8 +82,8 @@ export const BrowserSpeechRecognition = ({
     error: audioError
   } = useAudioRecording({ onChunk: handleChunk });
 
-  // Track previous external recording and pause states
-  const prevExternalRef = useRef(externalIsRecording);
+  // Track previous recording and pause states
+  const prevRecordingRef = useRef(isRecording);
   const prevPausedRef = useRef(isPaused);
 
   // Get current user info and fetch saved audios
@@ -130,17 +139,17 @@ export const BrowserSpeechRecognition = ({
     }
   };
 
-  // Sync with external recording and pause state
+  // Sync with recording and pause state
   useEffect(() => {
     const sync = async () => {
-      const prevExternal = prevExternalRef.current;
+      const prevRecording = prevRecordingRef.current;
       const prevPaused = prevPausedRef.current;
   
-      console.log('Sync state:', { externalIsRecording, isPaused, isListening, prevExternal, prevPaused });
+      console.log('Sync state:', { isRecording, isPaused, isListening, prevRecording, prevPaused });
   
-      if (!externalIsRecording) {
+      if (!isRecording) {
         // Recording stopped → save once on falling edge
-        if (prevExternal) {
+        if (prevRecording) {
           console.log('Stopping recording and saving...');
           if (isListening) stopListening();
           // Clean up PCM capture
@@ -175,10 +184,10 @@ export const BrowserSpeechRecognition = ({
           }
         } else {
           // Active and not paused → ensure listening
-          if (!isListening || !prevExternal) {
-            console.log('Starting/resuming recording...', { isListening, prevExternal });
+          if (!isListening || !prevRecording) {
+            console.log('Starting/resuming recording...', { isListening, prevRecording });
             // New session start (rising edge) → clear and start
-            if (!prevExternal) {
+            if (!prevRecording) {
               console.log('New recording session - clearing and starting fresh');
               resetTranscript();
               setWhisperTranscript('');
@@ -234,16 +243,16 @@ export const BrowserSpeechRecognition = ({
       }
   
       // Update previous flags
-      prevExternalRef.current = externalIsRecording;
+      prevRecordingRef.current = isRecording;
       prevPausedRef.current = isPaused;
     };
 
     void sync();
-  }, [externalIsRecording, isPaused, isListening, selectedLanguage]);
+  }, [isRecording, isPaused, isListening, selectedLanguage]);
 
   useEffect(() => {
     let interval: any;
-    if (externalIsRecording && !isPaused) {
+    if (isRecording && !isPaused) {
       interval = setInterval(() => {
         setRecordingDuration(prev => {
           const next = prev + 1;
@@ -255,12 +264,12 @@ export const BrowserSpeechRecognition = ({
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [externalIsRecording, isPaused]);
+  }, [isRecording, isPaused]);
 
   // Live Browser Whisper transcription loop using PCM data
   useEffect(() => {
-    if (!externalIsRecording || isPaused || !whisperMode) {
-      console.log('Whisper loop skipped:', { externalIsRecording, isPaused, whisperMode });
+    if (!isRecording || isPaused || !whisperMode) {
+      console.log('Whisper loop skipped:', { isRecording, isPaused, whisperMode });
       return;
     }
     
@@ -329,7 +338,7 @@ export const BrowserSpeechRecognition = ({
       console.log('Stopping Browser Whisper transcription loop');
       clearInterval(interval);
     };
-  }, [externalIsRecording, isPaused, whisperMode]);
+  }, [isRecording, isPaused, whisperMode]);
 
   // Auto-save transcript every ~5s while recording (no audio upload, text only)
   const lastSavedLenRef = useRef(0);
@@ -359,7 +368,7 @@ export const BrowserSpeechRecognition = ({
 
   // Autosave for Browser Whisper mode
   useEffect(() => {
-    if (!whisperMode || !externalIsRecording || isPaused) return;
+    if (!whisperMode || !isRecording || isPaused) return;
     const autosave = setInterval(async () => {
       const text = whisperTranscript.trim();
       if (text && text.length - lastSavedLenRef.current >= 10) {
@@ -380,7 +389,7 @@ export const BrowserSpeechRecognition = ({
       }
     }, 2000);
     return () => clearInterval(autosave);
-  }, [whisperMode, whisperTranscript, externalIsRecording, isPaused, meetingId, userName, selectedLanguage]);
+  }, [whisperMode, whisperTranscript, isRecording, isPaused, meetingId, userName, selectedLanguage]);
 
   const handleSave = async (audioFile?: Blob | null) => {
     const displayText = (whisperMode ? whisperTranscript : transcript).trim();
@@ -601,7 +610,7 @@ export const BrowserSpeechRecognition = ({
         </div>
 
         <div className="flex flex-col items-center gap-6">
-          {externalIsRecording && !isPaused && (
+          {isRecording && !isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
@@ -621,7 +630,7 @@ export const BrowserSpeechRecognition = ({
             </div>
           )}
 
-          {externalIsRecording && isPaused && (
+          {isRecording && isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="warning" className="gap-2 text-base px-4 py-2">
                 <span className="h-2 w-2 rounded-full bg-white" />
@@ -636,7 +645,7 @@ export const BrowserSpeechRecognition = ({
             </div>
           )}
 
-          {!externalIsRecording && (
+          {!isRecording && (
             <div className="text-center py-4">
               <p className="text-muted-foreground">
                 Use the <strong>"Start Recording"</strong> button above to begin transcription
