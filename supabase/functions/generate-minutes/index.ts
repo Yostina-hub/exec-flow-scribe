@@ -66,25 +66,26 @@ try {
     
     console.log("✅ User authenticated:", user.id);
 
-    // Get user's AI provider preference
-    const { data: preference } = await supabase
-      .from("ai_provider_preferences")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Get user's AI provider preference & fetch meeting data in parallel
+    console.log("📋 Fetching data in parallel...");
+    const [
+      { data: preference },
+      { data: meeting, error: meetingError },
+      tr1,
+      { data: decisions },
+      { data: polls }
+    ] = await Promise.all([
+      supabase.from("ai_provider_preferences").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("meetings").select("*, agenda_items(*)").eq("id", meetingId).single(),
+      supabase.from("transcriptions").select("*").eq("meeting_id", meetingId).order("timestamp", { ascending: true }),
+      supabase.from("decisions").select("*").eq("meeting_id", meetingId),
+      supabase.from("meeting_polls").select("*, poll_responses(*)").eq("meeting_id", meetingId).order("created_at", { ascending: true })
+    ]);
 
     const provider = preference?.provider || "lovable_ai";
     console.log(`Using AI provider: ${provider}`);
     
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-
-    // Fetch meeting details
-    console.log("📋 Fetching meeting details...");
-    const { data: meeting, error: meetingError } = await supabase
-      .from("meetings")
-      .select("*, agenda_items(*)")
-      .eq("id", meetingId)
-      .single();
 
     if (meetingError) {
       console.error("Meeting fetch error:", meetingError);
@@ -94,34 +95,18 @@ try {
       );
     }
 
-    // Fetch transcriptions
-    console.log("📝 Fetching transcriptions...");
-    // Try primary table
-    let transcriptions: any[] = [];
-    let tr1 = await supabase
-      .from("transcriptions")
-      .select("*")
-      .eq("meeting_id", meetingId)
-      .order("timestamp", { ascending: true });
+    // Process transcriptions with fallback
+    let transcriptions: any[] = tr1.data || [];
 
-    if (tr1.error) {
-      console.error("Transcription fetch error (transcriptions):", tr1.error);
-    }
-    transcriptions = tr1.data || [];
-
-    // Fallback to alternate table name used elsewhere in app
     if (!transcriptions.length) {
-      console.log("🔎 No rows in 'transcriptions'. Trying 'transcription_segments'...");
+      console.log("🔎 Trying 'transcription_segments'...");
       const tr2 = await supabase
         .from("transcription_segments")
         .select("*")
         .eq("meeting_id", meetingId)
         .order("created_at", { ascending: true });
-      if (tr2.error) {
-        console.warn("Transcription fetch error (transcription_segments):", tr2.error);
-      }
+      
       if (tr2.data?.length) {
-        // Normalize shape -> { content, timestamp, speaker_name }
         transcriptions = tr2.data
           .map((r: any) => ({
             content: r.content || r.text || "",
@@ -133,29 +118,6 @@ try {
     }
 
     const noTranscript = transcriptions.length === 0;
-
-
-    // Fetch decisions
-    const { data: decisions, error: decisionsError } = await supabase
-      .from("decisions")
-      .select("*")
-      .eq("meeting_id", meetingId);
-
-    if (decisionsError) {
-      throw new Error("Failed to fetch decisions");
-    }
-
-    // Fetch polls and poll responses
-    console.log("🗳️ Fetching polls and responses...");
-    const { data: polls, error: pollsError } = await supabase
-      .from("meeting_polls")
-      .select("*, poll_responses(*)")
-      .eq("meeting_id", meetingId)
-      .order("created_at", { ascending: true });
-
-    if (pollsError) {
-      console.warn("Poll fetch warning:", pollsError);
-    }
 
     // Combine and analyze transcript to detect dominant language (favor Amharic when mixed)
     const fullTranscript = transcriptions
@@ -422,7 +384,66 @@ Format as a professional markdown document with:
     let providerError = "";
     let providerStatus: number | null = null;
 
-    // Try OpenAI first (best for multilingual summaries)
+    // Try Lovable AI first (fastest with Gemini Flash)
+    if (lovableApiKey && !minutes) {
+      try {
+        console.log("🤖 Using Lovable AI (Gemini 2.5 Flash - Fast)");
+        const lovableResponse = await fetch(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { 
+                  role: "system", 
+                  content: `You are an expert meeting minutes specialist. Create comprehensive, natural documentation capturing every detail.
+
+${detectedLang === 'am' ? `🇪🇹 AMHARIC REQUIREMENTS:
+• Write entirely in Ge'ez script - NEVER use Latin letters
+• Use Ethiopian punctuation: ። (end), ፣ (comma), ፦ (colon), ፤ (semicolon)
+• Every sentence MUST end with ።
+• Use SOV word order and formal business Amharic
+• Write naturally like an educated Ethiopian professional` : 'Write in the transcript language. Never romanize or transliterate.'}
+
+CRITICAL: Only document what is EXPLICITLY in the transcript - no assumptions.` 
+                },
+                { role: "user", content: prompt },
+              ],
+            }),
+          }
+        );
+
+        if (lovableResponse.ok) {
+          const lovableData = await lovableResponse.json();
+          minutes = lovableData.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with Lovable AI");
+        } else {
+          const statusCode = lovableResponse.status;
+          const errorText = await lovableResponse.text();
+          console.error(`Lovable AI error (${statusCode}):`, errorText);
+          
+          if (statusCode === 429) {
+            providerStatus = 429;
+            providerError = "Lovable AI rate limit exceeded. Trying fallback...";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "Lovable AI: Payment required. Trying fallback...";
+          } else {
+            providerError = `Lovable AI: ${errorText}`;
+          }
+        }
+      } catch (e) {
+        console.error("Lovable AI provider failed:", e);
+        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
+
+    // Try OpenAI as fallback
     const openaiKey = preference?.openai_api_key || Deno.env.get("OPENAI_API_KEY");
     if (openaiKey && !minutes) {
       try {
@@ -588,86 +609,6 @@ Preserve the transcript language and script exactly.\n\n${prompt}`
       }
     }
 
-    // Final fallback to Lovable AI (if available)
-    if (lovableApiKey && !minutes) {
-      try {
-        console.log("🤖 Using Lovable AI (final fallback)");
-        const lovableResponse = await fetch(
-          "https://ai.gateway.lovable.dev/v1/chat/completions",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${lovableApiKey}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              model: "google/gemini-2.5-pro", // Upgraded to Pro for best quality comprehensive minutes
-              messages: [
-                { 
-                  role: "system", 
-                  content: `You are an expert meeting minutes specialist who creates comprehensive, natural-sounding documentation. You have mastered the art of capturing every detail while maintaining engaging, professional prose.
-
-🎯 YOUR APPROACH:
-• Act as a skilled human note-taker who attended the meeting
-• Capture EVERY detail, nuance, and context from the discussion
-• Write in a natural, flowing style that engages readers
-• Include complete information - don't summarize or abbreviate excessively
-• Show the progression of ideas and how decisions were reached
-• Preserve speaker intentions, reasoning, and important quotes
-• Connect topics naturally to show the meeting's narrative flow
-• Make minutes thorough yet readable - like skilled human documentation
-
-✅ QUALITY STANDARDS:
-• Completeness: Include all discussions, questions, answers, and details
-• Accuracy: Only information from the transcript - no additions or assumptions
-• Natural flow: Varied sentences, smooth transitions, engaging prose
-• Context: Background, reasoning, and full picture of discussions
-• Professional yet conversational: Formal but not robotic
-• Detailed: Comprehensive coverage without missing minor but relevant points
-
-${detectedLang === 'am' ? `🇪🇹 AMHARIC MASTERY:
-You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) business writing with these non-negotiable requirements:
-• Write in natural, flowing Ge'ez script exclusively - NEVER use Latin letters
-• Use proper Ethiopian punctuation consistently: ። (sentence end), ፣ (comma), ፤ (semicolon), ፦ (colon before lists/elaborations), ፥ (section separator)
-• Every sentence MUST end with ።
-• Use Subject-Object-Verb (SOV) word order naturally
-• Employ professional honorifics and business terminology
-• Write with the skill and naturalness of an educated Ethiopian professional
-• Vary sentence structure and length for natural rhythm
-• Connect ideas smoothly with appropriate Amharic transitions
-• Make it indistinguishable from high-quality human-written Amharic documentation
-• BUT CRITICALLY: Only document what was actually discussed in the transcript` : 'Preserve the transcript language and script exactly. Write with native fluency in that language. Never romanize or transliterate. Only document what is explicitly in the transcript.'}` 
-                },
-                { role: "user", content: prompt },
-              ],
-            }),
-          }
-        );
-
-        if (lovableResponse.ok) {
-          const lovableData = await lovableResponse.json();
-          minutes = lovableData.choices?.[0]?.message?.content || "";
-          console.log("✅ Minutes generated with Lovable AI");
-        } else {
-          const statusCode = lovableResponse.status;
-          const errorText = await lovableResponse.text();
-          console.error(`Lovable AI error (${statusCode}):`, errorText);
-          
-          if (statusCode === 429) {
-            providerStatus = 429;
-            providerError = "Lovable AI rate limit exceeded.";
-          } else if (statusCode === 402) {
-            providerStatus = 402;
-            providerError = "Lovable AI: Payment required - please add credits to your workspace.";
-          } else {
-            providerError = `Lovable AI: ${errorText}`;
-          }
-        }
-      } catch (e) {
-        console.error("Lovable AI provider failed:", e);
-        providerError += ` | Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
-      }
-    }
 
     // If all providers failed, return helpful error
     if (!minutes) {
