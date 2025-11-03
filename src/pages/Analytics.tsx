@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { TrendingUp, Clock, Users, Calendar } from "lucide-react";
+import { TrendingUp, Clock, Users, Calendar, BarChart3 } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 
 const meetingTrendData = [
@@ -80,25 +80,31 @@ const Analytics = () => {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight">Analytics</h1>
-            <p className="text-muted-foreground mt-2">
-              Insights and trends from your meeting data
-            </p>
+        {/* Executive Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500/10 via-blue-500/5 to-pink-500/10 p-8 border border-purple-500/20 animate-fade-in">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <BarChart3 className="h-4 w-4 text-purple-400" />
+                <span className="text-sm font-medium">Executive Analytics</span>
+              </div>
+              <h1 className="text-5xl font-black font-['Space_Grotesk']">Analytics</h1>
+              <p className="text-muted-foreground text-lg">Real-time insights and performance metrics</p>
+            </div>
+            <Select defaultValue="6months">
+              <SelectTrigger className="w-[200px] h-11 border-2">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1month">Last Month</SelectItem>
+                <SelectItem value="3months">Last 3 Months</SelectItem>
+                <SelectItem value="6months">Last 6 Months</SelectItem>
+                <SelectItem value="1year">Last Year</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select defaultValue="6months">
-            <SelectTrigger className="w-[180px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1month">Last Month</SelectItem>
-              <SelectItem value="3months">Last 3 Months</SelectItem>
-              <SelectItem value="6months">Last 6 Months</SelectItem>
-              <SelectItem value="1year">Last Year</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Stats Grid */}

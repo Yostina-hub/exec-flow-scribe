@@ -106,12 +106,18 @@ const Reports = () => {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground mt-2">
-            Generate and export comprehensive meeting reports
-          </p>
+        {/* Executive Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-cyan-500/10 p-8 border border-emerald-500/20">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-4">
+              <FileText className="h-4 w-4 text-emerald-400" />
+              <span className="text-sm font-medium">Executive Reports</span>
+            </div>
+            <h1 className="text-5xl font-black font-['Space_Grotesk'] mb-3">Reports</h1>
+            <p className="text-muted-foreground text-lg">Generate and export comprehensive meeting intelligence</p>
+          </div>
         </div>
 
         {/* Export Configuration */}

@@ -53,6 +53,18 @@ export default function DriveIntegration() {
     loadSettings();
     loadMeetingFiles();
     checkGoogleAuth();
+    
+    // Real-time file updates
+    const filesChannel = supabase
+      .channel('drive-files-updates')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'meeting_drive_files' }, () => {
+        loadMeetingFiles();
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(filesChannel);
+    };
   }, []);
 
   const checkGoogleAuth = async () => {
@@ -221,20 +233,22 @@ export default function DriveIntegration() {
     <Layout>
       <div className="space-y-8 animate-fade-in">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-background p-10 shadow-xl border">
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-emerald-500/10 p-10 shadow-xl border border-cyan-500/20 animate-fade-in">
           <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,transparent,black)]" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          
           <div className="relative flex items-center justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-4">
-                <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
-                  <Cloud className="h-7 w-7 text-white" />
+                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-emerald-500 flex items-center justify-center shadow-2xl animate-glow">
+                  <Cloud className="h-8 w-8 text-white" />
                 </div>
-                <h1 className="text-4xl font-bold tracking-tight">
+                <h1 className="text-5xl font-black font-['Space_Grotesk']">
                   Smart Drive Hub
                 </h1>
               </div>
               <p className="text-muted-foreground text-lg max-w-2xl">
-                AI-powered meeting material organization with intelligent automation
+                AI-powered cloud storage with multi-provider sync (Google Drive + TeleDrive)
               </p>
             </div>
             <div className="flex gap-3">
