@@ -48,7 +48,7 @@ serve(async (req) => {
     
     const { data: transcriptions, error } = await supabase
       .from("transcriptions")
-      .select("id, content, speaker_name, timestamp, confidence_score")
+      .select("id, content, speaker_name, timestamp, confidence_score:confidence")
       .eq("meeting_id", meetingId)
       .order("timestamp", { ascending: true });
 
