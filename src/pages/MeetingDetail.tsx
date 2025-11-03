@@ -44,6 +44,7 @@ import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition"
 import { ContextPanel } from "@/components/ContextPanel";
 import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
 import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
+import { AudioToMinutesWorkflow } from "@/components/AudioToMinutesWorkflow";
 // Jitsi removed - using TMeet now
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
@@ -1125,35 +1126,7 @@ const MeetingDetail = () => {
 
               <TabsContent value="signatures" className="space-y-4">
                 <LazyTabContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-6">
-                      <LiveAudioRecorder
-                        meetingId={meetingId}
-                        disabled={meeting?.status === 'completed' || workflowStatus.pdf === 'signed'}
-                        onUploadComplete={() => {
-                          toast({
-                            title: "Success",
-                            description: "Audio recording uploaded successfully",
-                          });
-                          fetchMeetingDetails();
-                        }}
-                      />
-                      <PDFGenerationPanel 
-                        meetingId={meetingId}
-                        hasPDF={workflowStatus.pdf === 'generated' || workflowStatus.pdf === 'signed' || workflowStatus.pdf === 'distributed'}
-                        pdfUrl={(meeting as any)?.pdf_url}
-                        minutesGenerated={workflowStatus.minutes === 'generated' || workflowStatus.minutes === 'reviewed' || workflowStatus.minutes === 'approved'}
-                        onPDFGenerated={() => {
-                          fetchMeetingDetails();
-                          toast({
-                            title: 'PDF Ready',
-                            description: 'You can now request signatures',
-                          });
-                        }}
-                      />
-                    </div>
-                    <MeetingSignaturesPanel meetingId={meetingId} />
-                  </div>
+                  <AudioToMinutesWorkflow meetingId={meetingId} />
                 </LazyTabContent>
               </TabsContent>
             </Tabs>
