@@ -318,6 +318,29 @@ Never romanize or transliterate non-Latin scripts.`;
 • Use specific quotes when they capture important points
 • **Dedicate substantial detail to opening statements and core discussion topics**
 
+📝 DESCRIPTIVE WRITING STANDARDS:
+• Use rich, descriptive language that paints a clear picture
+• Explain WHY decisions were made, not just WHAT was decided
+• Include the reasoning, rationale, and thought process behind discussions
+• Describe the tone and nature of conversations (constructive, intense, collaborative, etc.)
+• Add context about HOW ideas were developed during the meeting
+• Use transitional phrases to show relationships between topics
+• Provide background information when speakers reference it
+• Make each section tell a complete story with beginning, middle, and conclusion
+
+✅ PUNCTUATION & FORMATTING EXCELLENCE:
+• Use proper punctuation consistently throughout
+• End every complete sentence with appropriate punctuation (. ! ?)
+• Use commas to separate clauses and improve readability
+• Use colons (:) to introduce lists or elaborate on points
+• Use semicolons (;) to connect related independent clauses
+• Use quotation marks for direct quotes from speakers
+• Use em dashes (—) for emphasis or clarification
+• Format lists with proper bullet points or numbering
+• Create clear paragraph breaks for different topics
+• Use headers (##) to organize major sections
+• **For Amharic: Use Ethiopian punctuation marks ። ፣ ፤ ፦ ፥ consistently**
+
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
@@ -359,16 +382,41 @@ ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based 
 7. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
 8. ተጨማሪ ሐሳቦች (Additional Notes) - Other relevant points, context, or observations
 
-${detectedLang === 'am' ? '✍️ CRITICAL AMHARIC REQUIREMENTS: Use Ethiopian punctuation ። at the end of EVERY sentence. Use ፣ for commas within sentences. Use ፦ before introducing lists or elaborations. Use ፤ for separating related clauses. Write in natural, flowing formal Amharic using proper SOV structure. Make it read like a skilled Amharic writer documented the meeting - natural, complete, and professional.' : ''}
+${detectedLang === 'am' ? `✍️ CRITICAL AMHARIC REQUIREMENTS: 
+• Use Ethiopian punctuation ። at the end of EVERY sentence without exception
+• Use ፣ for commas within sentences to separate items and clauses
+• Use ፦ before introducing lists, explanations, or elaborations
+• Use ፤ for separating closely related clauses
+• Use ፥ as section dividers between major topics
+• Write in natural, flowing formal Amharic using proper SOV (Subject-Object-Verb) structure
+• Use descriptive adjectives and adverbs to enrich the narrative
+• Employ professional vocabulary and proper honorifics
+• Create well-structured paragraphs with clear topic sentences
+• Make it read like an educated Ethiopian professional documented the meeting - natural, complete, descriptive, and expertly punctuated` : `✍️ ENGLISH/OTHER LANGUAGE REQUIREMENTS:
+• Use proper English punctuation: periods (.), commas (,), colons (:), semicolons (;)
+• End every sentence with appropriate punctuation
+• Use commas to improve readability and separate clauses
+• Create well-structured paragraphs with clear flow
+• Use professional vocabulary while remaining accessible
+• Make it read like a skilled professional documented the meeting`}
 
-📝 FINAL REMINDERS:
-• Be thorough - err on the side of including more detail rather than less
-• Make it readable and engaging - avoid dry bullet points
-• Connect ideas naturally - show how topics relate to each other
-• Capture the complete picture - context, decisions, reasoning, outcomes
-• Write as if you were actually in the meeting taking comprehensive notes
+📝 FINAL REMINDERS - CRITICAL FOR QUALITY:
+• **Be thorough AND well-organized** - include detail while maintaining clear structure
+• **Make it readable and engaging** - avoid dry bullet points, use narrative prose
+• **Connect ideas naturally** - show how topics relate with proper transitions
+• **Use proper punctuation** - this is non-negotiable for professional documentation
+• **Be descriptive** - explain the 'why' and 'how', not just the 'what'
+• **Capture complete picture** - context, decisions, reasoning, outcomes, implications
+• **Write as if you attended** - bring the meeting to life through your documentation
+• **Polish your language** - proofread mentally for grammar and flow
+• **Structure clearly** - use headers, paragraphs, and spacing effectively
 
-Format as a professional markdown document with clear sections and natural prose.${languageInstruction}`;
+Format as a professional markdown document with:
+- Clear section headers (##)
+- Well-structured paragraphs (not walls of text or excessive bullets)
+- Proper punctuation throughout
+- Natural prose that flows smoothly
+- Descriptive language that provides rich detail${languageInstruction}`;
 
     let minutes = "";
     let providerError = "";
