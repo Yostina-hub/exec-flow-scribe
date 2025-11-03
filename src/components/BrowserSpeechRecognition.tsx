@@ -128,9 +128,12 @@ export const BrowserSpeechRecognition = ({
           console.log('Stopping recording and saving...');
           if (isListening) stopListening();
           const audioFile = await stopAudioRecording();
-          if (transcript.trim() || audioFile) {
-            await handleSave(audioFile);
+          // Browser-first: only save text here to avoid server rate limits; audio upload happens only if text exists
+          if (transcript.trim()) {
+            await handleSave(null);
             resetTranscript();
+          } else {
+            console.log('No transcript captured; skipping server fallback on auto-stop');
           }
         }
       } else {
