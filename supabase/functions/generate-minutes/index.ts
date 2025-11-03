@@ -479,13 +479,13 @@ ${prompt}`
           }
         );
 
-        if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
-          minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          console.log("✅ Minutes generated with Gemini API (Primary)");
+        if (lovableResponse.ok) {
+          const lovableData = await lovableResponse.json();
+          minutes = lovableData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          console.log("✅ Minutes generated with Lovable AI (Fallback)");
         } else {
-          const statusCode = geminiResponse.status;
-          const errorText = await geminiResponse.text();
+          const statusCode = lovableResponse.status;
+          const errorText = await lovableResponse.text();
           console.error(`Gemini API error (${statusCode}):`, errorText);
           
           if (statusCode === 429) {
