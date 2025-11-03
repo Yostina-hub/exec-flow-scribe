@@ -93,6 +93,7 @@ import { GuestMeetingView } from "@/components/GuestMeetingView";
 import { WorkflowStatusIndicator } from "@/components/WorkflowStatusIndicator";
 import { PDFGenerationPanel } from "@/components/PDFGenerationPanel";
 import { SystemTestPanel } from "@/components/SystemTestPanel";
+import { TranscriptionProviderToggle } from "@/components/TranscriptionProviderToggle";
 
 interface AgendaItem {
   id: string;
@@ -952,6 +953,11 @@ const MeetingDetail = () => {
               <TabsContent value="transcription" className="space-y-4">
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="transcriptions">
+                    {/* Host-only Provider Toggle */}
+                    {meeting?.created_by === userId && (
+                      <TranscriptionProviderToggle />
+                    )}
+                    
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
