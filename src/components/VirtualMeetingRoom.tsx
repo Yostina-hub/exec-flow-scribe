@@ -19,6 +19,8 @@ import { AIMeetingCopilot } from './AIMeetingCopilot';
 import { SmartWhiteboard } from './SmartWhiteboard';
 import { AdvancedHostControls } from './AdvancedHostControls';
 import { useParticipantControls } from '@/hooks/useParticipantControls';
+import { SpeakerQueue } from './SpeakerQueue';
+import { AutoAssignmentControls } from './AutoAssignmentControls';
 import { cn } from '@/lib/utils';
 
 interface VirtualMeetingRoomProps {
@@ -1806,14 +1808,50 @@ export function VirtualMeetingRoom({ meetingId, isHost, currentUserId, onCloseRo
 
             {/* Advanced Host Controls Tab */}
             {isHost && (
-              <TabsContent value="controls" className="flex-1 overflow-hidden p-4">
-                <AdvancedHostControls
-                  meetingId={meetingId}
-                  isHost={isHost}
-                  participants={participants}
-                  currentUserId={currentUserId}
-                  onlineUsers={onlineUsers}
-                />
+              <TabsContent value="controls" className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                  <div className="p-4 space-y-6">
+                    {/* Auto-Assignment Settings */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                        <Clock className="h-4 w-4" />
+                        Speaker Queue Management
+                      </h3>
+                      <AutoAssignmentControls
+                        meetingId={meetingId}
+                        isHost={isHost}
+                      />
+                    </div>
+
+                    {/* Speaker Queue */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                        <Users className="h-4 w-4" />
+                        Active Queue
+                      </h3>
+                      <SpeakerQueue
+                        meetingId={meetingId}
+                        isHost={isHost}
+                        currentUserId={currentUserId}
+                      />
+                    </div>
+
+                    {/* Advanced Participant Controls */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-primary flex items-center gap-2">
+                        <Shield className="h-4 w-4" />
+                        Participant Controls
+                      </h3>
+                      <AdvancedHostControls
+                        meetingId={meetingId}
+                        isHost={isHost}
+                        participants={participants}
+                        currentUserId={currentUserId}
+                        onlineUsers={onlineUsers}
+                      />
+                    </div>
+                  </div>
+                </ScrollArea>
               </TabsContent>
             )}
 
