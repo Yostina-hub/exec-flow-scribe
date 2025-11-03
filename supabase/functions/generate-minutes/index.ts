@@ -384,24 +384,22 @@ Format as a professional markdown document with:
     let providerError = "";
     let providerStatus: number | null = null;
 
-    // Try Lovable AI first (fastest with Gemini Flash)
-    if (lovableApiKey && !minutes) {
+    // Try Gemini API directly (using your existing API key)
+    const geminiKey = Deno.env.get("GEMINI_API_KEY");
+    if (geminiKey && !minutes) {
       try {
-        console.log("🤖 Using Lovable AI (Gemini 2.5 Flash - Fast)");
-        const lovableResponse = await fetch(
-          "https://ai.gateway.lovable.dev/v1/chat/completions",
+        console.log("🤖 Using Gemini API (gemini-2.5-flash)");
+        const geminiResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
           {
             method: "POST",
             headers: {
-              "Authorization": `Bearer ${lovableApiKey}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({
-              model: "google/gemini-2.5-flash",
-              messages: [
-                { 
-                  role: "system", 
-                  content: `You are an expert meeting minutes specialist. Create comprehensive, natural documentation capturing every detail.
+              contents: [{
+                parts: [{
+                  text: `You are an expert meeting minutes specialist. Create comprehensive, natural documentation capturing every detail.
 
 ${detectedLang === 'am' ? `🇪🇹 AMHARIC REQUIREMENTS:
 • Write entirely in Ge'ez script - NEVER use Latin letters
@@ -410,36 +408,38 @@ ${detectedLang === 'am' ? `🇪🇹 AMHARIC REQUIREMENTS:
 • Use SOV word order and formal business Amharic
 • Write naturally like an educated Ethiopian professional` : 'Write in the transcript language. Never romanize or transliterate.'}
 
-CRITICAL: Only document what is EXPLICITLY in the transcript - no assumptions.` 
-                },
-                { role: "user", content: prompt },
-              ],
+CRITICAL: Only document what is EXPLICITLY in the transcript - no assumptions.
+
+${prompt}`
+                }]
+              }],
+              generationConfig: {
+                temperature: 0.3,
+                maxOutputTokens: 4096,
+              }
             }),
           }
         );
 
-        if (lovableResponse.ok) {
-          const lovableData = await lovableResponse.json();
-          minutes = lovableData.choices?.[0]?.message?.content || "";
-          console.log("✅ Minutes generated with Lovable AI");
+        if (geminiResponse.ok) {
+          const geminiData = await geminiResponse.json();
+          minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+          console.log("✅ Minutes generated with Gemini API");
         } else {
-          const statusCode = lovableResponse.status;
-          const errorText = await lovableResponse.text();
-          console.error(`Lovable AI error (${statusCode}):`, errorText);
+          const statusCode = geminiResponse.status;
+          const errorText = await geminiResponse.text();
+          console.error(`Gemini API error (${statusCode}):`, errorText);
           
           if (statusCode === 429) {
             providerStatus = 429;
-            providerError = "Lovable AI rate limit exceeded. Trying fallback...";
-          } else if (statusCode === 402) {
-            providerStatus = 402;
-            providerError = "Lovable AI: Payment required. Trying fallback...";
+            providerError = "Gemini API rate limit exceeded. Trying fallback...";
           } else {
-            providerError = `Lovable AI: ${errorText}`;
+            providerError = `Gemini API: ${errorText}`;
           }
         }
       } catch (e) {
-        console.error("Lovable AI provider failed:", e);
-        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+        console.error("Gemini API provider failed:", e);
+        providerError = `Gemini API: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
 
@@ -523,89 +523,6 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
       } catch (e) {
         console.error("OpenAI provider failed:", e);
         providerError = `OpenAI: ${e instanceof Error ? e.message : 'Unknown error'}`;
-      }
-    }
-
-    // Fallback to Gemini if OpenAI fails
-    const geminiKey = preference?.gemini_api_key || Deno.env.get("GEMINI_API_KEY");
-    if (geminiKey && !minutes) {
-      try {
-        console.log("🤖 Using Gemini 2.5 Flash (fallback)");
-        const geminiResponse = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: detectedLang === 'am' 
-                        ? `You are an expert meeting documentation specialist with masterful command of formal Ethiopian Amharic writing. You create comprehensive, natural-sounding minutes that capture every detail while reading like skilled human documentation.
-
-✍️ YOUR WRITING APPROACH:
-• Write as a highly skilled Ethiopian professional who attended the meeting
-• Capture ALL details comprehensively without missing anything
-• Write in natural, flowing Amharic that engages readers
-• Use varied sentence structures and natural rhythm
-• Connect ideas smoothly with appropriate transitions
-• Include complete context and reasoning behind discussions
-• Make it indistinguishable from expert human-written Amharic documentation
-
-🇪🇹 ETHIOPIAN AMHARIC REQUIREMENTS (NON-NEGOTIABLE):
-• Write ENTIRELY in Ge'ez script (ሀ-ፐ) - NEVER use Latin letters (a-z)
-• Use proper Ethiopian punctuation consistently: ። (sentence end), ፣ (comma), ፤ (semicolon), ፦ (colon), ፥ (section separator)
-• Every sentence MUST end with ።
-• Use Subject-Object-Verb (SOV) word order naturally
-• Write in formal business Amharic with professional vocabulary
-• Employ appropriate honorifics and business terminology
-• Make prose natural and engaging, not robotic or mechanical
-
-✅ CRITICAL: Only document what is EXPLICITLY in the transcript. Be thorough but accurate - never add information not present in the discussion.
-
-\n\n${prompt}`
-                        : `You are an expert meeting documentation specialist who creates comprehensive, natural-sounding minutes that capture every detail while reading like skilled human documentation.
-
-Write thoroughly, naturally, and professionally. Only document what is EXPLICITLY in the transcript - be complete but accurate.
-
-Preserve the transcript language and script exactly.\n\n${prompt}`
-                    }
-                  ]
-                }
-              ],
-              generationConfig: { 
-                temperature: 0.8, // Slightly higher for more natural, varied language
-                maxOutputTokens: 6000, // Increased significantly for comprehensive, detailed coverage
-                topP: 0.95,
-                topK: 40
-              },
-            }),
-          }
-        );
-
-        if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
-          minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          console.log("✅ Minutes generated with Gemini 2.5 Flash");
-        } else {
-          const statusCode = geminiResponse.status;
-          const errorText = await geminiResponse.text();
-          console.error(`Gemini API error (${statusCode}):`, errorText);
-          
-          if (statusCode === 429) {
-            providerStatus = 429;
-            providerError = "Gemini rate limit exceeded.";
-          } else if (statusCode === 402) {
-            providerStatus = 402;
-            providerError = "Gemini: Payment required.";
-          } else {
-            providerError = `Gemini: ${errorText}`;
-          }
-        }
-      } catch (e) {
-        console.error("Gemini provider failed:", e);
-        providerError = `Gemini: ${e instanceof Error ? e.message : 'Unknown error'}`;
       }
     }
 
