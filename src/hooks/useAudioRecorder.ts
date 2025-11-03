@@ -87,36 +87,83 @@ export const useAudioRecorder = (meetingId: string) => {
         return;
       }
 
-      // Check for available input devices before requesting access
+      // Check for available input devices (may return empty before permission)
       let audioInputs: MediaDeviceInfo[] = [];
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         audioInputs = devices.filter((d) => d.kind === 'audioinput');
+        console.info('Mic diagnostics:', {
+          secure: window.isSecureContext,
+          inIframe: window.top !== window,
+          audioInputs: audioInputs.map(d => ({ label: d.label || '(no label)', deviceId: d.deviceId.slice(0, 6) + '…' })),
+        });
       } catch (e) {
         console.warn('enumerateDevices failed (may require permission first):', e);
       }
 
-      if (audioInputs.length === 0) {
-        // No visible microphones to the browser
-        toast({
-          title: 'Recording failed',
-          description: 'No microphone detected. Check OS privacy settings and browser site permissions.',
-          variant: 'destructive',
-        });
+      const preferredDeviceId = audioInputs[0]?.deviceId;
+
+      // Optional Permissions API probe (not supported everywhere)
+      let permissionState: PermissionState | null = null;
+      try {
+        const perm: any = await (navigator as any).permissions?.query({ name: 'microphone' as any });
+        permissionState = perm?.state ?? null;
+      } catch {}
+
+      // Try multiple constraint sets to avoid NotFoundError/OverconstrainedError
+      let acquired: MediaStream | null = null;
+      let lastError: any = null;
+      const candidates: MediaStreamConstraints[] = [
+        {
+          audio: {
+            deviceId: preferredDeviceId ? { ideal: preferredDeviceId } : undefined,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            channelCount: 1,
+          } as MediaTrackConstraints,
+        },
+        { audio: true },
+        { audio: { deviceId: 'default' as any } as any },
+      ];
+
+      for (const c of candidates) {
+        try {
+          acquired = await navigator.mediaDevices.getUserMedia(c);
+          break;
+        } catch (e) {
+          lastError = e;
+        }
+      }
+
+      if (!acquired) {
+        let description = 'Could not access microphone.';
+        if (lastError instanceof DOMException) {
+          switch (lastError.name) {
+            case 'NotAllowedError':
+              description = 'Microphone permission denied. Allow access in browser site settings.';
+              // Extra hint for embedded previews
+              if (window.top !== window) {
+                description += ' Tip: open the preview in a new tab — some browsers block mic in embedded iframes.';
+              }
+              break;
+            case 'NotFoundError':
+              description = audioInputs.length === 0
+                ? 'No microphone detected. Check OS privacy settings and browser site permissions.'
+                : 'Requested input not available. Try selecting a different microphone in system settings.';
+              break;
+            case 'OverconstrainedError':
+              description = 'No microphone met the requested constraints.';
+              break;
+            default:
+              description = (lastError as any).message || description;
+          }
+        }
+        toast({ title: 'Recording failed', description, variant: 'destructive' });
         return;
       }
 
-      const preferredDeviceId = audioInputs[0]?.deviceId;
-
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          deviceId: preferredDeviceId ? { ideal: preferredDeviceId } : undefined,
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          channelCount: 1,
-        } as MediaTrackConstraints,
-      });
+      const stream = acquired;
 
       const supported = pickSupportedMimeType();
       const options: MediaRecorderOptions | undefined = supported ? { mimeType: supported } : undefined;
