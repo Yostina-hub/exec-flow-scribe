@@ -384,6 +384,66 @@ Format as a professional markdown document with:
     let providerError = "";
     let providerStatus: number | null = null;
 
+    // Try Lovable AI first (always available)
+    if (lovableApiKey && !minutes) {
+      try {
+        console.log("🤖 Using Lovable AI (gemini-2.5-flash)");
+        const lovableResponse = await fetch(
+          "https://ai.gateway.lovable.dev/v1/chat/completions",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${lovableApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              model: "google/gemini-2.5-flash",
+              messages: [
+                { 
+                  role: "system", 
+                  content: `You are an expert meeting minutes specialist who creates comprehensive, natural-sounding documentation.
+
+${detectedLang === 'am' ? `🇪🇹 AMHARIC REQUIREMENTS:
+• Write entirely in Ge'ez script - NEVER use Latin letters
+• Use Ethiopian punctuation: ። (end), ፣ (comma), ፦ (colon), ፤ (semicolon)
+• Every sentence MUST end with ።
+• Use SOV word order and formal business Amharic
+• Write naturally like an educated Ethiopian professional` : 'Write in the transcript language. Never romanize or transliterate.'}
+
+CRITICAL: Only document what is EXPLICITLY in the transcript - no assumptions.` 
+                },
+                { role: "user", content: prompt },
+              ],
+              max_tokens: 5000,
+            }),
+          }
+        );
+
+        if (lovableResponse.ok) {
+          const lovableData = await lovableResponse.json();
+          minutes = lovableData.choices?.[0]?.message?.content || "";
+          console.log("✅ Minutes generated with Lovable AI");
+        } else {
+          const statusCode = lovableResponse.status;
+          const errorText = await lovableResponse.text();
+          console.error(`Lovable AI error (${statusCode}):`, errorText);
+          
+          if (statusCode === 429) {
+            providerStatus = 429;
+            providerError = "Lovable AI rate limit exceeded. Trying fallback...";
+          } else if (statusCode === 402) {
+            providerStatus = 402;
+            providerError = "Lovable AI: Payment required. Trying fallback...";
+          } else {
+            providerError = `Lovable AI: ${errorText}`;
+          }
+        }
+      } catch (e) {
+        console.error("Lovable AI provider failed:", e);
+        providerError = `Lovable AI: ${e instanceof Error ? e.message : 'Unknown error'}`;
+      }
+    }
+
     // Try Gemini API directly (using your existing API key)
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     if (geminiKey && !minutes) {

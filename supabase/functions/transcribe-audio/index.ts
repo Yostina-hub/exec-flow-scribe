@@ -59,11 +59,21 @@ serve(async (req) => {
       },
     });
 
-    // Get authed user (to read preferences)
+    // Get authed user and preferences
     const authHeader = req.headers.get("Authorization");
     const jwt = authHeader?.replace("Bearer ", "");
     const { data: userData, error: userErr } = await supabase.auth.getUser(jwt || "");
-    if (userErr || !userData?.user) {
+    
+    let userPreference = null;
+    if (userData?.user) {
+      const { data: pref } = await supabase
+        .from("transcription_preferences")
+        .select("*")
+        .eq("user_id", userData.user.id)
+        .maybeSingle();
+      userPreference = pref;
+      console.log('User transcription preference:', pref?.provider || 'none set');
+    } else {
       console.log("No user context for transcription; proceeding without preferences");
     }
 
@@ -100,19 +110,42 @@ serve(async (req) => {
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audioBase64);
     
-    // Determine provider
+    // Determine available providers and user preference
     const googleCloudApiKey = Deno.env.get("GOOGLE_CLOUD_API_KEY");
-    const openaiApiKey = Deno.env.get("OPENAI_API_KEY");
+    const openaiApiKey = userPreference?.openai_api_key || Deno.env.get("OPENAI_API_KEY");
     
-    console.log('Available transcription providers:', {
+    const preferredProvider = userPreference?.provider || 'auto';
+    console.log('Transcription configuration:', {
+      preferredProvider,
       hasGoogleCloud: !!googleCloudApiKey,
-      hasOpenAI: !!openaiApiKey
+      hasOpenAI: !!openaiApiKey,
+      hasUserApiKey: !!userPreference?.openai_api_key
     });
     
     let transcriptText = "";
     let detectedLanguage: string | null = null;
+    let usedProvider = "";
 
-    // Try Google Cloud Speech-to-Text first (better for Amharic)
+    // Determine provider order based on preference
+    const providers: Array<'google' | 'openai'> = [];
+    
+    if (preferredProvider === 'openai' || preferredProvider === 'openai_realtime') {
+      // User explicitly wants OpenAI
+      if (openaiApiKey) providers.push('openai');
+      if (googleCloudApiKey) providers.push('google');
+    } else {
+      // Default: Try Google Cloud first (better for Amharic), then OpenAI
+      if (googleCloudApiKey) providers.push('google');
+      if (openaiApiKey) providers.push('openai');
+    }
+    
+    console.log('Provider order:', providers);
+
+    // Try providers in order
+    for (const provider of providers) {
+      if (transcriptText) break; // Skip if we already got a transcription
+      
+      if (provider === 'google' && googleCloudApiKey) {
     if (googleCloudApiKey) {
       console.log('Using Google Cloud Speech-to-Text API');
       
@@ -197,7 +230,8 @@ serve(async (req) => {
             .trim();
           detectedLanguage = languageCode.split('-')[0]; // Extract language from code
           
-          console.log('Google Cloud transcription successful:', {
+          usedProvider = 'google';
+          console.log('✅ Google Cloud transcription successful:', {
             textLength: transcriptText.length,
             detectedLanguage,
             preview: transcriptText.substring(0, 100)
@@ -247,103 +281,125 @@ serve(async (req) => {
           console.log('No transcription results from Google Cloud');
         }
       } catch (gcError) {
-        console.error("Google Cloud transcription failed:", gcError);
-        // Fall through to OpenAI fallback
+        console.error("❌ Google Cloud transcription failed:", gcError);
+        // Continue to next provider
       }
-    }
-    
-    // Fallback to OpenAI if Google Cloud failed or not available
-    if (!transcriptText && openaiApiKey) {
-      console.log('Using OpenAI Whisper as fallback');
-      
-      const formData = new FormData();
-      const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
-      const filename = type === 'audio/wav' ? 'audio.wav' : 'audio.webm';
-      const audioBlob = new Blob([binaryAudio], { type });
-      formData.append("file", audioBlob, filename);
-      formData.append("model", "whisper-1");
-      formData.append("response_format", "verbose_json");
-      
-      // Special handling for Amharic
-      if (language === 'am') {
-        console.log('Amharic language specified - forcing Ge\'ez script');
-        formData.append("language", "am");
-        formData.append(
-          "prompt",
-          "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters for Amharic words."
-        );
-      } else if (language && language !== "auto") {
-        formData.append("language", language);
-        formData.append(
-          "prompt",
-          "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
-        );
-      } else {
-        formData.append(
-          "prompt",
-          "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only. Never romanize or use Arabic script for Amharic."
-        );
-      }
-      
-      const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${openaiApiKey}` },
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errText = await response.text();
-        console.error("OpenAI transcription error:", response.status, errText);
-        
-        if (response.status === 429) {
-          console.error("OpenAI rate limited - both providers exhausted");
-          return new Response(JSON.stringify({ 
-            error: "Transcription service rate limited. Please wait a moment and try again.",
-            retryAfter: 10,
-            provider: "openai"
-          }), {
-            status: 429,
-            headers: { 
-              ...corsHeaders, 
-              "Content-Type": "application/json",
-              "Retry-After": "10"
-            },
+    } else if (provider === 'openai' && openaiApiKey) {
+        try {
+          console.log('🎙️ Trying OpenAI Whisper API');
+          
+          const formData = new FormData();
+          const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
+          const filename = type === 'audio/wav' ? 'audio.wav' : 'audio.webm';
+          const audioBlob = new Blob([binaryAudio], { type });
+          formData.append("file", audioBlob, filename);
+          formData.append("model", "whisper-1");
+          formData.append("response_format", "verbose_json");
+          
+          // Special handling for Amharic
+          if (language === 'am') {
+            console.log('Amharic language specified - forcing Ge\'ez script');
+            formData.append("language", "am");
+            formData.append(
+              "prompt",
+              "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters for Amharic words."
+            );
+          } else if (language && language !== "auto") {
+            formData.append("language", language);
+            formData.append(
+              "prompt",
+              "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
+            );
+          } else {
+            formData.append(
+              "prompt",
+              "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only. Never romanize or use Arabic script for Amharic."
+            );
+          }
+          
+          const response = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+            method: "POST",
+            headers: { Authorization: `Bearer ${openaiApiKey}` },
+            body: formData,
           });
-        }
-        
-        if (response.status === 402 || errText.includes("insufficient_quota")) {
-          return new Response(JSON.stringify({ 
-            error: "Transcription service quota exceeded. Please check your API configuration.",
-            provider: "openai"
-          }), {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          });
-        }
-        
-        throw new Error("Failed to transcribe audio with OpenAI");
-      }
 
-      const transcriptionData = await response.json();
-      transcriptText = transcriptionData.text || transcriptionData.transcript || "";
-      detectedLanguage = transcriptionData.language || null;
-      
-      console.log('OpenAI transcription result:', {
-        detectedLanguage,
-        textLength: transcriptText.length,
-        firstChars: transcriptText.substring(0, 50)
-      });
+          if (!response.ok) {
+            const errText = await response.text();
+            const statusCode = response.status;
+            console.error(`❌ OpenAI transcription error (${statusCode}):`, errText);
+            
+            // Handle rate limiting - continue to next provider if available
+            if (statusCode === 429) {
+              console.warn("⚠️ OpenAI rate limited");
+              if (providers.indexOf('openai') === providers.length - 1) {
+                // This was the last provider
+                return new Response(JSON.stringify({ 
+                  error: "⏳ Rate Limit Exceeded\n\nAll transcription providers are temporarily rate limited.\n\nPlease wait 2-3 minutes and try again.",
+                  retryAfter: 120,
+                  status: 429
+                }), {
+                  status: 429,
+                  headers: { 
+                    ...corsHeaders, 
+                    "Content-Type": "application/json",
+                    "Retry-After": "120"
+                  },
+                });
+              }
+              // Continue to next provider
+              continue;
+            }
+            
+            // Handle quota/payment issues
+            if (statusCode === 402 || errText.includes("insufficient_quota")) {
+              if (providers.indexOf('openai') === providers.length - 1) {
+                return new Response(JSON.stringify({ 
+                  error: "💳 Payment Required\n\nYour OpenAI API quota has been exhausted.\n\nPlease check your OpenAI account billing or add a different API key.",
+                  status: 402
+                }), {
+                  status: 402,
+                  headers: { ...corsHeaders, "Content-Type": "application/json" },
+                });
+              }
+              continue;
+            }
+            
+            // Other errors - continue to next provider
+            console.error(`OpenAI error: ${errText}`);
+            continue;
+          }
+
+          const transcriptionData = await response.json();
+          transcriptText = transcriptionData.text || transcriptionData.transcript || "";
+          detectedLanguage = transcriptionData.language || null;
+          usedProvider = 'openai';
+          
+          console.log('✅ OpenAI transcription successful:', {
+            detectedLanguage,
+            textLength: transcriptText.length,
+            firstChars: transcriptText.substring(0, 50)
+          });
+      } catch (openaiError) {
+        console.error("❌ OpenAI transcription failed:", openaiError);
+        // Continue to next provider
+      }
     }
     
     // If no transcription provider available or all failed
     if (!transcriptText) {
-      if (!googleCloudApiKey && !openaiApiKey) {
-        throw new Error("No transcription provider configured. Please add GOOGLE_CLOUD_API_KEY or OPENAI_API_KEY.");
+      if (providers.length === 0) {
+        return new Response(JSON.stringify({
+          error: "⚙️ Configuration Required\n\nNo transcription provider is configured.\n\nPlease add API keys in Settings → AI Provider.",
+          status: 503
+        }), {
+          status: 503,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
-      console.warn("All transcription providers failed or returned empty result");
+      console.error("❌ All transcription providers failed or returned empty result");
       return new Response(JSON.stringify({ 
-        error: "All transcription providers failed. Please try again in a moment.",
-        details: "Both Google Cloud and OpenAI transcription services are unavailable or rate limited."
+        error: "🔧 Transcription Failed\n\nAll configured providers failed to transcribe the audio.\n\nPlease check:\n• API keys are valid and have sufficient quota\n• Audio file is not corrupted\n• Audio is not too long (>30 seconds may fail)",
+        status: 503
       }), {
         status: 503,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -397,7 +453,7 @@ serve(async (req) => {
       );
     }
 
-      console.log(`✅ Transcription saved successfully (${detectedLanguage})`);
+      console.log(`✅ Transcription saved successfully using ${usedProvider} (${detectedLanguage})`);
       console.log('Final transcription preview:', transcriptText.substring(0, 100));
       
       // Update meeting workflow status
@@ -411,7 +467,8 @@ serve(async (req) => {
         success: true,
         transcription: transcriptText.trim(),
         detectedLanguage: detectedLanguage,
-        confidenceScore: confidenceScore
+        confidenceScore: confidenceScore,
+        provider: usedProvider
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
