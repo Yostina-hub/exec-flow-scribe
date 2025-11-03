@@ -78,6 +78,7 @@ import { NotificationPreferences } from "@/components/NotificationPreferences";
 import { LivePolling } from "@/components/LivePolling";
 import { CollaborativeNotes } from "@/components/CollaborativeNotes";
 import { MeetingBookmarks } from "@/components/MeetingBookmarks";
+import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -1052,19 +1053,23 @@ const MeetingDetail = () => {
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="documents">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <TranscriptionDocumentExport 
+                      <MeetingSummaryCard 
                         meetingId={meetingId} 
                         meetingTitle={meeting?.title || 'Meeting'} 
                       />
                       <MeetingAudioPlayback meetingId={meetingId} />
                     </div>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <TranscriptionDocumentExport 
+                        meetingId={meetingId} 
+                        meetingTitle={meeting?.title || 'Meeting'} 
+                      />
                       <div className="space-y-6">
                         <DocumentVersionControl meetingId={meetingId} />
                         <MultiChannelDistribution meetingId={meetingId} />
                       </div>
-                      <IntegrationManager meetingId={meetingId} />
                     </div>
+                    <IntegrationManager meetingId={meetingId} />
                   </ProtectedElement>
                 </LazyTabContent>
               </TabsContent>
