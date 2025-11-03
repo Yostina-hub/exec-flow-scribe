@@ -180,7 +180,6 @@ const MeetingDetail = () => {
   const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [transcriptionProvider, setTranscriptionProvider] = useState<string>('browser');
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
   // Workflow status state
@@ -273,20 +272,6 @@ const MeetingDetail = () => {
       }
     };
     getUser();
-    
-    // Fetch transcription provider preference
-    const fetchTranscriptionProvider = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data } = await supabase
-          .from('transcription_preferences')
-          .select('provider')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        setTranscriptionProvider(data?.provider || 'browser');
-      }
-    };
-    fetchTranscriptionProvider();
     
     if (id) {
       fetchMeetingDetails();
@@ -989,13 +974,11 @@ const MeetingDetail = () => {
                       </CardContent>
                     </Card>
                     <MeetingAudioPlayback meetingId={meetingId} />
-                    {(transcriptionProvider === 'openai_realtime' || transcriptionProvider === 'lovable_ai') && (
-                      <LiveTranscription 
-                        meetingId={meetingId} 
-                        isRecording={isRecording}
-                        currentUserName={userFullName || 'Unknown User'}
-                      />
-                    )}
+                    <LiveTranscription 
+                      meetingId={meetingId} 
+                      isRecording={isRecording}
+                      currentUserName={userFullName || 'Unknown User'}
+                    />
                   </ProtectedElement>
                 </LazyTabContent>
               </TabsContent>

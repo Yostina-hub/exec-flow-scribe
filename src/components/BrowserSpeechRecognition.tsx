@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Trash2, Clock, Languages, Volume2, Loader2 } from 'lucide-react';
+import { Trash2, Clock, Languages, Volume2 } from 'lucide-react';
 import { useSpeechRecognition } from '@/hooks/useSpeechRecognition';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,9 +44,6 @@ export const BrowserSpeechRecognition = ({
   const [userId, setUserId] = useState<string | null>(null);
   const [savedAudioUrl, setSavedAudioUrl] = useState<string | null>(null);
   const [savedAudios, setSavedAudios] = useState<Array<{ id: string; url: string; created_at: string; duration: number }>>([]);
-  const [translatedText, setTranslatedText] = useState<string>('');
-  const [isTranslating, setIsTranslating] = useState(false);
-  const [showTranslation, setShowTranslation] = useState(false);
   const { toast } = useToast();
   
   // Audio recording hook for archiving
@@ -131,12 +128,9 @@ export const BrowserSpeechRecognition = ({
           console.log('Stopping recording and saving...');
           if (isListening) stopListening();
           const audioFile = await stopAudioRecording();
-          // Browser-first: only save text here to avoid server rate limits; audio upload happens only if text exists
-          if (transcript.trim()) {
-            await handleSave(null);
+          if (transcript.trim() || audioFile) {
+            await handleSave(audioFile);
             resetTranscript();
-          } else {
-            console.log('No transcript captured; skipping server fallback on auto-stop');
           }
         }
       } else {
@@ -241,43 +235,27 @@ export const BrowserSpeechRecognition = ({
     try {
       let finalText = transcript.trim();
 
-      // Browser + server fallback: try browser first, fall back to server if no text
-      if (!finalText && audioFile) {
-        try {
-          toast({
-            title: 'Processing audio...',
-            description: 'Attempting server transcription',
-          });
+      // If we have audio but no text → server-side transcription fallback
+      if (audioFile && !finalText) {
+        const base64 = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(audioFile);
+        });
 
-          const base64 = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(audioFile);
-          });
-
-          const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-            body: {
-              audioBase64: base64,
-              meetingId,
-              language: selectedLanguage || 'auto',
-              contentType: audioFile.type || 'audio/webm'
-            }
-          });
-
-          if (error) throw error;
-          if (data?.transcription) {
-            finalText = data.transcription as string;
+        const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+          body: {
+            audioBase64: base64,
+            meetingId,
+            language: selectedLanguage || 'auto',
+            contentType: audioFile.type || 'audio/webm'
           }
-        } catch (err) {
-          console.error('Server transcription failed:', err);
-          toast({
-            title: 'No transcription available',
-            description: 'Browser and server transcription both failed',
-            variant: 'destructive',
-          });
-          setIsSaving(false);
-          return;
+        });
+
+        if (error) throw error;
+        if (data?.transcription) {
+          finalText = data.transcription as string;
         }
       }
 
@@ -358,50 +336,6 @@ export const BrowserSpeechRecognition = ({
     resetTranscript();
     setRecordingDuration(0);
     clearAudioRecording();
-    setTranslatedText('');
-    setShowTranslation(false);
-  };
-
-  const handleTranslate = async () => {
-    if (!transcript.trim()) {
-      toast({
-        title: 'No text to translate',
-        description: 'Please record some text first',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsTranslating(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('translate-transcript', {
-        body: {
-          text: transcript,
-          sourceLanguage: selectedLanguage === 'am-ET' ? 'Amharic' : 'English',
-          targetLanguage: selectedLanguage === 'am-ET' ? 'English' : 'Amharic',
-        },
-      });
-
-      if (error) throw error;
-
-      if (data?.translatedText) {
-        setTranslatedText(data.translatedText);
-        setShowTranslation(true);
-        toast({
-          title: 'Translation complete',
-          description: `Translated to ${selectedLanguage === 'am-ET' ? 'English' : 'Amharic'}`,
-        });
-      }
-    } catch (err: any) {
-      console.error('Translation error:', err);
-      toast({
-        title: 'Translation failed',
-        description: err.message || 'Failed to translate text',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsTranslating(false);
-    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -510,61 +444,18 @@ export const BrowserSpeechRecognition = ({
           )}
         </div>
 
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-medium">
-              {selectedLanguage === 'am-ET' ? 'Amharic Transcription' : 'English Transcription'}
-            </label>
-            {transcript && (
-              <Button
-                onClick={handleTranslate}
-                disabled={isTranslating}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                {isTranslating ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Translating...
-                  </>
-                ) : (
-                  <>
-                    <Languages className="w-4 h-4" />
-                    Translate to {selectedLanguage === 'am-ET' ? 'English' : 'Amharic'}
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-
-          <div className="min-h-[200px] max-h-[400px] overflow-y-auto bg-muted rounded-lg p-4">
-            {transcript ? (
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Badge variant="secondary" className="mt-1">{userName}</Badge>
-                  <p className="text-lg leading-relaxed flex-1">{transcript}</p>
-                </div>
+        <div className="min-h-[200px] max-h-[400px] overflow-y-auto bg-muted rounded-lg p-4">
+          {transcript ? (
+            <div className="space-y-3">
+              <div className="flex items-start gap-3">
+                <Badge variant="secondary" className="mt-1">{userName}</Badge>
+                <p className="text-lg leading-relaxed flex-1">{transcript}</p>
               </div>
-            ) : (
-              <p className="text-muted-foreground text-center italic">
-                Your transcription will appear here...
-              </p>
-            )}
-          </div>
-
-          {showTranslation && translatedText && (
-            <>
-              <label className="text-sm font-medium">
-                {selectedLanguage === 'am-ET' ? 'English Translation' : 'Amharic Translation'}
-              </label>
-              <div className="min-h-[150px] max-h-[300px] overflow-y-auto bg-muted/50 rounded-lg p-4 border border-border">
-                <div className="flex items-start gap-3">
-                  <Badge variant="outline" className="mt-1">Translation</Badge>
-                  <p className="text-lg leading-relaxed flex-1">{translatedText}</p>
-                </div>
-              </div>
-            </>
+            </div>
+          ) : (
+            <p className="text-muted-foreground text-center italic">
+              Your transcription will appear here...
+            </p>
           )}
         </div>
 
