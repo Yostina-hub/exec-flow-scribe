@@ -45,7 +45,7 @@ import { ContextPanel } from "@/components/ContextPanel";
 import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
 import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
 import { AudioToMinutesWorkflow } from "@/components/AudioToMinutesWorkflow";
-// Jitsi removed - using TMeet now
+import { JitsiMeetEmbed } from "@/components/JitsiMeetEmbed";
 import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
 import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
 import MeetingChatPanel from "@/components/MeetingChatPanel";
@@ -891,26 +891,33 @@ const MeetingDetail = () => {
               {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
                 <TabsContent value="video" className="space-y-4">
                   {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
-                    <Card>
-                      <CardContent className="p-6">
-                        <div className="text-center space-y-4">
-                          <Video className="h-12 w-12 mx-auto text-muted-foreground" />
-                          <div>
-                            <h3 className="font-semibold text-lg mb-2">Video Conference</h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                              Join the video conference by clicking below.
-                            </p>
-                            <Button 
-                              onClick={() => window.open(meeting.video_conference_url, '_blank')}
-                              className="gap-2"
-                            >
-                              <ExternalLink className="h-4 w-4" />
-                              Join Now
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    <JitsiMeetEmbed
+                      roomName={meeting.video_conference_url.split('/').pop() || 'meeting-room'}
+                      displayName={userFullName}
+                      meetingId={id}
+                      autoStartRecording={isRecording}
+                      onRecordingStart={() => {
+                        console.log('Jitsi recording started');
+                        toast({
+                          title: 'Conference Recording Started',
+                          description: 'Full conference audio will be captured and transcribed',
+                        });
+                      }}
+                      onRecordingStop={() => {
+                        console.log('Jitsi recording stopped');
+                        toast({
+                          title: 'Conference Recording Stopped',
+                          description: 'Processing recording for transcription...',
+                        });
+                      }}
+                      onMeetingEnd={() => {
+                        console.log('Jitsi meeting ended');
+                        toast({
+                          title: 'Meeting Ended',
+                          description: 'Video conference has ended',
+                        });
+                      }}
+                    />
                   )}
                   {meeting.meeting_type === 'virtual_room' && (
                     <VirtualMeetingRoom 

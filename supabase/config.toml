@@ -48,6 +48,9 @@ verify_jwt = false
 [functions.generate-catchup-card]
 verify_jwt = false
 
+[functions.jitsi-recording-control]
+verify_jwt = true
+
 [functions.generate-coach-hints]
 verify_jwt = false
 

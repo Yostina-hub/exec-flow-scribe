@@ -1696,6 +1696,56 @@ export type Database = {
           },
         ]
       }
+      jitsi_recordings: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          error_message: string | null
+          id: string
+          meeting_id: string
+          recording_id: string
+          recording_url: string | null
+          room_name: string
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          error_message?: string | null
+          id?: string
+          meeting_id: string
+          recording_id: string
+          recording_url?: string | null
+          room_name: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          error_message?: string | null
+          id?: string
+          meeting_id?: string
+          recording_id?: string
+          recording_url?: string | null
+          room_name?: string
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jitsi_recordings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       knowledge_entities: {
         Row: {
           created_at: string | null
