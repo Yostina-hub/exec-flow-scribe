@@ -123,7 +123,7 @@ export function InstantMeetingDialog() {
         description: 'Meeting is ready to join',
       });
       setOpen(false);
-      navigate(`/meetings/${meeting.id}`);
+      navigate('/meetings');
     } catch (error: any) {
       console.error('Error creating instant meeting:', error);
       toast({

@@ -195,8 +195,8 @@ export const CreateMeetingDialog = () => {
       setDate(undefined);
       setIsRecurring(false);
       
-      // Navigate to meeting detail page
-      navigate(`/meetings/${meeting.id}`);
+      // Navigate to meetings list
+      navigate('/meetings');
     } catch (error: any) {
       toast.error("Failed to create meeting: " + error.message);
     } finally {
