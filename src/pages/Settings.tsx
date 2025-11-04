@@ -20,6 +20,8 @@ import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
 import { JitsiSettings } from "@/components/settings/JitsiSettings";
+import { WorkflowBuilder } from "@/components/settings/WorkflowBuilder";
+import { CRMIntegration } from "@/components/settings/CRMIntegration";
 import { TwoWayCalendarSync } from "@/components/calendar/TwoWayCalendarSync";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { EnhancedWhatsAppReminders } from "@/components/notifications/EnhancedWhatsAppReminders";
@@ -404,6 +406,8 @@ const Settings = () => {
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="tmeet">TMeet</TabsTrigger>
+            <TabsTrigger value="workflows">Workflows</TabsTrigger>
+            <TabsTrigger value="crm">CRM</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
@@ -1083,6 +1087,16 @@ const Settings = () => {
           {/* TMeet Tab */}
           <TabsContent value="tmeet">
             <JitsiSettings />
+          </TabsContent>
+
+          {/* Workflows Tab */}
+          <TabsContent value="workflows">
+            <WorkflowBuilder />
+          </TabsContent>
+
+          {/* CRM Tab */}
+          <TabsContent value="crm" className="space-y-6">
+            <CRMIntegration />
           </TabsContent>
 
           {/* Integrations Tab */}

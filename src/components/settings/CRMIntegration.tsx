@@ -1,0 +1,222 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { Users, Loader2, RefreshCw } from "lucide-react";
+
+interface CRMConfig {
+  provider: string;
+  api_key: string;
+  domain: string;
+  is_active: boolean;
+  last_sync_at: string | null;
+}
+
+export function CRMIntegration() {
+  const [configs, setConfigs] = useState<Record<string, CRMConfig>>({});
+  const [loading, setLoading] = useState<Record<string, boolean>>({});
+  const [syncing, setSyncing] = useState<Record<string, boolean>>({});
+
+  const providers = [
+    { id: "hubspot", name: "HubSpot", fields: ["api_key"] },
+    { id: "salesforce", name: "Salesforce", fields: ["api_key", "domain"] },
+    { id: "pipedrive", name: "Pipedrive", fields: ["api_key", "domain"] },
+  ];
+
+  useEffect(() => {
+    loadConfigs();
+  }, []);
+
+  const loadConfigs = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from("crm_integrations")
+        .select("*")
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      const configMap: Record<string, CRMConfig> = {};
+      data?.forEach((config) => {
+        configMap[config.provider] = config as CRMConfig;
+      });
+      setConfigs(configMap);
+    } catch (error: any) {
+      console.error("Error loading CRM configs:", error);
+      toast.error("Failed to load CRM integrations");
+    }
+  };
+
+  const saveConfig = async (provider: string) => {
+    setLoading({ ...loading, [provider]: true });
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      const config = configs[provider] || {};
+      const { error } = await supabase
+        .from("crm_integrations")
+        .upsert({
+          user_id: user.id,
+          provider,
+          api_key: config.api_key,
+          domain: config.domain,
+          is_active: config.is_active || false,
+        }, {
+          onConflict: "user_id,provider"
+        });
+
+      if (error) throw error;
+
+      toast.success(`${provider} integration saved successfully`);
+      loadConfigs();
+    } catch (error: any) {
+      console.error("Error saving config:", error);
+      toast.error("Failed to save integration");
+    } finally {
+      setLoading({ ...loading, [provider]: false });
+    }
+  };
+
+  const syncCRM = async (provider: string) => {
+    setSyncing({ ...syncing, [provider]: true });
+    try {
+      const functionMap: Record<string, string> = {
+        hubspot: "hubspot-sync",
+        salesforce: "salesforce-sync",
+        pipedrive: "pipedrive-sync",
+      };
+
+      const { data, error } = await supabase.functions.invoke(functionMap[provider]);
+
+      if (error) throw error;
+
+      toast.success(`${provider} sync completed successfully`);
+      loadConfigs();
+    } catch (error: any) {
+      console.error("Sync error:", error);
+      toast.error(`Failed to sync with ${provider}`);
+    } finally {
+      setSyncing({ ...syncing, [provider]: false });
+    }
+  };
+
+  const updateConfig = (provider: string, field: string, value: any) => {
+    setConfigs({
+      ...configs,
+      [provider]: {
+        ...(configs[provider] || {}),
+        provider,
+        [field]: value,
+      } as CRMConfig,
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Users className="h-5 w-5" />
+          CRM Integration
+        </CardTitle>
+        <CardDescription>
+          Connect with your CRM to sync contacts and meeting history
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Tabs defaultValue="hubspot">
+          <TabsList className="grid w-full grid-cols-3">
+            {providers.map((provider) => (
+              <TabsTrigger key={provider.id} value={provider.id}>
+                {provider.name}
+                {configs[provider.id]?.is_active && (
+                  <Badge variant="default" className="ml-2 h-4 px-1">✓</Badge>
+                )}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+
+          {providers.map((provider) => (
+            <TabsContent key={provider.id} value={provider.id} className="space-y-4">
+              {provider.fields.includes("api_key") && (
+                <div>
+                  <Label>API Key</Label>
+                  <Input
+                    type="password"
+                    placeholder={`Enter your ${provider.name} API key`}
+                    value={configs[provider.id]?.api_key || ""}
+                    onChange={(e) => updateConfig(provider.id, "api_key", e.target.value)}
+                  />
+                </div>
+              )}
+
+              {provider.fields.includes("domain") && (
+                <div>
+                  <Label>Domain</Label>
+                  <Input
+                    placeholder={`your-company.${provider.id}.com`}
+                    value={configs[provider.id]?.domain || ""}
+                    onChange={(e) => updateConfig(provider.id, "domain", e.target.value)}
+                  />
+                </div>
+              )}
+
+              <div className="flex items-center justify-between rounded-lg border p-4">
+                <div className="space-y-0.5">
+                  <Label>Enable Integration</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Activate {provider.name} sync
+                  </p>
+                </div>
+                <Switch
+                  checked={configs[provider.id]?.is_active || false}
+                  onCheckedChange={(checked) => updateConfig(provider.id, "is_active", checked)}
+                />
+              </div>
+
+              {configs[provider.id]?.last_sync_at && (
+                <p className="text-sm text-muted-foreground">
+                  Last synced: {new Date(configs[provider.id].last_sync_at!).toLocaleString()}
+                </p>
+              )}
+
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => saveConfig(provider.id)}
+                  disabled={loading[provider.id]}
+                >
+                  {loading[provider.id] && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Save Configuration
+                </Button>
+
+                {configs[provider.id]?.is_active && (
+                  <Button
+                    variant="outline"
+                    onClick={() => syncCRM(provider.id)}
+                    disabled={syncing[provider.id]}
+                  >
+                    {syncing[provider.id] ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                    )}
+                    Sync Now
+                  </Button>
+                )}
+              </div>
+            </TabsContent>
+          ))}
+        </Tabs>
+      </CardContent>
+    </Card>
+  );
+}
