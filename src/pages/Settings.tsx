@@ -20,6 +20,9 @@ import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
 import { JitsiSettings } from "@/components/settings/JitsiSettings";
+import { TwoWayCalendarSync } from "@/components/calendar/TwoWayCalendarSync";
+import { TaskExportManager } from "@/components/actions/TaskExportManager";
+import { EnhancedWhatsAppReminders } from "@/components/notifications/EnhancedWhatsAppReminders";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -401,6 +404,7 @@ const Settings = () => {
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="tmeet">TMeet</TabsTrigger>
+            <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -1079,6 +1083,13 @@ const Settings = () => {
           {/* TMeet Tab */}
           <TabsContent value="tmeet">
             <JitsiSettings />
+          </TabsContent>
+
+          {/* Integrations Tab */}
+          <TabsContent value="integrations" className="space-y-6">
+            <TwoWayCalendarSync />
+            <TaskExportManager />
+            <EnhancedWhatsAppReminders />
           </TabsContent>
         </Tabs>
       </div>
