@@ -1746,6 +1746,36 @@ export type Database = {
           },
         ]
       }
+      jitsi_settings: {
+        Row: {
+          api_token: string
+          created_at: string | null
+          domain: string
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          api_token: string
+          created_at?: string | null
+          domain?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          api_token?: string
+          created_at?: string | null
+          domain?: string
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       knowledge_entities: {
         Row: {
           created_at: string | null

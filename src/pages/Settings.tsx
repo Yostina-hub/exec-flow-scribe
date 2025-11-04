@@ -19,6 +19,7 @@ import { DistributionManager } from "@/components/pdf/DistributionManager";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
 import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
+import { JitsiSettings } from "@/components/settings/JitsiSettings";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -399,6 +400,7 @@ const Settings = () => {
             <TabsTrigger value="communication">Communication</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
+            <TabsTrigger value="tmeet">TMeet</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
@@ -1072,6 +1074,11 @@ const Settings = () => {
           {/* Google API Tab */}
           <TabsContent value="google-api">
             <GoogleAPISettings />
+          </TabsContent>
+
+          {/* TMeet Tab */}
+          <TabsContent value="tmeet">
+            <JitsiSettings />
           </TabsContent>
         </Tabs>
       </div>
