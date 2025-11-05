@@ -200,8 +200,16 @@ export default function Meetings() {
       setLoading(false);
     }
   };
-
-
+  
+  // Fallback: ensure immediate list update on creation (even if realtime not ready)
+  React.useEffect(() => {
+    const handler = (e: any) => {
+      fetchMeetings();
+    };
+    window.addEventListener('meeting:created', handler);
+    return () => window.removeEventListener('meeting:created', handler);
+  }, []);
+  
   const formatMeetingCard = (meeting: Meeting): FormattedMeeting => {
     const startTime = new Date(meeting.start_time);
     const endTime = new Date(meeting.end_time);

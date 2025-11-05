@@ -191,6 +191,9 @@ export const CreateMeetingDialog = () => {
 
       toast.success("Meeting created successfully");
       
+      // Broadcast event for immediate UI update
+      window.dispatchEvent(new CustomEvent('meeting:created', { detail: meeting }));
+      
       setOpen(false);
       setDate(undefined);
       setIsRecurring(false);
