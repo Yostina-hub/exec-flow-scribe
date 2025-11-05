@@ -13,15 +13,16 @@ import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
 import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
-import { AutomationSettings } from "@/components/settings/AutomationSettings";
+// Temporarily disabled until database migration is approved:
+// import { AutomationSettings } from "@/components/settings/AutomationSettings";
 import { BrandKitManager } from "@/components/pdf/BrandKitManager";
 import { DistributionManager } from "@/components/pdf/DistributionManager";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
-import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
+// import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
 import { JitsiSettings } from "@/components/settings/JitsiSettings";
-import { WorkflowBuilder } from "@/components/settings/WorkflowBuilder";
-import { CRMIntegration } from "@/components/settings/CRMIntegration";
+// import { WorkflowBuilder } from "@/components/settings/WorkflowBuilder";
+// import { CRMIntegration } from "@/components/settings/CRMIntegration";
 import { TwoWayCalendarSync } from "@/components/calendar/TwoWayCalendarSync";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { EnhancedWhatsAppReminders } from "@/components/notifications/EnhancedWhatsAppReminders";
@@ -401,13 +402,9 @@ const Settings = () => {
             <TabsTrigger value="google-api">Google API</TabsTrigger>
             <TabsTrigger value="email">Email</TabsTrigger>
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
-            <TabsTrigger value="automation">Automation</TabsTrigger>
-            <TabsTrigger value="communication">Communication</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
             <TabsTrigger value="tmeet">TMeet</TabsTrigger>
-            <TabsTrigger value="workflows">Workflows</TabsTrigger>
-            <TabsTrigger value="crm">CRM</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
@@ -926,16 +923,6 @@ const Settings = () => {
             <RoleAssignmentManager />
           </TabsContent>
 
-          {/* Automation Tab */}
-          <TabsContent value="automation" className="space-y-6">
-            <AutomationSettings />
-          </TabsContent>
-
-          {/* Communication Tab */}
-          <TabsContent value="communication" className="space-y-6">
-            <CommunicationSettings />
-          </TabsContent>
-
           {/* Branding Tab */}
           <TabsContent value="branding" className="space-y-6">
             <BrandKitManager />
@@ -1087,16 +1074,6 @@ const Settings = () => {
           {/* TMeet Tab */}
           <TabsContent value="tmeet">
             <JitsiSettings />
-          </TabsContent>
-
-          {/* Workflows Tab */}
-          <TabsContent value="workflows">
-            <WorkflowBuilder />
-          </TabsContent>
-
-          {/* CRM Tab */}
-          <TabsContent value="crm" className="space-y-6">
-            <CRMIntegration />
           </TabsContent>
 
           {/* Integrations Tab */}
