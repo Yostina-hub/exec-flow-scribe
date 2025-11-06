@@ -305,6 +305,61 @@ const MeetingDetail = () => {
     };
   }, []);
 
+  // Load recording state from localStorage on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem(`recording-${meetingId}`);
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        if (state.isRecording && state.startTime) {
+          recordingStartTimeRef.current = state.startTime;
+          pausedDurationRef.current = state.pausedDuration || 0;
+          pauseStartTimeRef.current = state.pauseStartTime || null;
+        }
+      } catch (e) {
+        console.error('Failed to load recording state:', e);
+      }
+    }
+  }, [meetingId]);
+
+  // Persist recording state to localStorage and sync across tabs
+  useEffect(() => {
+    if (isRecording) {
+      const state = {
+        isRecording: true,
+        startTime: recordingStartTimeRef.current,
+        pausedDuration: pausedDurationRef.current,
+        pauseStartTime: pauseStartTimeRef.current,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(`recording-${meetingId}`, JSON.stringify(state));
+    } else {
+      localStorage.removeItem(`recording-${meetingId}`);
+    }
+  }, [isRecording, meetingId]);
+
+  // Sync recording state across browser tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `recording-${meetingId}` && e.newValue) {
+        try {
+          const state = JSON.parse(e.newValue);
+          if (state.isRecording && state.startTime) {
+            recordingStartTimeRef.current = state.startTime;
+            pausedDurationRef.current = state.pausedDuration || 0;
+            pauseStartTimeRef.current = state.pauseStartTime || null;
+            console.log('Synced recording state from another tab');
+          }
+        } catch (e) {
+          console.error('Failed to sync recording state:', e);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [meetingId]);
+
   // Track recording time with timestamp-based approach (works even when tab is inactive)
   useEffect(() => {
     if (isRecording && !isPaused) {
@@ -1034,27 +1089,26 @@ const MeetingDetail = () => {
                 </div>
               </TabsContent>
 
-              <TabsContent value="transcription" className="space-y-4">
-                <LazyTabContent>
-                  <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                    <BrowserSpeechRecognition
-                          meetingId={meetingId}
-                          externalIsRecording={isRecording}
-                          isPaused={isPaused}
-                          onRecordingStart={startRecording}
-                          onRecordingStop={() => stopRecording()}
-                          onDurationChange={(s) => setRecordingSeconds(s)}
-                          selectedLanguage={transcriptionLanguage}
-                        />
-                    <MeetingAudioPlayback meetingId={meetingId} />
-                    <LiveTranscription 
-                      meetingId={meetingId} 
-                      isRecording={isRecording}
-                      currentUserName={userFullName || 'Unknown User'}
-                    />
-                  </ProtectedElement>
-                </LazyTabContent>
-              </TabsContent>
+              {/* Keep mounted but hidden to preserve state */}
+              <div className={activeTab === 'transcription' ? 'space-y-4' : 'hidden'}>
+                <ProtectedElement meetingId={meetingId} elementType="transcriptions">
+                  <BrowserSpeechRecognition
+                        meetingId={meetingId}
+                        externalIsRecording={isRecording}
+                        isPaused={isPaused}
+                        onRecordingStart={startRecording}
+                        onRecordingStop={() => stopRecording()}
+                        onDurationChange={(s) => setRecordingSeconds(s)}
+                        selectedLanguage={transcriptionLanguage}
+                      />
+                  <MeetingAudioPlayback meetingId={meetingId} />
+                  <LiveTranscription 
+                    meetingId={meetingId} 
+                    isRecording={isRecording}
+                    currentUserName={userFullName || 'Unknown User'}
+                  />
+                </ProtectedElement>
+              </div>
 
               <TabsContent value="agenda" className="space-y-4">
                 <Card>
