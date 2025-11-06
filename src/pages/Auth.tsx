@@ -180,50 +180,48 @@ const Auth = () => {
       )}
 
       <div className={`relative z-10 min-h-screen flex items-center justify-center ${isEthioTelecom ? 'pt-20 p-4' : 'p-0 lg:p-4'}`}>
-        <div className={`w-full ${isEthioTelecom ? 'max-w-md' : 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto'}`}>
-          {/* Hero Section - Executive Focus - Only for default theme */}
-          {!isEthioTelecom && (
-            <div className="text-white space-y-8 animate-fade-in hidden lg:block pr-12">
-              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 backdrop-blur-xl border border-emerald-400/50 shadow-xl shadow-emerald-500/20">
-                <Sparkles className="h-5 w-5 text-emerald-300 animate-pulse" />
-                <span className="text-base font-bold text-white tracking-wide">Enterprise Meeting Intelligence</span>
-              </div>
-
-              <h1 className="text-7xl font-black leading-[1.1] font-['Space_Grotesk'] drop-shadow-2xl">
-                <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
-                  Digital Meeting
-                </span>
-                <span className="block bg-gradient-to-r from-emerald-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mt-2">
-                  Excellence
-                </span>
-              </h1>
-
-              <p className="text-xl text-blue-100/90 leading-relaxed drop-shadow-lg font-medium max-w-xl">
-                Transform executive meetings with AI-powered intelligence. Real-time transcription, automated minutes, and actionable insights for organizational excellence.
-              </p>
-
-              <div className="grid grid-cols-3 gap-6 pt-12">
-                {[
-                  { icon: Zap, label: "Real-Time AI", desc: "Instant transcription & translation", color: "from-yellow-500 to-orange-500" },
-                  { icon: Shield, label: "Enterprise Secure", desc: "Bank-grade encryption", color: "from-blue-500 to-cyan-500" },
-                  { icon: TrendingUp, label: "Executive Analytics", desc: "Decision intelligence", color: "from-emerald-500 to-teal-500" },
-                ].map((feature, i) => (
-                  <div 
-                    key={i} 
-                    className="group relative p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:-translate-y-1 cursor-pointer"
-                    style={{ animationDelay: `${i * 100}ms` }}
-                  >
-                    <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                    <div className={`relative p-3 w-fit rounded-xl bg-gradient-to-br ${feature.color} shadow-lg group-hover:shadow-2xl transition-all duration-500 mb-4`}>
-                      <feature.icon className="h-6 w-6 text-white drop-shadow-lg" />
-                    </div>
-                    <h3 className="relative font-bold text-lg mb-2 text-white drop-shadow-md">{feature.label}</h3>
-                    <p className="relative text-sm text-blue-100/80 font-medium leading-relaxed">{feature.desc}</p>
-                  </div>
-                ))}
-              </div>
+        <div className={`w-full ${isEthioTelecom ? 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center' : 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto'}`}>
+          {/* Hero Section - For both themes */}
+          <div className={`space-y-8 animate-fade-in hidden lg:block pr-12 ${isEthioTelecom ? 'text-gray-900' : 'text-white'}`}>
+            <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full backdrop-blur-xl border shadow-xl ${isEthioTelecom ? 'bg-[#8DC63F]/20 border-[#8DC63F]/50 shadow-[#8DC63F]/20' : 'bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 border-emerald-400/50 shadow-emerald-500/20'}`}>
+              <Sparkles className={`h-5 w-5 animate-pulse ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-emerald-300'}`} />
+              <span className={`text-base font-bold tracking-wide ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-white'}`}>Enterprise Meeting Intelligence</span>
             </div>
-          )}
+
+            <h1 className={`text-7xl font-black leading-[1.1] font-['Space_Grotesk'] drop-shadow-2xl ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"]' : ''}`}>
+              <span className={`bg-clip-text text-transparent ${isEthioTelecom ? 'bg-gradient-to-r from-gray-900 via-gray-800 to-gray-700' : 'bg-gradient-to-r from-white via-blue-100 to-cyan-100'}`}>
+                Digital Meeting
+              </span>
+              <span className={`block bg-clip-text text-transparent mt-2 ${isEthioTelecom ? 'bg-gradient-to-r from-[#8DC63F] via-[#7AB62F] to-[#0072BC]' : 'bg-gradient-to-r from-emerald-400 via-cyan-300 to-blue-400'}`}>
+                Excellence
+              </span>
+            </h1>
+
+            <p className={`text-xl leading-relaxed drop-shadow-lg font-medium max-w-xl ${isEthioTelecom ? 'text-gray-700' : 'text-blue-100/90'}`}>
+              Transform executive meetings with AI-powered intelligence. Real-time transcription, automated minutes, and actionable insights for organizational excellence.
+            </p>
+
+            <div className="grid grid-cols-3 gap-6 pt-12">
+              {[
+                { icon: Zap, label: "Real-Time AI", desc: "Instant transcription & translation", color: isEthioTelecom ? "from-[#8DC63F] to-[#7AB62F]" : "from-yellow-500 to-orange-500" },
+                { icon: Shield, label: "Enterprise Secure", desc: "Bank-grade encryption", color: isEthioTelecom ? "from-[#0072BC] to-[#005A9C]" : "from-blue-500 to-cyan-500" },
+                { icon: TrendingUp, label: "Executive Analytics", desc: "Decision intelligence", color: isEthioTelecom ? "from-[#8DC63F] to-[#0072BC]" : "from-emerald-500 to-teal-500" },
+              ].map((feature, i) => (
+                <div 
+                  key={i} 
+                  className={`group relative p-6 rounded-2xl backdrop-blur-xl border transition-all duration-500 hover:scale-105 hover:-translate-y-1 cursor-pointer ${isEthioTelecom ? 'bg-white/80 border-gray-200 hover:border-[#8DC63F]/50 hover:bg-white' : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/10'}`}
+                  style={{ animationDelay: `${i * 100}ms` }}
+                >
+                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+                  <div className={`relative p-3 w-fit rounded-xl bg-gradient-to-br ${feature.color} shadow-lg group-hover:shadow-2xl transition-all duration-500 mb-4`}>
+                    <feature.icon className="h-6 w-6 text-white drop-shadow-lg" />
+                  </div>
+                  <h3 className={`relative font-bold text-lg mb-2 drop-shadow-md ${isEthioTelecom ? 'text-gray-900' : 'text-white'}`}>{feature.label}</h3>
+                  <p className={`relative text-sm font-medium leading-relaxed ${isEthioTelecom ? 'text-gray-600' : 'text-blue-100/80'}`}>{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
           {/* Auth Card */}
           <div className={`${isEthioTelecom ? 'w-full' : 'animate-scale-in w-full lg:w-auto h-full lg:h-auto'}`}>
@@ -237,9 +235,25 @@ const Auth = () => {
               
               <CardHeader className={`space-y-4 ${isEthioTelecom ? 'px-8 pt-8 pb-4' : 'px-4 sm:px-8 pt-8 lg:pt-8 pb-4 lg:pb-6'} relative`}>
                 {isEthioTelecom ? (
-                  <CardTitle className="text-2xl font-semibold text-gray-700 text-center">
-                    User Login
-                  </CardTitle>
+                  <>
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#8DC63F] to-[#0072BC] rounded-2xl blur-xl opacity-50 animate-pulse" />
+                        <div className="relative h-14 w-14 lg:h-16 lg:w-16 rounded-2xl bg-gradient-to-br from-[#8DC63F] via-[#7AB62F] to-[#0072BC] flex items-center justify-center shadow-2xl animate-glow">
+                          <Sparkles className="h-7 w-7 lg:h-8 lg:w-8 text-white" />
+                        </div>
+                      </div>
+                      <div>
+                        <h1 className="text-2xl lg:text-4xl font-black font-['Noto_Sans_Ethiopic'] bg-gradient-to-r from-[#8DC63F] via-[#7AB62F] to-[#0072BC] bg-clip-text text-transparent">
+                          MeetingHub
+                        </h1>
+                        <p className="text-sm lg:text-base text-[#8DC63F] font-bold tracking-wide">Executive Edition</p>
+                      </div>
+                    </div>
+                    <CardDescription className="text-base lg:text-lg text-gray-700 font-semibold text-center">
+                      Secure access to your organization's intelligence platform
+                    </CardDescription>
+                  </>
                 ) : (
                   <>
                     <div className="flex items-center justify-center lg:justify-start gap-3">
