@@ -6,6 +6,7 @@ import { GuestAccessStatus } from "@/components/GuestAccessStatus";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import GuestDashboard from "./GuestDashboard";
 import { UnifiedMeetingHub } from "@/components/UnifiedMeetingHub";
+import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
   Users, Zap, Target, CheckSquare, Loader2, Sparkles,
@@ -25,6 +26,8 @@ import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "
 export default function Index() {
   const navigate = useNavigate();
   const { isGuest, loading: guestLoading } = useIsGuest();
+  const { theme } = useTheme();
+  const isEthioTelecom = theme === 'ethio-telecom';
   const [meetings, setMeetings] = useState<any[]>([]);
   const [actions, setActions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -243,33 +246,37 @@ export default function Index() {
     <Layout>
       <div className="space-y-4 lg:space-y-8 pb-16 lg:pb-20">
         {/* Animated Hero Section */}
-        <div className="relative overflow-hidden rounded-xl lg:rounded-2xl bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 p-4 lg:p-8 border border-purple-500/20 animate-fade-in">
-          <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000 hidden lg:block" />
+        <div className={`relative overflow-hidden rounded-xl lg:rounded-2xl p-4 lg:p-8 border animate-fade-in ${isEthioTelecom ? 'bg-white border-gray-200 shadow-md' : 'bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 border-purple-500/20'}`}>
+          {!isEthioTelecom && (
+            <>
+              <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
+              <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse delay-1000 hidden lg:block" />
+            </>
+          )}
           
           <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-4">
             <div className="space-y-3 lg:space-y-4 flex-1">
-              <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 animate-scale-in">
-                <Sparkles className="h-3 w-3 lg:h-4 lg:w-4 text-purple-400" />
-                <span className="text-xs lg:text-sm font-medium">
+              <div className={`inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full backdrop-blur-sm border animate-scale-in ${isEthioTelecom ? 'bg-[#8DC63F]/10 border-[#8DC63F]/20' : 'bg-white/10 border-white/20'}`}>
+                <Sparkles className={`h-3 w-3 lg:h-4 lg:w-4 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`} />
+                <span className={`text-xs lg:text-sm font-medium ${isEthioTelecom ? 'text-[#8DC63F]' : ''}`}>
                   {isCEO ? 'AI-Powered Executive Dashboard' : 'Live Dashboard'}
                 </span>
               </div>
               
-              <h1 className="text-3xl lg:text-5xl font-bold font-['Space_Grotesk'] animate-fade-in">
+              <h1 className={`text-3xl lg:text-5xl font-bold animate-fade-in ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"]'}`}>
                 Welcome Back! 
                 <span className="inline-block animate-bounce ml-2 lg:ml-3">👋</span>
               </h1>
               
-              <p className="text-sm lg:text-lg text-muted-foreground max-w-2xl">
-                You have <span className="font-bold text-purple-400">{todayMeetingsCount}</span> meeting{todayMeetingsCount !== 1 ? 's' : ''} today and{' '}
-                <span className="font-bold text-blue-400">{pendingActionsCount}</span> pending action{pendingActionsCount !== 1 ? 's' : ''}
+              <p className={`text-sm lg:text-lg max-w-2xl ${isEthioTelecom ? 'text-gray-700' : 'text-muted-foreground'}`}>
+                You have <span className={`font-bold ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`}>{todayMeetingsCount}</span> meeting{todayMeetingsCount !== 1 ? 's' : ''} today and{' '}
+                <span className={`font-bold ${isEthioTelecom ? 'text-[#0072BC]' : 'text-blue-400'}`}>{pendingActionsCount}</span> pending action{pendingActionsCount !== 1 ? 's' : ''}
               </p>
 
               {isCEO && (
                 <Button
                   onClick={() => setShowBriefing(true)}
-                  className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 mt-4 group"
+                  className={`gap-2 mt-4 group ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F]' : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90'}`}
                 >
                   <Brain className="h-5 w-5 group-hover:scale-110 transition-transform" />
                   AI Executive Briefing
@@ -279,10 +286,10 @@ export default function Index() {
             </div>
             
             <div className="text-right space-y-2 animate-scale-in">
-              <div className="text-2xl lg:text-4xl font-bold font-['Space_Grotesk'] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+              <div className={`text-2xl lg:text-4xl font-bold ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-transparent bg-clip-text bg-gradient-to-r from-[#8DC63F] to-[#0072BC]' : 'font-["Space_Grotesk"] text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400'}`}>
                 {format(currentTime, 'HH:mm')}
               </div>
-              <div className="text-xs lg:text-sm text-muted-foreground">
+              <div className={`text-xs lg:text-sm ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
                 {format(currentTime, 'EEE, MMM d')}
               </div>
             </div>
@@ -292,22 +299,22 @@ export default function Index() {
         {/* Enhanced Stats Grid */}
         <div className="grid gap-3 lg:gap-6 grid-cols-2 lg:grid-cols-4">
         {[
-            { icon: Calendar, label: "Today's Meetings", value: todayMeetingsCount, color: "from-blue-500 to-cyan-500", delay: "0" },
-            { icon: Target, label: "Pending Actions", value: pendingActionsCount, color: "from-purple-500 to-pink-500", delay: "100" },
-            { icon: Activity, label: "Total Actions", value: totalActions, color: "from-green-500 to-emerald-500", delay: "200" },
-            { icon: TrendingUp, label: "Completion Rate", value: `${completionRate}%`, color: "from-orange-500 to-red-500", delay: "300" },
+            { icon: Calendar, label: "Today's Meetings", value: todayMeetingsCount, color: isEthioTelecom ? "from-[#0072BC] to-[#005A9C]" : "from-blue-500 to-cyan-500", delay: "0" },
+            { icon: Target, label: "Pending Actions", value: pendingActionsCount, color: isEthioTelecom ? "from-[#8DC63F] to-[#7AB62F]" : "from-purple-500 to-pink-500", delay: "100" },
+            { icon: Activity, label: "Total Actions", value: totalActions, color: isEthioTelecom ? "from-[#8DC63F] to-[#0072BC]" : "from-green-500 to-emerald-500", delay: "200" },
+            { icon: TrendingUp, label: "Completion Rate", value: `${completionRate}%`, color: isEthioTelecom ? "from-[#0072BC] to-[#8DC63F]" : "from-orange-500 to-red-500", delay: "300" },
           ].map((stat, i) => (
             <Card 
               key={i}
-              className="relative overflow-hidden group hover:shadow-2xl hover:scale-105 transition-all duration-300 border-0 bg-gradient-to-br from-background to-muted/50 backdrop-blur-xl animate-scale-in"
+              className={`relative overflow-hidden group hover:shadow-2xl hover:scale-105 transition-all duration-300 border animate-scale-in ${isEthioTelecom ? 'bg-white border-gray-200' : 'border-0 bg-gradient-to-br from-background to-muted/50 backdrop-blur-xl'}`}
               style={{ animationDelay: `${stat.delay}ms` }}
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
               <CardContent className="p-3 lg:p-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
                   <div className="space-y-1 lg:space-y-2 w-full">
-                    <p className="text-xs lg:text-sm font-medium text-muted-foreground">{stat.label}</p>
-                    <p className="text-2xl lg:text-4xl font-bold font-['Space_Grotesk']">{stat.value}</p>
+                    <p className={`text-xs lg:text-sm font-medium ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>{stat.label}</p>
+                    <p className={`text-2xl lg:text-4xl font-bold ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"]'}`}>{stat.value}</p>
                   </div>
                   <div className={`p-2 lg:p-4 rounded-xl lg:rounded-2xl bg-gradient-to-br ${stat.color} shadow-lg group-hover:scale-110 transition-transform duration-300 self-end lg:self-auto`}>
                     <stat.icon className="h-5 w-5 lg:h-8 lg:w-8 text-white" />
