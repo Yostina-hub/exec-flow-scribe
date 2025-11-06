@@ -53,10 +53,8 @@ export default function DriveIntegration() {
   const [teledriveConnected, setTeledriveConnected] = useState(false);
   const [showTeledriveDialog, setShowTeledriveDialog] = useState(false);
   const [teledriveApiHost, setTeledriveApiHost] = useState("");
-  const [teledrivePhone, setTeledrivePhone] = useState("");
+  const [teledriveEmail, setTeledriveEmail] = useState("");
   const [teledrivePassword, setTeledrivePassword] = useState("");
-  const [teledriveApiId, setTeledriveApiId] = useState("");
-  const [teledriveApiHash, setTeledriveApiHash] = useState("");
 
   useEffect(() => {
     loadSettings();
@@ -117,10 +115,8 @@ export default function DriveIntegration() {
         body: {
           action: 'login',
           apiHost: teledriveApiHost,
-          phoneNumber: teledrivePhone,
+          email: teledriveEmail,
           password: teledrivePassword,
-          apiId: teledriveApiId,
-          apiHash: teledriveApiHash,
         }
       });
 
@@ -771,26 +767,40 @@ export default function DriveIntegration() {
                 Connect TeleDrive
               </DialogTitle>
               <DialogDescription>
-                Enter your TeleDrive credentials to enable Telegram cloud storage
+                Connect to your TeleDrive instance for distributed cloud storage
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
+              <Alert className={isEthioTelecom ? 'border-primary/30 bg-primary/5' : ''}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  TeleDrive is a self-hosted cloud storage service. Enter your TeleDrive instance URL and login credentials.
+                </AlertDescription>
+              </Alert>
+              
               <div>
-                <Label>API Host</Label>
+                <Label>TeleDrive Instance URL</Label>
                 <Input
                   value={teledriveApiHost}
                   onChange={(e) => setTeledriveApiHost(e.target.value)}
-                  placeholder="https://your-teledrive-instance.com"
+                  placeholder="https://teledrive.example.com"
+                  type="url"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  The URL of your TeleDrive server
+                </p>
               </div>
+              
               <div>
-                <Label>Phone Number</Label>
+                <Label>Email or Username</Label>
                 <Input
-                  value={teledrivePhone}
-                  onChange={(e) => setTeledrivePhone(e.target.value)}
-                  placeholder="+1234567890"
+                  value={teledriveEmail}
+                  onChange={(e) => setTeledriveEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  type="text"
                 />
               </div>
+              
               <div>
                 <Label>Password</Label>
                 <Input
@@ -800,26 +810,11 @@ export default function DriveIntegration() {
                   placeholder="Your TeleDrive password"
                 />
               </div>
-              <div>
-                <Label>Telegram API ID</Label>
-                <Input
-                  value={teledriveApiId}
-                  onChange={(e) => setTeledriveApiId(e.target.value)}
-                  placeholder="Get from my.telegram.org"
-                />
-              </div>
-              <div>
-                <Label>Telegram API Hash</Label>
-                <Input
-                  value={teledriveApiHash}
-                  onChange={(e) => setTeledriveApiHash(e.target.value)}
-                  placeholder="Get from my.telegram.org"
-                />
-              </div>
+              
               <Button 
                 onClick={connectTeleDrive} 
-                disabled={loading || !teledriveApiHost || !teledrivePhone || !teledrivePassword}
-                className="w-full"
+                disabled={loading || !teledriveApiHost || !teledriveEmail || !teledrivePassword}
+                className={`w-full ${isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''}`}
               >
                 {loading ? "Connecting..." : "Connect TeleDrive"}
               </Button>

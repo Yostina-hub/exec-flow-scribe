@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, apiHost, phoneNumber, password, apiId, apiHash } = await req.json();
+    const { action, apiHost, email, password } = await req.json();
 
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
@@ -27,33 +27,32 @@ serve(async (req) => {
     }
 
     if (action === 'login') {
-      // Authenticate with TeleDrive
+      // Authenticate with TeleDrive using standard login
       const loginResponse = await fetch(`${apiHost}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phoneNumber,
+          username: email, // TeleDrive may use username or email
           password,
-          apiId,
-          apiHash,
         }),
       });
 
       if (!loginResponse.ok) {
-        throw new Error(`TeleDrive authentication failed: ${await loginResponse.text()}`);
+        const errorText = await loginResponse.text();
+        throw new Error(`TeleDrive authentication failed: ${errorText}`);
       }
 
       const authData = await loginResponse.json();
 
-      // Store TeleDrive credentials in user metadata or settings
+      // Store TeleDrive credentials in user settings
       const { error: updateError } = await supabase
         .from('drive_sync_settings')
         .upsert({
           user_id: user.id,
           teledrive_api_host: apiHost,
-          teledrive_access_token: authData.accessToken,
+          teledrive_access_token: authData.accessToken || authData.token,
           teledrive_enabled: true,
         });
 
@@ -62,7 +61,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true,
-          accessToken: authData.accessToken,
+          accessToken: authData.accessToken || authData.token,
           message: 'Successfully authenticated with TeleDrive'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
