@@ -6,6 +6,10 @@ import { Loader2, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw";
+import { normalizeAIMarkdown } from "@/utils/markdownNormalizer";
 
 interface StudyGuideGeneratorProps {
   sourceIds: string[];
@@ -81,7 +85,12 @@ export const StudyGuideGenerator = ({ sourceIds }: StudyGuideGeneratorProps) => 
       ) : (
         <ScrollArea className="flex-1">
           <div className="prose prose-sm dark:prose-invert max-w-none pr-4">
-            <ReactMarkdown>{studyGuide}</ReactMarkdown>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm, remarkBreaks]}
+              rehypePlugins={[rehypeRaw]}
+            >
+              {normalizeAIMarkdown(studyGuide)}
+            </ReactMarkdown>
           </div>
         </ScrollArea>
       )}

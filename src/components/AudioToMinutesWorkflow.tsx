@@ -10,6 +10,10 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ReactMarkdown from 'react-markdown';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypeRaw from 'rehype-raw';
+import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 import { Input } from '@/components/ui/input';
 
 interface AudioToMinutesWorkflowProps {
@@ -541,8 +545,11 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
           <CardContent>
             <ScrollArea className="h-[400px] w-full rounded-md border p-4">
               <div className="prose prose-sm max-w-none dark:prose-invert">
-                <ReactMarkdown>
-                  {minutes}
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm, remarkBreaks]}
+                  rehypePlugins={[rehypeRaw]}
+                >
+                  {normalizeAIMarkdown(minutes)}
                 </ReactMarkdown>
               </div>
             </ScrollArea>

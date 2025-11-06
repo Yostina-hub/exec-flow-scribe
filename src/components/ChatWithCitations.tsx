@@ -8,6 +8,10 @@ import { Loader2, Send, FileText, Copy, ThumbsUp, ThumbsDown } from "lucide-reac
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw";
+import { normalizeAIMarkdown } from "@/utils/markdownNormalizer";
 
 interface Message {
   role: "user" | "assistant";
@@ -145,7 +149,12 @@ export const ChatWithCitations = ({ sourceIds, onLanguageDetected }: ChatWithCit
                     <div className="space-y-4">
                       <ScrollArea className="max-h-[400px] pr-4">
                         <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
-                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm, remarkBreaks]}
+                            rehypePlugins={[rehypeRaw]}
+                          >
+                            {normalizeAIMarkdown(msg.content)}
+                          </ReactMarkdown>
                         </div>
                       </ScrollArea>
                       
