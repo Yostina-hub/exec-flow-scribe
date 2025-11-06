@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -32,8 +32,20 @@ export const ViewMinutesDialog = ({
   const [minutes, setMinutes] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
+  const [showFull, setShowFull] = useState(false);
+  const deferredMinutes = useDeferredValue(minutes);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const tooLarge = deferredMinutes.length > 60000;
+  const hasHtml = useMemo(() => /<\/?[a-z][\s\S]*>/i.test(deferredMinutes), [deferredMinutes]);
+  const displayMinutes = useMemo(() => {
+    if (!tooLarge || showFull) return deferredMinutes;
+    return (
+      deferredMinutes.slice(0, 20000) +
+      "\n\n> Note: Preview truncated for performance. Click 'Render full document' to load all content."
+    );
+  }, [deferredMinutes, tooLarge, showFull]);
 
   useEffect(() => {
     if (open && meetingId) {
@@ -205,6 +217,13 @@ export const ViewMinutesDialog = ({
               </Button>
             </div>
 
+            {tooLarge && !showFull && (
+              <div className="mt-3 rounded-md border border-border bg-muted/40 p-3 text-sm flex items-center justify-between">
+                <span>Large document detected. Rendering a quick preview for performance.</span>
+                <Button variant="secondary" size="sm" onClick={() => setShowFull(true)}>Render full document</Button>
+              </div>
+            )}
+
             <div className="h-[70vh] w-full overflow-auto pr-4 pb-8">
               <div className="prose prose-sm dark:prose-invert max-w-none
                 prose-headings:text-primary prose-headings:font-bold
@@ -225,7 +244,7 @@ export const ViewMinutesDialog = ({
                 whitespace-pre-wrap break-words">
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm, remarkBreaks]}
-                  rehypePlugins={[rehypeRaw]}
+                  rehypePlugins={hasHtml ? [rehypeRaw] : []}
                   components={{
                     p: ({node, ...props}) => <p className="my-3 leading-7" {...props} />,
                     h1: ({node, ...props}) => <h1 className="scroll-m-20 first:mt-0" {...props} />,
@@ -238,7 +257,7 @@ export const ViewMinutesDialog = ({
                     )
                   }}
                 >
-                  {normalizeAIMarkdown(minutes)}
+                  {displayMinutes}
                 </ReactMarkdown>
               </div>
             </div>
