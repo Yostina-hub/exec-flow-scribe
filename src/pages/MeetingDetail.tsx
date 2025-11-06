@@ -873,6 +873,23 @@ const MeetingDetail = () => {
           </CardContent>
         </Card>
 
+        {/* AI Intelligence Deck - surfaced to the top for immediate visibility */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <NeuralCommandCenter
+            meetingId={meetingId}
+            meetingPhase={meetingPhase}
+            onActionSuggestion={(action) => {
+              toast({ title: '🚀 AI Suggestion', description: `Executing: ${action}` });
+            }}
+          />
+          <PredictiveActionMatrix
+            meetingId={meetingId}
+            onAcceptAction={(action) => {
+              toast({ title: '✨ Action Accepted', description: `Creating: ${action.title}` });
+            }}
+          />
+        </div>
+
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Transcription & Agenda */}
