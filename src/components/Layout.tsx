@@ -181,7 +181,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
           </header>
 
-          <main className={`flex-1 p-4 lg:p-8 animate-fade-in ${isEthioTelecom ? 'mt-0' : ''}`}>
+          <main className={`flex-1 p-4 lg:p-8 animate-fade-in ${isEthioTelecom ? 'pt-20 sm:pt-24' : ''}`}>
             <div className="mx-auto max-w-[1600px]">
               {children}
             </div>

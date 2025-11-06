@@ -5,7 +5,6 @@ import { CEOBriefing } from "@/components/CEOBriefing";
 import { GuestAccessStatus } from "@/components/GuestAccessStatus";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import GuestDashboard from "./GuestDashboard";
-import { UnifiedMeetingHub } from "@/components/UnifiedMeetingHub";
 import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
@@ -327,9 +326,6 @@ export default function Index() {
 
         {/* Guest Access Status */}
         <GuestAccessStatus />
-
-        {/* Unified Meeting Hub - Revolutionary Multi-device Access */}
-        <UnifiedMeetingHub />
 
         {/* Executive Dashboard Component */}
         <ExecutiveDashboard
