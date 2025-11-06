@@ -29,27 +29,36 @@ const normalizeMinutes = (raw: string): string => {
   const out: string[] = [];
   
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
+    const line = lines[i];
+    const trimmed = line.trim();
     
-    // Skip lines that are just separator patterns
-    if (/^[:\-=\s|]+$/.test(line) && line.length > 10) {
+    // Skip lines that are ONLY separator characters (colons, dashes, pipes, spaces)
+    // but NOT actual table rows with content
+    if (/^[\s|]*[:=\-]+[\s|:=\-]*$/.test(trimmed) && trimmed.length > 5) {
       continue;
     }
     
-    out.push(lines[i]);
+    // Check if this is a table header line (has pipes and content)
+    const isTableRow = /^\s*\|.*\|\s*$/.test(trimmed);
     
-    // If line looks like a table header, ensure proper separator exists
-    if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length) {
-      const next = lines[i + 1] || '';
-      const hasSep = /^\s*\|[\s\-:]+\|/.test(next);
+    if (isTableRow) {
+      out.push(line);
       
-      if (!hasSep) {
-        // Count columns
-        const cols = line.split('|').filter((c) => c.trim().length > 0).length;
-        if (cols > 0) {
-          out.push('|' + Array(cols).fill('---').join('|') + '|');
+      // Check if next line is a proper separator
+      if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        const hasProperSeparator = /^\s*\|[\s\-:]+\|\s*$/.test(nextLine) && nextLine.split('|').length > 2;
+        
+        // If no proper separator, add one
+        if (!hasProperSeparator) {
+          const cols = trimmed.split('|').filter((c) => c.trim().length > 0).length;
+          if (cols > 0) {
+            out.push('| ' + Array(cols).fill('---').join(' | ') + ' |');
+          }
         }
       }
+    } else {
+      out.push(line);
     }
   }
   
