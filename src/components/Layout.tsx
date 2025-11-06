@@ -3,6 +3,7 @@ import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, 
 import { QuickSearch } from "@/components/QuickSearch";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ActiveRecordingIndicator } from "@/components/ActiveRecordingIndicator";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
@@ -152,6 +153,7 @@ export const Layout = ({ children }: LayoutProps) => {
               <SidebarTrigger className="hover:bg-accent/50 transition-colors" />
               <div className="flex-1" />
               <div className="flex items-center gap-2 lg:gap-3">
+                <ThemeSwitcher />
                 <NotificationBell />
                 <QuickSearch />
               </div>

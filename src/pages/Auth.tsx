@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
 import { useIsGuest } from "@/hooks/useIsGuest";
+import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -126,6 +127,11 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+      {/* Theme Switcher - Top Right */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeSwitcher />
+      </div>
+      
       {/* Enhanced Animated Background - Executive Grade */}
       <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-600/20 via-cyan-500/15 to-emerald-500/10 rounded-full blur-3xl animate-pulse" />
