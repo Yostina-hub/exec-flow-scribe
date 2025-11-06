@@ -946,20 +946,20 @@ const MeetingDetail = () => {
               onValueChange={(value) => setActiveTab(value)}
             >
               <div className="w-full overflow-x-auto pb-2">
-                <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
+                <TabsList className="inline-flex w-auto min-w-full h-auto p-1.5 gap-2">
                 {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                  <TabsTrigger value="video">
+                  <TabsTrigger value="video" className="font-bold text-base px-6 py-3">
                     {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="participants">Participants</TabsTrigger>
-                <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
-                <TabsTrigger value="agenda">Agenda</TabsTrigger>
-                <TabsTrigger value="decisions">Decisions</TabsTrigger>
-                <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="signatures">Audio to Minutes</TabsTrigger>
-                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="participants" className="font-bold text-base px-6 py-3">Participants</TabsTrigger>
+                <TabsTrigger value="transcription" className="font-bold text-base px-6 py-3">Live Transcription</TabsTrigger>
+                <TabsTrigger value="agenda" className="font-bold text-base px-6 py-3">Agenda</TabsTrigger>
+                <TabsTrigger value="decisions" className="font-bold text-base px-6 py-3">Decisions</TabsTrigger>
+                <TabsTrigger value="collaboration" className="font-bold text-base px-6 py-3">Collaboration</TabsTrigger>
+                <TabsTrigger value="documents" className="font-bold text-base px-6 py-3">Documents</TabsTrigger>
+                <TabsTrigger value="signatures" className="font-bold text-base px-6 py-3">Audio to Minutes</TabsTrigger>
+                <TabsTrigger value="chat" className="font-bold text-base px-6 py-3">Chat</TabsTrigger>
               </TabsList>
               </div>
 
