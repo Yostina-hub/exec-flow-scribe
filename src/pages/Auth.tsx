@@ -219,7 +219,7 @@ const Auth = () => {
                     <p className="text-sm lg:text-base text-emerald-600 font-bold tracking-wide">Executive Edition</p>
                   </div>
                 </div>
-                <CardDescription className="text-base lg:text-lg text-slate-800 font-semibold text-center lg:text-left">
+                <CardDescription className="text-base lg:text-lg text-gray-900 font-bold text-center lg:text-left">
                   Secure access to your organization's intelligence platform
                 </CardDescription>
               </CardHeader>
@@ -233,7 +233,7 @@ const Auth = () => {
                   <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="email" className="text-sm lg:text-base text-slate-900 font-semibold">Email</Label>
+                        <Label htmlFor="email" className="text-sm lg:text-base text-gray-900 font-bold">Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -245,7 +245,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="password" className="text-sm lg:text-base text-slate-900 font-semibold">Password</Label>
+                        <Label htmlFor="password" className="text-sm lg:text-base text-gray-900 font-bold">Password</Label>
                         <Input
                           id="password"
                           type="password"
@@ -269,7 +269,7 @@ const Auth = () => {
                   <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="fullname" className="text-sm lg:text-base text-slate-900 font-semibold">Full Name</Label>
+                        <Label htmlFor="fullname" className="text-sm lg:text-base text-gray-900 font-bold">Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -281,7 +281,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-slate-900 font-semibold">Title</Label>
+                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-gray-900 font-bold">Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
@@ -292,7 +292,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-slate-900 font-semibold">Email</Label>
+                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-gray-900 font-bold">Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -304,7 +304,7 @@ const Auth = () => {
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-slate-900 font-semibold">Password</Label>
+                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-gray-900 font-bold">Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
