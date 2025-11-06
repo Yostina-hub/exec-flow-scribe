@@ -862,21 +862,10 @@ const MeetingDetail = () => {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Transcription & Agenda */}
           <div className="lg:col-span-2 space-y-6">
-            <Tabs defaultValue={(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') ? "video" : "transcription"} className="w-full">
+            <Tabs defaultValue="transcription" className="w-full">
               <div className="w-full overflow-x-auto pb-2">
                 <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
-                {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                  <TabsTrigger value="video">
-                    {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
-                  </TabsTrigger>
-                )}
-                <TabsTrigger value="participants">Participants</TabsTrigger>
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
-                <TabsTrigger value="agenda">Agenda</TabsTrigger>
-                <TabsTrigger value="decisions">Decisions</TabsTrigger>
-                <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="signatures">Audio to Minutes</TabsTrigger>
               </TabsList>
               </div>
 
@@ -1133,7 +1122,7 @@ const MeetingDetail = () => {
           </div>
 
           {/* Sidebar - Revolutionary AI Intelligence */}
-          <div className="space-y-6">            
+          <div className="space-y-6 mt-8">            
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
