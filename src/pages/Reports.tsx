@@ -20,6 +20,10 @@ import {
   Users,
   CheckCircle2,
   BarChart3,
+  Share2,
+  Eye,
+  Settings,
+  Zap,
 } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
@@ -27,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Separator } from "@/components/ui/separator";
 import { AnalyticsDashboard } from "@/components/reports/AnalyticsDashboard";
+import { Badge } from "@/components/ui/badge";
 
 const reportTypes = [
   {
@@ -34,6 +39,7 @@ const reportTypes = [
     title: "Meeting Summary Report",
     description: "Comprehensive overview of all meetings with attendance and outcomes",
     icon: FileText,
+    badge: "Popular",
     metrics: [
       { label: "Total Meetings", value: "118" },
       { label: "Total Hours", value: "177" },
@@ -56,6 +62,7 @@ const reportTypes = [
     title: "Attendance Report",
     description: "Executive participation rates and meeting engagement metrics",
     icon: Users,
+    badge: "New",
     metrics: [
       { label: "Avg. Attendance", value: "7.5" },
       { label: "Attendance Rate", value: "94%" },
@@ -241,17 +248,22 @@ const Reports = () => {
 
           <TabsContent value="quick" className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
-              {reportTypes.map((report) => (
-                <Card key={report.id} className="hover:shadow-md transition-all duration-300">
+              {reportTypes.map((report, index) => (
+                <Card key={report.id} className="group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border-2 hover:border-primary/50 animate-fade-in" style={{ animationDelay: `${index * 0.1}s` }}>
                   <CardHeader>
                     <div className="flex items-start justify-between gap-4">
-                      <div className="flex gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <report.icon className="h-5 w-5 text-primary" />
+                      <div className="flex gap-3 flex-1">
+                        <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                          <report.icon className="h-6 w-6 text-primary-foreground" />
                         </div>
-                        <div>
-                          <CardTitle className="text-lg">{report.title}</CardTitle>
-                          <CardDescription className="mt-1">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CardTitle className="text-lg group-hover:text-primary transition-colors">{report.title}</CardTitle>
+                            {report.badge && (
+                              <Badge variant="secondary" className="text-xs">{report.badge}</Badge>
+                            )}
+                          </div>
+                          <CardDescription className="text-sm">
                             {report.description}
                           </CardDescription>
                         </div>
@@ -261,8 +273,8 @@ const Reports = () => {
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-3 gap-4 text-center">
                       {report.metrics.map((metric, index) => (
-                        <div key={index}>
-                          <p className="text-2xl font-bold">{metric.value}</p>
+                        <div key={index} className="p-3 rounded-lg bg-muted/50 hover:bg-muted transition-colors">
+                          <p className="text-2xl font-bold text-primary">{metric.value}</p>
                           <p className="text-xs text-muted-foreground mt-1">
                             {metric.label}
                           </p>
@@ -270,13 +282,21 @@ const Reports = () => {
                       ))}
                     </div>
                     <Separator />
-                    <Button
-                      className="w-full gap-2"
-                      onClick={() => handleExport(report.title)}
-                    >
-                      <Download className="h-4 w-4" />
-                      Generate Report
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1 gap-2"
+                        onClick={() => handleExport(report.title)}
+                      >
+                        <Download className="h-4 w-4" />
+                        Generate
+                      </Button>
+                      <Button variant="outline" size="icon">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="outline" size="icon">
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}
