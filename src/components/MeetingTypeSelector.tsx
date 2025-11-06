@@ -3,8 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface MeetingTypeSelectorProps {
-  value: "video_conference" | "virtual_room" | "standard";
-  onChange: (type: "video_conference" | "virtual_room" | "standard") => void;
+  value: "video_conference" | "standard";
+  onChange: (type: "video_conference" | "standard") => void;
 }
 
 export const MeetingTypeSelector = ({ value, onChange }: MeetingTypeSelectorProps) => {
@@ -19,15 +19,6 @@ export const MeetingTypeSelector = ({ value, onChange }: MeetingTypeSelectorProp
       borderColor: "border-blue-500/50",
     },
     {
-      id: "virtual_room" as const,
-      title: "Virtual 3D Room",
-      description: "Immersive 3D meeting experience",
-      icon: Globe,
-      color: "text-purple-500",
-      bgColor: "bg-purple-500/10 hover:bg-purple-500/20",
-      borderColor: "border-purple-500/50",
-    },
-    {
       id: "standard" as const,
       title: "Standard Meeting",
       description: "In-person or async meeting page",
@@ -39,7 +30,7 @@ export const MeetingTypeSelector = ({ value, onChange }: MeetingTypeSelectorProp
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {types.map((type) => {
         const Icon = type.icon;
         const isSelected = value === type.id;
