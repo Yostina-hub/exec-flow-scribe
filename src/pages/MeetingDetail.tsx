@@ -80,13 +80,10 @@ import { LivePolling } from "@/components/LivePolling";
 import { CollaborativeNotes } from "@/components/CollaborativeNotes";
 import { MeetingBookmarks } from "@/components/MeetingBookmarks";
 import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
-import { NeuralCommandCenter } from "@/components/NeuralCommandCenter";
 import { SpatialPresenceMap } from "@/components/SpatialPresenceMap";
 import { TimeTravelDecisionTracker } from "@/components/TimeTravelDecisionTracker";
-import { PredictiveActionMatrix } from "@/components/PredictiveActionMatrix";
 import { MeetingEnergyTracker } from "@/components/MeetingEnergyTracker";
 import { LiveKnowledgeGraph } from "@/components/LiveKnowledgeGraph";
-import { AICoachPanel } from "@/components/AICoachPanel";
 import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
 import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
 import { useState, useEffect, useRef } from "react";
@@ -867,23 +864,6 @@ const MeetingDetail = () => {
           </CardContent>
         </Card>
 
-        {/* AI Intelligence Deck - surfaced to the top for immediate visibility */}
-        <div className="grid gap-6 md:grid-cols-2">
-          <NeuralCommandCenter
-            meetingId={meetingId}
-            meetingPhase={meetingPhase}
-            onActionSuggestion={(action) => {
-              toast({ title: '🚀 AI Suggestion', description: `Executing: ${action}` });
-            }}
-          />
-          <PredictiveActionMatrix
-            meetingId={meetingId}
-            onAcceptAction={(action) => {
-              toast({ title: '✨ Action Accepted', description: `Creating: ${action.title}` });
-            }}
-          />
-        </div>
-
         {/* Main Content */}
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Transcription & Agenda */}
@@ -1169,23 +1149,8 @@ const MeetingDetail = () => {
             {/* Meeting Energy Tracker */}
             <MeetingEnergyTracker meetingId={meetingId} />
             
-            {/* AI Coach Panel */}
-            <AICoachPanel meetingId={meetingId} />
-            
             {/* Live Knowledge Graph */}
             <LiveKnowledgeGraph meetingId={meetingId} />
-            
-            {/* Neural Command Center - AI Brain */}
-            <NeuralCommandCenter
-              meetingId={meetingId}
-              meetingPhase={meetingPhase}
-              onActionSuggestion={(action) => {
-                toast({
-                  title: '🚀 AI Suggestion',
-                  description: `Executing: ${action}`,
-                });
-              }}
-            />
 
             {/* Spatial Presence Map */}
             <SpatialPresenceMap
@@ -1245,17 +1210,6 @@ const MeetingDetail = () => {
               ]}
             />
 
-            {/* Predictive Action Matrix */}
-            <PredictiveActionMatrix
-              meetingId={meetingId}
-              onAcceptAction={(action) => {
-                toast({
-                  title: '✨ Action Accepted',
-                  description: `Creating: ${action.title}`,
-                });
-              }}
-            />
-            
             <ContextPanel meetingId={meetingId} />
             <Card>
               <CardHeader>
