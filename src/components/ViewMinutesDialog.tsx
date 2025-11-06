@@ -37,7 +37,7 @@ export const ViewMinutesDialog = ({
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const tooLarge = deferredMinutes.length > 60000;
+  const tooLarge = deferredMinutes.length > 200000; // raise threshold to avoid truncating typical minutes
   const hasHtml = useMemo(() => /<\/?[a-z][\s\S]*>/i.test(deferredMinutes), [deferredMinutes]);
   const displayMinutes = useMemo(() => {
     if (!tooLarge || showFull) return deferredMinutes;
