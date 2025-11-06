@@ -15,6 +15,7 @@ interface BrowserSpeechRecognitionProps {
   onRecordingStart?: () => void;
   onRecordingStop?: (durationSeconds?: number) => void;
   onDurationChange?: (seconds: number) => void;
+  selectedLanguage?: string;
 }
 
 export const BrowserSpeechRecognition = ({ 
@@ -23,7 +24,8 @@ export const BrowserSpeechRecognition = ({
   isPaused = false,
   onRecordingStart,
   onRecordingStop,
-  onDurationChange
+  onDurationChange,
+  selectedLanguage = 'am-ET'
 }: BrowserSpeechRecognitionProps) => {
   const {
     transcript,
@@ -36,7 +38,6 @@ export const BrowserSpeechRecognition = ({
     setLanguage,
   } = useSpeechRecognition();
 
-  const [selectedLanguage, setSelectedLanguage] = useState('am-ET');
   const [recordingDuration, setRecordingDuration] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
@@ -59,6 +60,11 @@ export const BrowserSpeechRecognition = ({
   // Track previous external recording and pause states
   const prevExternalRef = useRef(externalIsRecording);
   const prevPausedRef = useRef(isPaused);
+
+  // Update language when prop changes
+  useEffect(() => {
+    setLanguage(selectedLanguage);
+  }, [selectedLanguage, setLanguage]);
 
   // Get current user info and fetch saved audios
   useEffect(() => {
@@ -356,42 +362,7 @@ export const BrowserSpeechRecognition = ({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Languages className="w-4 h-4" />
-          Language
-        </label>
-        <Select
-          value={selectedLanguage}
-          onValueChange={(value) => {
-            setSelectedLanguage(value);
-            setLanguage(value);
-          }}
-          disabled={isListening}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-            <SelectItem value="en-US">English (US)</SelectItem>
-            <SelectItem value="en-GB">English (UK)</SelectItem>
-            <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-            <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-            <SelectItem value="fr-FR">French (Français)</SelectItem>
-            <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-            <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-            <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-            <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-            <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-            <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-            <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-            <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-        <div className="flex flex-col items-center gap-6">
+      <div className="flex flex-col items-center gap-6">
           {externalIsRecording && !isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
