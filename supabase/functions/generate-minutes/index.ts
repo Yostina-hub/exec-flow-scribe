@@ -79,13 +79,13 @@ try {
       { data: actionItems }
     ] = await Promise.all([
       supabase.from("ai_provider_preferences").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("meetings").select("*, agenda_items(*, profiles(*))").eq("id", meetingId).single(),
+      supabase.from("meetings").select("*, agenda_items(*)").eq("id", meetingId).single(),
       supabase.from("transcriptions").select("*").eq("meeting_id", meetingId).order("timestamp", { ascending: true }),
       supabase.from("decisions").select("*").eq("meeting_id", meetingId),
       supabase.from("meeting_polls").select("*, poll_responses(*)").eq("meeting_id", meetingId).order("created_at", { ascending: true }),
       supabase.from("meeting_attendees").select("*, profiles(full_name, email)").eq("meeting_id", meetingId),
       supabase.from("meeting_notes").select("*, profiles(full_name)").eq("meeting_id", meetingId).order("created_at", { ascending: true }),
-      supabase.from("action_items").select("*, profiles!action_items_assigned_to_fkey(full_name), creator:profiles!action_items_created_by_fkey(full_name)").eq("meeting_id", meetingId)
+      supabase.from("action_items").select("*").eq("meeting_id", meetingId)
     ]);
 
     const provider = preference?.provider || "lovable_ai";
@@ -159,10 +159,10 @@ try {
 
     const agendaList = meeting.agenda_items
       ?.map((item: any, idx: number) => {
-        const presenter = item.profiles?.full_name || 'Not assigned';
+        const presenter = item.presenter_id || 'Not assigned';
         const duration = item.duration_minutes ? `${item.duration_minutes} min` : 'TBD';
         const status = item.status || 'pending';
-        return `${idx + 1}. ${item.title}\n   Presenter: ${presenter} | Duration: ${duration} | Status: ${status}\n   ${item.description || 'No description'}`;
+        return `${idx + 1}. ${item.title}\n   Presenter ID: ${presenter} | Duration: ${duration} | Status: ${status}\n   ${item.description || 'No description'}`;
       })
       .join("\n\n") || "";
 
@@ -192,13 +192,13 @@ try {
 
     // Format action items
     const actionItemsList = actionItems?.map((a: any, idx: number) => {
-      const assignee = a.profiles?.full_name || 'Unassigned';
-      const creator = a.creator?.full_name || 'Unknown';
+      const assignee = a.assigned_to || 'Unassigned';
+      const creator = a.created_by || 'Unknown';
       const due = a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date';
       const priority = a.priority || 'medium';
       const status = a.status || 'pending';
       const priorityEmoji = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢';
-      return `${idx + 1}. ${priorityEmoji} ${a.title}\n   ${a.description || 'No description'}\n   Assigned to: ${assignee} | Created by: ${creator}\n   Due: ${due} | Priority: ${priority} | Status: ${status}`;
+      return `${idx + 1}. ${priorityEmoji} ${a.title}\n   ${a.description || 'No description'}\n   Assigned to ID: ${assignee} | Created by ID: ${creator}\n   Due: ${due} | Priority: ${priority} | Status: ${status}`;
     }).join("\n\n") || "";
 
     // Format polls data
