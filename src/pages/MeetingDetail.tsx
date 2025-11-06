@@ -195,6 +195,7 @@ const MeetingDetail = () => {
   const [spatialView, setSpatialView] = useState(false);
   const [activeTab, setActiveTab] = useState('transcription');
   const [transcriptionLanguage, setTranscriptionLanguage] = useState('am-ET');
+  const hasRestoredRecordingRef = useRef(false);
   
   const meetingId = id || "demo-meeting-id";
   
@@ -307,7 +308,7 @@ const MeetingDetail = () => {
 
   // Restore active recording when returning to this page
   useEffect(() => {
-    if (!meetingId || !userId) return;
+    if (!meetingId || !userId || hasRestoredRecordingRef.current) return;
     
     const checkAndRestoreRecording = async () => {
       try {
@@ -336,6 +337,7 @@ const MeetingDetail = () => {
             // Auto-restart recording to resume audio capture
             if (!isRecording) {
               console.log('Restarting recording to resume audio capture');
+              hasRestoredRecordingRef.current = true;
               await startRecording();
               
               toast({
@@ -353,7 +355,7 @@ const MeetingDetail = () => {
     // Small delay to ensure meeting data is loaded
     const timer = setTimeout(checkAndRestoreRecording, 500);
     return () => clearTimeout(timer);
-  }, [meetingId, userId, meeting, isRecording, startRecording, toast]);
+  }, [meetingId, userId, meeting, startRecording, toast]);
 
   // Load recording state from localStorage on mount
   useEffect(() => {
@@ -498,7 +500,7 @@ const MeetingDetail = () => {
       const recordingKey = `meeting-recording-${meetingId}`;
       const savedRecording = localStorage.getItem(recordingKey);
       
-      if (!savedRecording) {
+      if (!savedRecording || !hasRestoredRecordingRef.current) {
         setRecordingSeconds(0);
         recordingStartTimeRef.current = Date.now();
         pausedDurationRef.current = 0;
@@ -511,6 +513,7 @@ const MeetingDetail = () => {
       wasRecordingRef.current = true;
     } else if (!isRecording) {
       wasRecordingRef.current = false;
+      hasRestoredRecordingRef.current = false; // Reset flag when recording stops
     }
   }, [isRecording, meetingId]);
 
