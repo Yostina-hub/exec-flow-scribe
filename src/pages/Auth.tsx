@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -20,6 +21,8 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { isGuest, loading: guestLoading } = useIsGuest();
+  const { theme } = useTheme();
+  const isEthioTelecom = theme === 'ethio-telecom';
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
@@ -126,14 +129,31 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className={`min-h-screen relative overflow-hidden ${isEthioTelecom ? 'bg-[#F4F4F4]' : 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'}`}>
+      {/* Ethio Telecom Header */}
+      {isEthioTelecom && (
+        <div className="fixed top-0 left-0 right-0 h-20 bg-[#8DC63F] z-40 flex items-center px-8">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
+              <div className="text-[#8DC63F] font-bold text-xl">ET</div>
+            </div>
+            <div>
+              <h1 className="text-white text-2xl font-bold">ethio telecom</h1>
+              <p className="text-white/90 text-xs">ኢትዮ ቴሌኮም</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Theme Switcher - Top Right */}
-      <div className="absolute top-4 right-4 z-50">
+      <div className={`absolute ${isEthioTelecom ? 'top-24' : 'top-4'} right-4 z-50`}>
         <ThemeSwitcher />
       </div>
       
-      {/* Enhanced Animated Background - Executive Grade */}
-      <div className="absolute inset-0">
+      {!isEthioTelecom && (
+        <>
+          {/* Enhanced Animated Background - Executive Grade */}
+          <div className="absolute inset-0">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-br from-blue-600/20 via-cyan-500/15 to-emerald-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gradient-to-br from-purple-600/15 via-pink-500/10 to-blue-500/15 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 left-1/2 w-80 h-80 bg-gradient-to-br from-cyan-500/10 to-sky-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }} />
@@ -159,59 +179,73 @@ const Auth = () => {
       </div>
 
       <div className="absolute inset-0 bg-gradient-to-r from-black/35 via-black/15 to-transparent hidden lg:block" />
+        </>
+      )}
 
-      <div className="relative z-10 min-h-screen flex items-center justify-center p-0 lg:p-4">
-        <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto">
-          {/* Hero Section - Executive Focus */}
-          <div className="text-white space-y-8 animate-fade-in hidden lg:block pr-12">
-            <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 backdrop-blur-xl border border-emerald-400/50 shadow-xl shadow-emerald-500/20">
-              <Sparkles className="h-5 w-5 text-emerald-300 animate-pulse" />
-              <span className="text-base font-bold text-white tracking-wide">Enterprise Meeting Intelligence</span>
-            </div>
+      <div className={`relative z-10 min-h-screen flex items-center justify-center ${isEthioTelecom ? 'pt-20 p-4' : 'p-0 lg:p-4'}`}>
+        <div className={`w-full ${isEthioTelecom ? 'max-w-md' : 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto'}`}>
+          {/* Hero Section - Executive Focus - Only for default theme */}
+          {!isEthioTelecom && (
+            <div className="text-white space-y-8 animate-fade-in hidden lg:block pr-12">
+              <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 backdrop-blur-xl border border-emerald-400/50 shadow-xl shadow-emerald-500/20">
+                <Sparkles className="h-5 w-5 text-emerald-300 animate-pulse" />
+                <span className="text-base font-bold text-white tracking-wide">Enterprise Meeting Intelligence</span>
+              </div>
 
-            <h1 className="text-7xl font-black leading-[1.1] font-['Space_Grotesk'] drop-shadow-2xl">
-              <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
-                Digital Meeting
-              </span>
-              <span className="block bg-gradient-to-r from-emerald-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mt-2">
-                Excellence
-              </span>
-            </h1>
+              <h1 className="text-7xl font-black leading-[1.1] font-['Space_Grotesk'] drop-shadow-2xl">
+                <span className="bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-transparent">
+                  Digital Meeting
+                </span>
+                <span className="block bg-gradient-to-r from-emerald-400 via-cyan-300 to-blue-400 bg-clip-text text-transparent mt-2">
+                  Excellence
+                </span>
+              </h1>
 
-            <p className="text-xl text-blue-100/90 leading-relaxed drop-shadow-lg font-medium max-w-xl">
-              Transform executive meetings with AI-powered intelligence. Real-time transcription, automated minutes, and actionable insights for organizational excellence.
-            </p>
+              <p className="text-xl text-blue-100/90 leading-relaxed drop-shadow-lg font-medium max-w-xl">
+                Transform executive meetings with AI-powered intelligence. Real-time transcription, automated minutes, and actionable insights for organizational excellence.
+              </p>
 
-            <div className="grid grid-cols-3 gap-6 pt-12">
-              {[
-                { icon: Zap, label: "Real-Time AI", desc: "Instant transcription & translation", color: "from-yellow-500 to-orange-500" },
-                { icon: Shield, label: "Enterprise Secure", desc: "Bank-grade encryption", color: "from-blue-500 to-cyan-500" },
-                { icon: TrendingUp, label: "Executive Analytics", desc: "Decision intelligence", color: "from-emerald-500 to-teal-500" },
-              ].map((feature, i) => (
-                <div 
-                  key={i} 
-                  className="group relative p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:-translate-y-1 cursor-pointer"
-                  style={{ animationDelay: `${i * 100}ms` }}
-                >
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                  <div className={`relative p-3 w-fit rounded-xl bg-gradient-to-br ${feature.color} shadow-lg group-hover:shadow-2xl transition-all duration-500 mb-4`}>
-                    <feature.icon className="h-6 w-6 text-white drop-shadow-lg" />
+              <div className="grid grid-cols-3 gap-6 pt-12">
+                {[
+                  { icon: Zap, label: "Real-Time AI", desc: "Instant transcription & translation", color: "from-yellow-500 to-orange-500" },
+                  { icon: Shield, label: "Enterprise Secure", desc: "Bank-grade encryption", color: "from-blue-500 to-cyan-500" },
+                  { icon: TrendingUp, label: "Executive Analytics", desc: "Decision intelligence", color: "from-emerald-500 to-teal-500" },
+                ].map((feature, i) => (
+                  <div 
+                    key={i} 
+                    className="group relative p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/10 transition-all duration-500 hover:scale-105 hover:-translate-y-1 cursor-pointer"
+                    style={{ animationDelay: `${i * 100}ms` }}
+                  >
+                    <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
+                    <div className={`relative p-3 w-fit rounded-xl bg-gradient-to-br ${feature.color} shadow-lg group-hover:shadow-2xl transition-all duration-500 mb-4`}>
+                      <feature.icon className="h-6 w-6 text-white drop-shadow-lg" />
+                    </div>
+                    <h3 className="relative font-bold text-lg mb-2 text-white drop-shadow-md">{feature.label}</h3>
+                    <p className="relative text-sm text-blue-100/80 font-medium leading-relaxed">{feature.desc}</p>
                   </div>
-                  <h3 className="relative font-bold text-lg mb-2 text-white drop-shadow-md">{feature.label}</h3>
-                  <p className="relative text-sm text-blue-100/80 font-medium leading-relaxed">{feature.desc}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Auth Card - Executive Edition */}
-          <div className="animate-scale-in w-full lg:w-auto h-full lg:h-auto">
-            <Card className="border-0 lg:border-2 lg:border-emerald-400/30 bg-slate-900/95 backdrop-blur-2xl shadow-none lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] lg:rounded-3xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center py-8 lg:py-0 relative overflow-hidden">
-              {/* Card Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+          {/* Auth Card */}
+          <div className={`${isEthioTelecom ? 'w-full' : 'animate-scale-in w-full lg:w-auto h-full lg:h-auto'}`}>
+            <Card className={`${isEthioTelecom 
+              ? 'border border-gray-200 bg-white shadow-md rounded-lg' 
+              : 'border-0 lg:border-2 lg:border-emerald-400/30 bg-slate-900/95 backdrop-blur-2xl shadow-none lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] lg:rounded-3xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center py-8 lg:py-0'
+            } relative overflow-hidden`}>
+              {!isEthioTelecom && (
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+              )}
               
-              <CardHeader className="space-y-4 px-4 sm:px-8 pt-8 lg:pt-8 pb-4 lg:pb-6 relative">
-                <div className="flex items-center justify-center lg:justify-start gap-3">
+              <CardHeader className={`space-y-4 ${isEthioTelecom ? 'px-8 pt-8 pb-4' : 'px-4 sm:px-8 pt-8 lg:pt-8 pb-4 lg:pb-6'} relative`}>
+                {isEthioTelecom ? (
+                  <CardTitle className="text-2xl font-semibold text-gray-700 text-center">
+                    User Login
+                  </CardTitle>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-center lg:justify-start gap-3">
                   <div className="relative">
                     <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl blur-xl opacity-50 animate-pulse" />
                     <div className="relative h-14 w-14 lg:h-16 lg:w-16 rounded-2xl bg-gradient-to-br from-emerald-500 via-cyan-500 to-blue-500 flex items-center justify-center shadow-2xl animate-glow">
@@ -228,18 +262,20 @@ const Auth = () => {
                 <CardDescription className="text-base lg:text-lg text-white font-bold text-center lg:text-left">
                   Secure access to your organization's intelligence platform
                 </CardDescription>
+                  </>
+                )}
               </CardHeader>
-              <CardContent className="px-4 sm:px-6 lg:px-6 pb-6 lg:pb-8">
+              <CardContent className={`${isEthioTelecom ? 'px-8 pb-8' : 'px-4 sm:px-6 lg:px-6 pb-6 lg:pb-8'}`}>
                 <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2 bg-slate-800 border border-slate-700 h-10 lg:h-auto">
-                    <TabsTrigger value="signin" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className="text-sm lg:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white">Sign Up</TabsTrigger>
+                  <TabsList className={`grid w-full grid-cols-2 ${isEthioTelecom ? 'bg-gray-100 border border-gray-200' : 'bg-slate-800 border border-slate-700'} h-10 lg:h-auto`}>
+                    <TabsTrigger value="signin" className={`text-sm lg:text-base ${isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}>Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className={`text-sm lg:text-base ${isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}>Sign Up</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="email" className="text-sm lg:text-base text-white font-semibold">Email</Label>
+                        <Label htmlFor="email" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -247,35 +283,42 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="password" className="text-sm lg:text-base text-white font-semibold">Password</Label>
+                        <Label htmlFor="password" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full h-11 lg:h-10 text-sm lg:text-base bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
+                        className={`w-full h-11 lg:h-10 text-sm lg:text-base font-semibold shadow-lg transition-all duration-300 ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F] text-white' : 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white hover:shadow-cyan-500/50 hover:scale-105'}`}
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Sign In
                       </Button>
+                      {isEthioTelecom && (
+                        <div className="text-center">
+                          <button type="button" className="text-red-500 text-sm font-medium hover:underline">
+                            Forgot Password?
+                          </button>
+                        </div>
+                      )}
                     </form>
                   </TabsContent>
 
                   <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
                     <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="fullname" className="text-sm lg:text-base text-white font-semibold">Full Name</Label>
+                        <Label htmlFor="fullname" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -283,22 +326,22 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="usertitle" className="text-sm lg:text-base text-white font-semibold">Title</Label>
+                        <Label htmlFor="usertitle" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-email" className="text-sm lg:text-base text-white font-semibold">Email</Label>
+                        <Label htmlFor="signup-email" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -306,23 +349,23 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-password" className="text-sm lg:text-base text-white font-semibold">Password</Label>
+                        <Label htmlFor="signup-password" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className="h-10 lg:h-10 text-sm lg:text-base bg-slate-800 border-slate-700 text-white placeholder:text-slate-400 focus:border-cyan-500 focus:ring-cyan-500/20"
+                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full h-11 lg:h-10 text-sm lg:text-base bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-cyan-500/50 transition-all duration-300 hover:scale-105"
+                        className={`w-full h-11 lg:h-10 text-sm lg:text-base font-semibold shadow-lg transition-all duration-300 ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F] text-white' : 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white hover:shadow-cyan-500/50 hover:scale-105'}`}
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -331,17 +374,17 @@ const Auth = () => {
                       
                       <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
-                          <span className="w-full border-t border-slate-700" />
+                          <span className={`w-full border-t ${isEthioTelecom ? 'border-gray-300' : 'border-slate-700'}`} />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                          <span className="bg-slate-900 px-2 text-slate-400">Or</span>
+                          <span className={`${isEthioTelecom ? 'bg-white text-gray-500' : 'bg-slate-900 text-slate-400'} px-2`}>Or</span>
                         </div>
                       </div>
 
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full h-11 lg:h-10 text-sm lg:text-base border-2 border-slate-700 text-white hover:bg-slate-800"
+                        className={`w-full h-11 lg:h-10 text-sm lg:text-base border-2 ${isEthioTelecom ? 'border-gray-300 text-gray-700 hover:bg-gray-50' : 'border-slate-700 text-white hover:bg-slate-800'}`}
                         onClick={() => navigate('/guest-signup')}
                       >
                         Request Guest Access
