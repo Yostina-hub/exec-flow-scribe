@@ -154,21 +154,21 @@ export const Layout = ({ children }: LayoutProps) => {
   
   return (
     <SidebarProvider>
+      {/* Ethio Telecom Header - Fixed at very top */}
+      {isEthioTelecom && (
+        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md">
+          <img 
+            src={ethioTelecomLogo} 
+            alt="Ethio Telecom" 
+            className="w-full h-full object-cover object-left"
+          />
+        </div>
+      )}
+      
       <div className={`min-h-screen flex w-full ${isEthioTelecom ? 'bg-[#F4F4F4] pt-16 sm:pt-20' : 'bg-gradient-to-br from-background via-muted/5 to-background'}`}>
         <AppSidebar />
         
         <div className="flex-1 flex flex-col w-full">
-          {/* Ethio Telecom Header - Matches Login Page */}
-          {isEthioTelecom && (
-            <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md">
-              <img 
-                src={ethioTelecomLogo} 
-                alt="Ethio Telecom" 
-                className="w-full h-full object-cover object-left"
-              />
-            </div>
-          )}
-
           <header className={`sticky z-40 border-b ${isEthioTelecom ? 'top-0 border-gray-200 bg-white shadow-sm' : 'top-0 border-border/50 bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60 shadow-sm'}`}>
             <div className="flex h-16 lg:h-16 items-center gap-3 lg:gap-4 px-4 lg:px-6">
               <SidebarTrigger className={`transition-colors ${isEthioTelecom ? 'hover:bg-gray-100' : 'hover:bg-accent/50'}`} />
