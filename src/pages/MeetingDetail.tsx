@@ -84,6 +84,11 @@ import { NeuralCommandCenter } from "@/components/NeuralCommandCenter";
 import { SpatialPresenceMap } from "@/components/SpatialPresenceMap";
 import { TimeTravelDecisionTracker } from "@/components/TimeTravelDecisionTracker";
 import { PredictiveActionMatrix } from "@/components/PredictiveActionMatrix";
+import { MeetingEnergyTracker } from "@/components/MeetingEnergyTracker";
+import { LiveKnowledgeGraph } from "@/components/LiveKnowledgeGraph";
+import { AICoachPanel } from "@/components/AICoachPanel";
+import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
+import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -101,9 +106,6 @@ import { TranscriptionProviderToggle } from "@/components/TranscriptionProviderT
 import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
 import { useRealtimeAgenda } from "@/hooks/useRealtimeAgenda";
 import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
-import { MeetingEnergyTracker } from "@/components/MeetingEnergyTracker";
-import { LiveKnowledgeGraph } from "@/components/LiveKnowledgeGraph";
-import { AICoachPanel } from "@/components/AICoachPanel";
 
 interface AgendaItem {
   id: string;
@@ -1158,6 +1160,12 @@ const MeetingDetail = () => {
 
           {/* Sidebar - Revolutionary AI Intelligence */}
           <div className="space-y-6">
+            {/* AI-Powered Summary & Search */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <MeetingKeyPointsSummary meetingId={meetingId} />
+              <MeetingKeywordSearch meetingId={meetingId} />
+            </div>
+            
             {/* Meeting Energy Tracker */}
             <MeetingEnergyTracker meetingId={meetingId} />
             
