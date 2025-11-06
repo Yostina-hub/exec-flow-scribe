@@ -200,7 +200,17 @@ export const ViewMinutesDialog = ({
             </div>
 
             <ScrollArea className="h-[500px] pr-4">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+              <div className="prose prose-sm dark:prose-invert max-w-none
+                prose-headings:text-primary prose-headings:font-bold
+                prose-h1:text-3xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-primary/20 prose-h1:pb-3
+                prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-primary/90
+                prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-primary/80
+                prose-strong:text-accent prose-strong:font-semibold
+                prose-ul:my-4 prose-li:my-2
+                prose-p:leading-relaxed prose-p:my-3
+                prose-a:text-primary prose-a:underline
+                [&>ul>li]:before:text-primary [&>ul>li]:before:font-bold
+                [&>ol>li]:marker:text-primary [&>ol>li]:marker:font-bold">
                 <ReactMarkdown>{minutes}</ReactMarkdown>
               </div>
             </ScrollArea>
