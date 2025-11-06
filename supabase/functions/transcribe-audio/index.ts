@@ -296,15 +296,25 @@ serve(async (req) => {
           formData.append("response_format", "verbose_json");
           
           // Special handling for Amharic
-          if (language === 'am') {
+          // Convert BCP-47 format (am-ET) to ISO-639-1 format (am) for OpenAI
+          const convertToISO639 = (lang: string): string => {
+            if (!lang || lang === 'auto') return lang;
+            // Extract just the language code (first 2-3 characters before hyphen)
+            return lang.split('-')[0].toLowerCase();
+          };
+          
+          const iso639Lang = convertToISO639(language || '');
+          
+          if (iso639Lang === 'am') {
             console.log('Amharic language specified - forcing Ge\'ez script');
             formData.append("language", "am");
             formData.append(
               "prompt",
               "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters for Amharic words."
             );
-          } else if (language && language !== "auto") {
-            formData.append("language", language);
+          } else if (iso639Lang && iso639Lang !== "auto") {
+            console.log(`Setting OpenAI language to ISO-639-1: ${iso639Lang} (from ${language})`);
+            formData.append("language", iso639Lang);
             formData.append(
               "prompt",
               "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
