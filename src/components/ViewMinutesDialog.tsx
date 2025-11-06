@@ -201,7 +201,7 @@ export const ViewMinutesDialog = ({
               </Button>
             </div>
 
-            <ScrollArea className="h-[600px] w-full pr-4">
+            <div className="h-[70vh] w-full overflow-auto pr-4">
               <div className="prose prose-sm dark:prose-invert max-w-none
                 prose-headings:text-primary prose-headings:font-bold
                 prose-h1:text-3xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-primary/20 prose-h1:pb-3
@@ -229,7 +229,7 @@ export const ViewMinutesDialog = ({
                   {minutes}
                 </ReactMarkdown>
               </div>
-            </ScrollArea>
+            </div>
           </>
         )}
       </DialogContent>
