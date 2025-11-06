@@ -27,21 +27,32 @@ const normalizeMinutes = (raw: string): string => {
 
   const lines = text.split('\n');
   const out: string[] = [];
+  
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    out.push(line);
-    // If line looks like a table header but lacks a separator, inject one
-    if (/^\s*\|.*\|\s*$/.test(line)) {
+    const line = lines[i].trim();
+    
+    // Skip lines that are just separator patterns
+    if (/^[:\-=\s|]+$/.test(line) && line.length > 10) {
+      continue;
+    }
+    
+    out.push(lines[i]);
+    
+    // If line looks like a table header, ensure proper separator exists
+    if (/^\s*\|.*\|\s*$/.test(line) && i + 1 < lines.length) {
       const next = lines[i + 1] || '';
-      const hasSep = /^\s*\|\s*[-:]+/.test(next);
+      const hasSep = /^\s*\|[\s\-:]+\|/.test(next);
+      
       if (!hasSep) {
+        // Count columns
         const cols = line.split('|').filter((c) => c.trim().length > 0).length;
         if (cols > 0) {
-          out.push('|' + Array(cols).fill(' --- ').join('|') + '|');
+          out.push('|' + Array(cols).fill('---').join('|') + '|');
         }
       }
     }
   }
+  
   return out.join('\n');
 };
 
@@ -232,30 +243,37 @@ export const ViewMinutesDialog = ({
               </Button>
             </div>
 
-            <div className="h-[70vh] w-full overflow-auto pr-4">
+            <div className="h-[70vh] w-full overflow-auto pr-4 pb-8">
               <div className="prose prose-sm dark:prose-invert max-w-none
                 prose-headings:text-primary prose-headings:font-bold
-                prose-h1:text-3xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-primary/20 prose-h1:pb-3
-                prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-primary/90
+                prose-h1:text-3xl prose-h1:mb-6 prose-h1:mt-8 prose-h1:border-b-2 prose-h1:border-primary/30 prose-h1:pb-3
+                prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-primary/90 prose-h2:border-l-4 prose-h2:border-primary/40 prose-h2:pl-4
                 prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-primary/80
                 prose-strong:text-accent prose-strong:font-semibold
-                prose-ul:my-4 prose-li:my-2
-                prose-p:leading-relaxed prose-p:my-3
-                prose-a:text-primary prose-a:underline
-                prose-table:w-full prose-table:border-collapse
-                prose-td:border prose-td:border-border prose-td:p-2
-                prose-th:border prose-th:border-border prose-th:p-2 prose-th:bg-muted
-                [&>ul>li]:before:text-primary [&>ul>li]:before:font-bold
+                prose-ul:my-4 prose-li:my-2 prose-li:leading-relaxed
+                prose-p:leading-relaxed prose-p:my-3 prose-p:text-justify
+                prose-a:text-primary prose-a:underline prose-a:font-medium
+                prose-table:w-full prose-table:border-2 prose-table:border-primary/20 prose-table:my-6 prose-table:shadow-md
+                prose-thead:bg-primary/5
+                prose-tr:border-b prose-tr:border-border
+                prose-td:border prose-td:border-border/50 prose-td:p-3 prose-td:align-top
+                prose-th:border prose-th:border-border prose-th:p-3 prose-th:bg-primary/10 prose-th:font-bold prose-th:text-primary
+                [&>ul>li]:before:text-primary [&>ul>li]:before:font-bold [&>ul>li]:before:text-lg
                 [&>ol>li]:marker:text-primary [&>ol>li]:marker:font-bold
                 whitespace-pre-wrap break-words">
                 <ReactMarkdown 
                   remarkPlugins={[remarkGfm, remarkBreaks]}
                   rehypePlugins={[rehypeRaw]}
                   components={{
-                    p: ({node, ...props}) => <p className="my-2" {...props} />,
-                    h1: ({node, ...props}) => <h1 className="scroll-m-20" {...props} />,
+                    p: ({node, ...props}) => <p className="my-3 leading-7" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="scroll-m-20 first:mt-0" {...props} />,
                     h2: ({node, ...props}) => <h2 className="scroll-m-20" {...props} />,
-                    h3: ({node, ...props}) => <h3 className="scroll-m-20" {...props} />
+                    h3: ({node, ...props}) => <h3 className="scroll-m-20" {...props} />,
+                    table: ({node, ...props}) => (
+                      <div className="overflow-x-auto my-6">
+                        <table className="min-w-full" {...props} />
+                      </div>
+                    )
                   }}
                 >
                   {minutes}
