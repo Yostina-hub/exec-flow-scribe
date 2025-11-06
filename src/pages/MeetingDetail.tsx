@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,7 +36,6 @@ import {
   FileSignature,
   Settings,
   MessageSquare,
-  Languages,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -186,15 +184,11 @@ const MeetingDetail = () => {
   const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const recordingStartTimeRef = useRef<number | null>(null);
-  const pausedDurationRef = useRef<number>(0);
-  const pauseStartTimeRef = useRef<number | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [aiInsights, setAiInsights] = useState<any[]>([]);
   const [meetingPhase, setMeetingPhase] = useState<'pre' | 'active' | 'post'>('pre');
   const [spatialView, setSpatialView] = useState(false);
   const [activeTab, setActiveTab] = useState('transcription');
-  const [transcriptionLanguage, setTranscriptionLanguage] = useState('am-ET');
   
   const meetingId = id || "demo-meeting-id";
   
@@ -298,86 +292,35 @@ const MeetingDetail = () => {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
       }
-      // Reset recording time tracking
-      recordingStartTimeRef.current = null;
-      pausedDurationRef.current = 0;
-      pauseStartTimeRef.current = null;
     };
   }, []);
 
-  // Track recording time with timestamp-based approach (works even when tab is inactive)
+  // Track recording time
   useEffect(() => {
     if (isRecording && !isPaused) {
-      // Start recording - set start time if not already set
-      if (recordingStartTimeRef.current === null) {
-        recordingStartTimeRef.current = Date.now();
-        pausedDurationRef.current = 0;
-        console.log('Recording started at:', new Date(recordingStartTimeRef.current).toISOString());
-      }
-      
-      // If resuming from pause, calculate pause duration
-      if (pauseStartTimeRef.current !== null) {
-        const pauseDuration = Date.now() - pauseStartTimeRef.current;
-        pausedDurationRef.current += pauseDuration;
-        pauseStartTimeRef.current = null;
-        console.log('Resumed - total pause duration:', pausedDurationRef.current / 1000, 'seconds');
-      }
-      
-      // Update timer every 100ms for smooth display
-      const updateTimer = () => {
-        if (recordingStartTimeRef.current !== null) {
-          const elapsed = Date.now() - recordingStartTimeRef.current - pausedDurationRef.current;
-          const seconds = Math.floor(elapsed / 1000);
-          setRecordingSeconds(seconds);
-        }
-      };
-      
-      updateTimer(); // Initial update
-      recordingTimerRef.current = setInterval(updateTimer, 100);
-      
-    } else if (isRecording && isPaused) {
-      // Recording paused - mark pause start time
-      if (pauseStartTimeRef.current === null) {
-        pauseStartTimeRef.current = Date.now();
-        console.log('Recording paused at:', new Date(pauseStartTimeRef.current).toISOString());
-      }
-      
-      // Clear timer during pause
-      if (recordingTimerRef.current) {
-        clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
-      }
+      // Start/resume timer
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
     } else {
-      // Recording stopped - clear timer and reset
+      // Pause or stop - clear timer
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
-      }
-      
-      // Reset time tracking when recording stops
-      if (!isRecording) {
-        recordingStartTimeRef.current = null;
-        pausedDurationRef.current = 0;
-        pauseStartTimeRef.current = null;
       }
     }
 
     return () => {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
-        recordingTimerRef.current = null;
       }
     };
   }, [isRecording, isPaused]);
 
-  // Reset recording seconds and timestamps when recording starts fresh
+  // Reset recording seconds when recording starts fresh
   useEffect(() => {
     if (isRecording && !wasRecordingRef.current) {
       setRecordingSeconds(0);
-      recordingStartTimeRef.current = Date.now();
-      pausedDurationRef.current = 0;
-      pauseStartTimeRef.current = null;
-      console.log('Fresh recording started - reset all timers');
     }
   }, [isRecording]);
 
@@ -878,16 +821,10 @@ const MeetingDetail = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3 flex-wrap">
+              <div className="flex gap-3">
                 {!isRecording ? (
                   <Button 
-                    onClick={() => { 
-                      setRecordingSeconds(0);
-                      recordingStartTimeRef.current = null;
-                      pausedDurationRef.current = 0;
-                      pauseStartTimeRef.current = null;
-                      startRecording(); 
-                    }} 
+                    onClick={() => { setRecordingSeconds(0); startRecording(); }} 
                     className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
                   >
                     <Mic className="h-4 w-4" />
@@ -910,12 +847,6 @@ const MeetingDetail = () => {
                       <Square className="h-4 w-4" />
                       Stop Recording
                     </Button>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-background/50 rounded-lg border">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span className="font-mono font-semibold tabular-nums">
-                        {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}
-                      </span>
-                    </div>
                   </>
                 )}
                 {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
@@ -1037,15 +968,32 @@ const MeetingDetail = () => {
               <TabsContent value="transcription" className="space-y-4">
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                    <BrowserSpeechRecognition
+                    {/* Host-only Provider Toggle */}
+                    {meeting?.created_by === userId && (
+                      <TranscriptionProviderToggle />
+                    )}
+                    
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <MessageSquare className="h-5 w-5" />
+                          Live Transcription & Recording
+                        </CardTitle>
+                        <CardDescription>
+                          Real-time speech-to-text with speaker detection
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <BrowserSpeechRecognition 
                           meetingId={meetingId}
                           externalIsRecording={isRecording}
                           isPaused={isPaused}
                           onRecordingStart={startRecording}
                           onRecordingStop={() => stopRecording()}
                           onDurationChange={(s) => setRecordingSeconds(s)}
-                          selectedLanguage={transcriptionLanguage}
                         />
+                      </CardContent>
+                    </Card>
                     <MeetingAudioPlayback meetingId={meetingId} />
                     <LiveTranscription 
                       meetingId={meetingId} 
@@ -1200,49 +1148,7 @@ const MeetingDetail = () => {
 
           {/* Sidebar - Quick Actions - Only visible on Live Transcription tab */}
           {activeTab === 'transcription' && (
-            <div className="space-y-6 mt-8">
-              {/* Transcription Controls */}
-              {meeting?.created_by === userId && (
-                <div className="space-y-4">
-                  <Card className="border-primary/20">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                        <Languages className="h-4 w-4 text-primary" />
-                        Language Selection
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select
-                        value={transcriptionLanguage}
-                        onValueChange={setTranscriptionLanguage}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-                          <SelectItem value="en-US">English (US)</SelectItem>
-                          <SelectItem value="en-GB">English (UK)</SelectItem>
-                          <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-                          <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-                          <SelectItem value="fr-FR">French (Français)</SelectItem>
-                          <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-                          <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-                          <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-                          <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-                          <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-                          <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-                          <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-                          <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-                  
-                  <TranscriptionProviderToggle />
-                </div>
-              )}
-              
+            <div className="space-y-6 mt-8">            
               <Card>
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
