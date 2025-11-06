@@ -676,6 +676,53 @@ export default function DriveIntegration() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                {/* Key Features Section */}
+                <div className={`grid gap-4 md:grid-cols-2 rounded-lg p-6 border-2 ${
+                  isEthioTelecom 
+                    ? 'border-primary/20 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5' 
+                    : 'border-muted bg-gradient-to-br from-background to-muted/20'
+                }`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Automatic Backup</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      All your meetings are automatically stored on Ethio Telecom Drive. Every recording, document, and minute is backed up in real-time without any manual intervention.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Never Lose Anything</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Your data is permanently secured with enterprise-grade redundancy. Files are replicated across multiple data centers to ensure zero data loss, even in case of hardware failure.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Safe & Secure</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Protected by military-grade encryption (AES-256). Your data is secured both in transit and at rest, with full compliance to international data protection standards.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Complete History</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Access your entire meeting history anytime, anywhere. All documents, recordings, and transcriptions are organized chronologically for instant retrieval and reference.
+                    </p>
+                  </div>
+                </div>
+
                 {teledriveConnected ? (
                   <>
                     <Alert className={`border-green-500/30 bg-green-500/10 ${isEthioTelecom ? 'border-primary/30 bg-primary/10' : ''}`}>
