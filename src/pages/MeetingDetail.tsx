@@ -511,9 +511,10 @@ const MeetingDetail = () => {
       }
       
       wasRecordingRef.current = true;
-    } else if (!isRecording) {
-      wasRecordingRef.current = false;
-      hasRestoredRecordingRef.current = false; // Reset flag when recording stops
+    } else if (!isRecording && wasRecordingRef.current) {
+      // Only reset flag when recording stops, but don't update wasRecordingRef here
+      // Let the auto-generate useEffect handle wasRecordingRef to detect the transition
+      hasRestoredRecordingRef.current = false;
     }
   }, [isRecording, meetingId]);
 
