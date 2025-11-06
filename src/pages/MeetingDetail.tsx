@@ -1087,10 +1087,13 @@ const MeetingDetail = () => {
                 </div>
               </TabsContent>
 
-              {/* Keep mounted but hidden to preserve state */}
-              <div className={activeTab === 'transcription' ? 'space-y-4' : 'hidden'}>
+              {/* Keep mounted but hidden to preserve state - with sidebar layout */}
+              <div className={activeTab === 'transcription' ? 'block' : 'hidden'}>
                 <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                  <BrowserSpeechRecognition
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Content Area */}
+                    <div className="lg:col-span-2 space-y-4">
+                      <BrowserSpeechRecognition
                         meetingId={meetingId}
                         externalIsRecording={isRecording}
                         isPaused={isPaused}
@@ -1099,12 +1102,105 @@ const MeetingDetail = () => {
                         onDurationChange={(s) => setRecordingSeconds(s)}
                         selectedLanguage={transcriptionLanguage}
                       />
-                  <MeetingAudioPlayback meetingId={meetingId} />
-                  <LiveTranscription 
-                    meetingId={meetingId} 
-                    isRecording={isRecording}
-                    currentUserName={userFullName || 'Unknown User'}
-                  />
+                      <MeetingAudioPlayback meetingId={meetingId} />
+                      <LiveTranscription 
+                        meetingId={meetingId} 
+                        isRecording={isRecording}
+                        currentUserName={userFullName || 'Unknown User'}
+                      />
+                    </div>
+
+                    {/* Right Sidebar - Settings & Quick Actions */}
+                    <div className="lg:col-span-1 space-y-4">
+                      {/* Transcription Controls */}
+                      {meeting?.created_by === userId && (
+                        <>
+                          <Card className="border-primary/20">
+                            <CardHeader className="pb-3">
+                              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                                <Languages className="h-4 w-4 text-primary" />
+                                Language Selection
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <Select
+                                value={transcriptionLanguage}
+                                onValueChange={setTranscriptionLanguage}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
+                                  <SelectItem value="en-US">English (US)</SelectItem>
+                                  <SelectItem value="en-GB">English (UK)</SelectItem>
+                                  <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
+                                  <SelectItem value="es-ES">Spanish (Español)</SelectItem>
+                                  <SelectItem value="fr-FR">French (Français)</SelectItem>
+                                  <SelectItem value="de-DE">German (Deutsch)</SelectItem>
+                                  <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
+                                  <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
+                                  <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
+                                  <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
+                                  <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
+                                  <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
+                                  <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </CardContent>
+                          </Card>
+                          
+                          <TranscriptionProviderToggle />
+                        </>
+                      )}
+                      
+                      {/* Quick Actions */}
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Quick Actions</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3">
+                            {/* AI-Powered Summary & Search */}
+                            <div className="space-y-2">
+                              <MeetingKeyPointsSummary meetingId={meetingId} />
+                              <MeetingKeywordSearch meetingId={meetingId} />
+                            </div>
+                            
+                            <Separator />
+                            
+                            <div className="space-y-2">
+                              <Button 
+                                variant="default" 
+                                className="w-full justify-start gap-2"
+                                onClick={() => setShowMinutesDialog(true)}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Generate AI Minutes
+                              </Button>
+                              <Button 
+                                variant="outline" 
+                                className="w-full justify-start gap-2"
+                                onClick={() => navigate(`/meetings/${id}/minutes`)}
+                              >
+                                <FileText className="h-4 w-4" />
+                                Open Minutes Editor
+                              </Button>
+                              <AgendaIntakeForm
+                                meetingId={meetingId}
+                                trigger={
+                                  <Button variant="outline" className="w-full justify-start gap-2">
+                                    <Plus className="h-4 w-4" />
+                                    Add Agenda Items
+                                  </Button>
+                                }
+                              />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </div>
                 </ProtectedElement>
               </div>
 
@@ -1249,129 +1345,6 @@ const MeetingDetail = () => {
               </TabsContent>
             </Tabs>
 
-          {/* Sidebar - Quick Actions - Only visible on Live Transcription tab */}
-          {activeTab === 'transcription' && (
-            <div className="space-y-6 mt-6">
-              {/* Transcription Controls */}
-              {meeting?.created_by === userId && (
-                <div className="space-y-4">
-                  <Card className="border-primary/20">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                        <Languages className="h-4 w-4 text-primary" />
-                        Language Selection
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Select
-                        value={transcriptionLanguage}
-                        onValueChange={setTranscriptionLanguage}
-                      >
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-                          <SelectItem value="en-US">English (US)</SelectItem>
-                          <SelectItem value="en-GB">English (UK)</SelectItem>
-                          <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-                          <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-                          <SelectItem value="fr-FR">French (Français)</SelectItem>
-                          <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-                          <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-                          <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-                          <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-                          <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-                          <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-                          <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-                          <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </CardContent>
-                  </Card>
-                  
-                  <TranscriptionProviderToggle />
-                </div>
-              )}
-              
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* AI-Powered Summary & Search */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <MeetingKeyPointsSummary meetingId={meetingId} />
-                      <MeetingKeywordSearch meetingId={meetingId} />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
-                    
-                    <Button 
-                      variant="default" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => setShowMinutesDialog(true)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Generate AI Minutes
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => navigate(`/meetings/${id}/minutes`)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Open Minutes Editor
-                    </Button>
-                    <AgendaIntakeForm
-                      meetingId={meetingId}
-                      trigger={
-                        <Button variant="outline" className="w-full justify-start gap-2">
-                          <Plus className="h-4 w-4" />
-                          Add Agenda Items
-                        </Button>
-                      }
-                    />
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => setShowViewMinutesDialog(true)}
-                      disabled={!(meeting?.minutes || meeting?.minutes_url)}
-                    >
-                      <FileText className="h-4 w-4" />
-                      View Previous Minutes
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => setShowRescheduleDialog(true)}
-                    >
-                      <Calendar className="h-4 w-4" />
-                      Reschedule Meeting
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      className="w-full justify-start gap-2"
-                      onClick={() => setShowManageAttendeesDialog(true)}
-                    >
-                      <Users className="h-4 w-4" />
-                      Manage Attendees
-                    </Button>
-                      <Button 
-                        variant="outline" 
-                        className="w-full justify-start gap-2"
-                        onClick={() => setShowCreateSignatureDialog(true)}
-                      >
-                        <FileSignature className="h-4 w-4" />
-                        Request Sign-Off
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
         </div>
 
         <GenerateMinutesDialog
