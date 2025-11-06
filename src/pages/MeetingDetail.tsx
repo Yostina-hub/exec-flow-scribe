@@ -305,6 +305,56 @@ const MeetingDetail = () => {
     };
   }, []);
 
+  // Restore active recording when returning to this page
+  useEffect(() => {
+    if (!meetingId || !userId) return;
+    
+    const checkAndRestoreRecording = async () => {
+      try {
+        const recordingKey = `meeting-recording-${meetingId}`;
+        const savedRecording = localStorage.getItem(recordingKey);
+        
+        if (savedRecording) {
+          const recordingData = JSON.parse(savedRecording);
+          
+          // Only restore if recording is actually active and user is the host
+          if (recordingData.isRecording && meeting?.created_by === userId) {
+            console.log('Found active recording, restoring state...');
+            
+            // Restore the recording timestamps
+            recordingStartTimeRef.current = recordingData.startTime;
+            pausedDurationRef.current = recordingData.pausedDuration || 0;
+            
+            // Calculate current duration for display
+            if (recordingData.startTime) {
+              const elapsed = Date.now() - recordingData.startTime;
+              const pausedDuration = recordingData.pausedDuration || 0;
+              const currentSeconds = Math.floor((elapsed - pausedDuration) / 1000);
+              setRecordingSeconds(currentSeconds);
+            }
+            
+            // Auto-restart recording to resume audio capture
+            if (!isRecording) {
+              console.log('Restarting recording to resume audio capture');
+              await startRecording();
+              
+              toast({
+                title: 'Recording Resumed',
+                description: 'Your recording session has been restored',
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error restoring recording:', error);
+      }
+    };
+    
+    // Small delay to ensure meeting data is loaded
+    const timer = setTimeout(checkAndRestoreRecording, 500);
+    return () => clearTimeout(timer);
+  }, [meetingId, userId, meeting, isRecording, startRecording, toast]);
+
   // Load recording state from localStorage on mount
   useEffect(() => {
     const savedState = localStorage.getItem(`recording-${meetingId}`);
@@ -384,6 +434,22 @@ const MeetingDetail = () => {
           const elapsed = Date.now() - recordingStartTimeRef.current - pausedDurationRef.current;
           const seconds = Math.floor(elapsed / 1000);
           setRecordingSeconds(seconds);
+          
+          // Update localStorage every second for the floating indicator
+          if (seconds % 1 === 0) {
+            try {
+              localStorage.setItem(
+                `meeting-recording-${meetingId}`,
+                JSON.stringify({
+                  isRecording: true,
+                  startTime: recordingStartTimeRef.current,
+                  pausedDuration: pausedDurationRef.current,
+                })
+              );
+            } catch (e) {
+              console.error('Failed to update recording state:', e);
+            }
+          }
         }
       };
       
@@ -425,16 +491,28 @@ const MeetingDetail = () => {
     };
   }, [isRecording, isPaused]);
 
-  // Reset recording seconds and timestamps when recording starts fresh
+  // Reset recording seconds and timestamps when recording starts fresh (but not when resuming)
   useEffect(() => {
     if (isRecording && !wasRecordingRef.current) {
-      setRecordingSeconds(0);
-      recordingStartTimeRef.current = Date.now();
-      pausedDurationRef.current = 0;
-      pauseStartTimeRef.current = null;
-      console.log('Fresh recording started - reset all timers');
+      // Only reset if we don't have a restored recording session
+      const recordingKey = `meeting-recording-${meetingId}`;
+      const savedRecording = localStorage.getItem(recordingKey);
+      
+      if (!savedRecording) {
+        setRecordingSeconds(0);
+        recordingStartTimeRef.current = Date.now();
+        pausedDurationRef.current = 0;
+        pauseStartTimeRef.current = null;
+        console.log('Fresh recording started - reset all timers');
+      } else {
+        console.log('Resuming existing recording - preserving timestamps');
+      }
+      
+      wasRecordingRef.current = true;
+    } else if (!isRecording) {
+      wasRecordingRef.current = false;
     }
-  }, [isRecording]);
+  }, [isRecording, meetingId]);
 
   // Auto-generate minutes when recording stops
   useEffect(() => {
