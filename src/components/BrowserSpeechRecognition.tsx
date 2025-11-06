@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -346,58 +345,51 @@ export const BrowserSpeechRecognition = ({
 
   if (!isSupported) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Browser Speech Recognition</CardTitle>
-          <CardDescription className="text-destructive">
-            Your browser doesn't support speech recognition. Please use Chrome or Edge.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+        <p className="text-sm text-destructive font-medium">Browser Not Supported</p>
+        <p className="text-sm text-muted-foreground mt-1">
+          Your browser doesn't support speech recognition. Please use Chrome or Edge.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Speech to Text</CardTitle>
-        <CardDescription>Click the microphone to start recording</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Languages className="w-4 h-4" />
-            Language
-          </label>
-          <Select
-            value={selectedLanguage}
-            onValueChange={(value) => {
-              setSelectedLanguage(value);
-              setLanguage(value);
-            }}
-            disabled={isListening}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-              <SelectItem value="en-US">English (US)</SelectItem>
-              <SelectItem value="en-GB">English (UK)</SelectItem>
-              <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-              <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-              <SelectItem value="fr-FR">French (Français)</SelectItem>
-              <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-              <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-              <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-              <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-              <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-              <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-              <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-              <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Languages className="w-4 h-4" />
+          Language
+        </label>
+        <Select
+          value={selectedLanguage}
+          onValueChange={(value) => {
+            setSelectedLanguage(value);
+            setLanguage(value);
+          }}
+          disabled={isListening}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
+            <SelectItem value="en-US">English (US)</SelectItem>
+            <SelectItem value="en-GB">English (UK)</SelectItem>
+            <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
+            <SelectItem value="es-ES">Spanish (Español)</SelectItem>
+            <SelectItem value="fr-FR">French (Français)</SelectItem>
+            <SelectItem value="de-DE">German (Deutsch)</SelectItem>
+            <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
+            <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
+            <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
+            <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
+            <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
+            <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
+            <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
         <div className="flex flex-col items-center gap-6">
           {externalIsRecording && !isPaused && (
@@ -500,7 +492,6 @@ export const BrowserSpeechRecognition = ({
             Clear & Start New
           </Button>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };
