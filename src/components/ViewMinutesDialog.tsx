@@ -66,6 +66,7 @@ export const ViewMinutesDialog = ({
       const content: string = latestMinutes?.content || meeting?.minutes_url || '';
 
       if (content) {
+        console.log('Minutes loaded, content length:', content.length, 'characters');
         setMinutes(content);
       } else {
         toast({
@@ -199,7 +200,7 @@ export const ViewMinutesDialog = ({
               </Button>
             </div>
 
-            <ScrollArea className="h-[500px] pr-4">
+            <ScrollArea className="h-[600px] w-full pr-4">
               <div className="prose prose-sm dark:prose-invert max-w-none
                 prose-headings:text-primary prose-headings:font-bold
                 prose-h1:text-3xl prose-h1:mb-6 prose-h1:border-b prose-h1:border-primary/20 prose-h1:pb-3
@@ -209,9 +210,22 @@ export const ViewMinutesDialog = ({
                 prose-ul:my-4 prose-li:my-2
                 prose-p:leading-relaxed prose-p:my-3
                 prose-a:text-primary prose-a:underline
+                prose-table:w-full prose-table:border-collapse
+                prose-td:border prose-td:border-border prose-td:p-2
+                prose-th:border prose-th:border-border prose-th:p-2 prose-th:bg-muted
                 [&>ul>li]:before:text-primary [&>ul>li]:before:font-bold
-                [&>ol>li]:marker:text-primary [&>ol>li]:marker:font-bold">
-                <ReactMarkdown>{minutes}</ReactMarkdown>
+                [&>ol>li]:marker:text-primary [&>ol>li]:marker:font-bold
+                whitespace-pre-wrap break-words">
+                <ReactMarkdown 
+                  components={{
+                    p: ({node, ...props}) => <p className="my-2" {...props} />,
+                    h1: ({node, ...props}) => <h1 className="scroll-m-20" {...props} />,
+                    h2: ({node, ...props}) => <h2 className="scroll-m-20" {...props} />,
+                    h3: ({node, ...props}) => <h3 className="scroll-m-20" {...props} />
+                  }}
+                >
+                  {minutes}
+                </ReactMarkdown>
               </div>
             </ScrollArea>
           </>
