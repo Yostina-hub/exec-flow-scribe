@@ -17,6 +17,34 @@ import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { useNavigate } from 'react-router-dom';
 
+// Normalize/sanitize AI markdown so it renders fully
+const normalizeMinutes = (raw: string): string => {
+  if (!raw) return '';
+  let text = raw.replace(/\u0000/g, '').replace(/\r\n?/g, '\n');
+
+  // Convert box-drawing horizontal rules to markdown hr
+  text = text.replace(/[\u2500-\u257F\u2550-\u2570]{6,}/g, '\n\n---\n\n');
+
+  const lines = text.split('\n');
+  const out: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    out.push(line);
+    // If line looks like a table header but lacks a separator, inject one
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      const next = lines[i + 1] || '';
+      const hasSep = /^\s*\|\s*[-:]+/.test(next);
+      if (!hasSep) {
+        const cols = line.split('|').filter((c) => c.trim().length > 0).length;
+        if (cols > 0) {
+          out.push('|' + Array(cols).fill(' --- ').join('|') + '|');
+        }
+      }
+    }
+  }
+  return out.join('\n');
+};
+
 interface ViewMinutesDialogProps {
   meetingId: string;
   open: boolean;
@@ -69,8 +97,9 @@ export const ViewMinutesDialog = ({
       const content: string = latestMinutes?.content || meeting?.minutes_url || '';
 
       if (content) {
-        console.log('Minutes loaded, content length:', content.length, 'characters');
-        setMinutes(content);
+        const normalized = normalizeMinutes(content);
+        console.log('Minutes loaded, content length:', normalized.length, 'characters');
+        setMinutes(normalized);
       } else {
         toast({
           title: 'No Minutes Available',
