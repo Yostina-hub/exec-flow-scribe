@@ -199,6 +199,8 @@ LANGUAGE & SCRIPT:
 • Write ENTIRELY in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
 • NEVER use Latin letters (a-z) or romanization
 • ALL headings, titles, content MUST be Ge'ez script
+• WHEN ENGLISH TECHNICAL TERMS appear: provide Amharic translation/explanation in parentheses. Example: "ማናጀመንት (አስተዳደር)" or explain the concept in Amharic
+• For names, titles, or specific terms, you may keep the original in Latin script only if transliteration would lose meaning, but ALWAYS provide Amharic context
 
 ETHIOPIAN PUNCTUATION (MANDATORY):
 • ። = Full stop (end of sentence) - USE CONSISTENTLY
@@ -306,12 +308,14 @@ Never romanize or transliterate non-Latin scripts.`;
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
+Time: ${new Date(meeting.start_time).toLocaleTimeString()} - ${new Date(meeting.end_time).toLocaleTimeString()}
 Duration (scheduled): ${Math.round(
       (new Date(meeting.end_time).getTime() -
         new Date(meeting.start_time).getTime()) /
          60000
     )} minutes
-${recordingSeconds !== null ? `Recording Time: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
+${recordingSeconds !== null ? `Actual Recording Duration: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
+Location: ${meeting.location || 'Not specified'}
 
 📝 PLANNED AGENDA:
 ${agendaList || 'No agenda items'}
@@ -328,6 +332,12 @@ ${pollsList || 'No polls conducted'}
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
 📊 REQUIRED SECTIONS (be thorough and complete):
+0. **የስብሰባ መረጃ** (Meeting Information) - MUST include at the very top:
+   • Meeting title and date
+   • Start and end time
+   • Duration (scheduled and actual if available)
+   • Location/venue
+   Present this in a clear, formatted box at the beginning
 1. **የስብሰባ መግቢያ** (Meeting Opening) - WHO opened the meeting, their introduction, welcome remarks, and stated purpose (MUST be comprehensive - this sets the stage)
 2. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (4-6 detailed sentences minimum)
 3. **ዋና ዋና የውይይት ነጥቦች** (Key Discussion Points) - DETAILED coverage of ALL topics discussed in order presented, including:
@@ -342,7 +352,7 @@ ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based 
 5. 🗳️ የምርጫ ውጤቶች (Poll Results) - Complete poll information with context
 6. የተግባር እቅዶች (Action Items) - ALL actions mentioned with full details
 7. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
-8. ተጨማሪ ሐሳቦች (Additional Notes) - Other relevant points, context, or observations
+8. የማጠቃለያ ተጨማሪ ሐሳቦች (Closing & Additional Notes) - Other relevant points, context, or observations
 
 ${detectedLang === 'am' ? `✍️ CRITICAL AMHARIC REQUIREMENTS: 
 • Use Ethiopian punctuation ። at the end of EVERY sentence without exception
