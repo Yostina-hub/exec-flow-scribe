@@ -80,6 +80,10 @@ import { LivePolling } from "@/components/LivePolling";
 import { CollaborativeNotes } from "@/components/CollaborativeNotes";
 import { MeetingBookmarks } from "@/components/MeetingBookmarks";
 import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
+import { NeuralCommandCenter } from "@/components/NeuralCommandCenter";
+import { SpatialPresenceMap } from "@/components/SpatialPresenceMap";
+import { TimeTravelDecisionTracker } from "@/components/TimeTravelDecisionTracker";
+import { PredictiveActionMatrix } from "@/components/PredictiveActionMatrix";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -183,6 +187,9 @@ const MeetingDetail = () => {
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [aiInsights, setAiInsights] = useState<any[]>([]);
+  const [meetingPhase, setMeetingPhase] = useState<'pre' | 'active' | 'post'>('pre');
+  const [spatialView, setSpatialView] = useState(false);
   
   // Workflow status state
   const [workflowStatus, setWorkflowStatus] = useState({
@@ -1140,7 +1147,7 @@ const MeetingDetail = () => {
             </Tabs>
           </div>
 
-          {/* Sidebar - Context Panel & Attendees */}
+          {/* Sidebar - Revolutionary AI Intelligence */}
           <div className="space-y-6">
             {/* Workflow Progress Indicator */}
             <WorkflowStatusIndicator
@@ -1148,6 +1155,87 @@ const MeetingDetail = () => {
               minutesStatus={workflowStatus.minutes}
               pdfStatus={workflowStatus.pdf}
               workflowStage={workflowStatus.stage}
+            />
+            
+            {/* Neural Command Center - AI Brain */}
+            <NeuralCommandCenter
+              meetingId={meetingId}
+              meetingPhase={meetingPhase}
+              onActionSuggestion={(action) => {
+                toast({
+                  title: '🚀 AI Suggestion',
+                  description: `Executing: ${action}`,
+                });
+              }}
+            />
+
+            {/* Spatial Presence Map */}
+            <SpatialPresenceMap
+              meetingId={meetingId}
+              participants={[
+                { id: '1', name: 'CEO', initials: 'CE', engagement: 95, speaking: true, attention: 92, sentiment: 'positive' },
+                { id: '2', name: 'CFO', initials: 'CF', engagement: 88, speaking: false, attention: 85, sentiment: 'positive' },
+                { id: '3', name: 'CTO', initials: 'CT', engagement: 76, speaking: false, attention: 78, sentiment: 'neutral' },
+                { id: '4', name: 'CMO', initials: 'CM', engagement: 82, speaking: false, attention: 88, sentiment: 'positive' },
+                { id: '5', name: 'CPO', initials: 'CP', engagement: 65, speaking: false, attention: 70, sentiment: 'neutral' },
+                { id: '6', name: 'CHRO', initials: 'CH', engagement: 91, speaking: false, attention: 89, sentiment: 'positive' },
+              ]}
+            />
+
+            {/* Time-Travel Decision Tracker */}
+            <TimeTravelDecisionTracker
+              meetingId={meetingId}
+              decisions={[
+                {
+                  id: '1',
+                  timestamp: '2:15 PM',
+                  title: 'Q4 Budget Reallocation Approved',
+                  alternatives: [
+                    'Defer to Q1 2025',
+                    'Split allocation 50/50 between marketing and product',
+                    'Allocate entirely to engineering'
+                  ],
+                  confidence: 94,
+                  impact: 'high',
+                  owner: 'CEO'
+                },
+                {
+                  id: '2',
+                  timestamp: '2:35 PM',
+                  title: 'Engineering Team Expansion by 15%',
+                  alternatives: [
+                    'Expand by 10% instead',
+                    'Focus on senior hires only',
+                    'Delay expansion to Q2'
+                  ],
+                  confidence: 87,
+                  impact: 'high',
+                  owner: 'CTO'
+                },
+                {
+                  id: '3',
+                  timestamp: '2:50 PM',
+                  title: 'Launch New Product Feature by March',
+                  alternatives: [
+                    'Launch in April for better QA',
+                    'Launch MVP version in February'
+                  ],
+                  confidence: 76,
+                  impact: 'medium',
+                  owner: 'CPO'
+                }
+              ]}
+            />
+
+            {/* Predictive Action Matrix */}
+            <PredictiveActionMatrix
+              meetingId={meetingId}
+              onAcceptAction={(action) => {
+                toast({
+                  title: '✨ Action Accepted',
+                  description: `Creating: ${action.title}`,
+                });
+              }}
             />
             
             <ContextPanel meetingId={meetingId} />
