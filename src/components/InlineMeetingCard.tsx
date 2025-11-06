@@ -10,6 +10,7 @@ import { AgendaIntakeForm } from './AgendaIntakeForm';
 import { EditMeetingDialog } from './EditMeetingDialog';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface InlineMeetingCardProps {
   id: string;
@@ -62,6 +63,8 @@ export function InlineMeetingCard({
   createdBy,
 }: InlineMeetingCardProps) {
   const navigate = useNavigate();
+  const { theme } = useTheme();
+  const isEthioTelecom = theme === 'ethio-telecom';
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const config = statusConfig[status];
   const isOnlineMeeting = meetingType === 'online' || meetingType === 'hybrid';
@@ -78,65 +81,96 @@ export function InlineMeetingCard({
     getUser();
   }, []);
 
+  const getEthioTelecomGradient = (status: string) => {
+    switch (status) {
+      case 'upcoming':
+        return 'from-[#0072BC] to-[#005A9C]';
+      case 'in-progress':
+        return 'from-[#8DC63F] to-[#7AB62F]';
+      case 'completed':
+        return 'from-gray-500 to-gray-600';
+      default:
+        return 'from-[#0072BC] to-[#8DC63F]';
+    }
+  };
+
   return (
     <Card 
       className={cn(
         "group relative overflow-hidden cursor-pointer h-full",
-        "hover:shadow-2xl hover:scale-[1.02] transition-all duration-300",
-        "bg-gradient-to-br from-background to-muted/30",
-        "border-2 hover:border-primary/50"
+        "hover:shadow-2xl hover:-translate-y-2 transition-all duration-500",
+        isEthioTelecom 
+          ? "bg-white border-2 border-gray-200 hover:border-[#8DC63F]/50"
+          : "bg-gradient-to-br from-background to-muted/30 border-2 hover:border-primary/50"
       )}
       onClick={() => navigate(`/meetings/${id}`)}
     >
-      <div className={cn("absolute top-0 left-0 right-0 h-1", `bg-gradient-to-r ${config.gradient}`)} />
+      <div className={cn(
+        "absolute top-0 left-0 right-0 h-1.5 transition-all duration-300 group-hover:h-2",
+        `bg-gradient-to-r ${isEthioTelecom ? getEthioTelecomGradient(status) : config.gradient}`
+      )} />
       
-      <CardContent className="p-6 space-y-4">
+      <CardContent className="p-5 lg:p-6 space-y-4">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 flex-1">
             <div className={cn(
-              "flex flex-col items-center justify-center px-3 py-2 rounded-lg",
-              "bg-gradient-to-br from-background to-muted text-center min-w-[60px]"
+              "flex flex-col items-center justify-center px-3 py-2 rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110",
+              isEthioTelecom 
+                ? "bg-gradient-to-br from-[#8DC63F]/10 to-[#0072BC]/10 border border-[#8DC63F]/20"
+                : "bg-gradient-to-br from-background to-muted"
             )}>
-              <Calendar className="h-4 w-4 mb-1 text-muted-foreground" />
-              <span className="text-xs font-bold uppercase text-muted-foreground">{date}</span>
+              <Calendar className={`h-4 w-4 mb-1 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-muted-foreground'}`} />
+              <span className={`text-xs font-bold uppercase ${isEthioTelecom ? 'text-gray-900' : 'text-muted-foreground'}`}>{date}</span>
             </div>
-            <Badge variant={config.variant} className="text-xs">
+            <Badge 
+              variant={config.variant} 
+              className={cn(
+                "text-xs font-semibold",
+                isEthioTelecom && status === 'upcoming' && "bg-[#0072BC] text-white hover:bg-[#005A9C]",
+                isEthioTelecom && status === 'in-progress' && "bg-[#8DC63F] text-white hover:bg-[#7AB62F]"
+              )}
+            >
               {config.label}
             </Badge>
           </div>
           
           {status === 'in-progress' && (
             <span className="flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+              <span className={`animate-ping absolute inline-flex h-3 w-3 rounded-full opacity-75 ${isEthioTelecom ? 'bg-[#8DC63F]' : 'bg-green-400'}`}></span>
+              <span className={`relative inline-flex rounded-full h-3 w-3 ${isEthioTelecom ? 'bg-[#8DC63F]' : 'bg-green-500'}`}></span>
             </span>
           )}
         </div>
 
         {/* Title */}
-        <h3 className="font-bold text-lg line-clamp-2 group-hover:text-primary transition-colors min-h-[56px]">
+        <h3 className={cn(
+          "font-black text-base lg:text-lg line-clamp-2 min-h-[56px] transition-colors duration-300",
+          isEthioTelecom 
+            ? 'font-["Noto_Sans_Ethiopic"] text-gray-900 group-hover:text-[#8DC63F]'
+            : 'group-hover:text-primary'
+        )}>
           {title}
         </h3>
 
         {/* Info Grid */}
-        <div className="space-y-2 text-sm text-muted-foreground">
+        <div className={`space-y-2 text-sm ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">{time} • {duration}</span>
+            <span className="truncate font-medium">{time} • {duration}</span>
           </div>
           <div className="flex items-center gap-2">
             <MapPin className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">{location}</span>
+            <span className="truncate font-medium">{location}</span>
           </div>
           <div className="flex items-center gap-2 justify-between">
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4" />
-              <span>{attendees || 0}</span>
+              <span className="font-semibold">{attendees || 0}</span>
             </div>
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span>{agendaItems || 0} items</span>
+              <span className="font-semibold">{agendaItems || 0} items</span>
             </div>
           </div>
         </div>
