@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,7 @@ import {
   FileSignature,
   Settings,
   MessageSquare,
+  Languages,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -189,6 +191,7 @@ const MeetingDetail = () => {
   const [meetingPhase, setMeetingPhase] = useState<'pre' | 'active' | 'post'>('pre');
   const [spatialView, setSpatialView] = useState(false);
   const [activeTab, setActiveTab] = useState('transcription');
+  const [transcriptionLanguage, setTranscriptionLanguage] = useState('am-ET');
   
   const meetingId = id || "demo-meeting-id";
   
@@ -968,11 +971,6 @@ const MeetingDetail = () => {
               <TabsContent value="transcription" className="space-y-4">
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                    {/* Host-only Provider Toggle */}
-                    {meeting?.created_by === userId && (
-                      <TranscriptionProviderToggle />
-                    )}
-                    
                     <Card>
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
@@ -991,6 +989,7 @@ const MeetingDetail = () => {
                           onRecordingStart={startRecording}
                           onRecordingStop={() => stopRecording()}
                           onDurationChange={(s) => setRecordingSeconds(s)}
+                          selectedLanguage={transcriptionLanguage}
                         />
                       </CardContent>
                     </Card>
@@ -1148,7 +1147,49 @@ const MeetingDetail = () => {
 
           {/* Sidebar - Quick Actions - Only visible on Live Transcription tab */}
           {activeTab === 'transcription' && (
-            <div className="space-y-6 mt-8">            
+            <div className="space-y-6 mt-8">
+              {/* Transcription Controls */}
+              {meeting?.created_by === userId && (
+                <div className="space-y-4">
+                  <Card className="border-primary/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Languages className="h-4 w-4 text-primary" />
+                        Language Selection
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Select
+                        value={transcriptionLanguage}
+                        onValueChange={setTranscriptionLanguage}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
+                          <SelectItem value="en-US">English (US)</SelectItem>
+                          <SelectItem value="en-GB">English (UK)</SelectItem>
+                          <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
+                          <SelectItem value="es-ES">Spanish (Español)</SelectItem>
+                          <SelectItem value="fr-FR">French (Français)</SelectItem>
+                          <SelectItem value="de-DE">German (Deutsch)</SelectItem>
+                          <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
+                          <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
+                          <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
+                          <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
+                          <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
+                          <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
+                          <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
+                  
+                  <TranscriptionProviderToggle />
+                </div>
+              )}
+              
               <Card>
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
