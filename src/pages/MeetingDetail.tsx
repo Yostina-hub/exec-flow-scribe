@@ -82,9 +82,11 @@ import { MeetingBookmarks } from "@/components/MeetingBookmarks";
 import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
 import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
 import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
+import { EnhancedDocumentsTab } from "@/components/EnhancedDocumentsTab";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useTheme } from "@/contexts/ThemeContext";
 import { format } from "date-fns";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
 import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
@@ -167,6 +169,8 @@ const MeetingDetail = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
+  const { theme } = useTheme();
+  const isEthioTelecom = theme === 'ethio-telecom';
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const [showViewMinutesDialog, setShowViewMinutesDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
@@ -1081,20 +1085,45 @@ const MeetingDetail = () => {
               onValueChange={(value) => setActiveTab(value)}
             >
               <div className="w-full overflow-x-auto pb-2">
-                <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
+                <TabsList className={`inline-flex w-auto min-w-full h-auto p-1 gap-1 ${isEthioTelecom ? 'bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 backdrop-blur-sm' : ''}`}>
                 {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                  <TabsTrigger value="video">
+                  <TabsTrigger value="video" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                    <Video className="h-4 w-4" />
                     {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="participants">Participants</TabsTrigger>
-                <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
-                <TabsTrigger value="agenda">Agenda</TabsTrigger>
-                <TabsTrigger value="decisions">Decisions</TabsTrigger>
-                <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
-                <TabsTrigger value="documents">Documents</TabsTrigger>
-                <TabsTrigger value="signatures">Audio to Minutes</TabsTrigger>
-                <TabsTrigger value="chat">Chat</TabsTrigger>
+                <TabsTrigger value="participants" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <Users className="h-4 w-4" />
+                  Participants
+                </TabsTrigger>
+                <TabsTrigger value="transcription" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <Mic className="h-4 w-4" />
+                  Live Transcription
+                </TabsTrigger>
+                <TabsTrigger value="agenda" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <ListChecks className="h-4 w-4" />
+                  Agenda
+                </TabsTrigger>
+                <TabsTrigger value="decisions" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <CheckCircle2 className="h-4 w-4" />
+                  Decisions
+                </TabsTrigger>
+                <TabsTrigger value="collaboration" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <MessageSquare className="h-4 w-4" />
+                  Collaboration
+                </TabsTrigger>
+                <TabsTrigger value="documents" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <FileText className="h-4 w-4" />
+                  Documents
+                </TabsTrigger>
+                <TabsTrigger value="signatures" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <FileSignature className="h-4 w-4" />
+                  Audio to Minutes
+                </TabsTrigger>
+                <TabsTrigger value="chat" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <MessageSquare className="h-4 w-4" />
+                  Chat
+                </TabsTrigger>
               </TabsList>
               </div>
 
@@ -1392,24 +1421,27 @@ const MeetingDetail = () => {
               <TabsContent value="documents" className="space-y-6">
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="documents">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <MeetingSummaryCard 
-                        meetingId={meetingId} 
-                        meetingTitle={meeting?.title || 'Meeting'} 
-                      />
-                      <MeetingAudioPlayback meetingId={meetingId} />
+                    <EnhancedDocumentsTab 
+                      meetingId={meetingId}
+                      meetingTitle={meeting?.title || 'Meeting'}
+                    />
+                    <div className="mt-6">
+                      <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
+                        <CardHeader>
+                          <CardTitle className="flex items-center gap-2">
+                            <Settings className="h-5 w-5 text-primary" />
+                            Document Management & Distribution
+                          </CardTitle>
+                          <CardDescription>
+                            Manage document distribution and integrations
+                          </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <MultiChannelDistribution meetingId={meetingId} />
+                          <IntegrationManager meetingId={meetingId} />
+                        </CardContent>
+                      </Card>
                     </div>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <TranscriptionDocumentExport 
-                        meetingId={meetingId} 
-                        meetingTitle={meeting?.title || 'Meeting'} 
-                      />
-                      <div className="space-y-6">
-                        <DocumentVersionControl meetingId={meetingId} />
-                        <MultiChannelDistribution meetingId={meetingId} />
-                      </div>
-                    </div>
-                    <IntegrationManager meetingId={meetingId} />
                   </ProtectedElement>
                 </LazyTabContent>
               </TabsContent>
