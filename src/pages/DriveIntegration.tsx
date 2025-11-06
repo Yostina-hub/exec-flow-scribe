@@ -170,12 +170,37 @@ export default function DriveIntegration() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
+    // First check if settings exist
+    const { data: existing } = await supabase
       .from('drive_sync_settings')
-      .upsert({
-        user_id: user.id,
-        [key]: value,
-      });
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    let error;
+    if (existing) {
+      // Update existing record
+      const result = await supabase
+        .from('drive_sync_settings')
+        .update({ [key]: value })
+        .eq('user_id', user.id);
+      error = result.error;
+    } else {
+      // Insert new record with all default values
+      const result = await supabase
+        .from('drive_sync_settings')
+        .insert({
+          user_id: user.id,
+          [key]: value,
+          auto_upload_recordings: key === 'auto_upload_recordings' ? value : true,
+          auto_save_minutes_as_docs: key === 'auto_save_minutes_as_docs' ? value : true,
+          auto_backup_enabled: key === 'auto_backup_enabled' ? value : false,
+          google_drive_enabled: key === 'google_drive_enabled' ? value : true,
+          teledrive_enabled: key === 'teledrive_enabled' ? value : false,
+          auto_sync_notebooks: key === 'auto_sync_notebooks' ? value : false,
+        });
+      error = result.error;
+    }
 
     if (error) {
       toast({
