@@ -55,20 +55,25 @@ serve(async (req) => {
       );
     }
 
-    // Fetch meeting details
+    // Fetch meeting details (works for all meeting types)
     const { data: meeting, error: meetingError } = await supabase
       .from("meetings")
       .select("*, agenda_items(*)")
       .eq("id", meetingId)
-      .eq("meeting_type", "virtual_room")
       .single();
 
     if (meetingError || !meeting) {
+      console.error("Meeting fetch error:", meetingError);
       return new Response(
-        JSON.stringify({ error: "Virtual room meeting not found" }),
+        JSON.stringify({ 
+          error: "Meeting not found",
+          details: meetingError?.message || "Meeting does not exist"
+        }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
+
+    console.log("✅ Meeting found:", meeting.title, "Type:", meeting.meeting_type);
 
     // Fetch virtual room specific transcriptions
     console.log("📝 Fetching virtual room transcriptions...");
