@@ -158,12 +158,12 @@ export const Layout = ({ children }: LayoutProps) => {
       {isEthioTelecom && (
         <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md bg-white">
           <div className="h-full flex items-center">
-            {/* Logo section - white background */}
-            <div className="h-full px-4 sm:px-6 flex items-center bg-white">
+            {/* Logo section - white background with curved right edge */}
+            <div className="h-full px-4 sm:px-6 flex items-center bg-white rounded-r-3xl sm:rounded-r-[40px]">
               <img 
                 src={ethioTelecomLogo} 
                 alt="Ethio Telecom" 
-                className="h-12 sm:h-16 w-auto object-contain"
+                className="h-10 sm:h-14 w-auto object-contain"
               />
             </div>
             {/* Green bar extending to the right */}
