@@ -95,10 +95,15 @@ import { HostManagementPanel } from "@/components/HostManagementPanel";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { GuestLayout } from "@/components/GuestLayout";
 import { GuestMeetingView } from "@/components/GuestMeetingView";
-import { WorkflowStatusIndicator } from "@/components/WorkflowStatusIndicator";
 import { PDFGenerationPanel } from "@/components/PDFGenerationPanel";
 import { SystemTestPanel } from "@/components/SystemTestPanel";
 import { TranscriptionProviderToggle } from "@/components/TranscriptionProviderToggle";
+import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
+import { useRealtimeAgenda } from "@/hooks/useRealtimeAgenda";
+import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
+import { MeetingEnergyTracker } from "@/components/MeetingEnergyTracker";
+import { LiveKnowledgeGraph } from "@/components/LiveKnowledgeGraph";
+import { AICoachPanel } from "@/components/AICoachPanel";
 
 interface AgendaItem {
   id: string;
@@ -191,15 +196,12 @@ const MeetingDetail = () => {
   const [meetingPhase, setMeetingPhase] = useState<'pre' | 'active' | 'post'>('pre');
   const [spatialView, setSpatialView] = useState(false);
   
-  // Workflow status state
-  const [workflowStatus, setWorkflowStatus] = useState({
-    transcription: 'pending' as 'pending' | 'in_progress' | 'completed' | 'failed',
-    minutes: 'pending' as 'pending' | 'generated' | 'reviewed' | 'approved',
-    pdf: 'pending' as 'pending' | 'generated' | 'signed' | 'distributed',
-    stage: 'created' as 'created' | 'recording' | 'transcribing' | 'minutes_ready' | 'pdf_ready' | 'awaiting_signatures' | 'completed'
-  });
-  
   const meetingId = id || "demo-meeting-id";
+  
+  // Realtime data hooks
+  const { agenda: realtimeAgenda } = useRealtimeAgenda(meetingId);
+  const { transcriptions: realtimeTranscriptions } = useRealtimeTranscriptions(meetingId);
+  
   const meetingAccess = useMeetingAccess(id);
   const { isGuest, guestName, loading: guestLoading } = useIsGuest(id);
   const { 
@@ -482,16 +484,6 @@ const MeetingDetail = () => {
       if (meetingData.meeting_type === 'virtual_room') {
         setIsVirtualRoomMeeting(true);
         setShowVirtualRoom(true);
-      }
-
-      // Update workflow status from meeting data
-      if (meetingData) {
-        setWorkflowStatus({
-          transcription: (meetingData as any).transcription_status || 'pending',
-          minutes: (meetingData as any).minutes_status || 'pending',
-          pdf: (meetingData as any).pdf_status || 'pending',
-          stage: (meetingData as any).workflow_stage || 'created'
-        });
       }
 
       // Format agenda items
@@ -1166,13 +1158,14 @@ const MeetingDetail = () => {
 
           {/* Sidebar - Revolutionary AI Intelligence */}
           <div className="space-y-6">
-            {/* Workflow Progress Indicator */}
-            <WorkflowStatusIndicator
-              transcriptionStatus={workflowStatus.transcription}
-              minutesStatus={workflowStatus.minutes}
-              pdfStatus={workflowStatus.pdf}
-              workflowStage={workflowStatus.stage}
-            />
+            {/* Meeting Energy Tracker */}
+            <MeetingEnergyTracker meetingId={meetingId} />
+            
+            {/* AI Coach Panel */}
+            <AICoachPanel meetingId={meetingId} />
+            
+            {/* Live Knowledge Graph */}
+            <LiveKnowledgeGraph meetingId={meetingId} />
             
             {/* Neural Command Center - AI Brain */}
             <NeuralCommandCenter
