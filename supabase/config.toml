@@ -149,3 +149,9 @@ verify_jwt = true
 
 [functions.list-upcoming-meetings]
 verify_jwt = false
+
+[functions.generate-key-points]
+verify_jwt = true
+
+[functions.generate-key-points-pdf]
+verify_jwt = true

@@ -12,7 +12,7 @@ serve(async (req) => {
   }
 
   try {
-    const { meetingId } = await req.json();
+    const { meetingId, language = 'en' } = await req.json();
 
     if (!meetingId) {
       return new Response(
@@ -89,9 +89,29 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          {
+        {
             role: "system",
-            content: `You are an expert meeting analyst. Extract the most important key points from meetings.
+            content: language === 'am' 
+              ? `እርስዎ ባለሙያ ስብሰባ ተንታኝ ነዎት። ከስብሰባዎች ወሳኝ ነጥቦችን ያውጡ።
+
+የእርስዎን ምላሽ እንደ JSON ነገር በዚህ መዋቅር ያቅርቡ:
+{
+  "summary": "አጭር 2-3 ዓረፍተ ነገር አጠቃላይ እይታ",
+  "keyPoints": ["ነጥብ 1", "ነጥብ 2", "ነጥብ 3", ...],
+  "decisions": ["ውሳኔ 1", "ውሳኔ 2", ...],
+  "actionItems": ["እርምጃ 1", "እርምጃ 2", ...],
+  "keywords": ["ቁልፍ ቃል1", "ቁልፍ ቃል2", "ቁልፍ ቃል3", ...]
+}
+
+በሚከተሉት ላይ አተኩር:
+- ዋና ርዕሶች የተነጋገሩ
+- ዋና ውሳኔዎች የተወሰኑ
+- አስፈላጊ የተግባር ነጥቦች
+- ጉልህ ግንዛቤዎች ወይም መደምደሚያዎች
+- ለመፈለግ ወሳኝ ቁልፍ ቃላት
+
+በአማርኛ መልስ ይስጡ።`
+              : `You are an expert meeting analyst. Extract the most important key points from meetings.
             
 Format your response as a JSON object with this structure:
 {
@@ -107,7 +127,9 @@ Focus on:
 - Key decisions made
 - Important action items
 - Notable insights or conclusions
-- Critical keywords for searchability`
+- Critical keywords for searchability
+
+Respond in English.`
           },
           {
             role: "user",

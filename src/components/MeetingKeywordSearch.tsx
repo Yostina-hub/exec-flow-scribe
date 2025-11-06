@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Search, FileText, MessageSquare, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
+import { detectLanguage } from '@/utils/langDetect';
 
 interface SearchResult {
   type: 'transcription' | 'minute' | 'agenda';
@@ -25,6 +28,7 @@ export const MeetingKeywordSearch = ({ meetingId }: MeetingKeywordSearchProps) =
   const [searchQuery, setSearchQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
@@ -37,7 +41,15 @@ export const MeetingKeywordSearch = ({ meetingId }: MeetingKeywordSearchProps) =
   const performSearch = async () => {
     setIsSearching(true);
     try {
-      const keywords = searchQuery.toLowerCase().split(' ').filter(k => k.length >= 2);
+      // Detect if query contains Amharic
+      const detectedLang = detectLanguage(searchQuery);
+      const isAmharic = detectedLang === 'am' || detectedLang === 'mixed';
+      
+      // For Amharic, keep the query as is; for English/other, split by space
+      const keywords = isAmharic 
+        ? [searchQuery.toLowerCase().trim()]
+        : searchQuery.toLowerCase().split(' ').filter(k => k.length >= 2);
+      
       const foundResults: SearchResult[] = [];
 
       // Search transcriptions
@@ -156,95 +168,104 @@ export const MeetingKeywordSearch = ({ meetingId }: MeetingKeywordSearchProps) =
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5 text-primary" />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" className="gap-2">
+          <Search className="h-4 w-4" />
           Keyword Search
-        </CardTitle>
-        <CardDescription>
-          Search across transcripts, minutes, and agenda items
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search for keywords..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-4xl max-h-[90vh]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-primary" />
+            Keyword Search
+          </DialogTitle>
+          <DialogDescription>
+            Search across transcripts, minutes, and agenda items (supports Amharic and English)
+          </DialogDescription>
+        </DialogHeader>
 
-        {searchQuery.length > 0 && searchQuery.length < 2 && (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            Type at least 2 characters to search
-          </p>
-        )}
+        <div className="space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search for keywords (አማርኛ or English)..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
-        {searchQuery.length >= 2 && (
-          <ScrollArea className="h-[400px] pr-4">
-            {isSearching ? (
-              <p className="text-sm text-muted-foreground text-center py-8">Searching...</p>
-            ) : results.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">
-                No results found for "{searchQuery}"
-              </p>
-            ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Found {results.length} result{results.length !== 1 ? 's' : ''}
+          {searchQuery.length > 0 && searchQuery.length < 2 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Type at least 2 characters to search
+            </p>
+          )}
+
+          {searchQuery.length >= 2 && (
+            <ScrollArea className="h-[60vh] pr-4">
+              {isSearching ? (
+                <p className="text-sm text-muted-foreground text-center py-8">Searching...</p>
+              ) : results.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  No results found for "{searchQuery}"
                 </p>
-                {results.map((result, idx) => (
-                  <Card key={idx} className="border-primary/20">
-                    <CardContent className="pt-4 space-y-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Badge variant="secondary" className="gap-1">
-                          {getTypeIcon(result.type)}
-                          {getTypeLabel(result.type)}
-                        </Badge>
-                        {result.speaker && (
-                          <Badge variant="outline">{result.speaker}</Badge>
-                        )}
-                        {result.timestamp && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(result.timestamp), { addSuffix: true })}
-                          </span>
-                        )}
-                        {result.created_at && (
-                          <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(result.created_at), { addSuffix: true })}
-                          </span>
-                        )}
-                      </div>
-                      {result.title && (
-                        <h4 className="font-medium text-sm">{result.title}</h4>
-                      )}
-                      <p
-                        className="text-sm text-muted-foreground leading-relaxed"
-                        dangerouslySetInnerHTML={{
-                          __html: highlightKeywords(
-                            result.content.substring(0, 200) + (result.content.length > 200 ? '...' : ''),
-                            result.matchedKeywords
-                          )
-                        }}
-                      />
-                      <div className="flex gap-1 flex-wrap">
-                        {result.matchedKeywords.map((kw, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {kw}
+              ) : (
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Found {results.length} result{results.length !== 1 ? 's' : ''}
+                  </p>
+                  {results.map((result, idx) => (
+                    <Card key={idx} className="border-primary/20">
+                      <CardContent className="pt-4 space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary" className="gap-1">
+                            {getTypeIcon(result.type)}
+                            {getTypeLabel(result.type)}
                           </Badge>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-        )}
-      </CardContent>
-    </Card>
+                          {result.speaker && (
+                            <Badge variant="outline">{result.speaker}</Badge>
+                          )}
+                          {result.timestamp && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(result.timestamp), { addSuffix: true })}
+                            </span>
+                          )}
+                          {result.created_at && (
+                            <span className="text-xs text-muted-foreground">
+                              {formatDistanceToNow(new Date(result.created_at), { addSuffix: true })}
+                            </span>
+                          )}
+                        </div>
+                        {result.title && (
+                          <h4 className="font-medium text-sm">{result.title}</h4>
+                        )}
+                        <p
+                          className="text-sm text-muted-foreground leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: highlightKeywords(
+                              result.content.substring(0, 200) + (result.content.length > 200 ? '...' : ''),
+                              result.matchedKeywords
+                            )
+                          }}
+                        />
+                        <div className="flex gap-1 flex-wrap">
+                          {result.matchedKeywords.map((kw, i) => (
+                            <Badge key={i} variant="outline" className="text-xs">
+                              {kw}
+                            </Badge>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };

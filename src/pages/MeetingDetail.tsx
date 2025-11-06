@@ -1133,18 +1133,18 @@ const MeetingDetail = () => {
           </div>
 
           {/* Sidebar - Revolutionary AI Intelligence */}
-          <div className="space-y-6">
-            {/* AI-Powered Summary & Search */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <MeetingKeyPointsSummary meetingId={meetingId} />
-              <MeetingKeywordSearch meetingId={meetingId} />
-            </div>
-            
+          <div className="space-y-6">            
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
+                {/* AI-Powered Summary & Search */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
+                  <MeetingKeyPointsSummary meetingId={meetingId} />
+                  <MeetingKeywordSearch meetingId={meetingId} />
+                </div>
+                
                 <Button 
                   variant="default" 
                   className="w-full justify-start gap-2"
