@@ -133,7 +133,7 @@ const Auth = () => {
     <div className={`min-h-screen relative overflow-hidden ${isEthioTelecom ? 'bg-[#F4F4F4]' : 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'}`}>
       {/* Ethio Telecom Header */}
       {isEthioTelecom && (
-        <div className="fixed top-0 left-0 right-0 h-20 z-40">
+        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-40">
           <img 
             src={ethioTelecomLogo} 
             alt="Ethio Telecom" 
@@ -143,7 +143,7 @@ const Auth = () => {
       )}
       
       {/* Theme Switcher - Top Right */}
-      <div className={`absolute ${isEthioTelecom ? 'top-24' : 'top-4'} right-4 z-50`}>
+      <div className={`absolute ${isEthioTelecom ? 'top-20 sm:top-24' : 'top-4'} right-4 z-50`}>
         <ThemeSwitcher />
       </div>
       
@@ -179,8 +179,8 @@ const Auth = () => {
         </>
       )}
 
-      <div className={`relative z-10 min-h-screen flex items-center justify-center ${isEthioTelecom ? 'pt-20 p-4' : 'p-0 lg:p-4'}`}>
-        <div className={`w-full ${isEthioTelecom ? 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center' : 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center h-full lg:h-auto'}`}>
+      <div className={`relative z-10 min-h-screen flex items-center justify-center ${isEthioTelecom ? 'pt-20 sm:pt-24 pb-8 px-4' : 'p-4 lg:p-8'}`}>
+        <div className={`w-full ${isEthioTelecom ? 'max-w-md lg:max-w-6xl lg:grid lg:grid-cols-2 gap-8 items-center' : 'max-w-6xl grid lg:grid-cols-2 gap-8 items-center'}`}>
           {/* Hero Section - For both themes */}
           <div className={`space-y-8 animate-fade-in hidden lg:block pr-12 ${isEthioTelecom ? 'text-gray-900' : 'text-white'}`}>
             <div className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full backdrop-blur-xl border shadow-xl ${isEthioTelecom ? 'bg-[#8DC63F]/20 border-[#8DC63F]/50 shadow-[#8DC63F]/20' : 'bg-gradient-to-r from-emerald-500/30 to-cyan-500/30 border-emerald-400/50 shadow-emerald-500/20'}`}>
@@ -224,33 +224,33 @@ const Auth = () => {
           </div>
 
           {/* Auth Card */}
-          <div className={`${isEthioTelecom ? 'w-full' : 'animate-scale-in w-full lg:w-auto h-full lg:h-auto'}`}>
+          <div className={`${isEthioTelecom ? 'w-full' : 'animate-scale-in w-full lg:w-auto'}`}>
             <Card className={`${isEthioTelecom 
-              ? 'border border-gray-200 bg-white shadow-md rounded-lg' 
-              : 'border-0 lg:border-2 lg:border-emerald-400/30 bg-slate-900/95 backdrop-blur-2xl shadow-none lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] lg:rounded-3xl rounded-none min-h-screen lg:min-h-0 flex flex-col justify-center py-8 lg:py-0'
+              ? 'border border-gray-200 bg-white shadow-lg rounded-2xl' 
+              : 'border-0 lg:border-2 lg:border-emerald-400/30 bg-slate-900/95 backdrop-blur-2xl shadow-none lg:shadow-[0_20px_70px_-15px_rgba(16,185,129,0.3)] rounded-2xl lg:rounded-3xl'
             } relative overflow-hidden`}>
               {!isEthioTelecom && (
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
               )}
               
-              <CardHeader className={`space-y-4 ${isEthioTelecom ? 'px-8 pt-8 pb-4' : 'px-4 sm:px-8 pt-8 lg:pt-8 pb-4 lg:pb-6'} relative`}>
+              <CardHeader className={`space-y-3 ${isEthioTelecom ? 'px-6 sm:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4' : 'px-6 sm:px-8 pt-6 sm:pt-8 pb-3 sm:pb-4 lg:pb-6'} relative`}>
                 {isEthioTelecom ? (
                   <>
-                    <div className="flex items-center justify-center gap-3">
+                    <div className="flex items-center justify-center gap-2 sm:gap-3">
                       <div className="relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-[#8DC63F] to-[#0072BC] rounded-2xl blur-xl opacity-50 animate-pulse" />
-                        <div className="relative h-14 w-14 lg:h-16 lg:w-16 rounded-2xl bg-gradient-to-br from-[#8DC63F] via-[#7AB62F] to-[#0072BC] flex items-center justify-center shadow-2xl animate-glow">
-                          <Sparkles className="h-7 w-7 lg:h-8 lg:w-8 text-white" />
+                        <div className="absolute inset-0 bg-gradient-to-br from-[#8DC63F] to-[#0072BC] rounded-xl sm:rounded-2xl blur-lg sm:blur-xl opacity-50 animate-pulse" />
+                        <div className="relative h-12 w-12 sm:h-14 sm:w-14 lg:h-16 lg:w-16 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#8DC63F] via-[#7AB62F] to-[#0072BC] flex items-center justify-center shadow-2xl animate-glow">
+                          <Sparkles className="h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8 text-white" />
                         </div>
                       </div>
                       <div>
-                        <h1 className="text-2xl lg:text-4xl font-black font-['Noto_Sans_Ethiopic'] bg-gradient-to-r from-[#8DC63F] via-[#7AB62F] to-[#0072BC] bg-clip-text text-transparent">
+                        <h1 className="text-xl sm:text-2xl lg:text-4xl font-black font-['Noto_Sans_Ethiopic'] bg-gradient-to-r from-[#8DC63F] via-[#7AB62F] to-[#0072BC] bg-clip-text text-transparent">
                           MeetingHub
                         </h1>
-                        <p className="text-sm lg:text-base text-[#8DC63F] font-bold tracking-wide">Executive Edition</p>
+                        <p className="text-xs sm:text-sm lg:text-base text-[#8DC63F] font-bold tracking-wide">Executive Edition</p>
                       </div>
                     </div>
-                    <CardDescription className="text-base lg:text-lg text-gray-700 font-semibold text-center">
+                    <CardDescription className="text-sm sm:text-base lg:text-lg text-gray-700 font-semibold text-center px-2">
                       Secure access to your organization's intelligence platform
                     </CardDescription>
                   </>
@@ -276,17 +276,17 @@ const Auth = () => {
                   </>
                 )}
               </CardHeader>
-              <CardContent className={`${isEthioTelecom ? 'px-8 pb-8' : 'px-4 sm:px-6 lg:px-6 pb-6 lg:pb-8'}`}>
+              <CardContent className={`${isEthioTelecom ? 'px-6 sm:px-8 pb-6 sm:pb-8' : 'px-6 sm:px-8 pb-6 sm:pb-8 lg:pb-8'}`}>
                 <Tabs defaultValue="signin" className="w-full">
-                  <TabsList className={`grid w-full grid-cols-2 ${isEthioTelecom ? 'bg-gray-100 border border-gray-200' : 'bg-slate-800 border border-slate-700'} h-10 lg:h-auto`}>
-                    <TabsTrigger value="signin" className={`text-sm lg:text-base ${isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}>Sign In</TabsTrigger>
-                    <TabsTrigger value="signup" className={`text-sm lg:text-base ${isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}>Sign Up</TabsTrigger>
+                  <TabsList className={`grid w-full grid-cols-2 ${isEthioTelecom ? 'bg-gray-100 border border-gray-200' : 'bg-slate-800 border border-slate-700'} h-11 sm:h-12`}>
+                    <TabsTrigger value="signin" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}>Sign In</TabsTrigger>
+                    <TabsTrigger value="signup" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}>Sign Up</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="signin" className="animate-fade-in mt-4 lg:mt-6">
-                    <form onSubmit={handleSignIn} className="space-y-3 lg:space-y-4">
-                      <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="email" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Email</Label>
+                  <TabsContent value="signin" className="animate-fade-in mt-5 sm:mt-6">
+                    <form onSubmit={handleSignIn} className="space-y-4 sm:space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'text-gray-700' : 'text-white'}`}>Email</Label>
                         <Input
                           id="email"
                           type="email"
@@ -294,31 +294,31 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
+                          className={`h-12 sm:h-11 text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
-                      <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="password" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Password</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'text-gray-700' : 'text-white'}`}>Password</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
+                          className={`h-12 sm:h-11 text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className={`w-full h-11 lg:h-10 text-sm lg:text-base font-semibold shadow-lg transition-all duration-300 ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F] text-white' : 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white hover:shadow-cyan-500/50 hover:scale-105'}`}
+                        className={`w-full h-12 sm:h-11 text-base font-bold shadow-lg transition-all duration-300 ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F] text-white' : 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white hover:shadow-cyan-500/50 hover:scale-105'}`}
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Sign In
                       </Button>
                       {isEthioTelecom && (
-                        <div className="text-center">
-                          <button type="button" className="text-red-500 text-sm font-medium hover:underline">
+                        <div className="text-center pt-2">
+                          <button type="button" className="text-red-500 text-sm sm:text-base font-semibold hover:underline">
                             Forgot Password?
                           </button>
                         </div>
@@ -326,10 +326,10 @@ const Auth = () => {
                     </form>
                   </TabsContent>
 
-                  <TabsContent value="signup" className="animate-fade-in mt-4 lg:mt-6">
-                    <form onSubmit={handleSignUp} className="space-y-3 lg:space-y-4">
-                      <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="fullname" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Full Name</Label>
+                  <TabsContent value="signup" className="animate-fade-in mt-5 sm:mt-6">
+                    <form onSubmit={handleSignUp} className="space-y-4 sm:space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="fullname" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'text-gray-700' : 'text-white'}`}>Full Name</Label>
                         <Input
                           id="fullname"
                           type="text"
@@ -337,22 +337,22 @@ const Auth = () => {
                           value={fullName}
                           onChange={(e) => setFullName(e.target.value)}
                           required
-                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
+                          className={`h-12 sm:h-11 text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
-                      <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="usertitle" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Title</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="usertitle" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'text-gray-700' : 'text-white'}`}>Title</Label>
                         <Input
                           id="usertitle"
                           type="text"
                           placeholder="CEO"
                           value={title}
                           onChange={(e) => setTitle(e.target.value)}
-                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
+                          className={`h-12 sm:h-11 text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
-                      <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-email" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Email</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-email" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'text-gray-700' : 'text-white'}`}>Email</Label>
                         <Input
                           id="signup-email"
                           type="email"
@@ -360,23 +360,23 @@ const Auth = () => {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           required
-                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
+                          className={`h-12 sm:h-11 text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
-                      <div className="space-y-1.5 lg:space-y-2">
-                        <Label htmlFor="signup-password" className={`text-sm lg:text-base ${isEthioTelecom ? 'text-gray-600 font-medium' : 'text-white font-semibold'}`}>Password</Label>
+                      <div className="space-y-2">
+                        <Label htmlFor="signup-password" className={`text-sm sm:text-base font-semibold ${isEthioTelecom ? 'text-gray-700' : 'text-white'}`}>Password</Label>
                         <Input
                           id="signup-password"
                           type="password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
                           required
-                          className={`h-10 lg:h-10 text-sm lg:text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
+                          className={`h-12 sm:h-11 text-base ${isEthioTelecom ? 'bg-blue-50 border-blue-200 text-gray-900 placeholder:text-gray-400' : 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'} focus:border-cyan-500 focus:ring-cyan-500/20`}
                         />
                       </div>
                       <Button 
                         type="submit" 
-                        className={`w-full h-11 lg:h-10 text-sm lg:text-base font-semibold shadow-lg transition-all duration-300 ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F] text-white' : 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white hover:shadow-cyan-500/50 hover:scale-105'}`}
+                        className={`w-full h-12 sm:h-11 text-base font-bold shadow-lg transition-all duration-300 ${isEthioTelecom ? 'bg-[#8DC63F] hover:bg-[#7AB62F] text-white' : 'bg-gradient-to-r from-blue-500 via-cyan-500 to-emerald-500 hover:from-blue-600 hover:via-cyan-600 hover:to-emerald-600 text-white hover:shadow-cyan-500/50 hover:scale-105'}`}
                         disabled={loading}
                       >
                         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
