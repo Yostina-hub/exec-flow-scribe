@@ -45,6 +45,27 @@ const Actions = () => {
 
   useEffect(() => {
     fetchActions();
+    
+    // Real-time subscription for action items
+    const channel = supabase
+      .channel('actions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'action_items'
+        },
+        () => {
+          console.log('Action items changed, refetching...');
+          fetchActions();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchActions = async () => {
