@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send, Loader2 } from "lucide-react";
+import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send, Loader2, Settings as SettingsIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
@@ -383,12 +383,20 @@ const Settings = () => {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
-          <p className="text-muted-foreground mt-2">
-            Manage your account preferences and application settings
-          </p>
+        {/* Executive Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-indigo-500/10 p-8 border border-cyan-500/20">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          
+          <div className="relative z-10">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-4">
+              <SettingsIcon className="h-4 w-4 text-cyan-400" />
+              <span className="text-sm font-medium">Configuration Center</span>
+            </div>
+            <h1 className="text-5xl font-black font-['Space_Grotesk'] mb-3">Settings</h1>
+            <p className="text-muted-foreground text-lg">
+              Manage your account preferences and application settings
+            </p>
+          </div>
         </div>
 
         <Tabs defaultValue="profile" className="w-full">
