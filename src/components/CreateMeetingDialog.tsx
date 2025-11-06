@@ -44,7 +44,7 @@ export const CreateMeetingDialog = () => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [meetingType, setMeetingType] = useState<'video_conference' | 'standard'>('standard');
+  const [meetingType, setMeetingType] = useState<'video_conference' | 'virtual_room' | 'standard'>('standard');
 
   useEffect(() => {
     if (open) {

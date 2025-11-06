@@ -91,7 +91,7 @@ export function useMeetingAccess(meetingId: string | undefined): MeetingAccessRe
           .from('meetings')
           .select('created_by')
           .eq('id', meetingId)
-          .maybeSingle();
+          .single();
         const isHost = meetingRow?.created_by === user.id;
 
         setAccessData({

@@ -68,37 +68,10 @@ export const useAudioRecorder = (meetingId: string) => {
 
   const startRecording = useCallback(async () => {
     try {
-      // Initialize or restore recording timestamps
-      let startTs = recordingStartTimeRef.current;
-      let pausedTotal = pausedDurationRef.current || 0;
-
-      try {
-        const saved = localStorage.getItem(`meeting-recording-${meetingId}`);
-        if (saved) {
-          const s = JSON.parse(saved);
-          if (s.isRecording && s.startTime) {
-            startTs = s.startTime;
-            pausedTotal = s.pausedDuration || 0;
-          }
-        }
-      } catch {}
-
-      if (!startTs) startTs = Date.now();
-      recordingStartTimeRef.current = startTs;
-      pausedDurationRef.current = pausedTotal;
+      // Initialize recording timestamps
+      recordingStartTimeRef.current = Date.now();
+      pausedDurationRef.current = 0;
       pauseStartTimeRef.current = null;
-      
-      // Persist recording session so the global indicator can detect it across routes/tabs
-      try {
-        localStorage.setItem(
-          `meeting-recording-${meetingId}`,
-          JSON.stringify({
-            isRecording: true,
-            startTime: startTs,
-            pausedDuration: pausedTotal,
-          })
-        );
-      } catch {}
       
       // Update meeting status to "in_progress" when recording starts
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -447,11 +420,6 @@ export const useAudioRecorder = (meetingId: string) => {
         title: 'Recording stopped',
         description: 'Meeting completed, generating minutes...',
       });
-
-      // Clear persisted indicator state
-      try {
-        localStorage.removeItem(`meeting-recording-${meetingId}`);
-      } catch {}
     } catch (e) {
       console.error('Error stopping recording:', e);
       // Force state update even if stop fails
@@ -486,19 +454,6 @@ export const useAudioRecorder = (meetingId: string) => {
         }
         mediaRecorderRef.current.resume();
         setIsPaused(false);
-        
-        // Persist updated paused duration so the indicator shows correct elapsed time
-        try {
-          const key = `meeting-recording-${meetingId}`;
-          const existing = localStorage.getItem(key);
-          const base = existing ? JSON.parse(existing) : {};
-          localStorage.setItem(key, JSON.stringify({
-            ...base,
-            isRecording: true,
-            startTime: recordingStartTimeRef.current,
-            pausedDuration: pausedDurationRef.current,
-          }));
-        } catch {}
       } catch (err) {
         console.error('Error resuming recording:', err);
       }

@@ -80,7 +80,7 @@ export const ManageAttendeesDialog = ({
       // Fetch current attendees
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('meeting_attendees')
-        .select('id, user_id, role, response_status, profiles:user_id(full_name, email)')
+        .select('id, user_id, role, response_status, profiles(full_name, email)')
         .eq('meeting_id', meetingId);
 
       if (attendeesError) throw attendeesError;

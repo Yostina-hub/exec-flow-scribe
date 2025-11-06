@@ -5,7 +5,6 @@ import { RequirePermission } from "@/components/RequirePermission";
 import { useSystemIntegration } from "@/hooks/useSystemIntegration";
 import { useCalendarActionSync } from "@/hooks/useCalendarActionSync";
 import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
-import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import CalendarView from "./pages/CalendarView";
 import Meetings from "./pages/Meetings";
@@ -49,7 +48,6 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
       <BrowserRouter>
           <IntegrationProvider>
             <Routes>
@@ -88,9 +86,8 @@ const App = () => (
             </Routes>
           </IntegrationProvider>
         </BrowserRouter>
-      </ThemeProvider>
-      <Toaster />
-    </QueryClientProvider>
+        <Toaster />
+   </QueryClientProvider>
 );
 
 export default App;

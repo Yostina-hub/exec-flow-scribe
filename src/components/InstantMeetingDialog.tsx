@@ -28,6 +28,7 @@ import { generateGoogleMeetLink, generateTMeetLink } from '@/utils/videoConferen
 export function InstantMeetingDialog() {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [meetingType, setMeetingType] = useState<'video_conference' | 'virtual_room'>('video_conference');
   const navigate = useNavigate();
 
   const handleCreateInstant = async (e: React.FormEvent) => {
@@ -38,7 +39,7 @@ export function InstantMeetingDialog() {
       const formData = new FormData(e.target as HTMLFormElement);
       const title = formData.get('title') as string || 'Quick Meeting';
       const duration = parseInt(formData.get('duration') as string);
-      const videoProvider = formData.get('video_provider') as string;
+      const videoProvider = meetingType === 'video_conference' ? (formData.get('video_provider') as string) : null;
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
@@ -93,13 +94,13 @@ export function InstantMeetingDialog() {
           title,
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          location: 'Virtual',
+          location: meetingType === 'virtual_room' ? 'Virtual 3D Room' : 'Virtual',
           description: 'Instant meeting',
           created_by: user.id,
           status: 'in_progress' as any,
-          meeting_type: 'video_conference' as any,
-          video_conference_url: videoUrl,
-          video_provider: finalProvider as any,
+          meeting_type: meetingType as any,
+          video_conference_url: meetingType === 'video_conference' ? videoUrl : null,
+          video_provider: (meetingType === 'video_conference' ? finalProvider : null) as any,
           timezone: 'Africa/Addis_Ababa',
           is_recurring: false,
         } as any)
@@ -181,18 +182,54 @@ export function InstantMeetingDialog() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="video_provider">Video Platform</Label>
-              <Select defaultValue="tmeet" name="video_provider">
-                <SelectTrigger id="video_provider">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tmeet">TMeet (Instant)</SelectItem>
-                  <SelectItem value="google_meet">Google Meet (with OAuth)</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="space-y-4">
+              <Label>Meeting Experience</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <Card
+                  className={`cursor-pointer transition-all duration-200 border-2 ${
+                    meetingType === 'video_conference'
+                      ? 'border-blue-500/50 bg-blue-500/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => setMeetingType('video_conference')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <Video className="h-12 w-12 mx-auto mb-4 text-blue-500" />
+                    <h3 className="font-semibold text-lg mb-2">Video Conference</h3>
+                    <p className="text-sm text-muted-foreground">External video call (Google Meet, TMeet)</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={`cursor-pointer transition-all duration-200 border-2 ${
+                    meetingType === 'virtual_room'
+                      ? 'border-purple-500/50 bg-purple-500/10'
+                      : 'border-border hover:border-primary/50'
+                  }`}
+                  onClick={() => setMeetingType('virtual_room')}
+                >
+                  <CardContent className="p-6 text-center">
+                    <Globe className="h-12 w-12 mx-auto mb-4 text-purple-500" />
+                    <h3 className="font-semibold text-lg mb-2">Virtual 3D Room</h3>
+                    <p className="text-sm text-muted-foreground">Immersive 3D meeting experience</p>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
+
+            {meetingType === 'video_conference' && (
+              <div className="space-y-2">
+                <Label htmlFor="video_provider">Video Platform</Label>
+                <Select defaultValue="tmeet" name="video_provider">
+                  <SelectTrigger id="video_provider">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tmeet">TMeet (Instant)</SelectItem>
+                    <SelectItem value="google_meet">Google Meet (with OAuth)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="bg-muted/50 p-3 rounded-lg text-sm text-muted-foreground">
               <p className="font-semibold mb-1">What happens next:</p>

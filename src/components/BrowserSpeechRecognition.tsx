@@ -51,31 +51,6 @@ export const BrowserSpeechRecognition = ({
   const pausedDurationRef = useRef<number>(0);
   const pauseStartTimeRef = useRef<number | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Load persisted state on mount
-  useEffect(() => {
-    const savedState = localStorage.getItem(`transcription-${meetingId}`);
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        if (state.transcript) {
-          // Restore transcript would require speech recognition API support
-          // For now we just log it
-          console.log('Found saved transcript:', state.transcript.substring(0, 100));
-        }
-      } catch (e) {
-        console.error('Failed to load transcription state:', e);
-      }
-    }
-  }, [meetingId]);
-  
-  // Persist transcript to localStorage
-  useEffect(() => {
-    if (transcript) {
-      const state = { transcript, timestamp: Date.now() };
-      localStorage.setItem(`transcription-${meetingId}`, JSON.stringify(state));
-    }
-  }, [transcript, meetingId]);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
   const [userId, setUserId] = useState<string | null>(null);

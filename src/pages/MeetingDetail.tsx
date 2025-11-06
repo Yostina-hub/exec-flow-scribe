@@ -71,6 +71,7 @@ import { SpeakerQueue } from "@/components/SpeakerQueue";
 import { AutoAssignmentControls } from "@/components/AutoAssignmentControls";
 import { MeetingAnalytics } from "@/components/MeetingAnalytics";
 import { RealTimePresence } from "@/components/RealTimePresence";
+import { RecordingConsentDialog } from "@/components/RecordingConsentDialog";
 import { AuditLogViewer } from "@/components/AuditLogViewer";
 import { BreakoutRoomsManager } from "@/components/BreakoutRoomsManager";
 import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
@@ -81,11 +82,9 @@ import { MeetingBookmarks } from "@/components/MeetingBookmarks";
 import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
 import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
 import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
-import { EnhancedDocumentsTab } from "@/components/EnhancedDocumentsTab";
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { useTheme } from "@/contexts/ThemeContext";
 import { format } from "date-fns";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
 import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
@@ -168,14 +167,13 @@ const MeetingDetail = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
-  const { theme } = useTheme();
-  const isEthioTelecom = theme === 'ethio-telecom';
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const [showViewMinutesDialog, setShowViewMinutesDialog] = useState(false);
   const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
   const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showConsentDialog, setShowConsentDialog] = useState(false);
   const [showVirtualRoom, setShowVirtualRoom] = useState(false);
   const [showHostPanel, setShowHostPanel] = useState(false);
   const [userId, setUserId] = useState<string>("");
@@ -197,7 +195,6 @@ const MeetingDetail = () => {
   const [spatialView, setSpatialView] = useState(false);
   const [activeTab, setActiveTab] = useState('transcription');
   const [transcriptionLanguage, setTranscriptionLanguage] = useState('am-ET');
-  const hasRestoredRecordingRef = useRef(false);
   
   const meetingId = id || "demo-meeting-id";
   
@@ -269,6 +266,20 @@ const MeetingDetail = () => {
         if (profile) {
           setUserFullName(profile.full_name || "User");
         }
+        
+        // Check if meeting requires consent and user hasn't given it yet
+        if (id) {
+          const { data: consent } = await supabase
+            .from("recording_consents")
+            .select("consent_given")
+            .eq("meeting_id", id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          
+          if (!consent?.consent_given) {
+            setShowConsentDialog(true);
+          }
+        }
       }
     };
     getUser();
@@ -294,112 +305,6 @@ const MeetingDetail = () => {
     };
   }, []);
 
-  // Restore active recording when returning to this page
-  useEffect(() => {
-    if (!meetingId || !userId || hasRestoredRecordingRef.current) return;
-    
-    const checkAndRestoreRecording = async () => {
-      try {
-        const recordingKey = `meeting-recording-${meetingId}`;
-        const savedRecording = localStorage.getItem(recordingKey);
-        
-        if (savedRecording) {
-          const recordingData = JSON.parse(savedRecording);
-          
-          // Only restore if recording is actually active and user is the host
-          if (recordingData.isRecording && meeting?.created_by === userId) {
-            console.log('Found active recording, restoring state...');
-            
-            // Restore the recording timestamps
-            recordingStartTimeRef.current = recordingData.startTime;
-            pausedDurationRef.current = recordingData.pausedDuration || 0;
-            
-            // Calculate current duration for display
-            if (recordingData.startTime) {
-              const elapsed = Date.now() - recordingData.startTime;
-              const pausedDuration = recordingData.pausedDuration || 0;
-              const currentSeconds = Math.floor((elapsed - pausedDuration) / 1000);
-              setRecordingSeconds(currentSeconds);
-            }
-            
-            // Auto-restart recording to resume audio capture
-            if (!isRecording) {
-              console.log('Restarting recording to resume audio capture');
-              hasRestoredRecordingRef.current = true;
-              await startRecording();
-              
-              toast({
-                title: 'Recording Resumed',
-                description: 'Your recording session has been restored',
-              });
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error restoring recording:', error);
-      }
-    };
-    
-    // Small delay to ensure meeting data is loaded
-    const timer = setTimeout(checkAndRestoreRecording, 500);
-    return () => clearTimeout(timer);
-  }, [meetingId, userId, meeting, startRecording, toast]);
-
-  // Load recording state from localStorage on mount
-  useEffect(() => {
-    const savedState = localStorage.getItem(`recording-${meetingId}`);
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        if (state.isRecording && state.startTime) {
-          recordingStartTimeRef.current = state.startTime;
-          pausedDurationRef.current = state.pausedDuration || 0;
-          pauseStartTimeRef.current = state.pauseStartTime || null;
-        }
-      } catch (e) {
-        console.error('Failed to load recording state:', e);
-      }
-    }
-  }, [meetingId]);
-
-  // Persist recording state to localStorage and sync across tabs
-  useEffect(() => {
-    if (isRecording) {
-      const state = {
-        isRecording: true,
-        startTime: recordingStartTimeRef.current,
-        pausedDuration: pausedDurationRef.current,
-        pauseStartTime: pauseStartTimeRef.current,
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(`recording-${meetingId}`, JSON.stringify(state));
-    } else {
-      localStorage.removeItem(`recording-${meetingId}`);
-    }
-  }, [isRecording, meetingId]);
-
-  // Sync recording state across browser tabs
-  useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === `recording-${meetingId}` && e.newValue) {
-        try {
-          const state = JSON.parse(e.newValue);
-          if (state.isRecording && state.startTime) {
-            recordingStartTimeRef.current = state.startTime;
-            pausedDurationRef.current = state.pausedDuration || 0;
-            pauseStartTimeRef.current = state.pauseStartTime || null;
-            console.log('Synced recording state from another tab');
-          }
-        } catch (e) {
-          console.error('Failed to sync recording state:', e);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [meetingId]);
-
   // Track recording time with timestamp-based approach (works even when tab is inactive)
   useEffect(() => {
     if (isRecording && !isPaused) {
@@ -424,22 +329,6 @@ const MeetingDetail = () => {
           const elapsed = Date.now() - recordingStartTimeRef.current - pausedDurationRef.current;
           const seconds = Math.floor(elapsed / 1000);
           setRecordingSeconds(seconds);
-          
-          // Update localStorage every second for the floating indicator
-          if (seconds % 1 === 0) {
-            try {
-              localStorage.setItem(
-                `meeting-recording-${meetingId}`,
-                JSON.stringify({
-                  isRecording: true,
-                  startTime: recordingStartTimeRef.current,
-                  pausedDuration: pausedDurationRef.current,
-                })
-              );
-            } catch (e) {
-              console.error('Failed to update recording state:', e);
-            }
-          }
         }
       };
       
@@ -481,30 +370,16 @@ const MeetingDetail = () => {
     };
   }, [isRecording, isPaused]);
 
-  // Reset recording seconds and timestamps when recording starts fresh (but not when resuming)
+  // Reset recording seconds and timestamps when recording starts fresh
   useEffect(() => {
     if (isRecording && !wasRecordingRef.current) {
-      // Only reset if we don't have a restored recording session
-      const recordingKey = `meeting-recording-${meetingId}`;
-      const savedRecording = localStorage.getItem(recordingKey);
-      
-      if (!savedRecording || !hasRestoredRecordingRef.current) {
-        setRecordingSeconds(0);
-        recordingStartTimeRef.current = Date.now();
-        pausedDurationRef.current = 0;
-        pauseStartTimeRef.current = null;
-        console.log('Fresh recording started - reset all timers');
-      } else {
-        console.log('Resuming existing recording - preserving timestamps');
-      }
-      
-      wasRecordingRef.current = true;
-    } else if (!isRecording && wasRecordingRef.current) {
-      // Only reset flag when recording stops, but don't update wasRecordingRef here
-      // Let the auto-generate useEffect handle wasRecordingRef to detect the transition
-      hasRestoredRecordingRef.current = false;
+      setRecordingSeconds(0);
+      recordingStartTimeRef.current = Date.now();
+      pausedDurationRef.current = 0;
+      pauseStartTimeRef.current = null;
+      console.log('Fresh recording started - reset all timers');
     }
-  }, [isRecording, meetingId]);
+  }, [isRecording]);
 
   // Auto-generate minutes when recording stops
   useEffect(() => {
@@ -646,11 +521,11 @@ const MeetingDetail = () => {
           meeting_attendees(
             user_id,
             attended,
-            profiles:user_id(full_name, email, title)
+            profiles(full_name, email, title)
           )
         `)
         .eq("id", id)
-        .maybeSingle();
+        .single();
 
       if (meetingError) throw meetingError;
 
@@ -1062,52 +937,29 @@ const MeetingDetail = () => {
         </Card>
 
         {/* Main Content */}
-        <div className="space-y-6">
-          <Tabs
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Transcription & Agenda */}
+          <div className="lg:col-span-2 space-y-6">
+            <Tabs 
               defaultValue={(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') ? "video" : "transcription"} 
               className="w-full"
               onValueChange={(value) => setActiveTab(value)}
             >
               <div className="w-full overflow-x-auto pb-2">
-                <TabsList className={`inline-flex w-auto min-w-full h-auto p-1 gap-1 ${isEthioTelecom ? 'bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 backdrop-blur-sm' : ''}`}>
+                <TabsList className="inline-flex w-auto min-w-full h-auto p-1 gap-1">
                 {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                  <TabsTrigger value="video" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                    <Video className="h-4 w-4" />
+                  <TabsTrigger value="video">
                     {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
                   </TabsTrigger>
                 )}
-                <TabsTrigger value="participants" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <Users className="h-4 w-4" />
-                  Participants
-                </TabsTrigger>
-                <TabsTrigger value="transcription" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <Mic className="h-4 w-4" />
-                  Live Transcription
-                </TabsTrigger>
-                <TabsTrigger value="agenda" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <ListChecks className="h-4 w-4" />
-                  Agenda
-                </TabsTrigger>
-                <TabsTrigger value="decisions" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Decisions
-                </TabsTrigger>
-                <TabsTrigger value="collaboration" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <MessageSquare className="h-4 w-4" />
-                  Collaboration
-                </TabsTrigger>
-                <TabsTrigger value="documents" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <FileText className="h-4 w-4" />
-                  Documents
-                </TabsTrigger>
-                <TabsTrigger value="signatures" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <FileSignature className="h-4 w-4" />
-                  Audio to Minutes
-                </TabsTrigger>
-                <TabsTrigger value="chat" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <MessageSquare className="h-4 w-4" />
-                  Chat
-                </TabsTrigger>
+                <TabsTrigger value="participants">Participants</TabsTrigger>
+                <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
+                <TabsTrigger value="agenda">Agenda</TabsTrigger>
+                <TabsTrigger value="decisions">Decisions</TabsTrigger>
+                <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
+                <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsTrigger value="signatures">Audio to Minutes</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
               </TabsList>
               </div>
 
@@ -1182,122 +1034,27 @@ const MeetingDetail = () => {
                 </div>
               </TabsContent>
 
-              {/* Keep mounted but hidden to preserve state - with sidebar layout */}
-              <div className={activeTab === 'transcription' ? 'block' : 'hidden'}>
-                <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-2 space-y-4">
-                      <BrowserSpeechRecognition
-                        meetingId={meetingId}
-                        externalIsRecording={isRecording}
-                        isPaused={isPaused}
-                        onRecordingStart={startRecording}
-                        onRecordingStop={() => stopRecording()}
-                        onDurationChange={(s) => setRecordingSeconds(s)}
-                        selectedLanguage={transcriptionLanguage}
-                      />
-                      <MeetingAudioPlayback meetingId={meetingId} />
-                      <LiveTranscription 
-                        meetingId={meetingId} 
-                        isRecording={isRecording}
-                        currentUserName={userFullName || 'Unknown User'}
-                      />
-                    </div>
-
-                    {/* Right Sidebar - Settings & Quick Actions */}
-                    <div className="lg:col-span-1 space-y-4">
-                      {/* Transcription Controls */}
-                      {meeting?.created_by === userId && (
-                        <>
-                          <Card className="border-primary/20">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                <Languages className="h-4 w-4 text-primary" />
-                                Language Selection
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <Select
-                                value={transcriptionLanguage}
-                                onValueChange={setTranscriptionLanguage}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-                                  <SelectItem value="en-US">English (US)</SelectItem>
-                                  <SelectItem value="en-GB">English (UK)</SelectItem>
-                                  <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-                                  <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-                                  <SelectItem value="fr-FR">French (Français)</SelectItem>
-                                  <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-                                  <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-                                  <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-                                  <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-                                  <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-                                  <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-                                  <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-                                  <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </CardContent>
-                          </Card>
-                          
-                          <TranscriptionProviderToggle />
-                        </>
-                      )}
-                      
-                      {/* Quick Actions */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Quick Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {/* AI-Powered Summary & Search */}
-                            <div className="space-y-2">
-                              <MeetingKeyPointsSummary meetingId={meetingId} />
-                              <MeetingKeywordSearch meetingId={meetingId} />
-                            </div>
-                            
-                            <Separator />
-                            
-                            <div className="space-y-2">
-                              <Button 
-                                variant="default" 
-                                className="w-full justify-start gap-2"
-                                onClick={() => setShowMinutesDialog(true)}
-                              >
-                                <FileText className="h-4 w-4" />
-                                Generate AI Minutes
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                className="w-full justify-start gap-2"
-                                onClick={() => navigate(`/meetings/${id}/minutes`)}
-                              >
-                                <FileText className="h-4 w-4" />
-                                Open Minutes Editor
-                              </Button>
-                              <AgendaIntakeForm
-                                meetingId={meetingId}
-                                trigger={
-                                  <Button variant="outline" className="w-full justify-start gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    Add Agenda Items
-                                  </Button>
-                                }
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </ProtectedElement>
-              </div>
+              <TabsContent value="transcription" className="space-y-4">
+                <LazyTabContent>
+                  <ProtectedElement meetingId={meetingId} elementType="transcriptions">
+                    <BrowserSpeechRecognition
+                          meetingId={meetingId}
+                          externalIsRecording={isRecording}
+                          isPaused={isPaused}
+                          onRecordingStart={startRecording}
+                          onRecordingStop={() => stopRecording()}
+                          onDurationChange={(s) => setRecordingSeconds(s)}
+                          selectedLanguage={transcriptionLanguage}
+                        />
+                    <MeetingAudioPlayback meetingId={meetingId} />
+                    <LiveTranscription 
+                      meetingId={meetingId} 
+                      isRecording={isRecording}
+                      currentUserName={userFullName || 'Unknown User'}
+                    />
+                  </ProtectedElement>
+                </LazyTabContent>
+              </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
                 <Card>
@@ -1405,27 +1162,24 @@ const MeetingDetail = () => {
               <TabsContent value="documents" className="space-y-6">
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="documents">
-                    <EnhancedDocumentsTab 
-                      meetingId={meetingId}
-                      meetingTitle={meeting?.title || 'Meeting'}
-                    />
-                    <div className="mt-6">
-                      <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5 text-primary" />
-                            Document Management & Distribution
-                          </CardTitle>
-                          <CardDescription>
-                            Manage document distribution and integrations
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <MultiChannelDistribution meetingId={meetingId} />
-                          <IntegrationManager meetingId={meetingId} />
-                        </CardContent>
-                      </Card>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <MeetingSummaryCard 
+                        meetingId={meetingId} 
+                        meetingTitle={meeting?.title || 'Meeting'} 
+                      />
+                      <MeetingAudioPlayback meetingId={meetingId} />
                     </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <TranscriptionDocumentExport 
+                        meetingId={meetingId} 
+                        meetingTitle={meeting?.title || 'Meeting'} 
+                      />
+                      <div className="space-y-6">
+                        <DocumentVersionControl meetingId={meetingId} />
+                        <MultiChannelDistribution meetingId={meetingId} />
+                      </div>
+                    </div>
+                    <IntegrationManager meetingId={meetingId} />
                   </ProtectedElement>
                 </LazyTabContent>
               </TabsContent>
@@ -1442,7 +1196,126 @@ const MeetingDetail = () => {
                 </LazyTabContent>
               </TabsContent>
             </Tabs>
+          </div>
 
+          {/* Sidebar - Quick Actions - Only visible on Live Transcription tab */}
+          {activeTab === 'transcription' && (
+            <div className="space-y-6 mt-8">
+              {/* Transcription Controls */}
+              {meeting?.created_by === userId && (
+                <div className="space-y-4">
+                  <Card className="border-primary/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Languages className="h-4 w-4 text-primary" />
+                        Language Selection
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Select
+                        value={transcriptionLanguage}
+                        onValueChange={setTranscriptionLanguage}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
+                          <SelectItem value="en-US">English (US)</SelectItem>
+                          <SelectItem value="en-GB">English (UK)</SelectItem>
+                          <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
+                          <SelectItem value="es-ES">Spanish (Español)</SelectItem>
+                          <SelectItem value="fr-FR">French (Français)</SelectItem>
+                          <SelectItem value="de-DE">German (Deutsch)</SelectItem>
+                          <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
+                          <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
+                          <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
+                          <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
+                          <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
+                          <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
+                          <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
+                  
+                  <TranscriptionProviderToggle />
+                </div>
+              )}
+              
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {/* AI-Powered Summary & Search */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
+                    <MeetingKeyPointsSummary meetingId={meetingId} />
+                    <MeetingKeywordSearch meetingId={meetingId} />
+                  </div>
+                  
+                  <Button 
+                    variant="default" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowMinutesDialog(true)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Generate AI Minutes
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => navigate(`/meetings/${id}/minutes`)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    Open Minutes Editor
+                  </Button>
+                  <AgendaIntakeForm
+                    meetingId={meetingId}
+                    trigger={
+                      <Button variant="outline" className="w-full justify-start gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add Agenda Items
+                      </Button>
+                    }
+                  />
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowViewMinutesDialog(true)}
+                    disabled={!(meeting?.minutes || meeting?.minutes_url)}
+                  >
+                    <FileText className="h-4 w-4" />
+                    View Previous Minutes
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowRescheduleDialog(true)}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Reschedule Meeting
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowManageAttendeesDialog(true)}
+                  >
+                    <Users className="h-4 w-4" />
+                    Manage Attendees
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start gap-2"
+                    onClick={() => setShowCreateSignatureDialog(true)}
+                  >
+                    <FileSignature className="h-4 w-4" />
+                    Request Sign-Off
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          )}
         </div>
 
         <GenerateMinutesDialog
@@ -1492,6 +1365,15 @@ const MeetingDetail = () => {
             meetingDate={meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}
             meetingTime={meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
             videoConferenceUrl={meeting.video_conference_url}
+          />
+        )}
+        
+        {userId && id && (
+          <RecordingConsentDialog
+            meetingId={id}
+            userId={userId}
+            open={showConsentDialog}
+            onOpenChange={setShowConsentDialog}
           />
         )}
       </div>

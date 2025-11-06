@@ -13,10 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, FileText, Download, Copy, Brain, BookOpen } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
-import rehypeRaw from 'rehype-raw';
-import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 
 interface GenerateMinutesDialogProps {
   meetingId: string;
@@ -248,12 +244,7 @@ export const GenerateMinutesDialog = ({
 
             <ScrollArea className="h-[500px] pr-4">
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm, remarkBreaks]}
-                  rehypePlugins={[rehypeRaw]}
-                >
-                  {normalizeAIMarkdown(minutes)}
-                </ReactMarkdown>
+                <ReactMarkdown>{minutes}</ReactMarkdown>
               </div>
             </ScrollArea>
           </>

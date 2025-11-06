@@ -16,7 +16,7 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { action, phoneNumber, password } = await req.json();
+    const { action, apiHost, phoneNumber, password, apiId, apiHash } = await req.json();
 
     const authHeader = req.headers.get('Authorization')!;
     const token = authHeader.replace('Bearer ', '');
@@ -27,11 +27,8 @@ serve(async (req) => {
     }
 
     if (action === 'login') {
-      // Authenticate with Ethio Telecom Drive
-      // Note: Replace this URL with the actual Ethio Telecom Drive API endpoint
-      const ethioTelecomDriveUrl = 'https://drive.ethiotelecom.et/api/auth/login';
-      
-      const loginResponse = await fetch(ethioTelecomDriveUrl, {
+      // Authenticate with TeleDrive
+      const loginResponse = await fetch(`${apiHost}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -39,23 +36,24 @@ serve(async (req) => {
         body: JSON.stringify({
           phoneNumber,
           password,
+          apiId,
+          apiHash,
         }),
       });
 
       if (!loginResponse.ok) {
-        const errorText = await loginResponse.text();
-        throw new Error(`Ethio Telecom Drive authentication failed: ${errorText}`);
+        throw new Error(`TeleDrive authentication failed: ${await loginResponse.text()}`);
       }
 
       const authData = await loginResponse.json();
 
-      // Store Ethio Telecom Drive credentials in user settings
+      // Store TeleDrive credentials in user metadata or settings
       const { error: updateError } = await supabase
         .from('drive_sync_settings')
         .upsert({
           user_id: user.id,
-          teledrive_api_host: ethioTelecomDriveUrl,
-          teledrive_access_token: authData.accessToken || authData.token,
+          teledrive_api_host: apiHost,
+          teledrive_access_token: authData.accessToken,
           teledrive_enabled: true,
         });
 
@@ -64,8 +62,8 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           success: true,
-          accessToken: authData.accessToken || authData.token,
-          message: 'Successfully authenticated with Ethio Telecom Drive'
+          accessToken: authData.accessToken,
+          message: 'Successfully authenticated with TeleDrive'
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );

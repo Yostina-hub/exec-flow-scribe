@@ -7,18 +7,18 @@ export const initBrowserWhisper = async () => {
   if (transcriber) return transcriber;
   if (transcriberPromise) return transcriberPromise;
   transcriberPromise = (async () => {
-    console.log('Initializing browser-based Whisper model (multilingual)...');
+    console.log('Initializing browser-based Whisper model...');
     try {
       const pipe = await pipeline(
         'automatic-speech-recognition',
-        'onnx-community/whisper-tiny',
+        'onnx-community/whisper-tiny.en',
         { device: 'webgpu' }
       );
-      console.log('Browser Whisper model initialized (supports Amharic)');
+      console.log('Browser Whisper model initialized');
       transcriber = pipe;
       return pipe;
     } finally {
-      transcriberPromise = null;
+      transcriberPromise = null; // clear promise after resolve/reject
     }
   })();
   return transcriberPromise; 

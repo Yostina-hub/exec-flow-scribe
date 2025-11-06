@@ -5,8 +5,7 @@ import { InstantMeetingDialog } from "@/components/InstantMeetingDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Pagination,
   PaginationContent,
@@ -16,13 +15,12 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Calendar, Plus, Filter, Clock, Users, TrendingUp, Sparkles, Video, MapPin } from "lucide-react";
+import { Search, Calendar, Plus } from "lucide-react";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "@/contexts/ThemeContext";
 
 interface MeetingAttendee {
   id: string;
@@ -89,15 +87,12 @@ const ITEMS_PER_PAGE = 8;
 export default function Meetings() {
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isEthioTelecom = theme === 'ethio-telecom';
   const [searchQuery, setSearchQuery] = React.useState("");
   const [meetings, setMeetings] = React.useState<Meeting[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [currentPageUpcoming, setCurrentPageUpcoming] = React.useState(1);
   const [currentPageCompleted, setCurrentPageCompleted] = React.useState(1);
   const [currentPageAll, setCurrentPageAll] = React.useState(1);
-  const [stats, setStats] = React.useState({ upcoming: 0, inProgress: 0, completed: 0, total: 0 });
 
   React.useEffect(() => {
     fetchMeetings();
@@ -199,26 +194,6 @@ export default function Meetings() {
       }));
 
       setMeetings(enrichedMeetings);
-
-      // Calculate stats
-      const now = new Date();
-      const upcoming = enrichedMeetings.filter(m => {
-        const startTime = new Date(m.start_time);
-        return m.status !== "completed" && startTime > now;
-      }).length;
-      const inProgress = enrichedMeetings.filter(m => {
-        const startTime = new Date(m.start_time);
-        const endTime = new Date(m.end_time);
-        return now >= startTime && now <= endTime;
-      }).length;
-      const completed = enrichedMeetings.filter(m => m.status === "completed").length;
-
-      setStats({
-        upcoming,
-        inProgress,
-        completed,
-        total: enrichedMeetings.length
-      });
     } catch (error) {
       console.error("Failed to fetch meetings:", error);
     } finally {
@@ -363,59 +338,25 @@ export default function Meetings() {
 
   return (
     <Layout>
-      <div className="space-y-6 pb-20 animate-fade-in">
-        {/* Enhanced Header with Stats */}
-        <div className={`relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-10 border-2 shadow-2xl transition-all duration-500 ${isEthioTelecom ? 'bg-gradient-to-br from-white via-gray-50 to-white border-[#8DC63F]/30' : 'bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border-purple-500/30'}`}>
-          {!isEthioTelecom ? (
-            <>
-              <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
-            </>
-          ) : (
-            <>
-              <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-[#8DC63F]/15 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-[#0072BC]/15 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
-            </>
-          )}
+      <div className="space-y-6 pb-20">
+        {/* Executive Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-purple-500/5 to-pink-500/10 p-8 border border-blue-500/20 animate-fade-in">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
           
-          <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-6">
-            <div className="space-y-4 lg:space-y-5 flex-1">
-              <div className={`inline-flex items-center gap-2 px-4 lg:px-5 py-2 lg:py-2.5 rounded-full backdrop-blur-sm border-2 shadow-lg transition-all duration-300 hover:scale-105 ${isEthioTelecom ? 'bg-[#8DC63F]/20 border-[#8DC63F]/40' : 'bg-white/20 border-white/30'}`}>
-                <Calendar className={`h-4 w-4 lg:h-5 lg:w-5 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`} />
-                <span className={`text-sm lg:text-base font-semibold ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-white'}`}>
-                  Meeting Management
-                </span>
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <Calendar className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-medium">Meeting Management</span>
               </div>
               
-              <h1 className={`text-4xl lg:text-6xl font-black leading-tight animate-fade-in ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"] text-foreground'}`}>
+              <h1 className="text-4xl lg:text-5xl font-black font-['Space_Grotesk']">
                 Meetings
               </h1>
               
-              <p className={`text-base lg:text-xl max-w-2xl leading-relaxed ${isEthioTelecom ? 'text-gray-700' : 'text-muted-foreground'}`}>
-                Organize and manage all your meetings in one place
+              <p className="text-muted-foreground text-lg">
+                {upcomingMeetings.length} upcoming · {completedMeetings.length} completed · {allMeetingsFormatted.length} total
               </p>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                {[
-                  { label: "Upcoming", value: stats.upcoming, icon: Clock, color: isEthioTelecom ? "from-[#0072BC] to-[#005A9C]" : "from-blue-500 to-cyan-500" },
-                  { label: "In Progress", value: stats.inProgress, icon: Sparkles, color: isEthioTelecom ? "from-[#8DC63F] to-[#7AB62F]" : "from-purple-500 to-pink-500" },
-                  { label: "Completed", value: stats.completed, icon: TrendingUp, color: isEthioTelecom ? "from-[#8DC63F] to-[#0072BC]" : "from-green-500 to-emerald-500" },
-                  { label: "Total", value: stats.total, icon: Users, color: isEthioTelecom ? "from-[#0072BC] to-[#8DC63F]" : "from-orange-500 to-red-500" },
-                ].map((stat, i) => (
-                  <div key={i} className={`p-3 rounded-xl backdrop-blur-sm border ${isEthioTelecom ? 'bg-white/80 border-gray-200' : 'bg-white/10 border-white/20'} hover:scale-105 transition-transform duration-300`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
-                        <stat.icon className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className={`text-xs font-medium ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>{stat.label}</p>
-                        <p className={`text-xl font-black ${isEthioTelecom ? 'text-gray-900' : 'text-foreground'}`}>{stat.value}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
             
             <div className="flex gap-2">
@@ -425,85 +366,58 @@ export default function Meetings() {
           </div>
         </div>
 
-        {/* Enhanced Search and Filters */}
-        <div className="flex flex-col lg:flex-row gap-3">
-          <div className="relative flex-1">
-            <Search className={`absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 ${isEthioTelecom ? 'text-gray-400' : 'text-muted-foreground'}`} />
-            <Input
-              placeholder="Search meetings by title or location..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={`pl-12 h-12 text-base backdrop-blur-sm border-2 transition-all duration-300 hover:shadow-lg ${isEthioTelecom ? 'bg-white border-gray-200 hover:border-[#8DC63F]/50 focus:border-[#8DC63F]' : 'bg-background/50 hover:border-primary/50 focus:border-primary'}`}
-            />
-          </div>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className={`gap-2 ${isEthioTelecom ? 'border-2 border-gray-200 hover:bg-gray-100' : ''}`}
-          >
-            <Filter className="h-4 w-4" />
-            Filters
-          </Button>
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search meetings by title or location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-12 h-12 text-base bg-background/50 backdrop-blur-sm border-2 hover:border-primary/50 transition-colors"
+          />
         </div>
 
-        {/* Enhanced Meetings Tabs */}
+        {/* Meetings Tabs - Executive Style */}
         <Tabs defaultValue="upcoming" className="w-full">
-          <TabsList className={`grid w-full grid-cols-3 h-14 backdrop-blur-sm border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : 'bg-muted/50'}`}>
-            <TabsTrigger 
-              value="upcoming" 
-              className={`font-bold transition-all duration-300 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0072BC] data-[state=active]:to-[#005A9C] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}
-            >
-              <Clock className="h-4 w-4 mr-2" />
+          <TabsList className="grid w-full grid-cols-3 h-12 bg-muted/50 backdrop-blur-sm border-2">
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white font-semibold">
               Upcoming ({upcomingMeetings.length})
             </TabsTrigger>
-            <TabsTrigger 
-              value="completed" 
-              className={`font-bold transition-all duration-300 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#8DC63F] data-[state=active]:to-[#7AB62F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white'}`}
-            >
-              <TrendingUp className="h-4 w-4 mr-2" />
+            <TabsTrigger value="completed" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white font-semibold">
               Completed ({completedMeetings.length})
             </TabsTrigger>
-            <TabsTrigger 
-              value="all" 
-              className={`font-bold transition-all duration-300 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#8DC63F] data-[state=active]:to-[#0072BC] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white'}`}
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
+            <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white font-semibold">
               All ({allMeetingsFormatted.length})
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="upcoming" className="mt-6">
+          <TabsContent value="upcoming" className="mt-4">
             {upcomingMeetings.length === 0 ? (
-              <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-[#0072BC]/10' : 'bg-blue-500/10'}`}>
-                    <Calendar className={`h-16 w-16 ${isEthioTelecom ? 'text-[#0072BC]' : 'text-blue-500'}`} />
-                  </div>
-                  <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Upcoming Meetings</h3>
-                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'} mb-4`}>Get started by creating your first meeting</p>
-                  <CreateMeetingDialog />
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No upcoming meetings</p>
                 </CardContent>
               </Card>
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-                  {paginatedUpcoming.map((meeting, index) => (
-                    <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
-                      <InlineMeetingCard
-                        id={meeting.id}
-                        title={meeting.title}
-                        date={meeting.date}
-                        time={meeting.time}
-                        duration={meeting.duration}
-                        location={meeting.location}
-                        attendees={meeting.attendees}
-                        status={meeting.status}
-                        agendaItems={meeting.agendaItems}
-                        meetingType={meeting.meetingType}
-                        videoConferenceUrl={meeting.videoConferenceUrl}
-                        createdBy={meeting.createdBy}
-                      />
-                    </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {paginatedUpcoming.map((meeting) => (
+                    <InlineMeetingCard
+                      key={meeting.id}
+                      id={meeting.id}
+                      title={meeting.title}
+                      date={meeting.date}
+                      time={meeting.time}
+                      duration={meeting.duration}
+                      location={meeting.location}
+                      attendees={meeting.attendees}
+                      status={meeting.status}
+                      agendaItems={meeting.agendaItems}
+                      meetingType={meeting.meetingType}
+                      videoConferenceUrl={meeting.videoConferenceUrl}
+                      createdBy={meeting.createdBy}
+                    />
                   ))}
                 </div>
                 {renderPagination(currentPageUpcoming, totalPagesUpcoming, setCurrentPageUpcoming)}
@@ -511,37 +425,33 @@ export default function Meetings() {
             )}
           </TabsContent>
 
-          <TabsContent value="completed" className="mt-6">
+          <TabsContent value="completed" className="mt-4">
             {completedMeetings.length === 0 ? (
-              <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-[#8DC63F]/10' : 'bg-green-500/10'}`}>
-                    <TrendingUp className={`h-16 w-16 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-green-500'}`} />
-                  </div>
-                  <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Completed Meetings Yet</h3>
-                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>Completed meetings will appear here</p>
+              <Card className="border-dashed">
+                <CardContent className="flex flex-col items-center justify-center py-12">
+                  <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-muted-foreground">No completed meetings yet</p>
                 </CardContent>
               </Card>
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-                  {paginatedCompleted.map((meeting, index) => (
-                    <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
-                      <InlineMeetingCard
-                        id={meeting.id}
-                        title={meeting.title}
-                        date={meeting.date}
-                        time={meeting.time}
-                        duration={meeting.duration}
-                        location={meeting.location}
-                        attendees={meeting.attendees}
-                        status={meeting.status}
-                        agendaItems={meeting.agendaItems}
-                        meetingType={meeting.meetingType}
-                        videoConferenceUrl={meeting.videoConferenceUrl}
-                        createdBy={meeting.createdBy}
-                      />
-                    </div>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {paginatedCompleted.map((meeting) => (
+                    <InlineMeetingCard
+                      key={meeting.id}
+                      id={meeting.id}
+                      title={meeting.title}
+                      date={meeting.date}
+                      time={meeting.time}
+                      duration={meeting.duration}
+                      location={meeting.location}
+                      attendees={meeting.attendees}
+                      status={meeting.status}
+                      agendaItems={meeting.agendaItems}
+                      meetingType={meeting.meetingType}
+                      videoConferenceUrl={meeting.videoConferenceUrl}
+                      createdBy={meeting.createdBy}
+                    />
                   ))}
                 </div>
                 {renderPagination(currentPageCompleted, totalPagesCompleted, setCurrentPageCompleted)}
@@ -549,25 +459,24 @@ export default function Meetings() {
             )}
           </TabsContent>
 
-          <TabsContent value="all" className="mt-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-              {paginatedAll.map((meeting, index) => (
-                <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
-                  <InlineMeetingCard
-                    id={meeting.id}
-                    title={meeting.title}
-                    date={meeting.date}
-                    time={meeting.time}
-                    duration={meeting.duration}
-                    location={meeting.location}
-                    attendees={meeting.attendees}
-                    status={meeting.status}
-                    agendaItems={meeting.agendaItems}
-                    meetingType={meeting.meetingType}
-                    videoConferenceUrl={meeting.videoConferenceUrl}
-                    createdBy={meeting.createdBy}
-                  />
-                </div>
+          <TabsContent value="all" className="mt-4">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {paginatedAll.map((meeting) => (
+                <InlineMeetingCard
+                  key={meeting.id}
+                  id={meeting.id}
+                  title={meeting.title}
+                  date={meeting.date}
+                  time={meeting.time}
+                  duration={meeting.duration}
+                  location={meeting.location}
+                  attendees={meeting.attendees}
+                  status={meeting.status}
+                  agendaItems={meeting.agendaItems}
+                  meetingType={meeting.meetingType}
+                  videoConferenceUrl={meeting.videoConferenceUrl}
+                  createdBy={meeting.createdBy}
+                />
               ))}
             </div>
             {renderPagination(currentPageAll, totalPagesAll, setCurrentPageAll)}

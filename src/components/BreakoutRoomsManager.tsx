@@ -140,7 +140,7 @@ export function BreakoutRoomsManager({ meetingId, isHost }: BreakoutRoomsManager
   const fetchParticipants = async () => {
     const { data, error } = await supabase
       .from("meeting_attendees")
-      .select("id, user_id, profiles:user_id(id, full_name, avatar_url)")
+      .select("id, user_id, profiles(id, full_name, avatar_url)")
       .eq("meeting_id", meetingId);
 
     if (error) {

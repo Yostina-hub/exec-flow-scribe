@@ -17,10 +17,6 @@ import {
   Activity
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkBreaks from 'remark-breaks';
-import rehypeRaw from 'rehype-raw';
-import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 
 interface AIIntelligencePanelProps {
   meetingId: string;
@@ -466,12 +462,7 @@ export function AIIntelligencePanel({ meetingId }: AIIntelligencePanelProps) {
                       <div>
                         <h4 className="font-semibold mb-2">Full Brief</h4>
                         <div className="prose prose-sm max-w-none">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkGfm, remarkBreaks]}
-                            rehypePlugins={[rehypeRaw]}
-                          >
-                            {normalizeAIMarkdown(brief.brief_content.one_page_brief)}
-                          </ReactMarkdown>
+                          <ReactMarkdown>{brief.brief_content.one_page_brief}</ReactMarkdown>
                         </div>
                       </div>
                     )}

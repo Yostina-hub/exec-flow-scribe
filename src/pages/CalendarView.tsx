@@ -1,14 +1,14 @@
 import { Layout } from "@/components/Layout";
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, Bell, ExternalLink, Plus, Filter, Sparkles, Users, Clock, MapPin, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, Bell, ExternalLink } from "lucide-react";
 import { useState, useEffect } from "react";
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, isToday, isSameDay } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, endOfMonth } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { CalendarWeekView } from "@/components/calendar/CalendarWeekView";
@@ -19,7 +19,6 @@ import { EventRSVPControls } from "@/components/calendar/EventRSVPControls";
 import { EventNotificationSettings } from "@/components/calendar/EventNotificationSettings";
 import { CreateEventExceptionDialog } from "@/components/calendar/CreateEventExceptionDialog";
 import { generateRecurrenceInstances } from "@/utils/recurrenceUtils";
-import { useTheme } from "@/contexts/ThemeContext";
 
 interface Meeting {
   id: string;
@@ -53,8 +52,6 @@ interface Category {
 
 const CalendarView = () => {
   const navigate = useNavigate();
-  const { theme } = useTheme();
-  const isEthioTelecom = theme === 'ethio-telecom';
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [currentDay, setCurrentDay] = useState(new Date());
@@ -65,23 +62,10 @@ const CalendarView = () => {
   const [view, setView] = useState<"day" | "week" | "month">("week");
   const [selectedMeetingForNotifications, setSelectedMeetingForNotifications] = useState<Meeting | null>(null);
   const [selectedMeetingForException, setSelectedMeetingForException] = useState<Meeting | null>(null);
-  const [stats, setStats] = useState({ total: 0, today: 0, thisWeek: 0, thisMonth: 0 });
 
   useEffect(() => {
     fetchMeetings();
     fetchCategories();
-
-    // Real-time updates
-    const channel = supabase
-      .channel('calendar-meetings')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'meetings' }, () => {
-        fetchMeetings();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const fetchMeetings = async () => {
@@ -119,30 +103,6 @@ const CalendarView = () => {
           };
         });
         setMeetings(meetingsWithAttendees);
-
-        // Calculate stats
-        const now = new Date();
-        const todayMeetings = meetingsWithAttendees.filter(m => isToday(new Date(m.start_time)));
-        const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 6);
-        const thisWeekMeetings = meetingsWithAttendees.filter(m => {
-          const meetingDate = new Date(m.start_time);
-          return meetingDate >= weekStart && meetingDate <= weekEnd;
-        });
-        const monthStart = startOfMonth(now);
-        const monthEnd = endOfMonth(now);
-        const thisMonthMeetings = meetingsWithAttendees.filter(m => {
-          const meetingDate = new Date(m.start_time);
-          return meetingDate >= monthStart && meetingDate <= monthEnd;
-        });
-
-        setStats({
-          total: meetingsWithAttendees.length,
-          today: todayMeetings.length,
-          thisWeek: thisWeekMeetings.length,
-          thisMonth: thisMonthMeetings.length
-        });
       } else {
         setMeetings(meetingsData || []);
       }
@@ -232,89 +192,28 @@ const CalendarView = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 pb-20 animate-fade-in">
-        {/* Enhanced Header with Stats */}
-        <div className={`relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-8 border-2 shadow-2xl ${isEthioTelecom ? 'bg-gradient-to-br from-white via-gray-50 to-white border-[#8DC63F]/30' : 'bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 border-purple-500/30'}`}>
-          {!isEthioTelecom ? (
-            <>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
-            </>
-          ) : (
-            <>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#8DC63F]/15 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#0072BC]/15 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
-            </>
-          )}
-
-          <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-6">
-            <div className="space-y-4 flex-1">
-              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border-2 shadow-lg ${isEthioTelecom ? 'bg-[#8DC63F]/20 border-[#8DC63F]/40' : 'bg-white/20 border-white/30'}`}>
-                <CalendarIcon className={`h-5 w-5 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`} />
-                <span className={`text-sm font-semibold ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-white'}`}>Executive Calendar</span>
-              </div>
-              
-              <h1 className={`text-4xl lg:text-5xl font-black leading-tight ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"] text-foreground'}`}>
-                Your Schedule
-              </h1>
-              
-              <p className={`text-base lg:text-lg max-w-2xl ${isEthioTelecom ? 'text-gray-700' : 'text-muted-foreground'}`}>
-                Manage meetings, events, and stay organized with your executive calendar
-              </p>
-
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                {[
-                  { label: "Today", value: stats.today, icon: Clock, color: isEthioTelecom ? "from-[#8DC63F] to-[#7AB62F]" : "from-blue-500 to-cyan-500" },
-                  { label: "This Week", value: stats.thisWeek, icon: TrendingUp, color: isEthioTelecom ? "from-[#0072BC] to-[#005A9C]" : "from-purple-500 to-pink-500" },
-                  { label: "This Month", value: stats.thisMonth, icon: CalendarIcon, color: isEthioTelecom ? "from-[#8DC63F] to-[#0072BC]" : "from-green-500 to-emerald-500" },
-                  { label: "Total", value: stats.total, icon: Users, color: isEthioTelecom ? "from-[#0072BC] to-[#8DC63F]" : "from-orange-500 to-red-500" },
-                ].map((stat, i) => (
-                  <div key={i} className={`p-3 rounded-xl backdrop-blur-sm border ${isEthioTelecom ? 'bg-white/80 border-gray-200' : 'bg-white/10 border-white/20'} hover:scale-105 transition-transform duration-300`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
-                        <stat.icon className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className={`text-xs font-medium ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>{stat.label}</p>
-                        <p className={`text-xl font-black ${isEthioTelecom ? 'text-gray-900' : 'text-foreground'}`}>{stat.value}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <CreateCategoryDialog onCategoryCreated={fetchCategories} />
-              <CreateMeetingDialog />
-            </div>
+      <div className="space-y-6 animate-fade-in">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-4xl font-bold tracking-tight">Executive Calendar</h1>
+            <p className="text-muted-foreground mt-2">
+              CEO monthly schedule with executives
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <CreateCategoryDialog onCategoryCreated={fetchCategories} />
+            <CreateMeetingDialog />
           </div>
         </div>
 
-        {/* Enhanced Calendar Views */}
-        <Tabs value={view} onValueChange={(v) => setView(v as "day" | "week" | "month")} className="space-y-6">
-          <div className="flex items-center justify-between">
-            <TabsList className={`${isEthioTelecom ? 'bg-white border-2 border-gray-200' : 'bg-muted/50'}`}>
-              <TabsTrigger value="day" className={isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : ''}>
-                <Clock className="h-4 w-4 mr-2" />
-                Day View
-              </TabsTrigger>
-              <TabsTrigger value="week" className={isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : ''}>
-                <CalendarIcon className="h-4 w-4 mr-2" />
-                Week View
-              </TabsTrigger>
-              <TabsTrigger value="month" className={isEthioTelecom ? 'data-[state=active]:bg-[#8DC63F] data-[state=active]:text-white' : ''}>
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Month View
-              </TabsTrigger>
-            </TabsList>
-
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
-          </div>
+        {/* Calendar Views */}
+        <Tabs value={view} onValueChange={(v) => setView(v as "day" | "week" | "month")}>
+          <TabsList>
+            <TabsTrigger value="day">Day View</TabsTrigger>
+            <TabsTrigger value="week">Week View</TabsTrigger>
+            <TabsTrigger value="month">Month View</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="day" className="space-y-4">
             <div className="grid gap-6 lg:grid-cols-4">
@@ -376,24 +275,18 @@ const CalendarView = () => {
 
           <TabsContent value="month" className="space-y-4">
             <div className="grid gap-6 lg:grid-cols-3">
-              {/* Enhanced Calendar */}
-              <Card className={`lg:col-span-2 border-2 overflow-hidden transition-all duration-500 hover:shadow-2xl ${isEthioTelecom ? 'bg-white border-gray-200 hover:border-[#8DC63F]/50' : 'bg-gradient-to-br from-background via-muted/20 to-background border-border/50 hover:border-primary/50 backdrop-blur-xl'}`}>
-                <CardHeader className="border-b border-border/50">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`p-3 rounded-2xl shadow-2xl ${isEthioTelecom ? 'bg-gradient-to-br from-[#8DC63F] to-[#7AB62F]' : 'bg-gradient-to-br from-purple-500 to-pink-500'}`}>
-                        <CalendarIcon className="h-6 w-6 text-white" />
-                      </div>
-                      <CardTitle className={`text-2xl font-black ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"]'}`}>
-                        {format(currentMonth, "MMMM yyyy")}
-                      </CardTitle>
-                    </div>
+              {/* Calendar */}
+              <Card className="lg:col-span-2">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">
+                      {format(currentMonth, "MMMM yyyy")}
+                    </h2>
                     <div className="flex gap-2">
                       <Button
                         variant="outline"
                         size="icon"
                         onClick={handlePreviousMonth}
-                        className="hover:scale-110 transition-transform"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -401,178 +294,162 @@ const CalendarView = () => {
                         variant="outline"
                         size="icon"
                         onClick={handleNextMonth}
-                        className="hover:scale-110 transition-transform"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="p-6">
                   <Calendar
                     mode="single"
                     selected={selectedDate}
                     onSelect={setSelectedDate}
                     month={currentMonth}
                     onMonthChange={setCurrentMonth}
-                    className={`rounded-md border-0 pointer-events-auto ${isEthioTelecom ? 'text-gray-900' : ''}`}
+                    className="rounded-md border"
                     modifiers={{
                       hasMeetings: datesWithMeetings,
-                      today: [new Date()],
                     }}
                     modifiersClassNames={{
-                      hasMeetings: isEthioTelecom 
-                        ? "bg-gradient-to-br from-[#8DC63F]/20 to-[#0072BC]/20 font-bold border-2 border-[#8DC63F]/50"
-                        : "bg-gradient-to-br from-purple-500/20 to-blue-500/20 font-bold border-2 border-purple-500/30",
-                      today: isEthioTelecom
-                        ? "bg-[#8DC63F] text-white font-black"
-                        : "bg-primary text-primary-foreground font-black",
+                      hasMeetings: "bg-gradient-to-br from-purple-500/20 to-blue-500/20 font-bold border-2 border-purple-500/30",
                     }}
                   />
-                  <div className="flex items-center gap-4 mt-6 pt-4 border-t border-border/50 text-sm">
+                  <div className="flex items-center gap-4 mt-4 text-sm">
                     <div className="flex items-center gap-2">
-                      <div className={`h-3 w-3 rounded-full ${isEthioTelecom ? 'bg-gradient-to-br from-[#8DC63F]/40 to-[#0072BC]/40 border-2 border-[#8DC63F]/50' : 'bg-gradient-to-br from-purple-500/40 to-blue-500/40 border-2 border-purple-500/50'}`} />
-                      <span className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>Has meetings</span>
+                      <div className="h-3 w-3 rounded-full bg-gradient-to-br from-purple-500/40 to-blue-500/40 border-2 border-purple-500/50" />
+                      <span className="text-muted-foreground">Has meetings</span>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(237 83% 28%)' }} />
-                      <span className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>Scheduled</span>
+                      <span className="text-muted-foreground">Scheduled</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(38 92% 50%)' }} />
-                      <span className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>In Progress</span>
+                      <span className="text-muted-foreground">In Progress</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="h-2 w-2 rounded-full" style={{ backgroundColor: 'hsl(142 71% 45%)' }} />
-                      <span className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>Completed</span>
+                      <span className="text-muted-foreground">Completed</span>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Enhanced Selected Day Details */}
+              {/* Selected Day Details */}
               <div className="space-y-4">
-                <Card className={`border-2 overflow-hidden transition-all duration-500 hover:shadow-2xl ${isEthioTelecom ? 'bg-white border-gray-200 hover:border-[#0072BC]/50' : 'bg-gradient-to-br from-background via-muted/20 to-background border-border/50 hover:border-primary/50 backdrop-blur-xl'}`}>
-                  <CardHeader className="border-b border-border/50">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-2xl shadow-2xl ${isEthioTelecom ? 'bg-gradient-to-br from-[#0072BC] to-[#005A9C]' : 'bg-gradient-to-br from-blue-500 to-cyan-500'}`}>
-                        <CalendarIcon className="h-6 w-6 text-white" />
-                      </div>
-                      <CardTitle className={`text-xl font-black ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"]'}`}>
-                        Selected Day
-                      </CardTitle>
-                    </div>
-                  </CardHeader>
+                <Card>
                   <CardContent className="pt-6">
                     <div className="space-y-4">
-                      <div className={`flex items-center gap-2 ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
+                      <div className="flex items-center gap-2 text-muted-foreground">
                         <CalendarIcon className="h-4 w-4" />
-                        <span className="text-sm font-semibold">
+                        <span className="text-sm font-medium">
                           {selectedDate
-                            ? format(selectedDate, "EEEE, MMMM d")
+                            ? format(selectedDate, "EEEE, MMMM d, yyyy")
                             : "Select a date"}
                         </span>
                       </div>
 
                       {selectedMeetings.length > 0 ? (
                         <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <p className={`text-sm font-bold ${isEthioTelecom ? 'text-gray-900' : ''}`}>
-                              {selectedMeetings.length} {selectedMeetings.length === 1 ? "Meeting" : "Meetings"}
-                            </p>
-                            <Badge variant="secondary" className="text-xs">
-                              {selectedMeetings.length}
-                            </Badge>
-                          </div>
-                          <div className="space-y-2 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                            {selectedMeetings.map((meeting) => (
-                              <Card 
-                                key={`${meeting.id}-${meeting.start_time}`} 
-                                className={`border-l-4 cursor-pointer transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${isEthioTelecom ? 'hover:border-[#8DC63F]/70 bg-white' : 'hover:shadow-primary/20'}`}
-                                style={{ 
-                                  borderLeftColor: meeting.event_categories?.color_hex || 
-                                    (meeting.status === 'completed' ? '#10b981' : 
-                                     meeting.status === 'in-progress' ? '#f59e0b' : '#3b82f6')
-                                }}
-                                onClick={() => navigate(`/meetings/${meeting.id}`)}
-                              >
-                                <CardContent className="p-4">
-                                  <div className="space-y-3">
-                                    <div className="flex items-start justify-between gap-2">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 flex-wrap mb-2">
-                                          <p className={`font-bold text-sm ${isEthioTelecom ? 'text-gray-900' : ''} hover:text-primary transition-colors line-clamp-1`}>
-                                            {meeting.title}
-                                          </p>
-                                          <ExternalLink className="h-3 w-3 text-muted-foreground shrink-0" />
-                                        </div>
-                                        
-                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                          <Clock className="h-3 w-3" />
-                                          <span>{format(new Date(meeting.start_time), "h:mm a")} - {format(new Date(meeting.end_time), "h:mm a")}</span>
-                                        </div>
-                                        
-                                        {meeting.location && (
-                                          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                                            <MapPin className="h-3 w-3" />
-                                            <span className="truncate">{meeting.location}</span>
-                                          </div>
+                          <p className="text-sm font-medium">
+                            {selectedMeetings.length}{" "}
+                            {selectedMeetings.length === 1 ? "meeting" : "meetings"} scheduled
+                          </p>
+                          {selectedMeetings.map((meeting, index) => (
+                            <Card 
+                              key={`${meeting.id}-${meeting.start_time}`} 
+                              className="border-l-4 hover:shadow-md transition-shadow cursor-pointer"
+                              style={{ 
+                                borderLeftColor: meeting.event_categories?.color_hex || 
+                                  (meeting.status === 'completed' ? '#10b981' : 
+                                   meeting.status === 'in-progress' ? '#f59e0b' : '#3b82f6')
+                              }}
+                              onClick={() => navigate(`/meetings/${meeting.id}`)}
+                            >
+                              <CardContent className="p-4">
+                                <div className="space-y-2">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <p className="font-medium text-sm hover:text-primary transition-colors">
+                                          {meeting.title}
+                                        </p>
+                                        <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                                        {meeting.is_recurring && (
+                                          <Badge variant="outline" className="text-xs">Recurring</Badge>
                                         )}
-                                        
-                                        <div className="flex flex-wrap items-center gap-2 mt-2">
-                                          {meeting.event_categories && (
-                                            <Badge 
-                                              variant="outline" 
-                                              className="text-xs"
-                                              style={{ 
-                                                borderColor: meeting.event_categories.color_hex,
-                                                color: meeting.event_categories.color_hex 
-                                              }}
-                                            >
-                                              {meeting.event_categories.name}
-                                            </Badge>
-                                          )}
-                                          {meeting.is_recurring && (
-                                            <Badge variant="outline" className="text-xs">Recurring</Badge>
-                                          )}
-                                          {meeting.is_exception && (
-                                            <Badge variant="outline" className="text-xs">Modified</Badge>
-                                          )}
-                                          {meeting.attendee_count > 0 && (
-                                            <Badge variant="secondary" className="text-xs gap-1">
-                                              <Users className="h-3 w-3" />
-                                              {meeting.attendee_count}
-                                            </Badge>
-                                          )}
-                                        </div>
+                                        {meeting.is_exception && (
+                                          <Badge variant="outline" className="text-xs">Modified</Badge>
+                                        )}
                                       </div>
-                                      
-                                      <div className="flex flex-col gap-2 items-end shrink-0" onClick={(e) => e.stopPropagation()}>
-                                        <Badge
-                                          variant={meeting.status === "completed" ? "success" : "secondary"}
-                                          className="text-xs"
+                                      <p className="text-xs text-muted-foreground mt-1">
+                                        {format(new Date(meeting.start_time), "h:mm a")} - {format(new Date(meeting.end_time), "h:mm a")}
+                                      </p>
+                                      {meeting.location && (
+                                        <p className="text-xs text-muted-foreground truncate">{meeting.location}</p>
+                                      )}
+                                      {meeting.event_categories && (
+                                        <Badge 
+                                          variant="outline" 
+                                          className="text-xs mt-1"
+                                          style={{ borderColor: meeting.event_categories.color_hex }}
                                         >
-                                          {meeting.status}
+                                          {meeting.event_categories.name}
                                         </Badge>
-                                        <EventRSVPControls
-                                          meetingId={meeting.id}
-                                          currentStatus={meeting.user_response_status || 'none'}
-                                          onStatusChange={fetchMeetings}
-                                        />
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col gap-2 items-end" onClick={(e) => e.stopPropagation()}>
+                                      <Badge
+                                        variant={
+                                          meeting.status === "completed"
+                                            ? "success"
+                                            : "secondary"
+                                        }
+                                        className="shrink-0 text-xs"
+                                      >
+                                        {meeting.status}
+                                      </Badge>
+                                       <EventRSVPControls
+                                        meetingId={meeting.id}
+                                        currentStatus={meeting.user_response_status || 'none'}
+                                        onStatusChange={fetchMeetings}
+                                      />
+                                       <div className="flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setSelectedMeetingForNotifications(meeting);
+                                          }}
+                                        >
+                                          <Bell className="h-4 w-4" />
+                                        </Button>
+                                        {meeting.is_recurring && (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setSelectedMeetingForException(meeting);
+                                            }}
+                                          >
+                                            Edit
+                                          </Button>
+                                        )}
                                       </div>
                                     </div>
                                   </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
                         </div>
                       ) : (
                         <div className="text-center py-8">
-                          <CalendarIcon className={`h-12 w-12 mx-auto mb-2 ${isEthioTelecom ? 'text-gray-400' : 'text-muted-foreground'}`} />
-                          <p className={`text-sm ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
+                          <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
+                          <p className="text-sm text-muted-foreground">
                             No meetings scheduled for this day
                           </p>
                         </div>
