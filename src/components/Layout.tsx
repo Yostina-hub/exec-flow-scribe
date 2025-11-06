@@ -10,6 +10,7 @@ import { useUserPermissions } from "@/hooks/useUserPermissions";
 import { useAutoUploadToDrive } from "@/hooks/useAutoUploadToDrive";
 import { useTheme } from "@/contexts/ThemeContext";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
+import ethioTelecomHeader from "@/assets/ethio-telecom-header.png";
 import {
   Sidebar,
   SidebarContent,
@@ -156,19 +157,12 @@ export const Layout = ({ children }: LayoutProps) => {
     <SidebarProvider>
       {/* Ethio Telecom Header - Fixed at very top */}
       {isEthioTelecom && (
-        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md bg-white">
-          <div className="h-full flex items-center">
-            {/* Logo section - white background with curved right edge */}
-            <div className="h-full px-4 sm:px-6 flex items-center bg-white rounded-r-3xl sm:rounded-r-[40px]">
-              <img 
-                src={ethioTelecomLogo} 
-                alt="Ethio Telecom" 
-                className="h-10 sm:h-14 w-auto object-contain"
-              />
-            </div>
-            {/* Green bar extending to the right */}
-            <div className="flex-1 h-full bg-[#8DC63F]" />
-          </div>
+        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md">
+          <img 
+            src={ethioTelecomHeader} 
+            alt="Ethio Telecom Header" 
+            className="w-full h-full object-cover object-left"
+          />
         </div>
       )}
       
