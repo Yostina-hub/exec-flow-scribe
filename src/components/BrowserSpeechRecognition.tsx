@@ -354,25 +354,17 @@ export const BrowserSpeechRecognition = ({
 
   if (!isSupported) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Browser Speech Recognition</CardTitle>
-          <CardDescription className="text-destructive">
-            Your browser doesn't support speech recognition. Please use Chrome or Edge.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="p-6 border border-destructive/50 rounded-lg bg-destructive/10">
+        <p className="text-destructive">
+          Your browser doesn't support speech recognition. Please use Chrome or Edge.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Speech to Text</CardTitle>
-        <CardDescription>Click the microphone to start recording</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="flex flex-col items-center gap-6">
+    <div className="space-y-6">
+      <div className="flex flex-col items-center gap-6">
           {externalIsRecording && !isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
@@ -473,7 +465,6 @@ export const BrowserSpeechRecognition = ({
             Clear & Start New
           </Button>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };

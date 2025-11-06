@@ -971,18 +971,7 @@ const MeetingDetail = () => {
               <TabsContent value="transcription" className="space-y-4">
                 <LazyTabContent>
                   <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <MessageSquare className="h-5 w-5" />
-                          Live Transcription & Recording
-                        </CardTitle>
-                        <CardDescription>
-                          Real-time speech-to-text with speaker detection
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <BrowserSpeechRecognition 
+                    <BrowserSpeechRecognition
                           meetingId={meetingId}
                           externalIsRecording={isRecording}
                           isPaused={isPaused}
@@ -991,8 +980,6 @@ const MeetingDetail = () => {
                           onDurationChange={(s) => setRecordingSeconds(s)}
                           selectedLanguage={transcriptionLanguage}
                         />
-                      </CardContent>
-                    </Card>
                     <MeetingAudioPlayback meetingId={meetingId} />
                     <LiveTranscription 
                       meetingId={meetingId} 
