@@ -96,7 +96,6 @@ import { GuestMeetingView } from "@/components/GuestMeetingView";
 import { PDFGenerationPanel } from "@/components/PDFGenerationPanel";
 import { SystemTestPanel } from "@/components/SystemTestPanel";
 import { TranscriptionProviderToggle } from "@/components/TranscriptionProviderToggle";
-import { TranscriptionSettings } from "@/components/TranscriptionSettings";
 import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
 import { useRealtimeAgenda } from "@/hooks/useRealtimeAgenda";
 import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
@@ -1008,10 +1007,6 @@ const MeetingDetail = () => {
                 )}
                 <TabsTrigger value="participants">Participants</TabsTrigger>
                 <TabsTrigger value="transcription">Live Transcription</TabsTrigger>
-                <TabsTrigger value="settings" className="flex items-center gap-2">
-                  <Settings className="h-4 w-4" />
-                  Recording Settings
-                </TabsTrigger>
                 <TabsTrigger value="agenda">Agenda</TabsTrigger>
                 <TabsTrigger value="decisions">Decisions</TabsTrigger>
                 <TabsTrigger value="collaboration">Collaboration</TabsTrigger>
@@ -1112,23 +1107,6 @@ const MeetingDetail = () => {
                   />
                 </ProtectedElement>
               </div>
-
-              <TabsContent value="settings" className="space-y-4">
-                <Card className="border-primary/20">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Settings className="h-5 w-5 text-primary" />
-                      Recording & Transcription Settings
-                    </CardTitle>
-                    <CardDescription>
-                      Configure your transcription provider and language preferences for this meeting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <TranscriptionSettings />
-                  </CardContent>
-                </Card>
-              </TabsContent>
 
               <TabsContent value="agenda" className="space-y-4">
                 <Card>
@@ -1274,6 +1252,48 @@ const MeetingDetail = () => {
           {/* Sidebar - Quick Actions - Only visible on Live Transcription tab */}
           {activeTab === 'transcription' && (
             <div className="space-y-6 mt-6">
+              {/* Transcription Controls */}
+              {meeting?.created_by === userId && (
+                <div className="space-y-4">
+                  <Card className="border-primary/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <Languages className="h-4 w-4 text-primary" />
+                        Language Selection
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <Select
+                        value={transcriptionLanguage}
+                        onValueChange={setTranscriptionLanguage}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
+                          <SelectItem value="en-US">English (US)</SelectItem>
+                          <SelectItem value="en-GB">English (UK)</SelectItem>
+                          <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
+                          <SelectItem value="es-ES">Spanish (Español)</SelectItem>
+                          <SelectItem value="fr-FR">French (Français)</SelectItem>
+                          <SelectItem value="de-DE">German (Deutsch)</SelectItem>
+                          <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
+                          <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
+                          <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
+                          <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
+                          <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
+                          <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
+                          <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </CardContent>
+                  </Card>
+                  
+                  <TranscriptionProviderToggle />
+                </div>
+              )}
+              
               <Card>
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
