@@ -68,9 +68,24 @@ export const useAudioRecorder = (meetingId: string) => {
 
   const startRecording = useCallback(async () => {
     try {
-      // Initialize recording timestamps
-      recordingStartTimeRef.current = Date.now();
-      pausedDurationRef.current = 0;
+      // Initialize or restore recording timestamps
+      let startTs = recordingStartTimeRef.current;
+      let pausedTotal = pausedDurationRef.current || 0;
+
+      try {
+        const saved = localStorage.getItem(`meeting-recording-${meetingId}`);
+        if (saved) {
+          const s = JSON.parse(saved);
+          if (s.isRecording && s.startTime) {
+            startTs = s.startTime;
+            pausedTotal = s.pausedDuration || 0;
+          }
+        }
+      } catch {}
+
+      if (!startTs) startTs = Date.now();
+      recordingStartTimeRef.current = startTs;
+      pausedDurationRef.current = pausedTotal;
       pauseStartTimeRef.current = null;
       
       // Persist recording session so the global indicator can detect it across routes/tabs
@@ -79,8 +94,8 @@ export const useAudioRecorder = (meetingId: string) => {
           `meeting-recording-${meetingId}`,
           JSON.stringify({
             isRecording: true,
-            startTime: recordingStartTimeRef.current,
-            pausedDuration: 0,
+            startTime: startTs,
+            pausedDuration: pausedTotal,
           })
         );
       } catch {}
