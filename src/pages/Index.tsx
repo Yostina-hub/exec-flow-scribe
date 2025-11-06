@@ -256,12 +256,22 @@ export default function Index() {
           
           <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-4">
             <div className="space-y-3 lg:space-y-4 flex-1">
-              <div className={`inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full backdrop-blur-sm border animate-scale-in ${isEthioTelecom ? 'bg-[#8DC63F]/10 border-[#8DC63F]/20' : 'bg-white/10 border-white/20'}`}>
-                <Sparkles className={`h-3 w-3 lg:h-4 lg:w-4 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`} />
-                <span className={`text-xs lg:text-sm font-medium ${isEthioTelecom ? 'text-[#8DC63F]' : ''}`}>
-                  {isCEO ? 'AI-Powered Executive Dashboard' : 'Live Dashboard'}
-                </span>
-              </div>
+              {!isEthioTelecom && (
+                <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 animate-scale-in">
+                  <Sparkles className="h-3 w-3 lg:h-4 lg:w-4 text-purple-400" />
+                  <span className="text-xs lg:text-sm font-medium">
+                    {isCEO ? 'AI-Powered Executive Dashboard' : 'Live Dashboard'}
+                  </span>
+                </div>
+              )}
+              {isEthioTelecom && (
+                <div className="inline-flex items-center gap-2 px-3 lg:px-4 py-1.5 lg:py-2 rounded-full bg-[#8DC63F]/10 backdrop-blur-sm border border-[#8DC63F]/20 animate-scale-in">
+                  <Sparkles className="h-3 w-3 lg:h-4 lg:w-4 text-[#8DC63F]" />
+                  <span className="text-xs lg:text-sm font-medium text-[#8DC63F]">
+                    Live Dashboard
+                  </span>
+                </div>
+              )}
               
               <h1 className={`text-3xl lg:text-5xl font-bold animate-fade-in ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"]'}`}>
                 Welcome Back! 
