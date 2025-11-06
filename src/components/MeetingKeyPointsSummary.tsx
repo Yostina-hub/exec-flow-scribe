@@ -54,14 +54,38 @@ export const MeetingKeyPointsSummary = ({ meetingId }: MeetingKeyPointsSummaryPr
         body: { meetingId }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Function invocation error:', error);
+        throw error;
+      }
 
       if (data.error) {
-        toast({
-          title: 'Error',
-          description: data.error,
-          variant: 'destructive',
-        });
+        // Handle specific error types
+        if (data.error.includes('temporarily unavailable')) {
+          toast({
+            title: 'Service Temporarily Unavailable',
+            description: 'The AI service is currently unavailable. Please try again in a few moments.',
+            variant: 'destructive',
+          });
+        } else if (data.error.includes('Rate limit')) {
+          toast({
+            title: 'Rate Limit Reached',
+            description: 'Please wait a moment before trying again.',
+            variant: 'destructive',
+          });
+        } else if (data.error.includes('Credits')) {
+          toast({
+            title: 'Credits Required',
+            description: 'Please add funds to your workspace to continue using AI features.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Error',
+            description: data.error,
+            variant: 'destructive',
+          });
+        }
         return;
       }
 
@@ -74,7 +98,7 @@ export const MeetingKeyPointsSummary = ({ meetingId }: MeetingKeyPointsSummaryPr
       console.error('Error generating key points:', error);
       toast({
         title: 'Generation Failed',
-        description: error.message || 'Failed to generate key points',
+        description: error.message || 'Failed to generate key points. Please try again.',
         variant: 'destructive',
       });
     } finally {

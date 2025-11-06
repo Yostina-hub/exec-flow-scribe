@@ -76,6 +76,9 @@ serve(async (req) => {
       });
     }
 
+    console.log(`Generating key points for meeting: ${meetingId}`);
+    console.log(`Content length: ${content.length} characters`);
+
     // Call Lovable AI to extract key points
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -148,7 +151,19 @@ Focus on:
       }),
     });
 
+    console.log(`AI API Response status: ${aiResponse.status}`);
+
     if (!aiResponse.ok) {
+      // Try to get error details from response body
+      let errorDetails = "";
+      try {
+        const errorBody = await aiResponse.text();
+        console.error(`AI API error body: ${errorBody}`);
+        errorDetails = errorBody;
+      } catch (e) {
+        console.error("Could not read error body:", e);
+      }
+
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
@@ -161,7 +176,23 @@ Focus on:
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error(`AI API error: ${aiResponse.status}`);
+      if (aiResponse.status === 503) {
+        return new Response(
+          JSON.stringify({ 
+            error: "AI service temporarily unavailable. Please try again in a moment.",
+            details: errorDetails
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `AI API error: ${aiResponse.status}`,
+          details: errorDetails
+        }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const aiData = await aiResponse.json();
