@@ -646,11 +646,11 @@ const MeetingDetail = () => {
           meeting_attendees(
             user_id,
             attended,
-            profiles(full_name, email, title)
+            profiles:user_id(full_name, email, title)
           )
         `)
         .eq("id", id)
-        .single();
+        .maybeSingle();
 
       if (meetingError) throw meetingError;
 
