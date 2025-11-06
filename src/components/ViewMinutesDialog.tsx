@@ -12,6 +12,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Download, Copy, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useNavigate } from 'react-router-dom';
 
 interface ViewMinutesDialogProps {
@@ -217,6 +218,7 @@ export const ViewMinutesDialog = ({
                 [&>ol>li]:marker:text-primary [&>ol>li]:marker:font-bold
                 whitespace-pre-wrap break-words">
                 <ReactMarkdown 
+                  remarkPlugins={[remarkGfm]}
                   components={{
                     p: ({node, ...props}) => <p className="my-2" {...props} />,
                     h1: ({node, ...props}) => <h1 className="scroll-m-20" {...props} />,
