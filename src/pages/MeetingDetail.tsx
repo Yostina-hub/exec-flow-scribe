@@ -71,7 +71,6 @@ import { SpeakerQueue } from "@/components/SpeakerQueue";
 import { AutoAssignmentControls } from "@/components/AutoAssignmentControls";
 import { MeetingAnalytics } from "@/components/MeetingAnalytics";
 import { RealTimePresence } from "@/components/RealTimePresence";
-import { RecordingConsentDialog } from "@/components/RecordingConsentDialog";
 import { AuditLogViewer } from "@/components/AuditLogViewer";
 import { BreakoutRoomsManager } from "@/components/BreakoutRoomsManager";
 import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
@@ -177,7 +176,6 @@ const MeetingDetail = () => {
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
   const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showConsentDialog, setShowConsentDialog] = useState(false);
   const [showVirtualRoom, setShowVirtualRoom] = useState(false);
   const [showHostPanel, setShowHostPanel] = useState(false);
   const [userId, setUserId] = useState<string>("");
@@ -270,20 +268,6 @@ const MeetingDetail = () => {
         
         if (profile) {
           setUserFullName(profile.full_name || "User");
-        }
-        
-        // Check if meeting requires consent and user hasn't given it yet
-        if (id) {
-          const { data: consent } = await supabase
-            .from("recording_consents")
-            .select("consent_given")
-            .eq("meeting_id", id)
-            .eq("user_id", user.id)
-            .maybeSingle();
-          
-          if (!consent?.consent_given) {
-            setShowConsentDialog(true);
-          }
         }
       }
     };
@@ -1508,15 +1492,6 @@ const MeetingDetail = () => {
             meetingDate={meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}
             meetingTime={meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
             videoConferenceUrl={meeting.video_conference_url}
-          />
-        )}
-        
-        {userId && id && (
-          <RecordingConsentDialog
-            meetingId={id}
-            userId={userId}
-            open={showConsentDialog}
-            onOpenChange={setShowConsentDialog}
           />
         )}
       </div>
