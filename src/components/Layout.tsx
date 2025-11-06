@@ -156,12 +156,19 @@ export const Layout = ({ children }: LayoutProps) => {
     <SidebarProvider>
       {/* Ethio Telecom Header - Fixed at very top */}
       {isEthioTelecom && (
-        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md">
-          <img 
-            src={ethioTelecomLogo} 
-            alt="Ethio Telecom" 
-            className="w-full h-full object-cover object-left"
-          />
+        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md bg-white">
+          <div className="h-full flex items-center">
+            {/* Logo section - white background */}
+            <div className="h-full px-4 sm:px-6 flex items-center bg-white">
+              <img 
+                src={ethioTelecomLogo} 
+                alt="Ethio Telecom" 
+                className="h-12 sm:h-16 w-auto object-contain"
+              />
+            </div>
+            {/* Green bar extending to the right */}
+            <div className="flex-1 h-full bg-[#8DC63F]" />
+          </div>
         </div>
       )}
       
