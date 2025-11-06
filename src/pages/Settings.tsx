@@ -504,6 +504,8 @@ const Settings = () => {
 
           {/* Notifications Tab */}
           <TabsContent value="notifications" className="space-y-6">
+            <EnhancedWhatsAppReminders />
+            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">

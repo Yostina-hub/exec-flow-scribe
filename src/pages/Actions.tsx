@@ -1,5 +1,6 @@
 import { Layout } from "@/components/Layout";
 import { CreateActionDialog } from "@/components/CreateActionDialog";
+import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -172,6 +173,9 @@ const Actions = () => {
             <CreateActionDialog />
           </div>
         </div>
+
+        {/* Task Export Manager */}
+        <TaskExportManager actionItems={actions} />
 
         {/* Stats */}
         <div className="grid gap-4 md:grid-cols-3">

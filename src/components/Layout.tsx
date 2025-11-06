@@ -5,6 +5,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { supabase } from "@/integrations/supabase/client";
 import { NavLink, useLocation } from "react-router-dom";
 import { useUserPermissions } from "@/hooks/useUserPermissions";
+import { useAutoUploadToDrive } from "@/hooks/useAutoUploadToDrive";
 import {
   Sidebar,
   SidebarContent,
@@ -136,6 +137,9 @@ function AppSidebar() {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
+  // Enable auto-upload to drive for generated documents
+  useAutoUploadToDrive();
+  
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-muted/5 to-background">
