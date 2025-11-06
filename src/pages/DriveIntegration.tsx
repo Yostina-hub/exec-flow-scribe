@@ -52,8 +52,7 @@ export default function DriveIntegration() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [teledriveConnected, setTeledriveConnected] = useState(false);
   const [showTeledriveDialog, setShowTeledriveDialog] = useState(false);
-  const [teledriveApiHost, setTeledriveApiHost] = useState("");
-  const [teledriveEmail, setTeledriveEmail] = useState("");
+  const [teledrivePhone, setTeledrivePhone] = useState("");
   const [teledrivePassword, setTeledrivePassword] = useState("");
 
   useEffect(() => {
@@ -114,8 +113,7 @@ export default function DriveIntegration() {
       const { data, error } = await supabase.functions.invoke('teledrive-auth', {
         body: {
           action: 'login',
-          apiHost: teledriveApiHost,
-          email: teledriveEmail,
+          phoneNumber: teledrivePhone,
           password: teledrivePassword,
         }
       });
@@ -125,8 +123,8 @@ export default function DriveIntegration() {
       setTeledriveConnected(true);
       setShowTeledriveDialog(false);
       toast({
-        title: "TeleDrive connected",
-        description: "Your TeleDrive account has been linked successfully.",
+        title: "Ethio Telecom Drive connected",
+        description: "Your Ethio Telecom Drive account has been linked successfully.",
       });
       
       loadSettings();
@@ -265,7 +263,7 @@ export default function DriveIntegration() {
                 </h1>
               </div>
               <p className="text-muted-foreground text-lg max-w-2xl">
-                AI-powered cloud storage with multi-provider sync (Google Drive + TeleDrive)
+                AI-powered cloud storage with multi-provider sync (Google Drive + Ethio Telecom Drive)
               </p>
               
               {/* Connection Status */}
@@ -283,7 +281,7 @@ export default function DriveIntegration() {
                       : 'border-blue-500/30 bg-blue-500/10'
                   }`}>
                     <CheckCircle2 className={`h-3 w-3 ${isEthioTelecom ? 'text-primary' : 'text-blue-500'}`} />
-                    TeleDrive Connected
+                    Ethio Telecom Drive
                   </Badge>
                 )}
               </div>
@@ -304,8 +302,8 @@ export default function DriveIntegration() {
                     isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''
                   }`}
                 >
-                  <Send className="h-5 w-5" />
-                  Connect TeleDrive
+                  <HardDrive className="h-5 w-5" />
+                  Connect Ethio Telecom Drive
                 </Button>
               )}
             </div>
@@ -391,12 +389,12 @@ export default function DriveIntegration() {
           </Card>
         </div>
         
-        {/* TeleDrive Info Alert */}
-        {!teledriveConnected && (
-          <Alert className={isEthioTelecom ? 'border-primary/30 bg-primary/5' : ''}>
-            <AlertCircle className={`h-4 w-4 ${isEthioTelecom ? 'text-primary' : ''}`} />
+        {/* Ethio Telecom Drive Info Alert */}
+        {!teledriveConnected && isEthioTelecom && (
+          <Alert className="border-primary/30 bg-primary/5">
+            <AlertCircle className="h-4 w-4 text-primary" />
             <AlertDescription>
-              <strong>TeleDrive Integration:</strong> Connect your TeleDrive account to enable Telegram-based cloud storage for meeting files. TeleDrive provides secure, distributed file storage leveraging Telegram's infrastructure.
+              <strong>Ethio Telecom Drive:</strong> Connect your Ethio Telecom account to enable seamless cloud storage for meeting files. Ethio Telecom Drive provides secure, high-speed file storage integrated with Ethiopia's leading telecom network.
             </AlertDescription>
           </Alert>
         )}
@@ -427,8 +425,8 @@ export default function DriveIntegration() {
             <TabsTrigger value="teledrive" className={`gap-2 ${
               isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''
             }`}>
-              <Send className="h-4 w-4" />
-              TeleDrive
+              <HardDrive className="h-4 w-4" />
+              Ethio Telecom Drive
             </TabsTrigger>
           </TabsList>
 
@@ -593,9 +591,9 @@ export default function DriveIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Enable TeleDrive</Label>
+                    <Label>Enable Ethio Telecom Drive</Label>
                     <p className="text-sm text-muted-foreground">
-                      Sync files to TeleDrive (Telegram storage)
+                      Sync files to Ethio Telecom's cloud storage
                     </p>
                   </div>
                   <Switch
@@ -668,27 +666,29 @@ export default function DriveIntegration() {
             <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Send className="h-5 w-5 text-primary" />
-                  TeleDrive Integration
+                  <HardDrive className="h-5 w-5 text-primary" />
+                  Ethio Telecom Drive Integration
                 </CardTitle>
                 <CardDescription>
-                  Telegram-based distributed cloud storage for your meeting files
+                  {isEthioTelecom 
+                    ? "Ethiopia's premier cloud storage solution for your meeting files"
+                    : "Enterprise cloud storage for your meeting files"}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {teledriveConnected ? (
                   <>
-                    <Alert className="border-green-500/30 bg-green-500/10">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <Alert className={`border-green-500/30 bg-green-500/10 ${isEthioTelecom ? 'border-primary/30 bg-primary/10' : ''}`}>
+                      <CheckCircle2 className={`h-4 w-4 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
                       <AlertDescription>
-                        <strong>TeleDrive Connected:</strong> Your meeting files will automatically sync to TeleDrive when enabled in Smart Sync settings.
+                        <strong>Ethio Telecom Drive Connected:</strong> Your meeting files will automatically sync to Ethio Telecom Drive when enabled in Smart Sync settings.
                       </AlertDescription>
                     </Alert>
 
                     <div className="space-y-4">
                       <h3 className="font-semibold flex items-center gap-2">
                         <HardDrive className="h-4 w-4" />
-                        TeleDrive Files
+                        Ethio Telecom Drive Files
                       </h3>
                       <div className="space-y-2">
                         {meetingFiles.filter(f => f.storage_provider === 'teledrive').length > 0 ? (
@@ -711,9 +711,9 @@ export default function DriveIntegration() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="gap-1">
-                                    <Send className="h-3 w-3" />
-                                    TeleDrive
+                                  <Badge variant="outline" className={`gap-1 ${isEthioTelecom ? 'border-primary/30 bg-primary/10' : ''}`}>
+                                    <HardDrive className="h-3 w-3" />
+                                    Ethio Telecom
                                   </Badge>
                                   <Button
                                     variant="ghost"
@@ -727,8 +727,8 @@ export default function DriveIntegration() {
                             ))
                         ) : (
                           <div className="text-center py-8 text-muted-foreground">
-                            <p>No files stored in TeleDrive yet</p>
-                            <p className="text-sm mt-2">Enable TeleDrive sync in Smart Sync settings</p>
+                            <p>No files stored in Ethio Telecom Drive yet</p>
+                            <p className="text-sm mt-2">Enable Ethio Telecom Drive sync in Smart Sync settings</p>
                           </div>
                         )}
                       </div>
@@ -736,20 +736,24 @@ export default function DriveIntegration() {
                   </>
                 ) : (
                   <div className="text-center py-12 space-y-4">
-                    <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto">
-                      <Send className="h-8 w-8 text-muted-foreground/50" />
+                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mx-auto ${
+                      isEthioTelecom ? 'bg-gradient-to-br from-primary/20 to-secondary/20' : 'bg-muted'
+                    }`}>
+                      <HardDrive className={`h-8 w-8 ${isEthioTelecom ? 'text-primary' : 'text-muted-foreground/50'}`} />
                     </div>
                     <div>
-                      <p className="font-semibold mb-2">Connect TeleDrive</p>
+                      <p className="font-semibold mb-2">Connect Ethio Telecom Drive</p>
                       <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
-                        TeleDrive uses Telegram's infrastructure to provide distributed cloud storage. Connect your account to enable automatic file syncing.
+                        {isEthioTelecom 
+                          ? "Ethio Telecom Drive provides secure, high-speed cloud storage integrated with Ethiopia's leading telecom network. Connect your account to enable automatic file syncing."
+                          : "Enterprise cloud storage solution. Connect your account to enable automatic file syncing."}
                       </p>
                     </div>
                     <Button onClick={() => setShowTeledriveDialog(true)} className={`gap-2 ${
                       isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''
                     }`}>
-                      <Send className="h-4 w-4" />
-                      Connect TeleDrive
+                      <HardDrive className="h-4 w-4" />
+                      Connect Ethio Telecom Drive
                     </Button>
                   </div>
                 )}
@@ -758,47 +762,41 @@ export default function DriveIntegration() {
           </TabsContent>
         </Tabs>
 
-        {/* TeleDrive Connection Dialog */}
+        {/* Ethio Telecom Drive Connection Dialog */}
         <Dialog open={showTeledriveDialog} onOpenChange={setShowTeledriveDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className={`max-w-md ${isEthioTelecom ? 'border-primary/20' : ''}`}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5 text-primary" />
-                Connect TeleDrive
+                <HardDrive className="h-5 w-5 text-primary" />
+                Connect Ethio Telecom Drive
               </DialogTitle>
               <DialogDescription>
-                Connect to your TeleDrive instance for distributed cloud storage
+                {isEthioTelecom 
+                  ? "Connect your Ethio Telecom account to access cloud storage"
+                  : "Connect to Ethio Telecom's cloud storage service"}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Alert className={isEthioTelecom ? 'border-primary/30 bg-primary/5' : ''}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  TeleDrive is a self-hosted cloud storage service. Enter your TeleDrive instance URL and login credentials.
-                </AlertDescription>
-              </Alert>
+              {isEthioTelecom && (
+                <Alert className="border-primary/30 bg-primary/5">
+                  <AlertCircle className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-xs">
+                    Use your Ethio Telecom mobile number and account password to connect.
+                  </AlertDescription>
+                </Alert>
+              )}
               
               <div>
-                <Label>TeleDrive Instance URL</Label>
+                <Label>Phone Number</Label>
                 <Input
-                  value={teledriveApiHost}
-                  onChange={(e) => setTeledriveApiHost(e.target.value)}
-                  placeholder="https://teledrive.example.com"
-                  type="url"
+                  value={teledrivePhone}
+                  onChange={(e) => setTeledrivePhone(e.target.value)}
+                  placeholder="+251911234567"
+                  type="tel"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  The URL of your TeleDrive server
+                  Your Ethio Telecom mobile number
                 </p>
-              </div>
-              
-              <div>
-                <Label>Email or Username</Label>
-                <Input
-                  value={teledriveEmail}
-                  onChange={(e) => setTeledriveEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  type="text"
-                />
               </div>
               
               <div>
@@ -807,16 +805,16 @@ export default function DriveIntegration() {
                   type="password"
                   value={teledrivePassword}
                   onChange={(e) => setTeledrivePassword(e.target.value)}
-                  placeholder="Your TeleDrive password"
+                  placeholder="Your Ethio Telecom account password"
                 />
               </div>
               
               <Button 
                 onClick={connectTeleDrive} 
-                disabled={loading || !teledriveApiHost || !teledriveEmail || !teledrivePassword}
+                disabled={loading || !teledrivePhone || !teledrivePassword}
                 className={`w-full ${isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''}`}
               >
-                {loading ? "Connecting..." : "Connect TeleDrive"}
+                {loading ? "Connecting..." : "Connect Ethio Telecom Drive"}
               </Button>
             </div>
           </DialogContent>
