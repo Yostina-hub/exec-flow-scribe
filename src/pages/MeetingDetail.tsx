@@ -41,7 +41,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { LiveTranscription } from "@/components/LiveTranscription";
 import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
-import { ContextPanel } from "@/components/ContextPanel";
 import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
 import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
 import { AudioToMinutesWorkflow } from "@/components/AudioToMinutesWorkflow";
@@ -65,7 +64,6 @@ import { LazyTabContent } from "@/components/LazyTabContent";
 import { MeetingAudioPlayback } from "@/components/MeetingAudioPlayback";
 import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
 import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
-import { AIPreparationAssistant } from "@/components/AIPreparationAssistant";
 import { ParticipantDashboard } from "@/components/ParticipantDashboard";
 import { SpeakerQueue } from "@/components/SpeakerQueue";
 import { AutoAssignmentControls } from "@/components/AutoAssignmentControls";
@@ -80,10 +78,6 @@ import { LivePolling } from "@/components/LivePolling";
 import { CollaborativeNotes } from "@/components/CollaborativeNotes";
 import { MeetingBookmarks } from "@/components/MeetingBookmarks";
 import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
-import { SpatialPresenceMap } from "@/components/SpatialPresenceMap";
-import { TimeTravelDecisionTracker } from "@/components/TimeTravelDecisionTracker";
-import { MeetingEnergyTracker } from "@/components/MeetingEnergyTracker";
-import { LiveKnowledgeGraph } from "@/components/LiveKnowledgeGraph";
 import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
 import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
 import { useState, useEffect, useRef } from "react";
@@ -1146,106 +1140,6 @@ const MeetingDetail = () => {
               <MeetingKeywordSearch meetingId={meetingId} />
             </div>
             
-            {/* Meeting Energy Tracker */}
-            <MeetingEnergyTracker meetingId={meetingId} />
-            
-            {/* Live Knowledge Graph */}
-            <LiveKnowledgeGraph meetingId={meetingId} />
-
-            {/* Spatial Presence Map */}
-            <SpatialPresenceMap
-              meetingId={meetingId}
-              participants={[
-                { id: '1', name: 'CEO', initials: 'CE', engagement: 95, speaking: true, attention: 92, sentiment: 'positive' },
-                { id: '2', name: 'CFO', initials: 'CF', engagement: 88, speaking: false, attention: 85, sentiment: 'positive' },
-                { id: '3', name: 'CTO', initials: 'CT', engagement: 76, speaking: false, attention: 78, sentiment: 'neutral' },
-                { id: '4', name: 'CMO', initials: 'CM', engagement: 82, speaking: false, attention: 88, sentiment: 'positive' },
-                { id: '5', name: 'CPO', initials: 'CP', engagement: 65, speaking: false, attention: 70, sentiment: 'neutral' },
-                { id: '6', name: 'CHRO', initials: 'CH', engagement: 91, speaking: false, attention: 89, sentiment: 'positive' },
-              ]}
-            />
-
-            {/* Time-Travel Decision Tracker */}
-            <TimeTravelDecisionTracker
-              meetingId={meetingId}
-              decisions={[
-                {
-                  id: '1',
-                  timestamp: '2:15 PM',
-                  title: 'Q4 Budget Reallocation Approved',
-                  alternatives: [
-                    'Defer to Q1 2025',
-                    'Split allocation 50/50 between marketing and product',
-                    'Allocate entirely to engineering'
-                  ],
-                  confidence: 94,
-                  impact: 'high',
-                  owner: 'CEO'
-                },
-                {
-                  id: '2',
-                  timestamp: '2:35 PM',
-                  title: 'Engineering Team Expansion by 15%',
-                  alternatives: [
-                    'Expand by 10% instead',
-                    'Focus on senior hires only',
-                    'Delay expansion to Q2'
-                  ],
-                  confidence: 87,
-                  impact: 'high',
-                  owner: 'CTO'
-                },
-                {
-                  id: '3',
-                  timestamp: '2:50 PM',
-                  title: 'Launch New Product Feature by March',
-                  alternatives: [
-                    'Launch in April for better QA',
-                    'Launch MVP version in February'
-                  ],
-                  confidence: 76,
-                  impact: 'medium',
-                  owner: 'CPO'
-                }
-              ]}
-            />
-
-            <ContextPanel meetingId={meetingId} />
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Attendees ({attendeesData.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {attendeesData.map((attendee, idx) => (
-                    <div key={`${attendee.role}-${idx}`} className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9 bg-gradient-to-br from-primary to-secondary">
-                        <AvatarFallback className="bg-transparent text-white text-xs">
-                          {attendee.initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="text-sm font-medium">{attendee.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {attendee.role}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <AIPreparationAssistant
-              meetingId={meetingId}
-              agendaCount={agendaData.length}
-              attendeeCount={attendeesData.length}
-              startTime={meeting?.start_time || new Date().toISOString()}
-            />
-
             <Card>
               <CardHeader>
                 <CardTitle>Quick Actions</CardTitle>
