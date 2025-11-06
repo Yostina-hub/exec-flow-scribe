@@ -211,6 +211,11 @@ export const ViewMinutesDialog = ({
                 <Download className="h-4 w-4" />
                 Download
               </Button>
+              {tooLarge && !showFull && (
+                <Button variant="secondary" size="sm" onClick={() => setShowFull(true)} className="gap-2">
+                  Render full document
+                </Button>
+              )}
               <Button size="sm" onClick={handleEditInEditor} className="gap-2">
                 <ExternalLink className="h-4 w-4" />
                 Open in Editor
