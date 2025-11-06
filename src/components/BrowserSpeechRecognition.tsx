@@ -47,6 +47,10 @@ export const BrowserSpeechRecognition = ({
     setLanguage(externalLanguage);
   }, [externalLanguage, setLanguage]);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingStartTimeRef = useRef<number | null>(null);
+  const pausedDurationRef = useRef<number>(0);
+  const pauseStartTimeRef = useRef<number | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
   const [userId, setUserId] = useState<string | null>(null);
@@ -195,14 +199,43 @@ export const BrowserSpeechRecognition = ({
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     if (externalIsRecording && !isPaused) {
-      interval = setInterval(() => {
-        setRecordingDuration(prev => {
-          const next = prev + 1;
-          onDurationChange?.(next);
-          return next;
-        });
-      }, 1000);
+      // Start or resume recording
+      if (recordingStartTimeRef.current === null) {
+        // Fresh start
+        recordingStartTimeRef.current = Date.now();
+        pausedDurationRef.current = 0;
+      } else if (pauseStartTimeRef.current !== null) {
+        // Resuming from pause
+        const pauseDuration = Date.now() - pauseStartTimeRef.current;
+        pausedDurationRef.current += pauseDuration;
+        pauseStartTimeRef.current = null;
+      }
+      
+      // Update timer every 100ms
+      const updateTimer = () => {
+        if (recordingStartTimeRef.current !== null) {
+          const elapsed = Date.now() - recordingStartTimeRef.current - pausedDurationRef.current;
+          const seconds = Math.floor(elapsed / 1000);
+          setRecordingDuration(seconds);
+          onDurationChange?.(seconds);
+        }
+      };
+      
+      updateTimer(); // Initial update
+      interval = setInterval(updateTimer, 100);
+    } else if (externalIsRecording && isPaused) {
+      // Mark pause start time
+      if (pauseStartTimeRef.current === null) {
+        pauseStartTimeRef.current = Date.now();
+      }
+    } else if (!externalIsRecording) {
+      // Reset when recording stops
+      recordingStartTimeRef.current = null;
+      pausedDurationRef.current = 0;
+      pauseStartTimeRef.current = null;
+      setRecordingDuration(0);
     }
+    
     return () => {
       if (interval) clearInterval(interval);
     };

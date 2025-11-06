@@ -186,6 +186,9 @@ const MeetingDetail = () => {
   const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recordingStartTimeRef = useRef<number | null>(null);
+  const pausedDurationRef = useRef<number>(0);
+  const pauseStartTimeRef = useRef<number | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [aiInsights, setAiInsights] = useState<any[]>([]);
   const [meetingPhase, setMeetingPhase] = useState<'pre' | 'active' | 'post'>('pre');
@@ -295,35 +298,86 @@ const MeetingDetail = () => {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
       }
+      // Reset recording time tracking
+      recordingStartTimeRef.current = null;
+      pausedDurationRef.current = 0;
+      pauseStartTimeRef.current = null;
     };
   }, []);
 
-  // Track recording time
+  // Track recording time with timestamp-based approach (works even when tab is inactive)
   useEffect(() => {
     if (isRecording && !isPaused) {
-      // Start/resume timer
-      recordingTimerRef.current = setInterval(() => {
-        setRecordingSeconds(prev => prev + 1);
-      }, 1000);
-    } else {
-      // Pause or stop - clear timer
+      // Start recording - set start time if not already set
+      if (recordingStartTimeRef.current === null) {
+        recordingStartTimeRef.current = Date.now();
+        pausedDurationRef.current = 0;
+        console.log('Recording started at:', new Date(recordingStartTimeRef.current).toISOString());
+      }
+      
+      // If resuming from pause, calculate pause duration
+      if (pauseStartTimeRef.current !== null) {
+        const pauseDuration = Date.now() - pauseStartTimeRef.current;
+        pausedDurationRef.current += pauseDuration;
+        pauseStartTimeRef.current = null;
+        console.log('Resumed - total pause duration:', pausedDurationRef.current / 1000, 'seconds');
+      }
+      
+      // Update timer every 100ms for smooth display
+      const updateTimer = () => {
+        if (recordingStartTimeRef.current !== null) {
+          const elapsed = Date.now() - recordingStartTimeRef.current - pausedDurationRef.current;
+          const seconds = Math.floor(elapsed / 1000);
+          setRecordingSeconds(seconds);
+        }
+      };
+      
+      updateTimer(); // Initial update
+      recordingTimerRef.current = setInterval(updateTimer, 100);
+      
+    } else if (isRecording && isPaused) {
+      // Recording paused - mark pause start time
+      if (pauseStartTimeRef.current === null) {
+        pauseStartTimeRef.current = Date.now();
+        console.log('Recording paused at:', new Date(pauseStartTimeRef.current).toISOString());
+      }
+      
+      // Clear timer during pause
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
         recordingTimerRef.current = null;
+      }
+    } else {
+      // Recording stopped - clear timer and reset
+      if (recordingTimerRef.current) {
+        clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
+      }
+      
+      // Reset time tracking when recording stops
+      if (!isRecording) {
+        recordingStartTimeRef.current = null;
+        pausedDurationRef.current = 0;
+        pauseStartTimeRef.current = null;
       }
     }
 
     return () => {
       if (recordingTimerRef.current) {
         clearInterval(recordingTimerRef.current);
+        recordingTimerRef.current = null;
       }
     };
   }, [isRecording, isPaused]);
 
-  // Reset recording seconds when recording starts fresh
+  // Reset recording seconds and timestamps when recording starts fresh
   useEffect(() => {
     if (isRecording && !wasRecordingRef.current) {
       setRecordingSeconds(0);
+      recordingStartTimeRef.current = Date.now();
+      pausedDurationRef.current = 0;
+      pauseStartTimeRef.current = null;
+      console.log('Fresh recording started - reset all timers');
     }
   }, [isRecording]);
 
@@ -824,10 +878,16 @@ const MeetingDetail = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-3 flex-wrap">
                 {!isRecording ? (
                   <Button 
-                    onClick={() => { setRecordingSeconds(0); startRecording(); }} 
+                    onClick={() => { 
+                      setRecordingSeconds(0);
+                      recordingStartTimeRef.current = null;
+                      pausedDurationRef.current = 0;
+                      pauseStartTimeRef.current = null;
+                      startRecording(); 
+                    }} 
                     className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
                   >
                     <Mic className="h-4 w-4" />
@@ -850,6 +910,12 @@ const MeetingDetail = () => {
                       <Square className="h-4 w-4" />
                       Stop Recording
                     </Button>
+                    <div className="flex items-center gap-2 px-4 py-2 bg-background/50 rounded-lg border">
+                      <Clock className="h-4 w-4 text-primary" />
+                      <span className="font-mono font-semibold tabular-nums">
+                        {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}
+                      </span>
+                    </div>
                   </>
                 )}
                 {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
