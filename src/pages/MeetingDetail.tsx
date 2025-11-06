@@ -992,10 +992,8 @@ const MeetingDetail = () => {
         </Card>
 
         {/* Main Content */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* Transcription & Agenda */}
-          <div className="lg:col-span-2 space-y-6">
-            <Tabs 
+        <div className="space-y-6">
+          <Tabs
               defaultValue={(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') ? "video" : "transcription"} 
               className="w-full"
               onValueChange={(value) => setActiveTab(value)}
@@ -1250,11 +1248,10 @@ const MeetingDetail = () => {
                 </LazyTabContent>
               </TabsContent>
             </Tabs>
-          </div>
 
           {/* Sidebar - Quick Actions - Only visible on Live Transcription tab */}
           {activeTab === 'transcription' && (
-            <div className="space-y-6 mt-8">
+            <div className="space-y-6 mt-6">
               {/* Transcription Controls */}
               {meeting?.created_by === userId && (
                 <div className="space-y-4">
@@ -1301,71 +1298,76 @@ const MeetingDetail = () => {
                 <CardHeader>
                   <CardTitle>Quick Actions</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  {/* AI-Powered Summary & Search */}
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
-                    <MeetingKeyPointsSummary meetingId={meetingId} />
-                    <MeetingKeywordSearch meetingId={meetingId} />
-                  </div>
-                  
-                  <Button 
-                    variant="default" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => setShowMinutesDialog(true)}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Generate AI Minutes
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => navigate(`/meetings/${id}/minutes`)}
-                  >
-                    <FileText className="h-4 w-4" />
-                    Open Minutes Editor
-                  </Button>
-                  <AgendaIntakeForm
-                    meetingId={meetingId}
-                    trigger={
-                      <Button variant="outline" className="w-full justify-start gap-2">
-                        <Plus className="h-4 w-4" />
-                        Add Agenda Items
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* AI-Powered Summary & Search */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <MeetingKeyPointsSummary meetingId={meetingId} />
+                      <MeetingKeywordSearch meetingId={meetingId} />
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
+                    
+                    <Button 
+                      variant="default" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => setShowMinutesDialog(true)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Generate AI Minutes
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => navigate(`/meetings/${id}/minutes`)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      Open Minutes Editor
+                    </Button>
+                    <AgendaIntakeForm
+                      meetingId={meetingId}
+                      trigger={
+                        <Button variant="outline" className="w-full justify-start gap-2">
+                          <Plus className="h-4 w-4" />
+                          Add Agenda Items
+                        </Button>
+                      }
+                    />
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => setShowViewMinutesDialog(true)}
+                      disabled={!(meeting?.minutes || meeting?.minutes_url)}
+                    >
+                      <FileText className="h-4 w-4" />
+                      View Previous Minutes
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => setShowRescheduleDialog(true)}
+                    >
+                      <Calendar className="h-4 w-4" />
+                      Reschedule Meeting
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full justify-start gap-2"
+                      onClick={() => setShowManageAttendeesDialog(true)}
+                    >
+                      <Users className="h-4 w-4" />
+                      Manage Attendees
+                    </Button>
+                      <Button 
+                        variant="outline" 
+                        className="w-full justify-start gap-2"
+                        onClick={() => setShowCreateSignatureDialog(true)}
+                      >
+                        <FileSignature className="h-4 w-4" />
+                        Request Sign-Off
                       </Button>
-                    }
-                  />
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => setShowViewMinutesDialog(true)}
-                    disabled={!(meeting?.minutes || meeting?.minutes_url)}
-                  >
-                    <FileText className="h-4 w-4" />
-                    View Previous Minutes
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => setShowRescheduleDialog(true)}
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Reschedule Meeting
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => setShowManageAttendeesDialog(true)}
-                  >
-                    <Users className="h-4 w-4" />
-                    Manage Attendees
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    className="w-full justify-start gap-2"
-                    onClick={() => setShowCreateSignatureDialog(true)}
-                  >
-                    <FileSignature className="h-4 w-4" />
-                    Request Sign-Off
-                  </Button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             </div>
