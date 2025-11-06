@@ -157,7 +157,7 @@ export const Layout = ({ children }: LayoutProps) => {
     <SidebarProvider>
       {/* Ethio Telecom Header - Fixed at very top */}
       {isEthioTelecom && (
-        <div className="fixed top-0 left-0 right-0 h-12 sm:h-14 z-50 shadow-md">
+        <div className="fixed top-0 left-0 right-0 h-16 sm:h-20 z-50 shadow-md">
           <img 
             src={ethioTelecomHeader} 
             alt="Ethio Telecom Header" 
@@ -166,7 +166,7 @@ export const Layout = ({ children }: LayoutProps) => {
         </div>
       )}
       
-      <div className={`min-h-screen flex w-full ${isEthioTelecom ? 'bg-[#F4F4F4] pt-12 sm:pt-14' : 'bg-gradient-to-br from-background via-muted/5 to-background'}`}>
+      <div className={`min-h-screen flex w-full ${isEthioTelecom ? 'bg-[#F4F4F4] pt-16 sm:pt-20' : 'bg-gradient-to-br from-background via-muted/5 to-background'}`}>
         <AppSidebar />
         
         <div className="flex-1 flex flex-col w-full">
