@@ -133,12 +133,15 @@ const Auth = () => {
     <div className={`min-h-screen relative overflow-hidden ${isEthioTelecom ? 'bg-[#F4F4F4]' : 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'}`}>
       {/* Ethio Telecom Header */}
       {isEthioTelecom && (
-        <div className="fixed top-0 left-0 right-0 h-24 bg-white z-40 flex items-center px-8 border-b border-gray-200">
-          <img 
-            src={ethioTelecomLogo} 
-            alt="Ethio Telecom" 
-            className="h-16 w-auto object-contain"
-          />
+        <div className="fixed top-0 left-0 right-0 h-20 z-40 flex items-center">
+          <div className="bg-white h-full flex items-center px-8">
+            <img 
+              src={ethioTelecomLogo} 
+              alt="Ethio Telecom" 
+              className="h-12 w-auto object-contain"
+            />
+          </div>
+          <div className="flex-1 h-full bg-[#8DC63F]" />
         </div>
       )}
       
