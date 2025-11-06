@@ -11,6 +11,7 @@ import { Loader2, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
 import { useIsGuest } from "@/hooks/useIsGuest";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTheme } from "@/contexts/ThemeContext";
+import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -132,16 +133,12 @@ const Auth = () => {
     <div className={`min-h-screen relative overflow-hidden ${isEthioTelecom ? 'bg-[#F4F4F4]' : 'bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950'}`}>
       {/* Ethio Telecom Header */}
       {isEthioTelecom && (
-        <div className="fixed top-0 left-0 right-0 h-20 bg-[#8DC63F] z-40 flex items-center px-8">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center">
-              <div className="text-[#8DC63F] font-bold text-xl">ET</div>
-            </div>
-            <div>
-              <h1 className="text-white text-2xl font-bold">ethio telecom</h1>
-              <p className="text-white/90 text-xs">ኢትዮ ቴሌኮም</p>
-            </div>
-          </div>
+        <div className="fixed top-0 left-0 right-0 h-24 bg-white z-40 flex items-center px-8 border-b border-gray-200">
+          <img 
+            src={ethioTelecomLogo} 
+            alt="Ethio Telecom" 
+            className="h-16 w-auto object-contain"
+          />
         </div>
       )}
       
