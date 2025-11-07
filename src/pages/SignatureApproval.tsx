@@ -138,11 +138,20 @@ export default function SignatureApproval() {
         return;
       }
 
-      // Generate PDF
+      // Fetch default Ethio Telecom brand kit
+      const { data: brandKits } = await supabase
+        .from('brand_kits')
+        .select('id')
+        .eq('is_default', true)
+        .limit(1)
+        .maybeSingle();
+
+      // Generate branded PDF with approval stamp
       const { data: pdfData, error } = await supabase.functions.invoke('generate-branded-pdf', {
         body: {
           meeting_id: signatureRequest.meeting_id,
           minutes_version_id: latestMinutes.id,
+          brand_kit_id: brandKits?.id,
           signature_request_id: requestId,
           include_watermark: false,
         },
@@ -150,20 +159,20 @@ export default function SignatureApproval() {
 
       if (error) throw error;
 
-      // Download the HTML
+      // Download the branded Ethio Telecom PDF
       const blob = new Blob([pdfData.html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `approved-minutes-${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `ethiotelecom-approved-${new Date().toISOString().split('T')[0]}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({
-        title: 'Downloaded',
-        description: 'Approved minutes saved to your device',
+        title: '✓ Branded PDF Downloaded',
+        description: 'Ethio Telecom approved minutes saved',
       });
     } catch (error: any) {
       console.error('Download error:', error);
