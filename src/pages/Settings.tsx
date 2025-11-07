@@ -27,6 +27,7 @@ import { TwoWayCalendarSync } from "@/components/calendar/TwoWayCalendarSync";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { EnhancedWhatsAppReminders } from "@/components/notifications/EnhancedWhatsAppReminders";
 import { GubaTaskSettings } from "@/components/settings/GubaTaskSettings";
+import { DepartmentManager } from "@/components/guba/DepartmentManager";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -948,6 +949,7 @@ const Settings = () => {
           {/* Guba Tasks Tab */}
           <TabsContent value="guba" className="space-y-6">
             <GubaTaskSettings />
+            <DepartmentManager />
           </TabsContent>
 
           {/* Security Tab */}

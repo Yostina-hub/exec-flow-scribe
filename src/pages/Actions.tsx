@@ -4,6 +4,7 @@ import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { GubaTaskProposals } from "@/components/guba/GubaTaskProposals";
 import { GubaDashboard } from "@/components/guba/GubaDashboard";
 import { GubaSidebar } from "@/components/guba/GubaSidebar";
+import { TaskReassignmentDialog } from "@/components/guba/TaskReassignmentDialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -57,6 +58,7 @@ const Actions = () => {
   const [gubaEnabled, setGubaEnabled] = useState(false);
   const [showGubaDashboard, setShowGubaDashboard] = useState(false);
   const [showGubaSidebar, setShowGubaSidebar] = useState(false);
+  const [reassignTask, setReassignTask] = useState<any>(null);
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
 
@@ -231,9 +233,9 @@ const Actions = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setReassignTask(action)}>
                     <Edit className="h-4 w-4 mr-2" />
-                    Edit
+                    Reassign
                   </DropdownMenuItem>
                   <DropdownMenuItem>
                     <CheckCircle2 className="h-4 w-4 mr-2" />
@@ -594,6 +596,17 @@ const Actions = () => {
 
         {/* Guba Sidebar */}
         {gubaEnabled && showGubaSidebar && <GubaSidebar />}
+
+        {/* Task Reassignment Dialog */}
+        <TaskReassignmentDialog
+          open={!!reassignTask}
+          onOpenChange={(open) => !open && setReassignTask(null)}
+          task={reassignTask}
+          onReassigned={() => {
+            fetchActions();
+            setReassignTask(null);
+          }}
+        />
       </div>
     </Layout>
   );
