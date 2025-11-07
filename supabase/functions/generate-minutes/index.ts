@@ -382,14 +382,31 @@ ${actionItemsList || 'No action items assigned'}
 
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
+⚠️ CRITICAL FORMATTING RULES - TABLES:
+• Use PROPER MARKDOWN TABLE SYNTAX for all structured/tabular data
+• Format tables correctly with pipes and alignment:
+  | Column 1 | Column 2 | Column 3 |
+  |----------|----------|----------|
+  | Data 1   | Data 2   | Data 3   |
+• NEVER use plain text with dashes (---) and spaces for tables
+• Use tables for:
+  - Meeting Information section (first section)
+  - Attendees/Participants lists with roles
+  - Agenda items with status/duration/presenter
+  - Decision tracking with details
+  - Action items with assignments/due dates
+• Ensure proper alignment and spacing in tables
+
 📊 REQUIRED SECTIONS (be thorough and complete):
-0. **የስብሰባ መረጃ** (Meeting Information) - MUST include at the very top:
-   • Meeting title and date
-   • Start and end time
-   • Duration (scheduled and actual if available)
-   • Location/venue
-   • List of participants with their roles and attendance status
-   Present this in a clear, formatted box at the beginning
+0. **የስብሰባ መረጃ** (Meeting Information) - MUST be formatted as a markdown table at the very top:
+   Example:
+   | Field | Details |
+   |-------|---------|
+   | የስብሰባ ርዕስ (Title) | [Title] |
+   | ቀን (Date) | [Date] |
+   | ሰዓት (Time) | [Start] - [End] |
+   | ቦታ (Location) | [Location] |
+   | ተሳታፊዎች (Participants) | [List] |
 1. **የስብሰባ መግቢያ** (Meeting Opening) - WHO opened the meeting, their introduction, welcome remarks, and stated purpose (MUST be comprehensive - this sets the stage)
 2. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (4-6 detailed sentences minimum)
 3. **የአጀንዳ ግምገማ** (Agenda Review) - Detailed summary of each agenda item:
