@@ -38,6 +38,8 @@ import {
   Settings,
   MessageSquare,
   Languages,
+  Heart,
+  Brain,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -102,6 +104,8 @@ const GuestMeetingView = lazy(() => import("@/components/GuestMeetingView").then
 const PDFGenerationPanel = lazy(() => import("@/components/PDFGenerationPanel").then(m => ({ default: m.PDFGenerationPanel })));
 const SystemTestPanel = lazy(() => import("@/components/SystemTestPanel").then(m => ({ default: m.SystemTestPanel })));
 const TranscriptionProviderToggle = lazy(() => import("@/components/TranscriptionProviderToggle").then(m => ({ default: m.TranscriptionProviderToggle })));
+const EmotionalAnalyticsDashboard = lazy(() => import("@/components/EmotionalAnalyticsDashboard").then(m => ({ default: m.EmotionalAnalyticsDashboard })));
+const SpeakerEmotionalProfiles = lazy(() => import("@/components/SpeakerEmotionalProfiles").then(m => ({ default: m.SpeakerEmotionalProfiles })));
 
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
@@ -1108,6 +1112,14 @@ const MeetingDetail = () => {
                   <MessageSquare className="h-4 w-4" />
                   Chat
                 </TabsTrigger>
+                <TabsTrigger value="emotional-analytics" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <Heart className="h-4 w-4" />
+                  Emotional Analytics
+                </TabsTrigger>
+                <TabsTrigger value="speaker-profiles" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <Brain className="h-4 w-4" />
+                  Speaker Profiles
+                </TabsTrigger>
               </TabsList>
               </div>
 
@@ -1439,6 +1451,18 @@ const MeetingDetail = () => {
               <TabsContent value="signatures" className="space-y-4">
                 <LazyTabContent>
                   <AudioToMinutesWorkflow meetingId={meetingId} />
+                </LazyTabContent>
+              </TabsContent>
+
+              <TabsContent value="emotional-analytics" className="space-y-4">
+                <LazyTabContent>
+                  <EmotionalAnalyticsDashboard meetingId={meetingId} />
+                </LazyTabContent>
+              </TabsContent>
+
+              <TabsContent value="speaker-profiles" className="space-y-4">
+                <LazyTabContent>
+                  <SpeakerEmotionalProfiles meetingId={meetingId} />
                 </LazyTabContent>
               </TabsContent>
             </Tabs>
