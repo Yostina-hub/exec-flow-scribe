@@ -210,6 +210,9 @@ const MeetingDetail = () => {
   
   const meetingId = id || "demo-meeting-id";
   
+  // Fast initial meeting fetch (realtime) to avoid long loading state
+  const { meeting: meetingRealtime, loading: meetingRealtimeLoading } = useRealtimeMeetingData(meetingId);
+  
   // User info from cached auth
   const userId = user?.id || "";
   const userFullName = useMemo(() => user?.user_metadata?.full_name || "User", [user]);
@@ -275,7 +278,7 @@ const MeetingDetail = () => {
     }
   );
 
-  const meeting = meetingData?.meeting || null;
+  const meeting = meetingData?.meeting || meetingRealtime || null;
 
   // Real-time updates for meeting data
   useEffect(() => {
@@ -732,7 +735,8 @@ const MeetingDetail = () => {
     }
   };
 
-  if (loading || guestLoading) {
+  // Show loading only until we have the basic meeting row
+  if (!meeting && (meetingRealtimeLoading || loading)) {
     return (
       <Layout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-fade-in">
