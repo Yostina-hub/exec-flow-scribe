@@ -6,6 +6,7 @@ import { GubaDashboard } from "@/components/guba/GubaDashboard";
 import { GubaSidebar } from "@/components/guba/GubaSidebar";
 import { TaskReassignmentDialog } from "@/components/guba/TaskReassignmentDialog";
 import { GubaLearningAnalytics } from "@/components/guba/GubaLearningAnalytics";
+import { BulkOperationsManager } from "@/components/guba/BulkOperationsManager";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3, Sparkles } from "lucide-react";
+import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3, Sparkles, Target, AlertOctagon } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -63,6 +64,7 @@ const Actions = () => {
   const [reassignTask, setReassignTask] = useState<any>(null);
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
+  const [bulkOperation, setBulkOperation] = useState<"reassign" | "status" | "priority" | "delete" | "due_date" | null>(null);
 
   useEffect(() => {
     const checkGubaStatus = async () => {
@@ -183,14 +185,20 @@ const Actions = () => {
     });
   };
 
-  const handleBulkAction = async (action: string) => {
+  const handleBulkAction = (operation: "reassign" | "status" | "priority" | "delete" | "due_date") => {
     if (selectedItems.size === 0) {
       toast({ title: "No items selected", variant: "destructive" });
       return;
     }
-    
-    toast({ title: `${action} ${selectedItems.size} items`, description: "Processing..." });
-    setSelectedItems(new Set());
+    setBulkOperation(operation);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === actions.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(actions.map(a => a.id)));
+    }
   };
 
   const toggleItem = (id: string) => {
@@ -495,25 +503,51 @@ const Actions = () => {
             </div>
             
             <div className="flex gap-2">
-              {selectedItems.size > 0 && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="gap-2">
-                      <span>{selectedItems.size} selected</span>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => handleBulkAction("Complete")}>
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
-                      Mark Complete
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleBulkAction("Delete")}>
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              {selectedItems.size > 0 ? (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={toggleSelectAll}
+                    className="gap-2"
+                  >
+                    {selectedItems.size === actions.length ? "Deselect All" : "Select All"}
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="default" className="gap-2">
+                        <span>{selectedItems.size} selected</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={() => handleBulkAction("reassign")}>
+                        <Users className="h-4 w-4 mr-2" />
+                        Reassign Tasks
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkAction("status")}>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        Update Status
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkAction("priority")}>
+                        <Target className="h-4 w-4 mr-2" />
+                        Update Priority
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleBulkAction("due_date")}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Update Due Date
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => handleBulkAction("delete")}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Tasks
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : null}
               <div className="flex items-center border rounded-lg">
                 <Button
                   variant={viewMode === "list" ? "secondary" : "ghost"}
@@ -653,6 +687,20 @@ const Actions = () => {
             setReassignTask(null);
           }}
         />
+
+        {/* Bulk Operations Manager */}
+        {bulkOperation && (
+          <BulkOperationsManager
+            selectedTaskIds={Array.from(selectedItems)}
+            operation={bulkOperation}
+            onClose={() => setBulkOperation(null)}
+            onComplete={() => {
+              fetchActions();
+              setSelectedItems(new Set());
+              setBulkOperation(null);
+            }}
+          />
+        )}
       </div>
     </Layout>
   );
