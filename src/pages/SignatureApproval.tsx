@@ -1,10 +1,12 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { useState, useEffect, lazy, Suspense, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
+import { localStorageCache } from '@/utils/localStorage';
 import { ArrowLeft, FileSignature, Download, Loader2 } from 'lucide-react';
 
 // Lazy load heavy components
@@ -24,121 +26,149 @@ export default function SignatureApproval() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
   const [signOffOpen, setSignOffOpen] = useState(false);
-  const [signatureRequest, setSignatureRequest] = useState<any>(null);
-  const [delegationChain, setDelegationChain] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (!authLoading && requestId) {
-      if (!user) {
-        toast({
-          title: 'Authentication Required',
-          description: 'Please sign in to view this signature request',
-          variant: 'destructive',
-        });
-        navigate('/auth');
-        return;
-      }
-      fetchSignatureRequest();
-    }
-  }, [requestId, user, authLoading]);
+  // Check localStorage first for faster initial load
+  const cachedRequest = useMemo(() => 
+    localStorageCache.get<any>(`signature_request_${requestId}`),
+    [requestId]
+  );
 
-  const fetchSignatureRequest = async () => {
-    try {
-      setIsLoading(true);
+  // Optimized data fetching with caching
+  const fetchSignatureData = useCallback(async () => {
+    if (!requestId) return null;
 
-      // Fetch signature request
-      const { data: request, error: requestError } = await supabase
+    // Batch all queries together
+    const [requestResult, delegationsResult] = await Promise.all([
+      supabase
         .from('signature_requests')
         .select('*')
         .eq('id', requestId)
-        .maybeSingle();
-
-      if (requestError) throw requestError;
-      
-      if (!request) {
-        toast({
-          title: 'Not Found',
-          description: 'This signature request does not exist',
-          variant: 'destructive',
-        });
-        navigate('/meetings');
-        return;
-      }
-
-      setSignatureRequest(request);
-
-      // Fetch delegation chain
-      const { data: delegations, error: delegError } = await supabase
+        .maybeSingle(),
+      supabase
         .from('delegation_records')
         .select('*')
         .eq('signature_request_id', requestId)
-        .order('delegated_at', { ascending: true });
+        .order('delegated_at', { ascending: true })
+    ]);
 
-      if (!delegError && delegations) {
-        // Fetch user profiles separately
-        const userIds = [...new Set([
-          ...delegations.map(d => d.delegated_from),
-          ...delegations.map(d => d.delegated_to)
-        ])];
-        
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, full_name')
-          .in('id', userIds);
-        
-        const userMap = new Map(profiles?.map(p => [p.id, p.full_name || 'Unknown']) || []);
-        
-        const formattedDelegations = delegations.map(d => ({
-          delegated_from: userMap.get(d.delegated_from) || 'Unknown',
-          delegated_to: userMap.get(d.delegated_to) || 'Unknown',
-          reason_code: d.reason_code,
-          delegated_at: d.delegated_at,
-        }));
-        setDelegationChain(formattedDelegations);
-      }
-    } catch (error: any) {
-      console.error('Error fetching signature request:', error);
+    if (requestResult.error) throw requestResult.error;
+    if (!requestResult.data) return null;
+
+    // Fetch profiles in batch
+    let formattedDelegations: any[] = [];
+    if (delegationsResult.data && delegationsResult.data.length > 0) {
+      const userIds = [...new Set([
+        ...delegationsResult.data.map(d => d.delegated_from),
+        ...delegationsResult.data.map(d => d.delegated_to)
+      ])];
+      
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .in('id', userIds);
+      
+      const userMap = new Map(profiles?.map(p => [p.id, p.full_name || 'Unknown']) || []);
+      
+      formattedDelegations = delegationsResult.data.map(d => ({
+        delegated_from: userMap.get(d.delegated_from) || 'Unknown',
+        delegated_to: userMap.get(d.delegated_to) || 'Unknown',
+        reason_code: d.reason_code,
+        delegated_at: d.delegated_at,
+      }));
+    }
+
+    const result = {
+      request: requestResult.data,
+      delegations: formattedDelegations,
+    };
+
+    // Cache in localStorage
+    localStorageCache.set(`signature_request_${requestId}`, result, 2 * 60 * 1000); // 2 min cache
+
+    return result;
+  }, [requestId]);
+
+  const { data, loading: isLoading, refetch } = useOptimizedQuery(
+    `signature_${requestId}`,
+    fetchSignatureData,
+    { 
+      enabled: !authLoading && !!user && !!requestId,
+      cacheDuration: 2 * 60 * 1000, // 2 minutes
+    }
+  );
+
+  // Use cached data immediately if available
+  const signatureRequest = data?.request ?? cachedRequest?.request;
+  const delegationChain = data?.delegations ?? cachedRequest?.delegations ?? [];
+
+  useEffect(() => {
+    if (!authLoading && !user) {
       toast({
-        title: 'Error',
-        description: 'Failed to load signature request',
+        title: 'Authentication Required',
+        description: 'Please sign in to view this signature request',
         variant: 'destructive',
       });
-    } finally {
-      setIsLoading(false);
+      navigate('/auth');
     }
-  };
+  }, [user, authLoading, navigate, toast]);
 
-  const handleSuccess = () => {
-    fetchSignatureRequest();
+  const handleSuccess = useCallback(() => {
+    // Clear cache and refetch
+    localStorageCache.remove(`signature_request_${requestId}`);
+    refetch();
     toast({
       title: 'Success',
       description: 'Sign-off processed successfully',
     });
-  };
+  }, [requestId, refetch, toast]);
 
-  const handleDownloadPDF = async () => {
+  const handleDownloadPDF = useCallback(async () => {
+    if (!signatureRequest?.meeting_id) {
+      toast({
+        title: 'Error',
+        description: 'Meeting ID not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check cache first
+    const cacheKey = `pdf_${signatureRequest.meeting_id}_${requestId}`;
+    const cachedPdf = localStorageCache.get<string>(cacheKey);
+    
+    if (cachedPdf) {
+      const blob = new Blob([cachedPdf], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ethiotelecom-approved-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     try {
-      if (!signatureRequest?.meeting_id) {
-        toast({
-          title: 'Error',
-          description: 'Meeting ID not found',
-          variant: 'destructive',
-        });
-        return;
-      }
+      // Batch queries
+      const [minutesResult, brandKitResult] = await Promise.all([
+        supabase
+          .from('minutes_versions')
+          .select('id')
+          .eq('meeting_id', signatureRequest.meeting_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('brand_kits')
+          .select('id')
+          .eq('is_default', true)
+          .limit(1)
+          .maybeSingle()
+      ]);
 
-      // Get latest minutes version
-      const { data: latestMinutes } = await supabase
-        .from('minutes_versions')
-        .select('id')
-        .eq('meeting_id', signatureRequest.meeting_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (!latestMinutes) {
+      if (!minutesResult.data) {
         toast({
           title: 'Error',
           description: 'No minutes found',
@@ -147,20 +177,11 @@ export default function SignatureApproval() {
         return;
       }
 
-      // Fetch default Ethio Telecom brand kit
-      const { data: brandKits } = await supabase
-        .from('brand_kits')
-        .select('id')
-        .eq('is_default', true)
-        .limit(1)
-        .maybeSingle();
-
-      // Generate branded PDF with approval stamp
       const { data: pdfData, error } = await supabase.functions.invoke('generate-branded-pdf', {
         body: {
           meeting_id: signatureRequest.meeting_id,
-          minutes_version_id: latestMinutes.id,
-          brand_kit_id: brandKits?.id,
+          minutes_version_id: minutesResult.data.id,
+          brand_kit_id: brandKitResult.data?.id,
           signature_request_id: requestId,
           include_watermark: false,
         },
@@ -168,7 +189,9 @@ export default function SignatureApproval() {
 
       if (error) throw error;
 
-      // Download the branded Ethio Telecom PDF
+      // Cache the PDF for 10 minutes
+      localStorageCache.set(cacheKey, pdfData.html, 10 * 60 * 1000);
+
       const blob = new Blob([pdfData.html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -191,13 +214,25 @@ export default function SignatureApproval() {
         variant: 'destructive',
       });
     }
-  };
+  }, [signatureRequest, requestId, toast]);
 
-  if (isLoading) {
+  // Memoize computed values
+  const canSign = useMemo(() => 
+    signatureRequest?.status === 'pending' || signatureRequest?.status === 'delegated',
+    [signatureRequest?.status]
+  );
+
+  const isApproved = useMemo(() => 
+    signatureRequest?.status === 'approved',
+    [signatureRequest?.status]
+  );
+
+  if (authLoading || isLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center h-full">
-          <div className="text-muted-foreground">Loading signature request...</div>
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-3 text-muted-foreground">Loading signature request...</span>
         </div>
       </Layout>
     );
@@ -212,8 +247,6 @@ export default function SignatureApproval() {
       </Layout>
     );
   }
-
-  const canSign = signatureRequest.status === 'pending' || signatureRequest.status === 'delegated';
 
   return (
     <Layout>
@@ -232,7 +265,7 @@ export default function SignatureApproval() {
             </div>
           </div>
           <div className="flex gap-2">
-            {signatureRequest.status === 'approved' && (
+            {isApproved && (
               <Button onClick={handleDownloadPDF} size="lg" variant="outline">
                 <Download className="w-5 h-5 mr-2" />
                 Download Approved PDF
