@@ -3,6 +3,7 @@ import { CreateActionDialog } from "@/components/CreateActionDialog";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { GubaTaskProposals } from "@/components/guba/GubaTaskProposals";
 import { GubaDashboard } from "@/components/guba/GubaDashboard";
+import { GubaSidebar } from "@/components/guba/GubaSidebar";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,6 +56,7 @@ const Actions = () => {
   const [sortBy, setSortBy] = useState<"due_date" | "priority" | "status">("due_date");
   const [gubaEnabled, setGubaEnabled] = useState(false);
   const [showGubaDashboard, setShowGubaDashboard] = useState(false);
+  const [showGubaSidebar, setShowGubaSidebar] = useState(false);
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
 
@@ -281,7 +283,8 @@ const Actions = () => {
 
   return (
     <Layout>
-      <div className="space-y-6 animate-fade-in">
+      <div className="flex min-h-screen">
+        <div className="flex-1 space-y-6 animate-fade-in p-6">
         {/* Executive Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 p-8 border border-blue-500/20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
@@ -297,10 +300,16 @@ const Actions = () => {
             </div>
             <div className="flex gap-3 items-center">
               {gubaEnabled && (
-                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
-                  <Switch checked={showGubaDashboard} onCheckedChange={setShowGubaDashboard} />
-                  <Label className="cursor-pointer">Guba Dashboard</Label>
-                </div>
+                <>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+                    <Switch checked={showGubaDashboard} onCheckedChange={setShowGubaDashboard} />
+                    <Label className="cursor-pointer">Dashboard</Label>
+                  </div>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
+                    <Switch checked={showGubaSidebar} onCheckedChange={setShowGubaSidebar} />
+                    <Label className="cursor-pointer">AI Panel</Label>
+                  </div>
+                </>
               )}
               <Button variant="outline" className="gap-2 hover-scale">
                 <BarChart3 className="h-4 w-4" />
@@ -581,6 +590,10 @@ const Actions = () => {
             )}
           </TabsContent>
         </Tabs>
+        </div>
+
+        {/* Guba Sidebar */}
+        {gubaEnabled && showGubaSidebar && <GubaSidebar />}
       </div>
     </Layout>
   );

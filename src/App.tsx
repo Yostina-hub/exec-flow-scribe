@@ -5,6 +5,7 @@ import { RequirePermission } from "@/components/RequirePermission";
 import { useSystemIntegration } from "@/hooks/useSystemIntegration";
 import { useCalendarActionSync } from "@/hooks/useCalendarActionSync";
 import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
+import { useGubaAutoGeneration } from "@/hooks/useGubaAutoGeneration";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import Index from "./pages/Index";
 import CalendarView from "./pages/CalendarView";
@@ -44,6 +45,7 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
   useSystemIntegration();
   useCalendarActionSync();
   useNotificationDispatcher();
+  useGubaAutoGeneration(); // Enable Guba auto-generation globally
   return <>{children}</>;
 };
 
