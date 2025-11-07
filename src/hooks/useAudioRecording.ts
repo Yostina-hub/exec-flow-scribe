@@ -30,10 +30,10 @@ export const useAudioRecording = (): AudioRecordingHook => {
     try {
       setError(null);
       
-      // Request microphone access with 24kHz sample rate
+      // Request microphone access with 48kHz sample rate for studio quality
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
-          sampleRate: 24000,
+          sampleRate: 48000, // Studio quality
           channelCount: 1,
           echoCancellation: true,
           noiseSuppression: true,
