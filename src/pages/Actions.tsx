@@ -58,6 +58,7 @@ const Actions = () => {
   const [gubaEnabled, setGubaEnabled] = useState(false);
   const [showGubaDashboard, setShowGubaDashboard] = useState(false);
   const [showGubaSidebar, setShowGubaSidebar] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [reassignTask, setReassignTask] = useState<any>(null);
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
@@ -303,9 +304,13 @@ const Actions = () => {
             <div className="flex gap-3 items-center">
               {gubaEnabled && (
                 <>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
+                    <Switch checked={showAnalytics} onCheckedChange={setShowAnalytics} />
+                    <Label className="cursor-pointer">Analytics</Label>
+                  </div>
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
                     <Switch checked={showGubaDashboard} onCheckedChange={setShowGubaDashboard} />
-                    <Label className="cursor-pointer">Dashboard</Label>
+                    <Label className="cursor-pointer">Tasks Dashboard</Label>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
                     <Switch checked={showGubaSidebar} onCheckedChange={setShowGubaSidebar} />
@@ -322,9 +327,44 @@ const Actions = () => {
           </div>
         </div>
 
-        {/* Guba Dashboard */}
-        {gubaEnabled && showGubaDashboard && (
+        {/* Guba Analytics Dashboard */}
+        {gubaEnabled && showAnalytics && (
           <GubaDashboard />
+        )}
+
+        {/* Guba Task Dashboard */}
+        {gubaEnabled && showGubaDashboard && (
+          <div className="space-y-4">
+            {recentMeetings.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-purple-500" />
+                    Generate AI Tasks from Meeting
+                  </CardTitle>
+                  <CardDescription>Select a recent meeting to generate actionable tasks</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Select value={selectedMeetingForTasks} onValueChange={setSelectedMeetingForTasks}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a meeting" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recentMeetings.map((meeting) => (
+                        <SelectItem key={meeting.id} value={meeting.id}>
+                          {meeting.title} - {format(new Date(meeting.start_time), 'MMM d, yyyy')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </CardContent>
+              </Card>
+            )}
+            <GubaTaskProposals 
+              meetingId={selectedMeetingForTasks}
+              onTasksAccepted={fetchActions}
+            />
+          </div>
         )}
 
         {/* Task Export Manager */}
