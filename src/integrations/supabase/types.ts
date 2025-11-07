@@ -1709,6 +1709,110 @@ export type Database = {
         }
         Relationships: []
       }
+      guba_notification_log: {
+        Row: {
+          channel: string
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          notification_type: string
+          sent_at: string
+          status: string
+          task_id: string
+          user_id: string
+        }
+        Insert: {
+          channel: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type: string
+          sent_at?: string
+          status: string
+          task_id: string
+          user_id: string
+        }
+        Update: {
+          channel?: string
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          notification_type?: string
+          sent_at?: string
+          status?: string
+          task_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guba_notification_log_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "action_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guba_notification_preferences: {
+        Row: {
+          created_at: string
+          due_date_1h: boolean | null
+          due_date_24h: boolean | null
+          email_enabled: boolean | null
+          id: string
+          in_app_enabled: boolean | null
+          new_assignment: boolean | null
+          overdue_escalation: boolean | null
+          quiet_hours_enabled: boolean | null
+          quiet_hours_end: string | null
+          quiet_hours_start: string | null
+          reassignment: boolean | null
+          sms_enabled: boolean | null
+          status_change: boolean | null
+          updated_at: string
+          user_id: string
+          whatsapp_enabled: boolean | null
+        }
+        Insert: {
+          created_at?: string
+          due_date_1h?: boolean | null
+          due_date_24h?: boolean | null
+          email_enabled?: boolean | null
+          id?: string
+          in_app_enabled?: boolean | null
+          new_assignment?: boolean | null
+          overdue_escalation?: boolean | null
+          quiet_hours_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          reassignment?: boolean | null
+          sms_enabled?: boolean | null
+          status_change?: boolean | null
+          updated_at?: string
+          user_id: string
+          whatsapp_enabled?: boolean | null
+        }
+        Update: {
+          created_at?: string
+          due_date_1h?: boolean | null
+          due_date_24h?: boolean | null
+          email_enabled?: boolean | null
+          id?: string
+          in_app_enabled?: boolean | null
+          new_assignment?: boolean | null
+          overdue_escalation?: boolean | null
+          quiet_hours_enabled?: boolean | null
+          quiet_hours_end?: string | null
+          quiet_hours_start?: string | null
+          reassignment?: boolean | null
+          sms_enabled?: boolean | null
+          status_change?: boolean | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_enabled?: boolean | null
+        }
+        Relationships: []
+      }
       guba_settings: {
         Row: {
           auto_assign_enabled: boolean | null
@@ -4451,6 +4555,10 @@ export type Database = {
       is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_senior_role: { Args: { _user_id: string }; Returns: boolean }
       seed_sample_data: { Args: never; Returns: undefined }
+      should_send_notification: {
+        Args: { p_user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       action_priority: "low" | "medium" | "high"

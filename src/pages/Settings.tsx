@@ -28,6 +28,7 @@ import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { EnhancedWhatsAppReminders } from "@/components/notifications/EnhancedWhatsAppReminders";
 import { GubaTaskSettings } from "@/components/settings/GubaTaskSettings";
 import { DepartmentManager } from "@/components/guba/DepartmentManager";
+import { TaskNotificationPreferences } from "@/components/guba/TaskNotificationPreferences";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -950,6 +951,7 @@ const Settings = () => {
           <TabsContent value="guba" className="space-y-6">
             <GubaTaskSettings />
             <DepartmentManager />
+            <TaskNotificationPreferences />
           </TabsContent>
 
           {/* Security Tab */}
