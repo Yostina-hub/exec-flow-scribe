@@ -48,92 +48,44 @@ verify_jwt = false
 [functions.generate-catchup-card]
 verify_jwt = false
 
-[functions.jitsi-recording-control]
-verify_jwt = true
-
 [functions.generate-coach-hints]
 verify_jwt = false
 
 [functions.generate-context-capsule]
 verify_jwt = false
 
-[functions.generate-redacted-version]
+[functions.simulate-outcomes]
 verify_jwt = false
 
 [functions.query-knowledge-graph]
 verify_jwt = false
 
-[functions.simulate-outcomes]
+[functions.generate-redacted-version]
 verify_jwt = false
 
-[functions.save-transcription]
-verify_jwt = true
-
-[functions.list-transcriptions]
-verify_jwt = true
-
-[functions.openai-realtime]
+[functions.auto-distribute-minutes]
 verify_jwt = false
 
-[functions.openai-realtime-token]
-verify_jwt = true
-
-[functions.ceo-assistant-realtime]
+[functions.scheduled-email-distribution]
 verify_jwt = false
 
-[functions.send-sms]
+[functions.auto-email-on-signoff]
 verify_jwt = false
-
-[functions.initiate-call]
-verify_jwt = false
-
-[functions.process-message]
-verify_jwt = false
-
-[functions.generate-meeting-overview]
-verify_jwt = true
-
-[functions.query-meetings-ai]
-verify_jwt = true
-
-[functions.meeting-chat]
-verify_jwt = true
-
-[functions.generate-audio-overview]
-verify_jwt = true
-
-[functions.generate-study-guide]
-verify_jwt = true
-
-[functions.generate-briefing]
-verify_jwt = true
-
-[functions.generate-faq]
-verify_jwt = true
-
-[functions.generate-timeline]
-verify_jwt = true
-
-[functions.generate-table-of-contents]
-verify_jwt = true
-
-[functions.generate-source-summary]
-verify_jwt = true
-
-[functions.text-to-speech]
-verify_jwt = true
 
 [functions.send-notification-email]
 verify_jwt = false
 
-[functions.generate-executive-briefing]
+[functions.send-guest-approval-email]
 verify_jwt = false
 
-[functions.google-meet-auth]
+[functions.send-guest-request-confirmation]
+verify_jwt = false
+
+[functions.google-calendar-sync]
 verify_jwt = true
 
 [functions.google-drive-auth]
-verify_jwt = false
+verify_jwt = true
 
 [functions.google-drive-upload]
 verify_jwt = true
@@ -143,6 +95,120 @@ verify_jwt = true
 
 [functions.google-drive-create-doc]
 verify_jwt = true
+
+[functions.teledrive-auth]
+verify_jwt = true
+
+[functions.teledrive-upload]
+verify_jwt = true
+
+[functions.google-meet-auth]
+verify_jwt = true
+
+[functions.initiate-call]
+verify_jwt = true
+
+[functions.send-sms]
+verify_jwt = false
+
+[functions.ethio-telecom-sms]
+verify_jwt = false
+
+[functions.send-whatsapp-reminder]
+verify_jwt = false
+
+[functions.process-message]
+verify_jwt = false
+
+[functions.salesforce-sync]
+verify_jwt = false
+
+[functions.hubspot-sync]
+verify_jwt = false
+
+[functions.pipedrive-sync]
+verify_jwt = false
+
+[functions.teams-sync]
+verify_jwt = false
+
+[functions.outlook-sync]
+verify_jwt = false
+
+[functions.save-transcription]
+verify_jwt = false
+
+[functions.jitsi-recording-control]
+verify_jwt = false
+
+[functions.openai-realtime]
+verify_jwt = false
+
+[functions.openai-realtime-token]
+verify_jwt = true
+
+[functions.execute-workflow]
+verify_jwt = false
+
+[functions.ceo-assistant-realtime]
+verify_jwt = false
+
+[functions.meeting-chat]
+verify_jwt = false
+
+[functions.query-meetings-ai]
+verify_jwt = false
+
+[functions.chat-with-citations]
+verify_jwt = false
+
+[functions.generate-briefing]
+verify_jwt = false
+
+[functions.generate-executive-briefing]
+verify_jwt = false
+
+[functions.list-transcriptions]
+verify_jwt = false
+
+[functions.generate-faq]
+verify_jwt = false
+
+[functions.generate-source-summary]
+verify_jwt = false
+
+[functions.generate-timeline]
+verify_jwt = false
+
+[functions.generate-audio-overview]
+verify_jwt = false
+
+[functions.text-to-speech]
+verify_jwt = false
+
+[functions.export-tasks]
+verify_jwt = false
+
+[functions.generate-guba-tasks]
+verify_jwt = false
+
+[functions.generate-pdf]
+verify_jwt = false
+
+[functions.generate-meeting-insights]
+verify_jwt = false
+
+[functions.generate-meeting-overview]
+verify_jwt = false
+
+[functions.generate-study-guide]
+verify_jwt = false
+
+[functions.generate-table-of-contents]
+verify_jwt = false
+
+[functions.generate-transcript-pdf]
+verify_jwt = false
 
 [functions.save-google-credentials]
 verify_jwt = true
@@ -166,4 +232,13 @@ verify_jwt = false
 verify_jwt = true
 
 [functions.update-speaker-profiles]
+verify_jwt = true
+
+[functions.generate-embeddings]
+verify_jwt = true
+
+[functions.semantic-search]
+verify_jwt = true
+
+[functions.generate-live-summary]
 verify_jwt = true

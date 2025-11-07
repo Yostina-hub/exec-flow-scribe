@@ -4493,6 +4493,54 @@ export type Database = {
           },
         ]
       }
+      transcription_embeddings: {
+        Row: {
+          content: string
+          created_at: string | null
+          embedding: string | null
+          id: string
+          meeting_id: string
+          speaker_name: string | null
+          timestamp: string | null
+          transcription_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          meeting_id: string
+          speaker_name?: string | null
+          timestamp?: string | null
+          transcription_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          embedding?: string | null
+          id?: string
+          meeting_id?: string
+          speaker_name?: string | null
+          timestamp?: string | null
+          transcription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transcription_embeddings_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transcription_embeddings_transcription_id_fkey"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transcription_preferences: {
         Row: {
           created_at: string
@@ -4709,6 +4757,22 @@ export type Database = {
       }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_senior_role: { Args: { _user_id: string }; Returns: boolean }
+      match_transcriptions: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          id: string
+          meeting_id: string
+          similarity: number
+          speaker_name: string
+          transcription_id: string
+          ts: string
+        }[]
+      }
       seed_sample_data: { Args: never; Returns: undefined }
       should_send_notification: {
         Args: { p_user_id: string }
