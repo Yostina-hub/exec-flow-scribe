@@ -2,7 +2,9 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, CheckCircle2, Clock, Shield } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileText, CheckCircle2, Clock, Shield, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useMemo, memo } from 'react';
 
 interface SignaturePackage {
   minutes: string;
@@ -22,17 +24,36 @@ interface SignaturePackageViewerProps {
   }>;
 }
 
-export function SignaturePackageViewer({ packageData, status, delegationChain }: SignaturePackageViewerProps) {
-  const statusConfig = {
+const ITEMS_PER_PAGE = 5;
+
+export const SignaturePackageViewer = memo(function SignaturePackageViewer({ packageData, status, delegationChain }: SignaturePackageViewerProps) {
+  const [decisionsPage, setDecisionsPage] = useState(1);
+  const [actionsPage, setActionsPage] = useState(1);
+
+  const statusConfig = useMemo(() => ({
     pending: { icon: Clock, color: 'bg-yellow-500', label: 'Pending' },
     approved: { icon: CheckCircle2, color: 'bg-green-500', label: 'Approved' },
     delegated: { icon: Shield, color: 'bg-blue-500', label: 'Delegated' },
     rejected: { icon: FileText, color: 'bg-red-500', label: 'Rejected' },
-  };
+  }), []);
 
   const StatusIcon = statusConfig[status as keyof typeof statusConfig]?.icon || FileText;
   const statusColor = statusConfig[status as keyof typeof statusConfig]?.color || 'bg-gray-500';
   const statusLabel = statusConfig[status as keyof typeof statusConfig]?.label || status;
+
+  // Paginated data
+  const paginatedDecisions = useMemo(() => {
+    const start = (decisionsPage - 1) * ITEMS_PER_PAGE;
+    return packageData.decisions.slice(start, start + ITEMS_PER_PAGE);
+  }, [packageData.decisions, decisionsPage]);
+
+  const paginatedActions = useMemo(() => {
+    const start = (actionsPage - 1) * ITEMS_PER_PAGE;
+    return packageData.actions.slice(start, start + ITEMS_PER_PAGE);
+  }, [packageData.actions, actionsPage]);
+
+  const totalDecisionPages = Math.ceil(packageData.decisions.length / ITEMS_PER_PAGE);
+  const totalActionPages = Math.ceil(packageData.actions.length / ITEMS_PER_PAGE);
 
   return (
     <Card className="p-6">
@@ -114,16 +135,41 @@ export function SignaturePackageViewer({ packageData, status, delegationChain }:
 
         <Separator className="my-6" />
 
-        {/* Decisions */}
+        {/* Decisions with Pagination */}
         {packageData.decisions.length > 0 && (
           <>
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                Decisions ({packageData.decisions.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Decisions ({packageData.decisions.length})
+                </h3>
+                {totalDecisionPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDecisionsPage(p => Math.max(1, p - 1))}
+                      disabled={decisionsPage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {decisionsPage} / {totalDecisionPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setDecisionsPage(p => Math.min(totalDecisionPages, p + 1))}
+                      disabled={decisionsPage === totalDecisionPages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
               <div className="space-y-3">
-                {packageData.decisions.map((decision, idx) => (
+                {paginatedDecisions.map((decision, idx) => (
                   <Card key={idx} className="p-4">
                     <p className="font-medium mb-1">{decision.decision_text}</p>
                     {decision.context && (
@@ -140,16 +186,41 @@ export function SignaturePackageViewer({ packageData, status, delegationChain }:
           </>
         )}
 
-        {/* Action Items */}
+        {/* Action Items with Pagination */}
         {packageData.actions.length > 0 && (
           <>
             <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                Action Items ({packageData.actions.length})
-              </h3>
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-5 h-5" />
+                  Action Items ({packageData.actions.length})
+                </h3>
+                {totalActionPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActionsPage(p => Math.max(1, p - 1))}
+                      disabled={actionsPage === 1}
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+                    <span className="text-sm text-muted-foreground">
+                      {actionsPage} / {totalActionPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setActionsPage(p => Math.min(totalActionPages, p + 1))}
+                      disabled={actionsPage === totalActionPages}
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+              </div>
               <div className="space-y-3">
-                {packageData.actions.map((action, idx) => (
+                {paginatedActions.map((action, idx) => (
                   <Card key={idx} className="p-4">
                     <div className="flex items-start justify-between">
                       <div>
@@ -197,4 +268,4 @@ export function SignaturePackageViewer({ packageData, status, delegationChain }:
       </ScrollArea>
     </Card>
   );
-}
+});

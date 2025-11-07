@@ -1,34 +1,36 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { SignaturePackageViewer } from '@/components/signoff/SignaturePackageViewer';
-import { SignOffDialog } from '@/components/signoff/SignOffDialog';
-import { ArrowLeft, FileSignature, Download } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { ArrowLeft, FileSignature, Download, Loader2 } from 'lucide-react';
+
+// Lazy load heavy components
+const SignaturePackageViewer = lazy(() => 
+  import('@/components/signoff/SignaturePackageViewer').then(module => ({ 
+    default: module.SignaturePackageViewer 
+  }))
+);
+const SignOffDialog = lazy(() => 
+  import('@/components/signoff/SignOffDialog').then(module => ({ 
+    default: module.SignOffDialog 
+  }))
+);
 
 export default function SignatureApproval() {
   const { requestId } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, loading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [signatureRequest, setSignatureRequest] = useState<any>(null);
   const [delegationChain, setDelegationChain] = useState<any[]>([]);
 
   useEffect(() => {
-    if (requestId) {
-      fetchSignatureRequest();
-    }
-  }, [requestId]);
-
-  const fetchSignatureRequest = async () => {
-    try {
-      setIsLoading(true);
-
-      // Verify user is authenticated
-      const { data: { user } } = await supabase.auth.getUser();
+    if (!authLoading && requestId) {
       if (!user) {
         toast({
           title: 'Authentication Required',
@@ -38,6 +40,13 @@ export default function SignatureApproval() {
         navigate('/auth');
         return;
       }
+      fetchSignatureRequest();
+    }
+  }, [requestId, user, authLoading]);
+
+  const fetchSignatureRequest = async () => {
+    try {
+      setIsLoading(true);
 
       // Fetch signature request
       const { data: request, error: requestError } = await supabase
@@ -240,20 +249,30 @@ export default function SignatureApproval() {
 
         {/* Content */}
         <div className="flex-1 overflow-auto p-6">
-          <SignaturePackageViewer
-            packageData={signatureRequest.package_data}
-            status={signatureRequest.status}
-            delegationChain={delegationChain}
-          />
+          <Suspense fallback={
+            <div className="flex items-center justify-center h-64">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          }>
+            <SignaturePackageViewer
+              packageData={signatureRequest.package_data}
+              status={signatureRequest.status}
+              delegationChain={delegationChain}
+            />
+          </Suspense>
         </div>
       </div>
 
-      <SignOffDialog
-        open={signOffOpen}
-        onOpenChange={setSignOffOpen}
-        signatureRequestId={requestId!}
-        onSuccess={handleSuccess}
-      />
+      {signOffOpen && (
+        <Suspense fallback={null}>
+          <SignOffDialog
+            open={signOffOpen}
+            onOpenChange={setSignOffOpen}
+            signatureRequestId={requestId!}
+            onSuccess={handleSuccess}
+          />
+        </Suspense>
+      )}
     </Layout>
   );
 }
