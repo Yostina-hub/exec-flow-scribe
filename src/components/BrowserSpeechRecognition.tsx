@@ -16,15 +16,17 @@ interface BrowserSpeechRecognitionProps {
   onRecordingStart?: () => void;
   onRecordingStop?: (durationSeconds?: number) => void;
   onDurationChange?: (seconds: number) => void;
+  selectedLanguage?: string;
 }
 
 export const BrowserSpeechRecognition = ({ 
-  meetingId, 
+  meetingId,
   externalIsRecording = false,
   isPaused = false,
   onRecordingStart,
   onRecordingStop,
-  onDurationChange
+  onDurationChange,
+  selectedLanguage: externalLanguage = 'am-ET'
 }: BrowserSpeechRecognitionProps) => {
   const {
     transcript,
@@ -37,8 +39,43 @@ export const BrowserSpeechRecognition = ({
     setLanguage,
   } = useSpeechRecognition();
 
-  const [selectedLanguage, setSelectedLanguage] = useState('am-ET');
+  const [selectedLanguage, setSelectedLanguage] = useState(externalLanguage);
+  
+  // Sync with external language prop
+  useEffect(() => {
+    setSelectedLanguage(externalLanguage);
+    setLanguage(externalLanguage);
+  }, [externalLanguage, setLanguage]);
   const [recordingDuration, setRecordingDuration] = useState(0);
+  const recordingStartTimeRef = useRef<number | null>(null);
+  const pausedDurationRef = useRef<number>(0);
+  const pauseStartTimeRef = useRef<number | null>(null);
+  const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Load persisted state on mount
+  useEffect(() => {
+    const savedState = localStorage.getItem(`transcription-${meetingId}`);
+    if (savedState) {
+      try {
+        const state = JSON.parse(savedState);
+        if (state.transcript) {
+          // Restore transcript would require speech recognition API support
+          // For now we just log it
+          console.log('Found saved transcript:', state.transcript.substring(0, 100));
+        }
+      } catch (e) {
+        console.error('Failed to load transcription state:', e);
+      }
+    }
+  }, [meetingId]);
+  
+  // Persist transcript to localStorage
+  useEffect(() => {
+    if (transcript) {
+      const state = { transcript, timestamp: Date.now() };
+      localStorage.setItem(`transcription-${meetingId}`, JSON.stringify(state));
+    }
+  }, [transcript, meetingId]);
   const [isSaving, setIsSaving] = useState(false);
   const [userName, setUserName] = useState('User');
   const [userId, setUserId] = useState<string | null>(null);
@@ -187,14 +224,43 @@ export const BrowserSpeechRecognition = ({
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     if (externalIsRecording && !isPaused) {
-      interval = setInterval(() => {
-        setRecordingDuration(prev => {
-          const next = prev + 1;
-          onDurationChange?.(next);
-          return next;
-        });
-      }, 1000);
+      // Start or resume recording
+      if (recordingStartTimeRef.current === null) {
+        // Fresh start
+        recordingStartTimeRef.current = Date.now();
+        pausedDurationRef.current = 0;
+      } else if (pauseStartTimeRef.current !== null) {
+        // Resuming from pause
+        const pauseDuration = Date.now() - pauseStartTimeRef.current;
+        pausedDurationRef.current += pauseDuration;
+        pauseStartTimeRef.current = null;
+      }
+      
+      // Update timer every 100ms
+      const updateTimer = () => {
+        if (recordingStartTimeRef.current !== null) {
+          const elapsed = Date.now() - recordingStartTimeRef.current - pausedDurationRef.current;
+          const seconds = Math.floor(elapsed / 1000);
+          setRecordingDuration(seconds);
+          onDurationChange?.(seconds);
+        }
+      };
+      
+      updateTimer(); // Initial update
+      interval = setInterval(updateTimer, 100);
+    } else if (externalIsRecording && isPaused) {
+      // Mark pause start time
+      if (pauseStartTimeRef.current === null) {
+        pauseStartTimeRef.current = Date.now();
+      }
+    } else if (!externalIsRecording) {
+      // Reset when recording stops
+      recordingStartTimeRef.current = null;
+      pausedDurationRef.current = 0;
+      pauseStartTimeRef.current = null;
+      setRecordingDuration(0);
     }
+    
     return () => {
       if (interval) clearInterval(interval);
     };
@@ -346,60 +412,17 @@ export const BrowserSpeechRecognition = ({
 
   if (!isSupported) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Browser Speech Recognition</CardTitle>
-          <CardDescription className="text-destructive">
-            Your browser doesn't support speech recognition. Please use Chrome or Edge.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="p-6 border border-destructive/50 rounded-lg bg-destructive/10">
+        <p className="text-destructive">
+          Your browser doesn't support speech recognition. Please use Chrome or Edge.
+        </p>
+      </div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Speech to Text</CardTitle>
-        <CardDescription>Click the microphone to start recording</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <label className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Languages className="w-4 h-4" />
-            Language
-          </label>
-          <Select
-            value={selectedLanguage}
-            onValueChange={(value) => {
-              setSelectedLanguage(value);
-              setLanguage(value);
-            }}
-            disabled={isListening}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-              <SelectItem value="en-US">English (US)</SelectItem>
-              <SelectItem value="en-GB">English (UK)</SelectItem>
-              <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-              <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-              <SelectItem value="fr-FR">French (Français)</SelectItem>
-              <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-              <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-              <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-              <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-              <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-              <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-              <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-              <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex flex-col items-center gap-6">
+    <div className="space-y-6">
+      <div className="flex flex-col items-center gap-6">
           {externalIsRecording && !isPaused && (
             <div className="flex flex-col items-center gap-2">
               <Badge variant="destructive" className="gap-2 text-base px-4 py-2">
@@ -500,7 +523,6 @@ export const BrowserSpeechRecognition = ({
             Clear & Start New
           </Button>
         )}
-      </CardContent>
-    </Card>
+    </div>
   );
 };

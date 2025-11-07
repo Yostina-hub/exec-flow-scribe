@@ -151,8 +151,17 @@ serve(async (req) => {
         try {
           console.log('🎙️ Trying Google Cloud Speech-to-Text (Gemini-based) - PRIMARY');
           
-          // Convert audio to base64 for Google Cloud API
-          const audioContent = btoa(String.fromCharCode(...binaryAudio));
+          // Convert audio to base64 for Google Cloud API (avoid spread to prevent call stack overflow)
+          let binaryStr = '';
+          const CHUNK = 0x8000; // 32k
+          for (let i = 0; i < binaryAudio.length; i += CHUNK) {
+            const sub = binaryAudio.subarray(i, Math.min(i + CHUNK, binaryAudio.length));
+            // Build string without spreading args
+            let s = '';
+            for (let j = 0; j < sub.length; j++) s += String.fromCharCode(sub[j]);
+            binaryStr += s;
+          }
+          const audioContent = btoa(binaryStr);
           
           // Determine language code for Google Cloud
           let languageCode = "am-ET"; // Default to Amharic (Ethiopia)
@@ -295,16 +304,21 @@ serve(async (req) => {
           formData.append("model", "whisper-1");
           formData.append("response_format", "verbose_json");
           
-          // Special handling for Amharic
-          if (language === 'am') {
-            console.log('Amharic language specified - forcing Ge\'ez script');
-            formData.append("language", "am");
+          // Special handling for language parameter
+          // Convert BCP-47 (e.g., am-ET) to ISO-639-1 (e.g., am) for OpenAI when applicable
+          const toIso639 = (lang: string): string => (lang || '').split('-')[0].toLowerCase();
+          const iso639Lang = toIso639(language || '');
+
+          // For Amharic, do NOT send the language param (OpenAI may reject 'am'); rely on auto-detect
+          if (iso639Lang === 'am') {
+            console.log("Skipping OpenAI 'language' param for Amharic; relying on auto-detect");
             formData.append(
               "prompt",
-              "አማርኛ በግእዝ ፊደላት ብቻ ተጻፍ። Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ። Never use Latin or Arabic characters for Amharic words."
+              "Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ. Never use Latin or Arabic characters for Amharic words."
             );
-          } else if (language && language !== "auto") {
-            formData.append("language", language);
+          } else if (iso639Lang && iso639Lang !== 'auto') {
+            console.log(`Setting OpenAI language to ISO-639-1: ${iso639Lang} (from ${language})`);
+            formData.append("language", iso639Lang);
             formData.append(
               "prompt",
               "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
@@ -326,6 +340,40 @@ serve(async (req) => {
             const errText = await response.text();
             const statusCode = response.status;
             console.error(`❌ OpenAI transcription error (${statusCode}):`, errText);
+
+            // If language parameter caused the error, retry once without language
+            if (/language/i.test(errText)) {
+              try {
+                console.log("Retrying OpenAI transcription without 'language' param");
+                const retryForm = new FormData();
+                const typeRetry = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
+                const filenameRetry = typeRetry === 'audio/wav' ? 'audio.wav' : 'audio.webm';
+                const audioBlobRetry = new Blob([binaryAudio], { type: typeRetry });
+                retryForm.append("file", audioBlobRetry, filenameRetry);
+                retryForm.append("model", "whisper-1");
+                retryForm.append("response_format", "verbose_json");
+                retryForm.append("prompt", "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only.");
+
+                const retryResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+                  method: "POST",
+                  headers: { Authorization: `Bearer ${openaiApiKey}` },
+                  body: retryForm,
+                });
+
+                if (retryResp.ok) {
+                  const retryData = await retryResp.json();
+                  transcriptText = retryData.text || retryData.transcript || "";
+                  detectedLanguage = retryData.language || null;
+                  usedProvider = 'openai';
+                  console.log('✅ OpenAI transcription successful on retry');
+                  break; // exit provider loop
+                } else {
+                  console.error('OpenAI retry failed:', await retryResp.text());
+                }
+              } catch (retryErr) {
+                console.error('OpenAI retry exception:', retryErr);
+              }
+            }
             
             // Handle rate limiting
             if (statusCode === 429) {

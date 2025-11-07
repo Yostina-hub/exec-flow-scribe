@@ -20,14 +20,23 @@ import {
   Calendar,
   TrendingUp,
   Zap,
-  Send
+  Send,
+  CheckCircle2,
+  AlertCircle,
+  HardDrive,
+  Download,
+  ExternalLink
 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function DriveIntegration() {
   const { toast } = useToast();
+  const { theme } = useTheme();
+  const isEthioTelecom = theme === 'ethio-telecom';
   const [driveFiles, setDriveFiles] = useState<any[]>([]);
   const [meetingFiles, setMeetingFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,11 +52,8 @@ export default function DriveIntegration() {
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const [teledriveConnected, setTeledriveConnected] = useState(false);
   const [showTeledriveDialog, setShowTeledriveDialog] = useState(false);
-  const [teledriveApiHost, setTeledriveApiHost] = useState("");
   const [teledrivePhone, setTeledrivePhone] = useState("");
   const [teledrivePassword, setTeledrivePassword] = useState("");
-  const [teledriveApiId, setTeledriveApiId] = useState("");
-  const [teledriveApiHash, setTeledriveApiHash] = useState("");
 
   useEffect(() => {
     loadSettings();
@@ -107,11 +113,8 @@ export default function DriveIntegration() {
       const { data, error } = await supabase.functions.invoke('teledrive-auth', {
         body: {
           action: 'login',
-          apiHost: teledriveApiHost,
           phoneNumber: teledrivePhone,
           password: teledrivePassword,
-          apiId: teledriveApiId,
-          apiHash: teledriveApiHash,
         }
       });
 
@@ -120,8 +123,8 @@ export default function DriveIntegration() {
       setTeledriveConnected(true);
       setShowTeledriveDialog(false);
       toast({
-        title: "TeleDrive connected",
-        description: "Your TeleDrive account has been linked successfully.",
+        title: "Ethio Telecom Drive connected",
+        description: "Your Ethio Telecom Drive account has been linked successfully.",
       });
       
       loadSettings();
@@ -167,12 +170,37 @@ export default function DriveIntegration() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const { error } = await supabase
+    // First check if settings exist
+    const { data: existing } = await supabase
       .from('drive_sync_settings')
-      .upsert({
-        user_id: user.id,
-        [key]: value,
-      });
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    let error;
+    if (existing) {
+      // Update existing record
+      const result = await supabase
+        .from('drive_sync_settings')
+        .update({ [key]: value })
+        .eq('user_id', user.id);
+      error = result.error;
+    } else {
+      // Insert new record with all default values
+      const result = await supabase
+        .from('drive_sync_settings')
+        .insert({
+          user_id: user.id,
+          [key]: value,
+          auto_upload_recordings: key === 'auto_upload_recordings' ? value : true,
+          auto_save_minutes_as_docs: key === 'auto_save_minutes_as_docs' ? value : true,
+          auto_backup_enabled: key === 'auto_backup_enabled' ? value : false,
+          google_drive_enabled: key === 'google_drive_enabled' ? value : true,
+          teledrive_enabled: key === 'teledrive_enabled' ? value : false,
+          auto_sync_notebooks: key === 'auto_sync_notebooks' ? value : false,
+        });
+      error = result.error;
+    }
 
     if (error) {
       toast({
@@ -233,14 +261,26 @@ export default function DriveIntegration() {
     <Layout>
       <div className="space-y-8 animate-fade-in">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-emerald-500/10 p-10 shadow-xl border border-cyan-500/20 animate-fade-in">
+        <div className={`relative overflow-hidden rounded-2xl p-10 shadow-xl border animate-fade-in ${
+          isEthioTelecom 
+            ? 'bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10 border-primary/20' 
+            : 'bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-emerald-500/10 border-cyan-500/20'
+        }`}>
           <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,transparent,black)]" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          <div className={`absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl animate-pulse ${
+            isEthioTelecom 
+              ? 'bg-gradient-to-br from-primary/20 to-transparent' 
+              : 'bg-gradient-to-br from-cyan-500/20 to-transparent'
+          }`} />
           
           <div className="relative flex items-center justify-between">
             <div className="space-y-3">
               <div className="flex items-center gap-4">
-                <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-cyan-500 via-blue-500 to-emerald-500 flex items-center justify-center shadow-2xl animate-glow">
+                <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-2xl animate-glow ${
+                  isEthioTelecom 
+                    ? 'bg-gradient-to-br from-primary via-secondary to-accent' 
+                    : 'bg-gradient-to-br from-cyan-500 via-blue-500 to-emerald-500'
+                }`}>
                   <Cloud className="h-8 w-8 text-white" />
                 </div>
                 <h1 className="text-5xl font-black font-['Space_Grotesk']">
@@ -248,8 +288,28 @@ export default function DriveIntegration() {
                 </h1>
               </div>
               <p className="text-muted-foreground text-lg max-w-2xl">
-                AI-powered cloud storage with multi-provider sync (Google Drive + TeleDrive)
+                AI-powered cloud storage with multi-provider sync (Google Drive + Ethio Telecom Drive)
               </p>
+              
+              {/* Connection Status */}
+              <div className="flex items-center gap-4 pt-2">
+                {accessToken && (
+                  <Badge variant="outline" className="gap-2 border-green-500/30 bg-green-500/10">
+                    <CheckCircle2 className="h-3 w-3 text-green-500" />
+                    Google Drive Connected
+                  </Badge>
+                )}
+                {teledriveConnected && (
+                  <Badge variant="outline" className={`gap-2 ${
+                    isEthioTelecom 
+                      ? 'border-primary/30 bg-primary/10' 
+                      : 'border-blue-500/30 bg-blue-500/10'
+                  }`}>
+                    <CheckCircle2 className={`h-3 w-3 ${isEthioTelecom ? 'text-primary' : 'text-blue-500'}`} />
+                    Ethio Telecom Drive
+                  </Badge>
+                )}
+              </div>
             </div>
             <div className="flex gap-3">
               {!accessToken && (
@@ -259,9 +319,16 @@ export default function DriveIntegration() {
                 </Button>
               )}
               {!teledriveConnected && (
-                <Button onClick={() => setShowTeledriveDialog(true)} size="lg" variant="outline" className="gap-2 shadow-lg hover:shadow-xl transition-all hover-scale">
-                  <Send className="h-5 w-5" />
-                  Connect TeleDrive
+                <Button 
+                  onClick={() => setShowTeledriveDialog(true)} 
+                  size="lg" 
+                  variant={isEthioTelecom ? "default" : "outline"}
+                  className={`gap-2 shadow-lg hover:shadow-xl transition-all hover-scale ${
+                    isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''
+                  }`}
+                >
+                  <HardDrive className="h-5 w-5" />
+                  Connect Ethio Telecom Drive
                 </Button>
               )}
             </div>
@@ -270,11 +337,15 @@ export default function DriveIntegration() {
 
         {/* Stats Cards */}
         <div className="grid gap-6 md:grid-cols-4">
-          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
+          <Card className={`hover:shadow-lg transition-all hover-scale border-2 animate-fade-in ${
+            isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold">Total Files</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <FolderOpen className="h-5 w-5 text-blue-500" />
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                isEthioTelecom ? 'bg-primary/10' : 'bg-blue-500/10'
+              }`}>
+                <FolderOpen className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-blue-500'}`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -283,11 +354,15 @@ export default function DriveIntegration() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
+          <Card className={`hover:shadow-lg transition-all hover-scale border-2 animate-fade-in ${
+            isEthioTelecom ? 'border-secondary/20 bg-gradient-to-br from-background via-secondary/5 to-background' : ''
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold">Auto-Generated</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <Sparkles className="h-5 w-5 text-purple-500" />
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                isEthioTelecom ? 'bg-secondary/10' : 'bg-purple-500/10'
+              }`}>
+                <Sparkles className={`h-5 w-5 ${isEthioTelecom ? 'text-secondary' : 'text-purple-500'}`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -298,11 +373,15 @@ export default function DriveIntegration() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
+          <Card className={`hover:shadow-lg transition-all hover-scale border-2 animate-fade-in ${
+            isEthioTelecom ? 'border-accent/20 bg-gradient-to-br from-background via-accent/5 to-background' : ''
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-semibold">This Week</CardTitle>
-              <div className="h-10 w-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-500" />
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+                isEthioTelecom ? 'bg-accent/10' : 'bg-green-500/10'
+              }`}>
+                <TrendingUp className={`h-5 w-5 ${isEthioTelecom ? 'text-accent' : 'text-green-500'}`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -317,26 +396,63 @@ export default function DriveIntegration() {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-all hover-scale border-2 animate-fade-in">
+          <Card className={`hover:shadow-lg transition-all hover-scale border-2 animate-fade-in ${
+            isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''
+          }`}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-semibold">Smart Sync</CardTitle>
+              <CardTitle className="text-sm font-semibold">Storage Providers</CardTitle>
               <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Zap className="h-5 w-5 text-amber-500" />
+                <HardDrive className="h-5 w-5 text-amber-500" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">Active</div>
-              <p className="text-xs text-muted-foreground mt-1">Automation enabled</p>
+              <div className="text-3xl font-bold">
+                {(accessToken ? 1 : 0) + (teledriveConnected ? 1 : 0)}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">Connected services</p>
             </CardContent>
           </Card>
         </div>
+        
+        {/* Ethio Telecom Drive Info Alert */}
+        {!teledriveConnected && isEthioTelecom && (
+          <Alert className="border-primary/30 bg-primary/5">
+            <AlertCircle className="h-4 w-4 text-primary" />
+            <AlertDescription>
+              <strong>Ethio Telecom Drive:</strong> Connect your Ethio Telecom account to enable seamless cloud storage for meeting files. Ethio Telecom Drive provides secure, high-speed file storage integrated with Ethiopia's leading telecom network.
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Main Content */}
         <Tabs defaultValue="files" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="files">Meeting Files</TabsTrigger>
-            <TabsTrigger value="settings">Smart Sync</TabsTrigger>
-            <TabsTrigger value="browse">Browse Drive</TabsTrigger>
+          <TabsList className={`grid w-full grid-cols-4 ${
+            isEthioTelecom ? 'bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10' : ''
+          }`}>
+            <TabsTrigger value="files" className={`gap-2 ${
+              isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''
+            }`}>
+              <FolderOpen className="h-4 w-4" />
+              Meeting Files
+            </TabsTrigger>
+            <TabsTrigger value="settings" className={`gap-2 ${
+              isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''
+            }`}>
+              <Settings className="h-4 w-4" />
+              Smart Sync
+            </TabsTrigger>
+            <TabsTrigger value="browse" className={`gap-2 ${
+              isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''
+            }`}>
+              <Cloud className="h-4 w-4" />
+              Browse Drive
+            </TabsTrigger>
+            <TabsTrigger value="teledrive" className={`gap-2 ${
+              isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''
+            }`}>
+              <HardDrive className="h-4 w-4" />
+              Ethio Telecom Drive
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="files" className="space-y-4 animate-fade-in">
@@ -500,9 +616,9 @@ export default function DriveIntegration() {
 
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label>Enable TeleDrive</Label>
+                    <Label>Enable Ethio Telecom Drive</Label>
                     <p className="text-sm text-muted-foreground">
-                      Sync files to TeleDrive (Telegram storage)
+                      Sync files to Ethio Telecom's cloud storage
                     </p>
                   </div>
                   <Switch
@@ -533,23 +649,35 @@ export default function DriveIntegration() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="browse" className="space-y-4">
-            <Card>
+          <TabsContent value="browse" className="space-y-4 animate-fade-in">
+            <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
               <CardHeader>
-                <CardTitle>Browse Google Drive</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <Cloud className="h-5 w-5 text-primary" />
+                  Browse Google Drive
+                </CardTitle>
                 <CardDescription>
                   Access your Drive files and attach them to meetings
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-12">
                   {accessToken ? (
-                    <div>Drive browser coming soon...</div>
+                    <div className="space-y-4">
+                      <div className="h-16 w-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto">
+                        <CheckCircle2 className="h-8 w-8 text-green-500" />
+                      </div>
+                      <p className="font-semibold">Google Drive Connected</p>
+                      <p className="text-sm text-muted-foreground">Advanced file browser coming soon...</p>
+                    </div>
                   ) : (
-                    <div>
-                      <Cloud className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Connect Google Drive to browse your files</p>
-                      <Button onClick={connectGoogleDrive} className="mt-4">
+                    <div className="space-y-4">
+                      <div className="h-16 w-16 rounded-2xl bg-muted flex items-center justify-center mx-auto">
+                        <Cloud className="h-8 w-8 text-muted-foreground/50" />
+                      </div>
+                      <p className="font-semibold">Connect Google Drive to browse your files</p>
+                      <Button onClick={connectGoogleDrive} className="mt-4 gap-2">
+                        <Cloud className="h-4 w-4" />
                         Connect Now
                       </Button>
                     </div>
@@ -558,68 +686,207 @@ export default function DriveIntegration() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="teledrive" className="space-y-4 animate-fade-in">
+            <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HardDrive className="h-5 w-5 text-primary" />
+                  Ethio Telecom Drive Integration
+                </CardTitle>
+                <CardDescription>
+                  {isEthioTelecom 
+                    ? "Ethiopia's premier cloud storage solution for your meeting files"
+                    : "Enterprise cloud storage for your meeting files"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Key Features Section */}
+                <div className={`grid gap-4 md:grid-cols-2 rounded-lg p-6 border-2 ${
+                  isEthioTelecom 
+                    ? 'border-primary/20 bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5' 
+                    : 'border-muted bg-gradient-to-br from-background to-muted/20'
+                }`}>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Automatic Backup</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      All your meetings are automatically stored on Ethio Telecom Drive. Every recording, document, and minute is backed up in real-time without any manual intervention.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Never Lose Anything</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Your data is permanently secured with enterprise-grade redundancy. Files are replicated across multiple data centers to ensure zero data loss, even in case of hardware failure.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Safe & Secure</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Protected by military-grade encryption (AES-256). Your data is secured both in transit and at rest, with full compliance to international data protection standards.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className={`h-5 w-5 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <h4 className="font-semibold">Complete History</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Access your entire meeting history anytime, anywhere. All documents, recordings, and transcriptions are organized chronologically for instant retrieval and reference.
+                    </p>
+                  </div>
+                </div>
+
+                {teledriveConnected ? (
+                  <>
+                    <Alert className={`border-green-500/30 bg-green-500/10 ${isEthioTelecom ? 'border-primary/30 bg-primary/10' : ''}`}>
+                      <CheckCircle2 className={`h-4 w-4 ${isEthioTelecom ? 'text-primary' : 'text-green-500'}`} />
+                      <AlertDescription>
+                        <strong>Ethio Telecom Drive Connected:</strong> Your meeting files will automatically sync to Ethio Telecom Drive when enabled in Smart Sync settings.
+                      </AlertDescription>
+                    </Alert>
+
+                    <div className="space-y-4">
+                      <h3 className="font-semibold flex items-center gap-2">
+                        <HardDrive className="h-4 w-4" />
+                        Ethio Telecom Drive Files
+                      </h3>
+                      <div className="space-y-2">
+                        {meetingFiles.filter(f => f.storage_provider === 'teledrive').length > 0 ? (
+                          meetingFiles
+                            .filter(f => f.storage_provider === 'teledrive')
+                            .map((file) => (
+                              <div
+                                key={file.id}
+                                className="flex items-center justify-between p-4 rounded-xl border-2 hover:border-primary/30 hover:bg-accent/50 transition-all"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="p-2 rounded-lg bg-accent">
+                                    {getFileIcon(file.drive_file_type)}
+                                  </div>
+                                  <div>
+                                    <div className="font-medium">{file.drive_file_name}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {file.meetings?.title || 'Unknown meeting'}
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className={`gap-1 ${isEthioTelecom ? 'border-primary/30 bg-primary/10' : ''}`}>
+                                    <HardDrive className="h-3 w-3" />
+                                    Ethio Telecom
+                                  </Badge>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(file.drive_file_url, '_blank')}
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))
+                        ) : (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <p>No files stored in Ethio Telecom Drive yet</p>
+                            <p className="text-sm mt-2">Enable Ethio Telecom Drive sync in Smart Sync settings</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center py-12 space-y-4">
+                    <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mx-auto ${
+                      isEthioTelecom ? 'bg-gradient-to-br from-primary/20 to-secondary/20' : 'bg-muted'
+                    }`}>
+                      <HardDrive className={`h-8 w-8 ${isEthioTelecom ? 'text-primary' : 'text-muted-foreground/50'}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-2">Connect Ethio Telecom Drive</p>
+                      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-4">
+                        {isEthioTelecom 
+                          ? "Ethio Telecom Drive provides secure, high-speed cloud storage integrated with Ethiopia's leading telecom network. Connect your account to enable automatic file syncing."
+                          : "Enterprise cloud storage solution. Connect your account to enable automatic file syncing."}
+                      </p>
+                    </div>
+                    <Button onClick={() => setShowTeledriveDialog(true)} className={`gap-2 ${
+                      isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''
+                    }`}>
+                      <HardDrive className="h-4 w-4" />
+                      Connect Ethio Telecom Drive
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
 
-        {/* TeleDrive Connection Dialog */}
+        {/* Ethio Telecom Drive Connection Dialog */}
         <Dialog open={showTeledriveDialog} onOpenChange={setShowTeledriveDialog}>
-          <DialogContent className="max-w-md">
+          <DialogContent className={`max-w-md ${isEthioTelecom ? 'border-primary/20' : ''}`}>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Send className="h-5 w-5 text-primary" />
-                Connect TeleDrive
+                <HardDrive className="h-5 w-5 text-primary" />
+                Connect Ethio Telecom Drive
               </DialogTitle>
               <DialogDescription>
-                Enter your TeleDrive credentials to enable Telegram cloud storage
+                {isEthioTelecom 
+                  ? "Connect your Ethio Telecom account to access cloud storage"
+                  : "Connect to Ethio Telecom's cloud storage service"}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <Label>API Host</Label>
-                <Input
-                  value={teledriveApiHost}
-                  onChange={(e) => setTeledriveApiHost(e.target.value)}
-                  placeholder="https://your-teledrive-instance.com"
-                />
-              </div>
+              {isEthioTelecom && (
+                <Alert className="border-primary/30 bg-primary/5">
+                  <AlertCircle className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-xs">
+                    Use your Ethio Telecom mobile number and account password to connect.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div>
                 <Label>Phone Number</Label>
                 <Input
                   value={teledrivePhone}
                   onChange={(e) => setTeledrivePhone(e.target.value)}
-                  placeholder="+1234567890"
+                  placeholder="+251911234567"
+                  type="tel"
                 />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Your Ethio Telecom mobile number
+                </p>
               </div>
+              
               <div>
                 <Label>Password</Label>
                 <Input
                   type="password"
                   value={teledrivePassword}
                   onChange={(e) => setTeledrivePassword(e.target.value)}
-                  placeholder="Your TeleDrive password"
+                  placeholder="Your Ethio Telecom account password"
                 />
               </div>
-              <div>
-                <Label>Telegram API ID</Label>
-                <Input
-                  value={teledriveApiId}
-                  onChange={(e) => setTeledriveApiId(e.target.value)}
-                  placeholder="Get from my.telegram.org"
-                />
-              </div>
-              <div>
-                <Label>Telegram API Hash</Label>
-                <Input
-                  value={teledriveApiHash}
-                  onChange={(e) => setTeledriveApiHash(e.target.value)}
-                  placeholder="Get from my.telegram.org"
-                />
-              </div>
+              
               <Button 
                 onClick={connectTeleDrive} 
-                disabled={loading || !teledriveApiHost || !teledrivePhone || !teledrivePassword}
-                className="w-full"
+                disabled={loading || !teledrivePhone || !teledrivePassword}
+                className={`w-full ${isEthioTelecom ? 'bg-gradient-to-r from-primary to-secondary' : ''}`}
               >
-                {loading ? "Connecting..." : "Connect TeleDrive"}
+                {loading ? "Connecting..." : "Connect Ethio Telecom Drive"}
               </Button>
             </div>
           </DialogContent>

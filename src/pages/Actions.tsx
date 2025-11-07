@@ -7,10 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Loader2 } from "lucide-react";
+import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 
 interface ActionItem {
   id: string;
@@ -38,13 +40,38 @@ const statusVariant: Record<string, "outline" | "warning" | "success"> = {
 };
 
 const Actions = () => {
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [actions, setActions] = useState<ActionItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<"list" | "grid">("list");
+  const [filterPriority, setFilterPriority] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"due_date" | "priority" | "status">("due_date");
 
   useEffect(() => {
     fetchActions();
+    
+    // Real-time subscription for action items
+    const channel = supabase
+      .channel('actions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'action_items'
+        },
+        () => {
+          console.log('Action items changed, refetching...');
+          fetchActions();
+        }
+      )
+      .subscribe();
+      
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchActions = async () => {
@@ -85,12 +112,40 @@ const Actions = () => {
   const completedActions = actions.filter((a) => a.status === "completed");
 
   const filterActions = (actions: ActionItem[]) => {
-    if (!searchQuery) return actions;
-    return actions.filter(
-      (a) =>
-        a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (a.assignee?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    let filtered = actions;
+    
+    if (searchQuery) {
+      filtered = filtered.filter(
+        (a) =>
+          a.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (a.assignee?.full_name || "").toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    if (filterPriority !== "all") {
+      filtered = filtered.filter((a) => a.priority === filterPriority);
+    }
+    
+    return filtered.sort((a, b) => {
+      if (sortBy === "due_date") {
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      }
+      if (sortBy === "priority") {
+        const priorityOrder = { high: 0, medium: 1, low: 2 };
+        return priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder];
+      }
+      return 0;
+    });
+  };
+
+  const handleBulkAction = async (action: string) => {
+    if (selectedItems.size === 0) {
+      toast({ title: "No items selected", variant: "destructive" });
+      return;
+    }
+    
+    toast({ title: `${action} ${selectedItems.size} items`, description: "Processing..." });
+    setSelectedItems(new Set());
   };
 
   const toggleItem = (id: string) => {
@@ -104,7 +159,7 @@ const Actions = () => {
   };
 
   const ActionItemCard = ({ action }: { action: ActionItem }) => (
-    <Card className="hover:shadow-md transition-all duration-300">
+    <Card className="group hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 border-2 hover:border-primary/50">
       <CardContent className="pt-6">
         <div className="flex items-start gap-4">
           <Checkbox
@@ -113,29 +168,60 @@ const Actions = () => {
             className="mt-1"
           />
           <div className="flex-1 space-y-3">
-            <div>
-              <h3 className="font-semibold text-base">{action.title}</h3>
-              {action.description && (
-                <p className="text-sm text-muted-foreground mt-1">{action.description}</p>
-              )}
-              {action.meeting && (
-                <p className="text-sm text-muted-foreground mt-1">
-                  From: {action.meeting.title}
-                </p>
-              )}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1">
+                <h3 className="font-semibold text-base group-hover:text-primary transition-colors">
+                  {action.title}
+                </h3>
+                {action.description && (
+                  <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">{action.description}</p>
+                )}
+                {action.meeting && (
+                  <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">
+                    <Calendar className="h-3.5 w-3.5" />
+                    From: {action.meeting.title}
+                  </p>
+                )}
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Mark Complete
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <Badge variant={priorityVariant[action.priority] || "secondary"}>
+              <Badge variant={priorityVariant[action.priority] || "secondary"} className="gap-1">
+                <AlertCircle className="h-3 w-3" />
                 {action.priority}
               </Badge>
-              <Badge variant={statusVariant[action.status] || "outline"}>
+              <Badge variant={statusVariant[action.status] || "outline"} className="gap-1">
+                {action.status === "completed" ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />}
                 {action.status.replace("_", " ")}
               </Badge>
-              <span className="text-xs text-muted-foreground">
-                • Assigned to {action.assignee?.full_name || "Unassigned"}
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {action.assignee?.full_name || "Unassigned"}
               </span>
-              <span className="text-xs text-muted-foreground">
-                • Due {format(new Date(action.due_date), "MMM d, yyyy")}
+              <span className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                Due {format(new Date(action.due_date), "MMM d, yyyy")}
               </span>
             </div>
           </div>
@@ -157,20 +243,26 @@ const Actions = () => {
   return (
     <Layout>
       <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight">Action Items</h1>
-            <p className="text-muted-foreground mt-2">
-              Track follow-ups and deliverables from meetings
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filter
-            </Button>
-            <CreateActionDialog />
+        {/* Executive Header */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 p-8 border border-blue-500/20">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
+          
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <ListTodo className="h-4 w-4 text-blue-400" />
+                <span className="text-sm font-medium">Action Management</span>
+              </div>
+              <h1 className="text-5xl font-black font-['Space_Grotesk']">Action Items</h1>
+              <p className="text-muted-foreground text-lg">Track and manage follow-ups and deliverables</p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" className="gap-2 hover-scale">
+                <BarChart3 className="h-4 w-4" />
+                Analytics
+              </Button>
+              <CreateActionDialog />
+            </div>
           </div>
         </div>
 
@@ -178,37 +270,164 @@ const Actions = () => {
         <TaskExportManager actionItems={actions} />
 
         {/* Stats */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
+        <div className="grid gap-4 md:grid-cols-4">
+          <Card className="border-2 hover:border-warning/50 transition-all hover:shadow-md">
             <CardHeader className="pb-3">
-              <CardDescription>Pending</CardDescription>
-              <CardTitle className="text-3xl">{pendingActions.length}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardDescription className="flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Pending
+                </CardDescription>
+                <div className="h-10 w-10 rounded-lg bg-warning/10 flex items-center justify-center">
+                  <Clock className="h-5 w-5 text-warning" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold">{pendingActions.length}</CardTitle>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="border-2 hover:border-blue-500/50 transition-all hover:shadow-md">
             <CardHeader className="pb-3">
-              <CardDescription>In Progress</CardDescription>
-              <CardTitle className="text-3xl">{inProgressActions.length}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardDescription className="flex items-center gap-2">
+                  <ArrowUpDown className="h-4 w-4" />
+                  In Progress
+                </CardDescription>
+                <div className="h-10 w-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <ArrowUpDown className="h-5 w-5 text-blue-500" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold">{inProgressActions.length}</CardTitle>
             </CardHeader>
           </Card>
-          <Card>
+          <Card className="border-2 hover:border-green-500/50 transition-all hover:shadow-md">
             <CardHeader className="pb-3">
-              <CardDescription>Completed</CardDescription>
-              <CardTitle className="text-3xl">{completedActions.length}</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardDescription className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Completed
+                </CardDescription>
+                <div className="h-10 w-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-5 w-5 text-green-500" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold">{completedActions.length}</CardTitle>
+            </CardHeader>
+          </Card>
+          <Card className="border-2 hover:border-primary/50 transition-all hover:shadow-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardDescription className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  Completion Rate
+                </CardDescription>
+                <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                </div>
+              </div>
+              <CardTitle className="text-4xl font-bold">
+                {actions.length > 0 ? Math.round((completedActions.length / actions.length) * 100) : 0}%
+              </CardTitle>
             </CardHeader>
           </Card>
         </div>
 
-        {/* Search */}
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search actions..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
+        {/* Toolbar */}
+        <Card className="p-4">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+            <div className="flex flex-1 gap-2 w-full md:w-auto">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Search actions..."
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Filter className="h-4 w-4" />
+                    Priority
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setFilterPriority("all")}>
+                    All Priorities
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterPriority("high")}>
+                    High Priority
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterPriority("medium")}>
+                    Medium Priority
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterPriority("low")}>
+                    Low Priority
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <ArrowUpDown className="h-4 w-4" />
+                    Sort
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => setSortBy("due_date")}>
+                    By Due Date
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("priority")}>
+                    By Priority
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setSortBy("status")}>
+                    By Status
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            
+            <div className="flex gap-2">
+              {selectedItems.size > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="secondary" className="gap-2">
+                      <span>{selectedItems.size} selected</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleBulkAction("Complete")}>
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Mark Complete
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleBulkAction("Delete")}>
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+              <div className="flex items-center border rounded-lg">
+                <Button
+                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="rounded-r-none"
+                >
+                  <ListTodo className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "secondary" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                  className="rounded-l-none"
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </Card>
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="w-full">

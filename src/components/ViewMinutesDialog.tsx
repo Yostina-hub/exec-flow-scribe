@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useDeferredValue, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Dialog,
@@ -12,7 +12,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
 import { FileText, Download, Copy, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import rehypeRaw from 'rehype-raw';
 import { useNavigate } from 'react-router-dom';
+import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 
 interface ViewMinutesDialogProps {
   meetingId: string;
@@ -28,8 +32,21 @@ export const ViewMinutesDialog = ({
   const [minutes, setMinutes] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
+  const [showFull, setShowFull] = useState(false);
+  const [showPlain, setShowPlain] = useState(false);
+  const deferredMinutes = useDeferredValue(minutes);
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  const tooLarge = deferredMinutes.length > 200000; // raise threshold to avoid truncating typical minutes
+  const hasHtml = useMemo(() => /<\/?[a-z][\s\S]*>/i.test(deferredMinutes), [deferredMinutes]);
+  const displayMinutes = useMemo(() => {
+    if (!tooLarge || showFull) return deferredMinutes;
+    return (
+      deferredMinutes.slice(0, 20000) +
+      "\n\n> Note: Preview truncated for performance. Click 'Render full document' to load all content."
+    );
+  }, [deferredMinutes, tooLarge, showFull]);
 
   useEffect(() => {
     if (open && meetingId) {
@@ -66,7 +83,9 @@ export const ViewMinutesDialog = ({
       const content: string = latestMinutes?.content || meeting?.minutes_url || '';
 
       if (content) {
-        setMinutes(content);
+        const normalized = normalizeAIMarkdown(content);
+        console.log('Minutes loaded, content length:', normalized.length, 'characters');
+        setMinutes(normalized);
       } else {
         toast({
           title: 'No Minutes Available',
@@ -193,17 +212,68 @@ export const ViewMinutesDialog = ({
                 <Download className="h-4 w-4" />
                 Download
               </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowPlain((v) => !v)} className="gap-2">
+                {showPlain ? 'Rich View' : 'Plain View'}
+              </Button>
+              {tooLarge && !showFull && (
+                <Button variant="secondary" size="sm" onClick={() => setShowFull(true)} className="gap-2">
+                  Render full document
+                </Button>
+              )}
               <Button size="sm" onClick={handleEditInEditor} className="gap-2">
                 <ExternalLink className="h-4 w-4" />
                 Open in Editor
               </Button>
             </div>
 
-            <ScrollArea className="h-[500px] pr-4">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{minutes}</ReactMarkdown>
+            {tooLarge && !showFull && (
+              <div className="mt-3 rounded-md border border-border bg-muted/40 p-3 text-sm flex items-center justify-between">
+                <span>Large document detected. Rendering a quick preview for performance.</span>
+                <Button variant="secondary" size="sm" onClick={() => setShowFull(true)}>Render full document</Button>
               </div>
-            </ScrollArea>
+            )}
+
+            <div className="h-[70vh] w-full overflow-auto pr-4 pb-8">
+              {showPlain ? (
+                <pre className="text-sm whitespace-pre-wrap leading-6">{displayMinutes}</pre>
+              ) : (
+                <div className="prose prose-sm dark:prose-invert max-w-none
+                  prose-headings:text-primary prose-headings:font-bold
+                  prose-h1:text-3xl prose-h1:mb-6 prose-h1:mt-8 prose-h1:border-b-2 prose-h1:border-primary/30 prose-h1:pb-3
+                  prose-h2:text-2xl prose-h2:mt-8 prose-h2:mb-4 prose-h2:text-primary/90 prose-h2:border-l-4 prose-h2:border-primary/40 prose-h2:pl-4
+                  prose-h3:text-xl prose-h3:mt-6 prose-h3:mb-3 prose-h3:text-primary/80
+                  prose-strong:text-accent prose-strong:font-semibold
+                  prose-ul:my-4 prose-li:my-2 prose-li:leading-relaxed
+                  prose-p:leading-relaxed prose-p:my-3 prose-p:text-justify
+                  prose-a:text-primary prose-a:underline prose-a:font-medium
+                  prose-table:w-full prose-table:border-2 prose-table:border-primary/20 prose-table:my-6 prose-table:shadow-md
+                  prose-thead:bg-primary/5
+                  prose-tr:border-b prose-tr:border-border
+                  prose-td:border prose-td:border-border/50 prose-td:p-3 prose-td:align-top
+                  prose-th:border prose-th:border-border prose-th:p-3 prose-th:bg-primary/10 prose-th:font-bold prose-th:text-primary
+                  [&>ul>li]:before:text-primary [&>ul>li]:before:font-bold [&>ul>li]:before:text-lg
+                  [&>ol>li]:marker:text-primary [&>ol>li]:marker:font-bold
+                  whitespace-pre-wrap break-words">
+                  <ReactMarkdown 
+                    remarkPlugins={[remarkGfm, remarkBreaks]}
+                    rehypePlugins={hasHtml ? [rehypeRaw] : []}
+                    components={{
+                      p: ({node, ...props}) => <p className="my-3 leading-7" {...props} />,
+                      h1: ({node, ...props}) => <h1 className="scroll-m-20 first:mt-0" {...props} />,
+                      h2: ({node, ...props}) => <h2 className="scroll-m-20" {...props} />,
+                      h3: ({node, ...props}) => <h3 className="scroll-m-20" {...props} />,
+                      table: ({node, ...props}) => (
+                        <div className="overflow-x-auto my-6">
+                          <table className="min-w-full" {...props} />
+                        </div>
+                      )
+                    }}
+                  >
+                    {displayMinutes}
+                  </ReactMarkdown>
+                </div>
+              )}
+            </div>
           </>
         )}
       </DialogContent>

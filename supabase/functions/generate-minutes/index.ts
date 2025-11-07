@@ -73,13 +73,19 @@ try {
       { data: meeting, error: meetingError },
       tr1,
       { data: decisions },
-      { data: polls }
+      { data: polls },
+      { data: attendees },
+      { data: collaborativeNotes },
+      { data: actionItems }
     ] = await Promise.all([
       supabase.from("ai_provider_preferences").select("*").eq("user_id", user.id).maybeSingle(),
       supabase.from("meetings").select("*, agenda_items(*)").eq("id", meetingId).single(),
       supabase.from("transcriptions").select("*").eq("meeting_id", meetingId).order("timestamp", { ascending: true }),
       supabase.from("decisions").select("*").eq("meeting_id", meetingId),
-      supabase.from("meeting_polls").select("*, poll_responses(*)").eq("meeting_id", meetingId).order("created_at", { ascending: true })
+      supabase.from("meeting_polls").select("*, poll_responses(*)").eq("meeting_id", meetingId).order("created_at", { ascending: true }),
+      supabase.from("meeting_attendees").select("*, profiles(full_name, email)").eq("meeting_id", meetingId),
+      supabase.from("meeting_notes").select("*, profiles(full_name)").eq("meeting_id", meetingId).order("created_at", { ascending: true }),
+      supabase.from("action_items").select("*").eq("meeting_id", meetingId)
     ]);
 
     const provider = preference?.provider || "lovable_ai";
@@ -152,12 +158,48 @@ try {
     console.log(`📍 Detected meeting language: ${detectedLang}`);
 
     const agendaList = meeting.agenda_items
-      ?.map((item: any) => `- ${item.title}`)
-      .join("\n") || "";
+      ?.map((item: any, idx: number) => {
+        const presenter = item.presenter_id || 'Not assigned';
+        const duration = item.duration_minutes ? `${item.duration_minutes} min` : 'TBD';
+        const status = item.status || 'pending';
+        return `${idx + 1}. ${item.title}\n   Presenter ID: ${presenter} | Duration: ${duration} | Status: ${status}\n   ${item.description || 'No description'}`;
+      })
+      .join("\n\n") || "";
 
     const decisionsList = decisions
-      ?.map((d: any) => `- ${d.decision_text}`)
-      .join("\n") || "";
+      ?.map((d: any, idx: number) => {
+        const timestamp = d.created_at ? new Date(d.created_at).toLocaleString() : '';
+        return `${idx + 1}. ${d.decision_text}\n   Made by: ${d.decision_maker || 'Unknown'} | Time: ${timestamp}\n   Impact: ${d.impact_level || 'Not specified'}`;
+      })
+      .join("\n\n") || "";
+
+    // Format attendees data
+    const attendeesList = attendees?.map((a: any) => {
+      const name = a.profiles?.full_name || a.profiles?.email || 'Unknown';
+      const status = a.attended ? '✅ Attended' : a.response_status === 'accepted' ? '📅 Confirmed' : '❓ Pending';
+      const role = a.role || 'Participant';
+      return `• ${name} - ${role} (${status})`;
+    }).join("\n") || "";
+
+    // Format collaborative notes
+    const collaborativeNotesList = collaborativeNotes?.map((n: any) => {
+      const author = n.profiles?.full_name || 'Anonymous';
+      const type = n.note_type || 'general';
+      const pinned = n.is_pinned ? '📌 ' : '';
+      const tags = Array.isArray(n.tags) && n.tags.length > 0 ? ` [${n.tags.join(', ')}]` : '';
+      return `${pinned}${type.toUpperCase()}: ${n.content}\n   By: ${author}${tags}`;
+    }).join("\n\n") || "";
+
+    // Format action items
+    const actionItemsList = actionItems?.map((a: any, idx: number) => {
+      const assignee = a.assigned_to || 'Unassigned';
+      const creator = a.created_by || 'Unknown';
+      const due = a.due_date ? new Date(a.due_date).toLocaleDateString() : 'No due date';
+      const priority = a.priority || 'medium';
+      const status = a.status || 'pending';
+      const priorityEmoji = priority === 'high' ? '🔴' : priority === 'medium' ? '🟡' : '🟢';
+      return `${idx + 1}. ${priorityEmoji} ${a.title}\n   ${a.description || 'No description'}\n   Assigned to ID: ${assignee} | Created by ID: ${creator}\n   Due: ${due} | Priority: ${priority} | Status: ${status}`;
+    }).join("\n\n") || "";
 
     // Format polls data
     const pollsList = polls?.map((p: any) => {
@@ -199,6 +241,8 @@ LANGUAGE & SCRIPT:
 • Write ENTIRELY in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
 • NEVER use Latin letters (a-z) or romanization
 • ALL headings, titles, content MUST be Ge'ez script
+• WHEN ENGLISH TECHNICAL TERMS appear: provide Amharic translation/explanation in parentheses. Example: "ማናጀመንት (አስተዳደር)" or explain the concept in Amharic
+• For names, titles, or specific terms, you may keep the original in Latin script only if transliteration would lose meaning, but ALWAYS provide Amharic context
 
 ETHIOPIAN PUNCTUATION (MANDATORY):
 • ። = Full stop (end of sentence) - USE CONSISTENTLY
@@ -306,12 +350,14 @@ Never romanize or transliterate non-Latin scripts.`;
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
 Date: ${new Date(meeting.start_time).toLocaleDateString()}
+Time: ${new Date(meeting.start_time).toLocaleTimeString()} - ${new Date(meeting.end_time).toLocaleTimeString()}
 Duration (scheduled): ${Math.round(
       (new Date(meeting.end_time).getTime() -
         new Date(meeting.start_time).getTime()) /
          60000
     )} minutes
-${recordingSeconds !== null ? `Recording Time: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
+${recordingSeconds !== null ? `Actual Recording Duration: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
+Location: ${meeting.location || 'Not specified'}
 
 📝 PLANNED AGENDA:
 ${agendaList || 'No agenda items'}
@@ -325,26 +371,67 @@ ${decisionsList || 'No decisions recorded'}
 🗳️ POLLS & VOTING RESULTS:
 ${pollsList || 'No polls conducted'}
 
+👥 MEETING PARTICIPANTS:
+${attendeesList || 'No participants recorded'}
+
+📝 COLLABORATIVE NOTES & INSIGHTS:
+${collaborativeNotesList || 'No collaborative notes'}
+
+✅ ACTION ITEMS & TASKS:
+${actionItemsList || 'No action items assigned'}
+
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
 📊 REQUIRED SECTIONS (be thorough and complete):
+0. **የስብሰባ መረጃ** (Meeting Information) - MUST include at the very top:
+   • Meeting title and date
+   • Start and end time
+   • Duration (scheduled and actual if available)
+   • Location/venue
+   • List of participants with their roles and attendance status
+   Present this in a clear, formatted box at the beginning
 1. **የስብሰባ መግቢያ** (Meeting Opening) - WHO opened the meeting, their introduction, welcome remarks, and stated purpose (MUST be comprehensive - this sets the stage)
 2. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (4-6 detailed sentences minimum)
-3. **ዋና ዋና የውይይት ነጥቦች** (Key Discussion Points) - DETAILED coverage of ALL topics discussed in order presented, including:
+3. **የአጀንዳ ግምገማ** (Agenda Review) - Detailed summary of each agenda item:
+   • What was planned for each agenda item
+   • Who presented each topic
+   • What was actually covered
+   • Any deviations from the planned agenda
+4. **ዋና ዋና የውይይት ነጥቦች** (Key Discussion Points) - DETAILED coverage of ALL topics discussed in order presented, including:
    • Who introduced each topic and why
    • Context provided by speakers
    • Different viewpoints and perspectives expressed
    • Questions raised and answers given
    • Explanations and reasoning shared
    • Specific examples or data mentioned
+   • Reference collaborative notes where relevant
    (This should be the LONGEST, MOST DETAILED section)
-4. የተወሰኑ ውሳኔዎች (Decisions Made) - ALL decisions with full context about how they were reached
-5. 🗳️ የምርጫ ውጤቶች (Poll Results) - Complete poll information with context
-6. የተግባር እቅዶች (Action Items) - ALL actions mentioned with full details
-7. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
-8. ተጨማሪ ሐሳቦች (Additional Notes) - Other relevant points, context, or observations
+5. **የተወሰኑ ውሳኔዎች** (Decisions Made) - ALL decisions with:
+   • Full context about how they were reached
+   • Who made the decision
+   • When it was made
+   • Impact level and implications
+6. 🗳️ **የምርጫ ውጤቶች** (Poll Results) - Complete poll information with:
+   • Question asked and context
+   • All options and vote counts
+   • Analysis of results
+   • How results influenced decisions
+7. 📝 **የጋራ ማስታወሻዎች** (Collaborative Notes & Insights) - Include key points from:
+   • Important observations shared during the meeting
+   • Questions raised
+   • Ideas contributed
+   • Concerns noted
+   Group by type (general, question, idea, concern)
+8. **የተግባር እቅዶች** (Action Items) - ALL actions with:
+   • Complete task description
+   • Assignee and creator
+   • Due date and priority
+   • Current status
+   • Context of why the task is needed
+9. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
+10. የማጠቃለያ ተጨማሪ ሐሳቦች (Closing & Additional Notes) - Other relevant points, context, or observations
 
-${detectedLang === 'am' ? `✍️ CRITICAL AMHARIC REQUIREMENTS: 
+${detectedLang === 'am' ? `✍️ CRITICAL AMHARIC REQUIREMENTS:
 • Use Ethiopian punctuation ። at the end of EVERY sentence without exception
 • Use ፣ for commas within sentences to separate items and clauses
 • Use ፦ before introducing lists, explanations, or elaborations

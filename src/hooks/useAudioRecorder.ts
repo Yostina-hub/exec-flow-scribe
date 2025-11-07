@@ -61,10 +61,45 @@ export const useAudioRecorder = (meetingId: string) => {
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const processorRef = useRef<ScriptProcessorNode | null>(null);
   const pcmChunksRef = useRef<Float32Array[]>([]);
+  const recordingStartTimeRef = useRef<number | null>(null);
+  const pausedDurationRef = useRef<number>(0);
+  const pauseStartTimeRef = useRef<number | null>(null);
   const normalizedMeetingId = normalizeMeetingId(meetingId);
 
   const startRecording = useCallback(async () => {
     try {
+      // Initialize or restore recording timestamps
+      let startTs = recordingStartTimeRef.current;
+      let pausedTotal = pausedDurationRef.current || 0;
+
+      try {
+        const saved = localStorage.getItem(`meeting-recording-${meetingId}`);
+        if (saved) {
+          const s = JSON.parse(saved);
+          if (s.isRecording && s.startTime) {
+            startTs = s.startTime;
+            pausedTotal = s.pausedDuration || 0;
+          }
+        }
+      } catch {}
+
+      if (!startTs) startTs = Date.now();
+      recordingStartTimeRef.current = startTs;
+      pausedDurationRef.current = pausedTotal;
+      pauseStartTimeRef.current = null;
+      
+      // Persist recording session so the global indicator can detect it across routes/tabs
+      try {
+        localStorage.setItem(
+          `meeting-recording-${meetingId}`,
+          JSON.stringify({
+            isRecording: true,
+            startTime: startTs,
+            pausedDuration: pausedTotal,
+          })
+        );
+      } catch {}
+      
       // Update meeting status to "in_progress" when recording starts
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(meetingId)) {
@@ -84,16 +119,40 @@ export const useAudioRecorder = (meetingId: string) => {
       const supported = pickSupportedMimeType();
       const options: MediaRecorderOptions | undefined = supported ? { mimeType: supported } : undefined;
       const mediaRecorder = new MediaRecorder(stream, options as any);
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Keep recording active even when tab is hidden/inactive
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          console.log('Tab hidden - ensuring recording continues');
+        } else {
+          console.log('Tab visible - recording active');
+        }
+        // Keep MediaRecorder active regardless of visibility (unless user paused)
+        const recorder = mediaRecorderRef.current;
+        if (recorder?.state === 'paused' && isRecording && !isPaused) {
+          console.log('Auto-resuming MediaRecorder after visibility change');
+          recorder.resume();
+        }
+      };
+      
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+      
+      // Store the handler for cleanup
+      (mediaRecorder as any)._visibilityHandler = handleVisibilityChange;
       
       // Prevent recording from stopping when tab is hidden
       mediaRecorder.addEventListener('pause', (e) => {
-        console.log('MediaRecorder pause event - keeping recording active');
-        if (mediaRecorderRef.current?.state === 'paused' && isRecording) {
-          mediaRecorderRef.current.resume();
-        }
+        console.log('MediaRecorder pause event - checking if intentional');
+        // Only resume if this wasn't an intentional user pause
+        setTimeout(() => {
+          const recorder = mediaRecorderRef.current;
+          if (recorder?.state === 'paused' && isRecording && !isPaused) {
+            console.log('Unintentional pause detected - auto-resuming');
+            recorder.resume();
+          }
+        }, 100);
       });
-
-      mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
       // Set up PCM capture via WebAudio for Browser Whisper (avoids container decode issues)
@@ -297,6 +356,13 @@ export const useAudioRecorder = (meetingId: string) => {
 
       mediaRecorder.onstop = () => {
         console.log('MediaRecorder stopped - cleaning up all resources');
+        
+        // Remove visibility change listener
+        const handler = (mediaRecorder as any)._visibilityHandler;
+        if (handler) {
+          document.removeEventListener('visibilitychange', handler);
+        }
+        
         try {
           // Stop all tracks to clear the recording indicator
           stream.getTracks().forEach(track => {
@@ -319,6 +385,11 @@ export const useAudioRecorder = (meetingId: string) => {
         pcmChunksRef.current = [];
         mediaRecorderRef.current = null;
         chunksRef.current = [];
+        
+        // Reset recording timestamps
+        recordingStartTimeRef.current = null;
+        pausedDurationRef.current = 0;
+        pauseStartTimeRef.current = null;
       };
 
       mediaRecorder.start(5000); // Record in 5-second chunks
@@ -376,6 +447,11 @@ export const useAudioRecorder = (meetingId: string) => {
         title: 'Recording stopped',
         description: 'Meeting completed, generating minutes...',
       });
+
+      // Clear persisted indicator state
+      try {
+        localStorage.removeItem(`meeting-recording-${meetingId}`);
+      } catch {}
     } catch (e) {
       console.error('Error stopping recording:', e);
       // Force state update even if stop fails
@@ -387,8 +463,11 @@ export const useAudioRecorder = (meetingId: string) => {
   const pauseRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       try {
+        // Mark pause start time
+        pauseStartTimeRef.current = Date.now();
         mediaRecorderRef.current.pause();
         setIsPaused(true);
+        console.log('Recording paused at:', new Date(pauseStartTimeRef.current).toISOString());
       } catch (err) {
         console.error('Error pausing recording:', err);
       }
@@ -398,8 +477,28 @@ export const useAudioRecorder = (meetingId: string) => {
   const resumeRecording = useCallback(() => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       try {
+        // Calculate pause duration and add to total
+        if (pauseStartTimeRef.current !== null) {
+          const pauseDuration = Date.now() - pauseStartTimeRef.current;
+          pausedDurationRef.current += pauseDuration;
+          pauseStartTimeRef.current = null;
+          console.log('Recording resumed - total pause duration:', pausedDurationRef.current / 1000, 'seconds');
+        }
         mediaRecorderRef.current.resume();
         setIsPaused(false);
+        
+        // Persist updated paused duration so the indicator shows correct elapsed time
+        try {
+          const key = `meeting-recording-${meetingId}`;
+          const existing = localStorage.getItem(key);
+          const base = existing ? JSON.parse(existing) : {};
+          localStorage.setItem(key, JSON.stringify({
+            ...base,
+            isRecording: true,
+            startTime: recordingStartTimeRef.current,
+            pausedDuration: pausedDurationRef.current,
+          }));
+        } catch {}
       } catch (err) {
         console.error('Error resuming recording:', err);
       }
