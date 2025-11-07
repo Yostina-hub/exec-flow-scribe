@@ -94,7 +94,7 @@ interface FormattedMeeting {
 }
 
 
-const ITEMS_PER_PAGE = 8;
+const ITEMS_PER_PAGE = 10;
 
 export default function Meetings() {
   const { toast } = useToast();
@@ -107,66 +107,118 @@ export default function Meetings() {
   const [currentPageUpcoming, setCurrentPageUpcoming] = React.useState(1);
   const [currentPageCompleted, setCurrentPageCompleted] = React.useState(1);
   const [currentPageAll, setCurrentPageAll] = React.useState(1);
+  const [activeTab, setActiveTab] = React.useState<'upcoming' | 'completed' | 'all'>('upcoming');
+  const [totalCounts, setTotalCounts] = React.useState({ upcoming: 0, completed: 0, all: 0 });
+  const [meetings, setMeetings] = React.useState<Meeting[]>([]);
+  const [loading, setLoading] = React.useState(true);
 
-  // Optimized data fetching with cache
-  const fetchMeetingsData = React.useCallback(async () => {
-    const { data: meetingsData, error: meetingsError } = await supabase
-      .from("meetings")
-      .select(`
-        *,
-        meeting_attendees(count),
-        agenda_items(count)
-      `)
-      .order("created_at", { ascending: false });
+  // Server-side pagination fetch
+  const fetchMeetingsPage = React.useCallback(async (
+    status: 'upcoming' | 'completed' | 'all',
+    page: number,
+    search?: string
+  ) => {
+    setLoading(true);
+    try {
+      const from = (page - 1) * ITEMS_PER_PAGE;
+      const to = from + ITEMS_PER_PAGE - 1;
 
-    if (meetingsError) throw meetingsError;
+      let query = supabase
+        .from("meetings")
+        .select(`
+          *,
+          meeting_attendees(count),
+          agenda_items(count)
+        `, { count: 'exact' })
+        .order("start_time", { ascending: false });
 
-    const enrichedMeetings = (meetingsData || []).map(meeting => ({
-      ...meeting,
-      attendee_count: meeting.meeting_attendees?.[0]?.count || 0,
-      agenda_count: meeting.agenda_items?.[0]?.count || 0,
-    }));
+      // Apply status filter
+      const now = new Date().toISOString();
+      if (status === 'upcoming') {
+        query = query.neq('status', 'completed').gte('start_time', now);
+      } else if (status === 'completed') {
+        query = query.eq('status', 'completed');
+      }
 
-    // Cache in localStorage
-    localStorageCache.set('meetings_list', enrichedMeetings, 2 * 60 * 1000);
+      // Apply search filter
+      if (search) {
+        query = query.or(`title.ilike.%${search}%,location.ilike.%${search}%`);
+      }
 
-    return enrichedMeetings;
+      // Apply pagination
+      query = query.range(from, to);
+
+      const { data: meetingsData, error: meetingsError, count } = await query;
+
+      if (meetingsError) throw meetingsError;
+
+      const enrichedMeetings = (meetingsData || []).map(meeting => ({
+        ...meeting,
+        attendee_count: meeting.meeting_attendees?.[0]?.count || 0,
+        agenda_count: meeting.agenda_items?.[0]?.count || 0,
+      }));
+
+      setMeetings(enrichedMeetings);
+      setTotalCounts(prev => ({ ...prev, [status]: count || 0 }));
+    } catch (error) {
+      console.error('Error fetching meetings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load meetings",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
+
+  // Fetch stats separately for display
+  const fetchStats = React.useCallback(async () => {
+    try {
+      const now = new Date().toISOString();
+      
+      const [upcomingRes, completedRes, totalRes] = await Promise.all([
+        supabase.from("meetings").select('id', { count: 'exact', head: true })
+          .neq('status', 'completed').gte('start_time', now),
+        supabase.from("meetings").select('id', { count: 'exact', head: true })
+          .eq('status', 'completed'),
+        supabase.from("meetings").select('id', { count: 'exact', head: true })
+      ]);
+
+      setTotalCounts({
+        upcoming: upcomingRes.count || 0,
+        completed: completedRes.count || 0,
+        all: totalRes.count || 0,
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
   }, []);
 
-  const { data: meetingsData, loading, refetch } = useOptimizedQuery<Meeting[]>(
-    'meetings_list',
-    fetchMeetingsData,
-    {
-      enabled: !authLoading && !!user,
-      cacheDuration: 2 * 60 * 1000,
-    }
-  );
-  
-  // Ensure meetings is always an array (handle null from useOptimizedQuery)
-  const meetings = meetingsData ?? [];
-
-  // Memoized stats calculation
-  const stats = React.useMemo(() => {
-    const now = new Date();
-    const upcoming = meetings.filter(m => {
-      const startTime = new Date(m.start_time);
-      return m.status !== "completed" && startTime > now;
-    }).length;
-    const inProgress = meetings.filter(m => {
-      const startTime = new Date(m.start_time);
-      const endTime = new Date(m.end_time);
-      return now >= startTime && now <= endTime;
-    }).length;
-    const completed = meetings.filter(m => m.status === "completed").length;
-
-    return { upcoming, inProgress, completed, total: meetings.length };
-  }, [meetings]);
-
+  // Load initial data and stats
   React.useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
       return;
     }
+
+    fetchStats();
+  }, [authLoading, user, navigate, fetchStats]);
+
+  // Load page data when tab/page/search changes
+  React.useEffect(() => {
+    if (!user) return;
+
+    const currentPage = activeTab === 'upcoming' ? currentPageUpcoming 
+      : activeTab === 'completed' ? currentPageCompleted 
+      : currentPageAll;
+    
+    fetchMeetingsPage(activeTab, currentPage, debouncedSearch);
+  }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, debouncedSearch, fetchMeetingsPage]);
+
+  // Real-time updates
+  React.useEffect(() => {
+    if (!user) return;
 
     const meetingsChannel = supabase
       .channel('meetings-changes')
@@ -176,22 +228,25 @@ export default function Meetings() {
         table: 'meetings' 
       }, () => {
         console.log('Meeting changed, refetching...');
-        refetch();
-      })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'agenda_items' 
-      }, () => {
-        console.log('Agenda changed, refetching...');
-        refetch();
+        fetchStats();
+        const currentPage = activeTab === 'upcoming' ? currentPageUpcoming 
+          : activeTab === 'completed' ? currentPageCompleted 
+          : currentPageAll;
+        fetchMeetingsPage(activeTab, currentPage, debouncedSearch);
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(meetingsChannel);
     };
-  }, [authLoading, user, navigate, refetch]);
+  }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, debouncedSearch, fetchStats, fetchMeetingsPage]);
+
+  const stats = React.useMemo(() => ({
+    upcoming: totalCounts.upcoming,
+    inProgress: 0,
+    completed: totalCounts.completed,
+    total: totalCounts.all,
+  }), [totalCounts]);
   
   const formatMeetingCard = React.useCallback((meeting: Meeting): FormattedMeeting => {
     const startTime = new Date(meeting.start_time);
@@ -222,41 +277,20 @@ export default function Meetings() {
     };
   }, []);
 
-  // Memoized filtered meetings using debounced search
-  const { upcomingMeetings, completedMeetings, allMeetingsFormatted } = React.useMemo(() => {
-    const formatted = meetings.map(formatMeetingCard);
-    
-    const filterBySearch = (items: FormattedMeeting[]) => {
-      if (!debouncedSearch) return items;
-      return items.filter((meeting) =>
-        meeting.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        meeting.location.toLowerCase().includes(debouncedSearch.toLowerCase())
-      );
-    };
-
-    return {
-      upcomingMeetings: filterBySearch(formatted.filter((m) => m.status !== "completed")),
-      completedMeetings: filterBySearch(formatted.filter((m) => m.status === "completed")),
-      allMeetingsFormatted: filterBySearch(formatted),
-    };
-  }, [meetings, debouncedSearch, formatMeetingCard]);
-
-  // Pagination logic
-  const paginateData = (data: any[], currentPage: number) => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return data.slice(startIndex, endIndex);
-  };
+  // Format current page meetings
+  const formattedMeetings = React.useMemo(() => {
+    return meetings.map(formatMeetingCard);
+  }, [meetings, formatMeetingCard]);
 
   const getTotalPages = (totalItems: number) => Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-  const paginatedUpcoming = paginateData(upcomingMeetings, currentPageUpcoming);
-  const paginatedCompleted = paginateData(completedMeetings, currentPageCompleted);
-  const paginatedAll = paginateData(allMeetingsFormatted, currentPageAll);
+  const totalPagesUpcoming = getTotalPages(totalCounts.upcoming);
+  const totalPagesCompleted = getTotalPages(totalCounts.completed);
+  const totalPagesAll = getTotalPages(totalCounts.all);
 
-  const totalPagesUpcoming = getTotalPages(upcomingMeetings.length);
-  const totalPagesCompleted = getTotalPages(completedMeetings.length);
-  const totalPagesAll = getTotalPages(allMeetingsFormatted.length);
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as 'upcoming' | 'completed' | 'all');
+  };
 
   const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
     if (totalPages <= 1) return null;
@@ -408,47 +442,56 @@ export default function Meetings() {
         </div>
 
         {/* Enhanced Meetings Tabs */}
-        <Tabs defaultValue="upcoming" className="w-full">
+        <Tabs defaultValue="upcoming" className="w-full" onValueChange={handleTabChange}>
           <TabsList className={`grid w-full grid-cols-3 h-14 backdrop-blur-sm border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : 'bg-muted/50'}`}>
             <TabsTrigger 
               value="upcoming" 
               className={`font-bold transition-all duration-300 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0072BC] data-[state=active]:to-[#005A9C] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}
             >
               <Clock className="h-4 w-4 mr-2" />
-              Upcoming ({upcomingMeetings.length})
+              Upcoming ({totalCounts.upcoming})
             </TabsTrigger>
             <TabsTrigger 
               value="completed" 
               className={`font-bold transition-all duration-300 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#8DC63F] data-[state=active]:to-[#7AB62F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-500 data-[state=active]:to-teal-500 data-[state=active]:text-white'}`}
             >
               <TrendingUp className="h-4 w-4 mr-2" />
-              Completed ({completedMeetings.length})
+              Completed ({totalCounts.completed})
             </TabsTrigger>
             <TabsTrigger 
-              value="all" 
+              value="all"
               className={`font-bold transition-all duration-300 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#8DC63F] data-[state=active]:to-[#0072BC] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-pink-500 data-[state=active]:text-white'}`}
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              All ({allMeetingsFormatted.length})
+              All ({totalCounts.all})
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="upcoming" className="mt-6">
-            {upcomingMeetings.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-16 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-muted-foreground">Loading meetings...</span>
+              </div>
+            ) : formattedMeetings.length === 0 ? (
               <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-[#0072BC]/10' : 'bg-blue-500/10'}`}>
                     <Calendar className={`h-16 w-16 ${isEthioTelecom ? 'text-[#0072BC]' : 'text-blue-500'}`} />
                   </div>
                   <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Upcoming Meetings</h3>
-                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'} mb-4`}>Get started by creating your first meeting</p>
-                  <CreateMeetingDialog />
+                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'} mb-4`}>
+                    {searchQuery ? "No meetings match your search." : "Get started by creating your first meeting"}
+                  </p>
+                  <React.Suspense fallback={<Loader2 className="h-5 w-5 animate-spin" />}>
+                    <CreateMeetingDialog />
+                  </React.Suspense>
                 </CardContent>
               </Card>
             ) : (
               <>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-                  {paginatedUpcoming.map((meeting, index) => (
+                  {formattedMeetings.map((meeting, index) => (
                     <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
                       <InlineMeetingCard
                         id={meeting.id}
@@ -473,20 +516,27 @@ export default function Meetings() {
           </TabsContent>
 
           <TabsContent value="completed" className="mt-6">
-            {completedMeetings.length === 0 ? (
+            {loading ? (
+              <div className="flex items-center justify-center py-16 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-muted-foreground">Loading meetings...</span>
+              </div>
+            ) : formattedMeetings.length === 0 ? (
               <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
                 <CardContent className="flex flex-col items-center justify-center py-16">
                   <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-[#8DC63F]/10' : 'bg-green-500/10'}`}>
                     <TrendingUp className={`h-16 w-16 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-green-500'}`} />
                   </div>
                   <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Completed Meetings Yet</h3>
-                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>Completed meetings will appear here</p>
+                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
+                    {searchQuery ? "No meetings match your search." : "Completed meetings will appear here"}
+                  </p>
                 </CardContent>
               </Card>
             ) : (
               <>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-                  {paginatedCompleted.map((meeting, index) => (
+                  {formattedMeetings.map((meeting, index) => (
                     <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
                       <InlineMeetingCard
                         id={meeting.id}
@@ -511,8 +561,30 @@ export default function Meetings() {
           </TabsContent>
 
           <TabsContent value="all" className="mt-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-16 gap-3">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-muted-foreground">Loading meetings...</span>
+              </div>
+            ) : formattedMeetings.length === 0 ? (
+              <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
+                <CardContent className="flex flex-col items-center justify-center py-16">
+                  <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-[#8DC63F]/10' : 'bg-purple-500/10'}`}>
+                    <Sparkles className={`h-16 w-16 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-500'}`} />
+                  </div>
+                  <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Meetings Found</h3>
+                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'} mb-4`}>
+                    {searchQuery ? "No meetings match your search." : "Get started by creating your first meeting"}
+                  </p>
+                  <React.Suspense fallback={<Loader2 className="h-5 w-5 animate-spin" />}>
+                    <CreateMeetingDialog />
+                  </React.Suspense>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-              {paginatedAll.map((meeting, index) => (
+              {formattedMeetings.map((meeting, index) => (
                 <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
                   <InlineMeetingCard
                     id={meeting.id}
@@ -532,6 +604,8 @@ export default function Meetings() {
               ))}
             </div>
             {renderPagination(currentPageAll, totalPagesAll, setCurrentPageAll)}
+              </>
+            )}
           </TabsContent>
         </Tabs>
       </div>
