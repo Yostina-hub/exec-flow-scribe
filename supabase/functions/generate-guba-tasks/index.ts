@@ -16,9 +16,49 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    const { meeting_id, source_type, source_id, language = 'en', user_id } = await req.json();
+    const { meeting_id, source_type, source_id, language = 'en', user_id, use_learning = false } = await req.json();
 
-    console.log(`Generating Guba tasks for meeting ${meeting_id} in ${language}`);
+    console.log(`Generating Guba tasks for meeting ${meeting_id} in ${language}${use_learning ? ' (with AI learning)' : ''}`);
+
+    // Fetch historical feedback data if learning is enabled
+    let learningContext = '';
+    if (use_learning) {
+      const { data: feedbackData } = await supabase
+        .from('guba_feedback')
+        .select(`
+          accepted,
+          metadata,
+          proposal:guba_task_proposals(generated_tasks)
+        `)
+        .eq('created_by', user_id)
+        .limit(50)
+        .order('created_at', { ascending: false });
+
+      if (feedbackData && feedbackData.length >= 10) {
+        const acceptedCount = feedbackData.filter(f => f.accepted).length;
+        const acceptanceRate = (acceptedCount / feedbackData.length) * 100;
+        
+        // Analyze accepted vs rejected patterns
+        const acceptedPriorities: Record<string, number> = { high: 0, medium: 0, low: 0 };
+        const rejectedPriorities: Record<string, number> = { high: 0, medium: 0, low: 0 };
+        
+        feedbackData.forEach((f: any) => {
+          const priority = f.metadata?.priority || 'medium';
+          if (f.accepted) {
+            acceptedPriorities[priority]++;
+          } else {
+            rejectedPriorities[priority]++;
+          }
+        });
+
+        learningContext = `\n\nHISTORICAL LEARNING DATA:
+- Overall acceptance rate: ${acceptanceRate.toFixed(1)}%
+- Accepted priority distribution: High: ${acceptedPriorities.high}, Medium: ${acceptedPriorities.medium}, Low: ${acceptedPriorities.low}
+- Rejected priority distribution: High: ${rejectedPriorities.high}, Medium: ${rejectedPriorities.medium}, Low: ${rejectedPriorities.low}
+- User tends to ${acceptedPriorities.high > acceptedPriorities.low ? 'prefer high-priority actionable tasks' : 'prefer balanced priorities'}
+- Adjust confidence scores and priority distribution based on this feedback.`;
+      }
+    }
 
     // Fetch meeting details
     const { data: meeting, error: meetingError } = await supabase
@@ -106,7 +146,7 @@ ${minutesContent}
 Available Departments:
 ${departmentsList}
 
-Generate specific actionable tasks from the meeting decisions and discussions. Respond in English.
+Generate specific actionable tasks from the meeting decisions and discussions. Respond in English.${learningContext}
 Return the result in this JSON format:
 {
   "tasks": [

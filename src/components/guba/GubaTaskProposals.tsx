@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Sparkles, CheckCircle2, Brain, Calendar, Building2 } from "lucide-react";
+import { Loader2, Sparkles, XCircle, CheckCircle2, Brain, Calendar, Building2 } from "lucide-react";
 import { format, addDays } from "date-fns";
 
 interface GubaTask {
@@ -85,7 +85,8 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
           meeting_id: meetingId,
           source_type: 'minutes',
           language,
-          user_id: user.id
+          user_id: user.id,
+          use_learning: true
         }
       });
 
@@ -168,6 +169,25 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
         throw new Error('Failed to create some tasks');
       }
 
+      // Track feedback for learning
+      const proposalTasks = proposal.generated_tasks.tasks as GubaTask[];
+      const feedbackRecords = proposalTasks.map(task => ({
+        proposal_id: proposal.id,
+        task_id: task.id,
+        accepted: selectedTasks.has(task.id),
+        meeting_id: meetingId,
+        created_by: user.id,
+        metadata: {
+          priority: task.priority,
+          confidence: task.confidence,
+          department: task.suggested_assignee_department
+        }
+      }));
+
+      await supabase
+        .from('guba_feedback')
+        .insert(feedbackRecords);
+
       // Update proposal status
       await supabase
         .from('guba_task_proposals')
@@ -179,7 +199,7 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
 
       toast({
         title: "Tasks Created! ✅",
-        description: `${selectedTasks.size} tasks have been added to your action items`,
+        description: `${selectedTasks.size} tasks have been added to your action items. AI learning updated.`,
       });
 
       setProposal(null);
@@ -204,6 +224,54 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
       newSelected.add(taskId);
     }
     setSelectedTasks(newSelected);
+  };
+
+  const handleRejectAll = async () => {
+    if (!proposal) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Not authenticated");
+
+      // Track rejection feedback
+      const rejectedTasks = proposal.generated_tasks.tasks as GubaTask[];
+      const feedbackRecords = rejectedTasks.map(task => ({
+        proposal_id: proposal.id,
+        task_id: task.id,
+        accepted: false,
+        meeting_id: meetingId,
+        created_by: user.id,
+        metadata: {
+          priority: task.priority,
+          confidence: task.confidence,
+          department: task.suggested_assignee_department
+        }
+      }));
+
+      await supabase
+        .from('guba_feedback')
+        .insert(feedbackRecords);
+
+      // Update proposal status
+      await supabase
+        .from('guba_task_proposals')
+        .update({ status: 'rejected' })
+        .eq('id', proposal.id);
+
+      toast({
+        title: "Proposal Rejected",
+        description: "Feedback recorded to improve future suggestions",
+      });
+
+      setProposal(null);
+    } catch (error) {
+      console.error('Error rejecting proposal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to record rejection",
+        variant: "destructive",
+      });
+    }
   };
 
   const priorityColors = {
@@ -274,6 +342,14 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
             </CardDescription>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleRejectAll}
+              className="text-destructive hover:text-destructive gap-2"
+            >
+              <XCircle className="h-4 w-4" />
+              Reject All
+            </Button>
             <Button 
               variant="outline" 
               onClick={() => setProposal(null)}

@@ -1631,6 +1631,84 @@ export type Database = {
           },
         ]
       }
+      guba_feedback: {
+        Row: {
+          accepted: boolean
+          created_at: string | null
+          created_by: string
+          feedback_reason: string | null
+          id: string
+          meeting_id: string
+          metadata: Json | null
+          proposal_id: string
+          task_id: string
+        }
+        Insert: {
+          accepted: boolean
+          created_at?: string | null
+          created_by: string
+          feedback_reason?: string | null
+          id?: string
+          meeting_id: string
+          metadata?: Json | null
+          proposal_id: string
+          task_id: string
+        }
+        Update: {
+          accepted?: boolean
+          created_at?: string | null
+          created_by?: string
+          feedback_reason?: string | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json | null
+          proposal_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guba_feedback_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guba_feedback_proposal_id_fkey"
+            columns: ["proposal_id"]
+            isOneToOne: false
+            referencedRelation: "guba_task_proposals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guba_learning_metrics: {
+        Row: {
+          calculated_at: string | null
+          id: string
+          metric_data: Json
+          metric_type: string
+          period_end: string
+          period_start: string
+        }
+        Insert: {
+          calculated_at?: string | null
+          id?: string
+          metric_data?: Json
+          metric_type: string
+          period_end: string
+          period_start: string
+        }
+        Update: {
+          calculated_at?: string | null
+          id?: string
+          metric_data?: Json
+          metric_type?: string
+          period_end?: string
+          period_start?: string
+        }
+        Relationships: []
+      }
       guba_settings: {
         Row: {
           auto_assign_enabled: boolean | null
@@ -4303,6 +4381,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_guba_learning_metrics: { Args: never; Returns: undefined }
       can_access_element: {
         Args: { _element_type: string; _meeting_id: string; _user_id: string }
         Returns: boolean

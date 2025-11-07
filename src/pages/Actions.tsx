@@ -5,6 +5,7 @@ import { GubaTaskProposals } from "@/components/guba/GubaTaskProposals";
 import { GubaDashboard } from "@/components/guba/GubaDashboard";
 import { GubaSidebar } from "@/components/guba/GubaSidebar";
 import { TaskReassignmentDialog } from "@/components/guba/TaskReassignmentDialog";
+import { GubaLearningAnalytics } from "@/components/guba/GubaLearningAnalytics";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -327,8 +328,13 @@ const Actions = () => {
           </div>
         </div>
 
-        {/* Guba Analytics Dashboard */}
+        {/* Guba Learning Analytics */}
         {gubaEnabled && showAnalytics && (
+          <GubaLearningAnalytics />
+        )}
+
+        {/* Guba Analytics Dashboard */}
+        {gubaEnabled && showAnalytics && !showGubaDashboard && (
           <GubaDashboard />
         )}
 
