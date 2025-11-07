@@ -1846,6 +1846,55 @@ export type Database = {
         }
         Relationships: []
       }
+      guba_task_dependencies: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          dependency_type: string
+          depends_on_task_id: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          dependency_type?: string
+          depends_on_task_id: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          dependency_type?: string
+          depends_on_task_id?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guba_task_dependencies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guba_task_dependencies_depends_on_task_id_fkey"
+            columns: ["depends_on_task_id"]
+            isOneToOne: false
+            referencedRelation: "action_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "guba_task_dependencies_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "action_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       guba_task_proposals: {
         Row: {
           created_at: string | null
@@ -4526,6 +4575,7 @@ export type Database = {
         Args: { _element_type: string; _meeting_id: string; _user_id: string }
         Returns: boolean
       }
+      can_start_task: { Args: { p_task_id: string }; Returns: boolean }
       get_users_with_role_name: {
         Args: { _role_name: string }
         Returns: {

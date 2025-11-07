@@ -8,6 +8,8 @@ import { TaskReassignmentDialog } from "@/components/guba/TaskReassignmentDialog
 import { GubaLearningAnalytics } from "@/components/guba/GubaLearningAnalytics";
 import { BulkOperationsManager } from "@/components/guba/BulkOperationsManager";
 import { TaskTemplatesManager } from "@/components/guba/TaskTemplatesManager";
+import { TaskDependencyManager } from "@/components/guba/TaskDependencyManager";
+import { TaskDependencyGraph } from "@/components/guba/TaskDependencyGraph";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3, Sparkles, Target, AlertOctagon } from "lucide-react";
+import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3, Sparkles, Target, AlertOctagon, Network } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -63,6 +65,8 @@ const Actions = () => {
   const [showGubaSidebar, setShowGubaSidebar] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showDependencyGraph, setShowDependencyGraph] = useState(false);
+  const [dependencyTaskId, setDependencyTaskId] = useState<string | null>(null);
   const [reassignTask, setReassignTask] = useState<any>(null);
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
@@ -249,6 +253,10 @@ const Actions = () => {
                     <Edit className="h-4 w-4 mr-2" />
                     Reassign
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setDependencyTaskId(action.id)}>
+                    <Network className="h-4 w-4 mr-2" />
+                    Manage Dependencies
+                  </DropdownMenuItem>
                   <DropdownMenuItem>
                     <CheckCircle2 className="h-4 w-4 mr-2" />
                     Mark Complete
@@ -333,6 +341,14 @@ const Actions = () => {
                   </div>
                 </>
               )}
+              <Button 
+                variant="outline" 
+                className="gap-2 hover-scale"
+                onClick={() => setShowDependencyGraph(true)}
+              >
+                <Network className="h-4 w-4" />
+                Dependency Graph
+              </Button>
               <Button variant="outline" className="gap-2 hover-scale">
                 <BarChart3 className="h-4 w-4" />
                 Analytics
@@ -712,6 +728,21 @@ const Actions = () => {
               setSelectedItems(new Set());
               setBulkOperation(null);
             }}
+          />
+        )}
+
+        {/* Task Dependency Manager */}
+        {dependencyTaskId && (
+          <TaskDependencyManager
+            taskId={dependencyTaskId}
+            onClose={() => setDependencyTaskId(null)}
+          />
+        )}
+
+        {/* Task Dependency Graph */}
+        {showDependencyGraph && (
+          <TaskDependencyGraph
+            onClose={() => setShowDependencyGraph(false)}
           />
         )}
       </div>
