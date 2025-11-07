@@ -133,7 +133,7 @@ export default function Meetings() {
     return enrichedMeetings;
   }, []);
 
-  const { data: meetings = [], loading, refetch } = useOptimizedQuery<Meeting[]>(
+  const { data: meetingsData, loading, refetch } = useOptimizedQuery<Meeting[]>(
     'meetings_list',
     fetchMeetingsData,
     {
@@ -141,6 +141,9 @@ export default function Meetings() {
       cacheDuration: 2 * 60 * 1000,
     }
   );
+  
+  // Ensure meetings is always an array (handle null from useOptimizedQuery)
+  const meetings = meetingsData ?? [];
 
   // Memoized stats calculation
   const stats = React.useMemo(() => {

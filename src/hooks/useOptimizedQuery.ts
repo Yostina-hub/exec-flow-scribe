@@ -17,7 +17,7 @@ export function useOptimizedQuery<T>(
     refetchOnMount?: boolean;
   }
 ) {
-  const [data, setData] = useState<T | null>(null);
+  const [data, setData] = useState<T | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
