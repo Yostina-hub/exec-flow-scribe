@@ -53,7 +53,7 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
       
       // Pre-select all tasks by default
       if (data?.generated_tasks) {
-        const tasksData = data.generated_tasks as { tasks: GubaTask[] };
+        const tasksData = data.generated_tasks as unknown as { tasks: GubaTask[] };
         if (tasksData.tasks) {
           setSelectedTasks(new Set(tasksData.tasks.map((t: GubaTask) => t.id)));
         }
@@ -124,7 +124,7 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const tasksData = proposal.generated_tasks as { tasks: GubaTask[] };
+      const tasksData = proposal.generated_tasks as unknown as { tasks: GubaTask[] };
       const tasks: GubaTask[] = tasksData.tasks.filter((t: GubaTask) => 
         selectedTasks.has(t.id)
       );
@@ -257,7 +257,7 @@ export const GubaTaskProposals = ({ meetingId, onTasksAccepted }: GubaTaskPropos
     );
   }
 
-  const tasksData = proposal.generated_tasks as { tasks: GubaTask[] };
+  const tasksData = proposal.generated_tasks as unknown as { tasks: GubaTask[] };
   const tasks: GubaTask[] = tasksData?.tasks || [];
 
   return (

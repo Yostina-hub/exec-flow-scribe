@@ -5,13 +5,14 @@ import { GubaTaskProposals } from "@/components/guba/GubaTaskProposals";
 import { GubaDashboard } from "@/components/guba/GubaDashboard";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3 } from "lucide-react";
+import { Search, Filter, Loader2, Calendar, Users, Clock, AlertCircle, CheckCircle2, ArrowUpDown, MoreHorizontal, Trash2, Edit, ListTodo, LayoutGrid, BarChart3, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -54,6 +55,8 @@ const Actions = () => {
   const [sortBy, setSortBy] = useState<"due_date" | "priority" | "status">("due_date");
   const [gubaEnabled, setGubaEnabled] = useState(false);
   const [showGubaDashboard, setShowGubaDashboard] = useState(false);
+  const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
+  const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
 
   useEffect(() => {
     const checkGubaStatus = async () => {
@@ -67,6 +70,20 @@ const Actions = () => {
         .maybeSingle();
       
       setGubaEnabled(data?.enabled || false);
+
+      // Fetch recent meetings
+      if (data?.enabled) {
+        const { data: meetingsData } = await supabase
+          .from('meetings')
+          .select('id, title, start_time')
+          .order('start_time', { ascending: false })
+          .limit(10);
+        
+        if (meetingsData && meetingsData.length > 0) {
+          setRecentMeetings(meetingsData);
+          setSelectedMeetingForTasks(meetingsData[0].id);
+        }
+      }
     };
     checkGubaStatus();
   }, []);
@@ -294,6 +311,11 @@ const Actions = () => {
           </div>
         </div>
 
+        {/* Guba Dashboard */}
+        {gubaEnabled && showGubaDashboard && (
+          <GubaDashboard />
+        )}
+
         {/* Task Export Manager */}
         <TaskExportManager actionItems={actions} />
 
@@ -456,6 +478,45 @@ const Actions = () => {
             </div>
           </div>
         </Card>
+
+        {/* Guba Task Proposals - Show for all users when enabled */}
+        {gubaEnabled && selectedMeetingForTasks && (
+          <Card className="border-2 border-purple-500/20 bg-gradient-to-r from-purple-50/50 to-pink-50/50 dark:from-purple-950/20 dark:to-pink-950/20">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-yellow-500" />
+                    Guba AI Task Generation
+                  </CardTitle>
+                  <CardDescription>
+                    Generate actionable tasks from meeting minutes
+                  </CardDescription>
+                </div>
+                {recentMeetings.length > 0 && (
+                  <Select value={selectedMeetingForTasks} onValueChange={setSelectedMeetingForTasks}>
+                    <SelectTrigger className="w-[300px]">
+                      <SelectValue placeholder="Select meeting" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {recentMeetings.map((meeting) => (
+                        <SelectItem key={meeting.id} value={meeting.id}>
+                          {meeting.title} - {format(new Date(meeting.start_time), "MMM d, yyyy")}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <GubaTaskProposals 
+                meetingId={selectedMeetingForTasks} 
+                onTasksAccepted={() => fetchActions()}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Tabs */}
         <Tabs defaultValue="all" className="w-full">
