@@ -161,3 +161,6 @@ verify_jwt = false
 
 [functions.send-due-date-reminders]
 verify_jwt = false
+
+[functions.analyze-emotional-tone]
+verify_jwt = true

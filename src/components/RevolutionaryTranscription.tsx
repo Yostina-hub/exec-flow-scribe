@@ -7,10 +7,13 @@ import { Input } from '@/components/ui/input';
 import { 
   Search, Star, Download, Filter, User, Clock, Sparkles, 
   Activity, Brain, Zap, TrendingUp, Heart, AlertCircle,
-  Volume2, Mic, Award, Target
+  Volume2, Mic, Award, Target, Smile, Frown, Meh, ThumbsUp,
+  ThumbsDown, AlertTriangle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface Transcription {
   id: string;
@@ -21,11 +24,23 @@ interface Transcription {
   detected_language?: string;
 }
 
+interface EmotionalAnalysis {
+  id: string;
+  transcription_id: string;
+  primary_emotion: string;
+  emotion_score: number;
+  secondary_emotions: string[];
+  sentiment: string;
+  energy_level: string;
+  confidence: number;
+}
+
 interface RevolutionaryTranscriptionProps {
   transcriptions: Transcription[];
   onHighlight?: (transcriptionId: string, content: string) => void;
   isRecording?: boolean;
   audioLevel?: number;
+  meetingId: string;
 }
 
 // Particle animation component
@@ -106,22 +121,150 @@ const isKeyMoment = (text: string) => {
   return text.match(keywords);
 };
 
+// Emotion to icon/color mapping
+const EMOTION_CONFIG: Record<string, { icon: any; color: string; bgGradient: string }> = {
+  joy: { icon: Smile, color: 'text-yellow-600', bgGradient: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30' },
+  happiness: { icon: Smile, color: 'text-yellow-600', bgGradient: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30' },
+  excitement: { icon: Sparkles, color: 'text-orange-600', bgGradient: 'from-orange-500/20 to-orange-500/5 border-orange-500/30' },
+  sadness: { icon: Frown, color: 'text-blue-600', bgGradient: 'from-blue-500/20 to-blue-500/5 border-blue-500/30' },
+  anger: { icon: AlertTriangle, color: 'text-red-600', bgGradient: 'from-red-500/20 to-red-500/5 border-red-500/30' },
+  frustration: { icon: AlertCircle, color: 'text-orange-600', bgGradient: 'from-orange-500/20 to-orange-500/5 border-orange-500/30' },
+  fear: { icon: AlertCircle, color: 'text-purple-600', bgGradient: 'from-purple-500/20 to-purple-500/5 border-purple-500/30' },
+  anxiety: { icon: Heart, color: 'text-purple-600', bgGradient: 'from-purple-500/20 to-purple-500/5 border-purple-500/30' },
+  surprise: { icon: Zap, color: 'text-cyan-600', bgGradient: 'from-cyan-500/20 to-cyan-500/5 border-cyan-500/30' },
+  confidence: { icon: ThumbsUp, color: 'text-green-600', bgGradient: 'from-green-500/20 to-green-500/5 border-green-500/30' },
+  uncertainty: { icon: ThumbsDown, color: 'text-gray-600', bgGradient: 'from-gray-500/20 to-gray-500/5 border-gray-500/30' },
+  neutral: { icon: Meh, color: 'text-gray-600', bgGradient: 'from-gray-500/20 to-gray-500/5 border-gray-500/30' },
+};
+
+const getEmotionConfig = (emotion: string) => {
+  return EMOTION_CONFIG[emotion.toLowerCase()] || EMOTION_CONFIG.neutral;
+};
+
 export const RevolutionaryTranscription = ({
   transcriptions,
   onHighlight,
   isRecording = false,
-  audioLevel = 0
+  audioLevel = 0,
+  meetingId
 }: RevolutionaryTranscriptionProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([]);
+  const [emotionalAnalyses, setEmotionalAnalyses] = useState<Map<string, EmotionalAnalysis>>(new Map());
+  const [analyzingIds, setAnalyzingIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Extract unique speakers
   const speakers = useMemo(() => {
     return [...new Set(transcriptions.map(t => t.speaker_name || 'Unknown'))];
   }, [transcriptions]);
+
+  // Fetch existing emotional analyses
+  useEffect(() => {
+    const fetchEmotionalAnalyses = async () => {
+      const { data, error } = await supabase
+        .from('emotional_analysis')
+        .select('*')
+        .eq('meeting_id', meetingId);
+
+      if (!error && data) {
+        const analysesMap = new Map(
+          data.map(a => [
+            a.transcription_id, 
+            {
+              ...a,
+              secondary_emotions: Array.isArray(a.secondary_emotions) 
+                ? a.secondary_emotions 
+                : []
+            } as EmotionalAnalysis
+          ])
+        );
+        setEmotionalAnalyses(analysesMap);
+      }
+    };
+
+    if (meetingId) {
+      fetchEmotionalAnalyses();
+    }
+
+    // Subscribe to real-time updates
+    const channel = supabase
+      .channel('emotional-analysis')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'emotional_analysis',
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        (payload) => {
+          const newAnalysis = payload.new as any;
+          const formattedAnalysis: EmotionalAnalysis = {
+            ...newAnalysis,
+            secondary_emotions: Array.isArray(newAnalysis.secondary_emotions) 
+              ? newAnalysis.secondary_emotions 
+              : []
+          };
+          setEmotionalAnalyses(prev => new Map(prev.set(formattedAnalysis.transcription_id, formattedAnalysis)));
+          setAnalyzingIds(prev => {
+            const next = new Set(prev);
+            next.delete(formattedAnalysis.transcription_id);
+            return next;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [meetingId]);
+
+  // Auto-analyze new transcriptions
+  useEffect(() => {
+    const analyzeNewTranscriptions = async () => {
+      for (const transcript of transcriptions) {
+        if (!emotionalAnalyses.has(transcript.id) && !analyzingIds.has(transcript.id)) {
+          setAnalyzingIds(prev => new Set(prev.add(transcript.id)));
+          
+          try {
+            const { error } = await supabase.functions.invoke('analyze-emotional-tone', {
+              body: {
+                transcriptionId: transcript.id,
+                meetingId: meetingId,
+                content: transcript.content,
+                speakerName: transcript.speaker_name,
+              }
+            });
+
+            if (error) {
+              console.error('Failed to analyze emotional tone:', error);
+              setAnalyzingIds(prev => {
+                const next = new Set(prev);
+                next.delete(transcript.id);
+                return next;
+              });
+            }
+          } catch (error) {
+            console.error('Error analyzing emotional tone:', error);
+            setAnalyzingIds(prev => {
+              const next = new Set(prev);
+              next.delete(transcript.id);
+              return next;
+            });
+          }
+        }
+      }
+    };
+
+    if (transcriptions.length > 0 && isRecording) {
+      analyzeNewTranscriptions();
+    }
+  }, [transcriptions, emotionalAnalyses, analyzingIds, isRecording, meetingId]);
 
   // Generate particles on new transcription
   useEffect(() => {
@@ -393,6 +536,8 @@ export const RevolutionaryTranscription = ({
                 {filteredTranscriptions.map((transcript, index) => {
                   const sentiment = getSentiment(transcript.content);
                   const isKey = isKeyMoment(transcript.content);
+                  const emotionalAnalysis = emotionalAnalyses.get(transcript.id);
+                  const isAnalyzing = analyzingIds.has(transcript.id);
                   
                   return (
                     <motion.div
@@ -412,11 +557,32 @@ export const RevolutionaryTranscription = ({
                         className={cn(
                           "relative p-4 rounded-xl border-2 backdrop-blur-sm transition-all duration-300",
                           "hover:shadow-xl hover:scale-[1.02]",
-                          `bg-gradient-to-r ${getSpeakerColor(transcript.speaker_name || 'Unknown')}/10`,
+                          emotionalAnalysis 
+                            ? `bg-gradient-to-r ${getEmotionConfig(emotionalAnalysis.primary_emotion).bgGradient}`
+                            : `bg-gradient-to-r ${getSpeakerColor(transcript.speaker_name || 'Unknown')}/10`,
                           highlightedIds.has(transcript.id) && "ring-4 ring-yellow-500/50 shadow-2xl",
                           isKey && "border-purple-500/50 shadow-lg shadow-purple-500/20"
                         )}
                       >
+                        {/* Emotional Pulse Effect */}
+                        {emotionalAnalysis && (
+                          <motion.div
+                            className="absolute inset-0 rounded-xl pointer-events-none"
+                            animate={{
+                              boxShadow: [
+                                '0 0 0 0 rgba(59, 130, 246, 0)',
+                                `0 0 0 ${emotionalAnalysis.emotion_score * 20}px rgba(59, 130, 246, 0.1)`,
+                                '0 0 0 0 rgba(59, 130, 246, 0)',
+                              ]
+                            }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                          />
+                        )}
+
                         {/* Decorative Corner */}
                         {isKey && (
                           <motion.div
@@ -455,13 +621,63 @@ export const RevolutionaryTranscription = ({
                               )}
                             </div>
 
-                            {/* AI Insights */}
+                            {/* Emotional Analysis Display */}
                             <div className="flex gap-2 flex-wrap">
-                              <AIInsight 
-                                text={sentiment.type} 
-                                icon={sentiment.icon} 
-                                color={sentiment.color}
-                              />
+                              {isAnalyzing ? (
+                                <motion.div
+                                  animate={{ rotate: 360 }}
+                                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                  className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border bg-blue-500/10 text-blue-700 border-blue-500/20"
+                                >
+                                  <Brain className="h-3 w-3" />
+                                  Analyzing...
+                                </motion.div>
+                              ) : emotionalAnalysis ? (
+                                <>
+                                  <motion.div
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    className={cn(
+                                      "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium backdrop-blur-sm border",
+                                      getEmotionConfig(emotionalAnalysis.primary_emotion).bgGradient,
+                                      getEmotionConfig(emotionalAnalysis.primary_emotion).color
+                                    )}
+                                  >
+                                    {(() => {
+                                      const EmotionIcon = getEmotionConfig(emotionalAnalysis.primary_emotion).icon;
+                                      return <EmotionIcon className="h-3 w-3" />;
+                                    })()}
+                                    {emotionalAnalysis.primary_emotion}
+                                    <span className="opacity-70">
+                                      {Math.round(emotionalAnalysis.emotion_score * 100)}%
+                                    </span>
+                                  </motion.div>
+                                  
+                                  <Badge 
+                                    variant="outline" 
+                                    className={cn(
+                                      "text-xs",
+                                      emotionalAnalysis.sentiment === 'positive' && "bg-green-500/10 text-green-700 border-green-500/20",
+                                      emotionalAnalysis.sentiment === 'negative' && "bg-red-500/10 text-red-700 border-red-500/20",
+                                      emotionalAnalysis.sentiment === 'neutral' && "bg-gray-500/10 text-gray-700 border-gray-500/20"
+                                    )}
+                                  >
+                                    {emotionalAnalysis.sentiment}
+                                  </Badge>
+                                  
+                                  <Badge variant="outline" className="text-xs">
+                                    <Activity className="h-3 w-3 mr-1" />
+                                    {emotionalAnalysis.energy_level} energy
+                                  </Badge>
+                                </>
+                              ) : (
+                                <AIInsight 
+                                  text={sentiment.type} 
+                                  icon={sentiment.icon} 
+                                  color={sentiment.color}
+                                />
+                              )}
+                              
                               {isKey && (
                                 <AIInsight 
                                   text="Key Moment" 

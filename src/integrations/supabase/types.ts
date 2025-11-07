@@ -1315,6 +1315,66 @@ export type Database = {
           },
         ]
       }
+      emotional_analysis: {
+        Row: {
+          analyzed_at: string | null
+          confidence: number | null
+          created_at: string | null
+          emotion_score: number
+          energy_level: string | null
+          id: string
+          meeting_id: string
+          primary_emotion: string
+          secondary_emotions: Json | null
+          sentiment: string | null
+          speaker_name: string | null
+          transcription_id: string
+        }
+        Insert: {
+          analyzed_at?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          emotion_score: number
+          energy_level?: string | null
+          id?: string
+          meeting_id: string
+          primary_emotion: string
+          secondary_emotions?: Json | null
+          sentiment?: string | null
+          speaker_name?: string | null
+          transcription_id: string
+        }
+        Update: {
+          analyzed_at?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          emotion_score?: number
+          energy_level?: string | null
+          id?: string
+          meeting_id?: string
+          primary_emotion?: string
+          secondary_emotions?: Json | null
+          sentiment?: string | null
+          speaker_name?: string | null
+          transcription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emotional_analysis_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emotional_analysis_transcription_id_fkey"
+            columns: ["transcription_id"]
+            isOneToOne: false
+            referencedRelation: "transcriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escalation_config: {
         Row: {
           created_at: string | null
