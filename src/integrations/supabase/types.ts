@@ -4288,6 +4288,51 @@ export type Database = {
           },
         ]
       }
+      speaker_emotional_profiles: {
+        Row: {
+          average_energy: number | null
+          average_sentiment: number | null
+          created_at: string | null
+          dominant_emotion: string | null
+          emotion_distribution: Json | null
+          emotional_stability: number | null
+          id: string
+          last_analyzed_meeting_id: string | null
+          meeting_count: number | null
+          sentiment_trend: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_energy?: number | null
+          average_sentiment?: number | null
+          created_at?: string | null
+          dominant_emotion?: string | null
+          emotion_distribution?: Json | null
+          emotional_stability?: number | null
+          id?: string
+          last_analyzed_meeting_id?: string | null
+          meeting_count?: number | null
+          sentiment_trend?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_energy?: number | null
+          average_sentiment?: number | null
+          created_at?: string | null
+          dominant_emotion?: string | null
+          emotion_distribution?: Json | null
+          emotional_stability?: number | null
+          id?: string
+          last_analyzed_meeting_id?: string | null
+          meeting_count?: number | null
+          sentiment_trend?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       speaker_queue: {
         Row: {
           completed_at: string | null

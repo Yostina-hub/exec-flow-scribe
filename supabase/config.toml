@@ -164,3 +164,6 @@ verify_jwt = false
 
 [functions.analyze-emotional-tone]
 verify_jwt = true
+
+[functions.update-speaker-profiles]
+verify_jwt = true
