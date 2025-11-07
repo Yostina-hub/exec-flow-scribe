@@ -1789,6 +1789,42 @@ export type Database = {
           },
         ]
       }
+      guba_task_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          is_shared: boolean | null
+          name: string
+          template_data: Json
+          updated_at: string
+          use_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          is_shared?: boolean | null
+          name: string
+          template_data: Json
+          updated_at?: string
+          use_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_shared?: boolean | null
+          name?: string
+          template_data?: Json
+          updated_at?: string
+          use_count?: number | null
+        }
+        Relationships: []
+      }
       guest_access_requests: {
         Row: {
           created_at: string

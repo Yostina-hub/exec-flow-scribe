@@ -7,6 +7,7 @@ import { GubaSidebar } from "@/components/guba/GubaSidebar";
 import { TaskReassignmentDialog } from "@/components/guba/TaskReassignmentDialog";
 import { GubaLearningAnalytics } from "@/components/guba/GubaLearningAnalytics";
 import { BulkOperationsManager } from "@/components/guba/BulkOperationsManager";
+import { TaskTemplatesManager } from "@/components/guba/TaskTemplatesManager";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -61,6 +62,7 @@ const Actions = () => {
   const [showGubaDashboard, setShowGubaDashboard] = useState(false);
   const [showGubaSidebar, setShowGubaSidebar] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [reassignTask, setReassignTask] = useState<any>(null);
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [selectedMeetingForTasks, setSelectedMeetingForTasks] = useState<string>("");
@@ -321,6 +323,10 @@ const Actions = () => {
                     <Switch checked={showGubaDashboard} onCheckedChange={setShowGubaDashboard} />
                     <Label className="cursor-pointer">Tasks Dashboard</Label>
                   </div>
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/30 dark:to-orange-950/30">
+                    <Switch checked={showTemplates} onCheckedChange={setShowTemplates} />
+                    <Label className="cursor-pointer">Templates</Label>
+                  </div>
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-950/30 dark:to-purple-950/30">
                     <Switch checked={showGubaSidebar} onCheckedChange={setShowGubaSidebar} />
                     <Label className="cursor-pointer">AI Panel</Label>
@@ -336,18 +342,23 @@ const Actions = () => {
           </div>
         </div>
 
+        {/* Task Templates Manager */}
+        {gubaEnabled && showTemplates && (
+          <TaskTemplatesManager />
+        )}
+
         {/* Guba Learning Analytics */}
-        {gubaEnabled && showAnalytics && (
+        {gubaEnabled && showAnalytics && !showTemplates && (
           <GubaLearningAnalytics />
         )}
 
         {/* Guba Analytics Dashboard */}
-        {gubaEnabled && showAnalytics && !showGubaDashboard && (
+        {gubaEnabled && showAnalytics && !showGubaDashboard && !showTemplates && (
           <GubaDashboard />
         )}
 
         {/* Guba Task Dashboard */}
-        {gubaEnabled && showGubaDashboard && (
+        {gubaEnabled && showGubaDashboard && !showTemplates && (
           <div className="space-y-4">
             {recentMeetings.length > 0 && (
               <Card>
@@ -609,7 +620,8 @@ const Actions = () => {
           </Card>
         )}
 
-        {/* Tabs */}
+        {/* Tabs - Only show when not in Templates mode */}
+        {!showTemplates && (
         <Tabs defaultValue="all" className="w-full">
           <TabsList>
             <TabsTrigger value="all">All ({actions.length})</TabsTrigger>
@@ -672,6 +684,7 @@ const Actions = () => {
             )}
           </TabsContent>
         </Tabs>
+        )}
         </div>
 
         {/* Guba Sidebar */}
