@@ -29,7 +29,7 @@ interface SemanticSearchPanelProps {
 
 export function SemanticSearchPanel({ meetingId, onResultClick }: SemanticSearchPanelProps) {
   const [query, setQuery] = useState('');
-  const [emotionFilter, setEmotionFilter] = useState<string>('');
+  const [emotionFilter, setEmotionFilter] = useState<string>('all');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const { toast } = useToast();
@@ -51,7 +51,7 @@ export function SemanticSearchPanel({ meetingId, onResultClick }: SemanticSearch
         body: {
           query: query.trim(),
           meetingId: meetingId,
-          emotionFilter: emotionFilter || undefined,
+          emotionFilter: emotionFilter === 'all' ? undefined : emotionFilter,
           limit: 15,
         },
       });
@@ -121,7 +121,7 @@ export function SemanticSearchPanel({ meetingId, onResultClick }: SemanticSearch
               <SelectValue placeholder="Filter by emotion" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All emotions</SelectItem>
+              <SelectItem value="all">All emotions</SelectItem>
               <SelectItem value="joy">Joy</SelectItem>
               <SelectItem value="confidence">Confidence</SelectItem>
               <SelectItem value="anxiety">Anxiety</SelectItem>
