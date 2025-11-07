@@ -107,7 +107,7 @@ export default function Meetings() {
   const [currentPageUpcoming, setCurrentPageUpcoming] = React.useState(1);
   const [currentPageCompleted, setCurrentPageCompleted] = React.useState(1);
   const [currentPageAll, setCurrentPageAll] = React.useState(1);
-  const [activeTab, setActiveTab] = React.useState<'upcoming' | 'completed' | 'all'>('all');
+  const [activeTab, setActiveTab] = React.useState<'upcoming' | 'completed' | 'all'>('upcoming');
   const [totalCounts, setTotalCounts] = React.useState({ upcoming: 0, completed: 0, all: 0 });
   const [meetings, setMeetings] = React.useState<Meeting[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -442,7 +442,7 @@ export default function Meetings() {
         </div>
 
         {/* Enhanced Meetings Tabs */}
-        <Tabs defaultValue="all" className="w-full" onValueChange={handleTabChange}>
+        <Tabs defaultValue="upcoming" className="w-full" onValueChange={handleTabChange}>
           <TabsList className={`grid w-full grid-cols-3 h-14 backdrop-blur-sm border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : 'bg-muted/50'}`}>
             <TabsTrigger 
               value="upcoming" 
