@@ -75,7 +75,6 @@ const MultiChannelDistribution = lazy(() => import("@/components/MultiChannelDis
 const IntegrationManager = lazy(() => import("@/components/IntegrationManager").then(m => ({ default: m.IntegrationManager })));
 const TranscriptionDocumentExport = lazy(() => import("@/components/TranscriptionDocumentExport").then(m => ({ default: m.TranscriptionDocumentExport })));
 const MeetingSignaturesPanel = lazy(() => import("@/components/MeetingSignaturesPanel").then(m => ({ default: m.MeetingSignaturesPanel })));
-const LazyTabContent = lazy(() => import("@/components/LazyTabContent").then(m => ({ default: m.LazyTabContent })));
 const MeetingAudioPlayback = lazy(() => import("@/components/MeetingAudioPlayback").then(m => ({ default: m.MeetingAudioPlayback })));
 const CreateSignatureRequestDialog = lazy(() => import("@/components/CreateSignatureRequestDialog").then(m => ({ default: m.CreateSignatureRequestDialog })));
 const ShareMeetingDialog = lazy(() => import("@/components/ShareMeetingDialog").then(m => ({ default: m.ShareMeetingDialog })));
@@ -103,6 +102,9 @@ const GuestMeetingView = lazy(() => import("@/components/GuestMeetingView").then
 const PDFGenerationPanel = lazy(() => import("@/components/PDFGenerationPanel").then(m => ({ default: m.PDFGenerationPanel })));
 const SystemTestPanel = lazy(() => import("@/components/SystemTestPanel").then(m => ({ default: m.SystemTestPanel })));
 const TranscriptionProviderToggle = lazy(() => import("@/components/TranscriptionProviderToggle").then(m => ({ default: m.TranscriptionProviderToggle })));
+
+// Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
+import { LazyTabContent } from "@/components/LazyTabContent";
 
 // Import hooks normally (cannot be lazy loaded)
 import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
