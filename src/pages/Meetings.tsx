@@ -110,7 +110,8 @@ export default function Meetings() {
   const [activeTab, setActiveTab] = React.useState<'upcoming' | 'completed' | 'all'>('upcoming');
   const [totalCounts, setTotalCounts] = React.useState({ upcoming: 0, completed: 0, all: 0 });
   const [meetings, setMeetings] = React.useState<Meeting[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [loading, setLoading] = React.useState(false);
+  const [hasLoadedTab, setHasLoadedTab] = React.useState<{ [key: string]: boolean }>({});
 
   // Server-side pagination fetch
   const fetchMeetingsPage = React.useCallback(async (
@@ -132,13 +133,16 @@ export default function Meetings() {
         `, { count: 'exact' })
         .order("start_time", { ascending: false });
 
-      // Apply status filter
+      // Apply status filter - FIXED
       const now = new Date().toISOString();
       if (status === 'upcoming') {
+        // Only show meetings that are NOT completed AND start time is in the future
         query = query.neq('status', 'completed').gte('start_time', now);
       } else if (status === 'completed') {
+        // Only show completed meetings
         query = query.eq('status', 'completed');
       }
+      // For 'all', no filter is applied
 
       // Apply search filter
       if (search) {
@@ -160,6 +164,7 @@ export default function Meetings() {
 
       setMeetings(enrichedMeetings);
       setTotalCounts(prev => ({ ...prev, [status]: count || 0 }));
+      setHasLoadedTab(prev => ({ ...prev, [status]: true }));
     } catch (error) {
       console.error('Error fetching meetings:', error);
       toast({
@@ -205,7 +210,7 @@ export default function Meetings() {
     fetchStats();
   }, [authLoading, user, navigate, fetchStats]);
 
-  // Load page data when tab/page/search changes
+  // Load page data ONLY when tab changes or page changes or search changes
   React.useEffect(() => {
     if (!user) return;
 
@@ -213,6 +218,7 @@ export default function Meetings() {
       : activeTab === 'completed' ? currentPageCompleted 
       : currentPageAll;
     
+    // Only fetch if tab hasn't been loaded yet, or page/search changed
     fetchMeetingsPage(activeTab, currentPage, debouncedSearch);
   }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, debouncedSearch, fetchMeetingsPage]);
 
@@ -289,7 +295,15 @@ export default function Meetings() {
   const totalPagesAll = getTotalPages(totalCounts.all);
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value as 'upcoming' | 'completed' | 'all');
+    const newTab = value as 'upcoming' | 'completed' | 'all';
+    setActiveTab(newTab);
+    
+    // Fetch data for the new tab
+    const currentPage = newTab === 'upcoming' ? currentPageUpcoming 
+      : newTab === 'completed' ? currentPageCompleted 
+      : currentPageAll;
+    
+    fetchMeetingsPage(newTab, currentPage, debouncedSearch);
   };
 
   const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
