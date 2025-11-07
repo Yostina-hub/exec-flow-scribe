@@ -1108,10 +1108,6 @@ const MeetingDetail = () => {
                   <FileSignature className="h-4 w-4" />
                   Audio to Minutes
                 </TabsTrigger>
-                <TabsTrigger value="chat" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <MessageSquare className="h-4 w-4" />
-                  Chat
-                </TabsTrigger>
                 <TabsTrigger value="emotional-analytics" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
                   <Heart className="h-4 w-4" />
                   Emotional Analytics
@@ -1440,12 +1436,6 @@ const MeetingDetail = () => {
                     </div>
                   </ProtectedElement>
                 </LazyTabContent>
-              </TabsContent>
-
-
-
-              <TabsContent value="chat" className="space-y-4">
-                <MeetingChatPanel meetingId={meetingId} />
               </TabsContent>
 
               <TabsContent value="signatures" className="space-y-4">
