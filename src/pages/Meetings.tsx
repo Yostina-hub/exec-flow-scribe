@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import {
   Pagination,
@@ -478,7 +479,7 @@ export default function Meetings() {
           </TabsList>
 
           <TabsContent value="upcoming" className="mt-6">
-            {loading ? (
+            {loading && !hasLoadedTab["upcoming"] ? (
               <div className="flex items-center justify-center py-16 gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="text-muted-foreground">Loading meetings...</span>
@@ -526,7 +527,7 @@ export default function Meetings() {
           </TabsContent>
 
           <TabsContent value="completed" className="mt-6">
-            {loading ? (
+            {loading && !hasLoadedTab["completed"] ? (
               <div className="flex items-center justify-center py-16 gap-3">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 <span className="text-muted-foreground">Loading meetings...</span>
@@ -571,10 +572,22 @@ export default function Meetings() {
           </TabsContent>
 
           <TabsContent value="all" className="mt-6">
-            {loading ? (
-              <div className="flex items-center justify-center py-16 gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading meetings...</span>
+            {loading && !hasLoadedTab["all"] ? (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <Card key={i} className={`border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : ''}`}>
+                    <CardContent className="p-6 space-y-4">
+                      <Skeleton className="h-5 w-1/2" />
+                      <Skeleton className="h-4 w-1/3" />
+                      <div className="grid grid-cols-3 gap-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-full" />
+                      </div>
+                      <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             ) : formattedMeetings.length === 0 ? (
               <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
