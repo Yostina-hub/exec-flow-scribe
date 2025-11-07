@@ -23,8 +23,6 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
-import { localStorageCache } from "@/utils/localStorage";
 
 // Lazy load dialogs
 const CreateMeetingDialog = React.lazy(() => 
@@ -127,7 +125,7 @@ export default function Meetings() {
       let query = supabase
         .from("meetings")
         .select(`
-          *,
+          id, title, start_time, end_time, location, status, created_at, meeting_type, video_conference_url, created_by,
           meeting_attendees(count),
           agenda_items(count)
         `, { count: 'exact' })
@@ -297,13 +295,11 @@ export default function Meetings() {
   const handleTabChange = (value: string) => {
     const newTab = value as 'upcoming' | 'completed' | 'all';
     setActiveTab(newTab);
-    
-    // Fetch data for the new tab
-    const currentPage = newTab === 'upcoming' ? currentPageUpcoming 
-      : newTab === 'completed' ? currentPageCompleted 
-      : currentPageAll;
-    
-    fetchMeetingsPage(newTab, currentPage, debouncedSearch);
+
+    // Reset pagination when switching tabs
+    if (newTab === 'upcoming') setCurrentPageUpcoming(1);
+    else if (newTab === 'completed') setCurrentPageCompleted(1);
+    else setCurrentPageAll(1);
   };
 
   const renderPagination = (currentPage: number, totalPages: number, onPageChange: (page: number) => void) => {
@@ -357,12 +353,12 @@ export default function Meetings() {
     );
   };
 
-  if (authLoading || loading) {
+  if (authLoading) {
     return (
       <Layout>
         <div className="flex items-center justify-center min-h-[60vh] gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="text-muted-foreground">Loading meetings...</span>
+          <span className="text-muted-foreground">Loading...</span>
         </div>
       </Layout>
     );
@@ -456,7 +452,7 @@ export default function Meetings() {
         </div>
 
         {/* Enhanced Meetings Tabs */}
-        <Tabs defaultValue="upcoming" className="w-full" onValueChange={handleTabChange}>
+        <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
           <TabsList className={`grid w-full grid-cols-3 h-14 backdrop-blur-sm border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : 'bg-muted/50'}`}>
             <TabsTrigger 
               value="upcoming" 
