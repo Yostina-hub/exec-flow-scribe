@@ -321,6 +321,29 @@ const Actions = () => {
               <p className="text-muted-foreground text-lg">Track and manage follow-ups and deliverables</p>
             </div>
             <div className="flex gap-3 items-center">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30">
+                <Switch 
+                  checked={gubaEnabled} 
+                  onCheckedChange={async (checked) => {
+                    setGubaEnabled(checked);
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (user) {
+                      await supabase.from('guba_settings').upsert({
+                        user_id: user.id,
+                        enabled: checked,
+                        auto_generate_on_minutes: true,
+                        auto_assign_enabled: true,
+                        preferred_language: 'en'
+                      });
+                      toast({
+                        title: checked ? "Guba AI Enabled" : "Guba AI Disabled",
+                        description: checked ? "AI task features are now active" : "AI task features are now disabled"
+                      });
+                    }
+                  }} 
+                />
+                <Label className="cursor-pointer font-semibold">Guba AI</Label>
+              </div>
               {gubaEnabled && (
                 <>
                   <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30">
