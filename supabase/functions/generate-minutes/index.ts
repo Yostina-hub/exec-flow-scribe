@@ -502,7 +502,7 @@ ${prompt}`
               }],
               generationConfig: {
                 temperature: 0.3,
-                maxOutputTokens: 4096,
+                maxOutputTokens: 8192,
               }
             }),
           }
@@ -582,7 +582,7 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
                 },
                 { role: "user", content: prompt },
               ],
-              max_tokens: 5000,
+              max_tokens: 10000,
               temperature: 0.3,
             }),
           }
@@ -666,7 +666,7 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
                 },
                 { role: "user", content: prompt },
               ],
-              max_completion_tokens: 5000, // Increased for comprehensive minutes with all details
+              max_completion_tokens: 10000, // Increased for comprehensive minutes with all details
             }),
           }
         );
