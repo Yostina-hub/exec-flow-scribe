@@ -41,65 +41,72 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
-import { LiveTranscription } from "@/components/LiveTranscription";
-import { BrowserSpeechRecognition } from "@/components/BrowserSpeechRecognition";
-import { LiveAudioRecorder } from "@/components/LiveAudioRecorder";
-import { VirtualMeetingRoom } from "@/components/VirtualMeetingRoom";
-import { AudioToMinutesWorkflow } from "@/components/AudioToMinutesWorkflow";
-import { JitsiMeetEmbed } from "@/components/JitsiMeetEmbed";
-import { GenerateMinutesDialog } from "@/components/GenerateMinutesDialog";
-import { ViewMinutesDialog } from "@/components/ViewMinutesDialog";
-import MeetingChatPanel from "@/components/MeetingChatPanel";
-import MeetingStudioPanel from "@/components/MeetingStudioPanel";
-import { RescheduleMeetingDialog } from "@/components/RescheduleMeetingDialog";
-import { ManageAttendeesDialog } from "@/components/ManageAttendeesDialog";
-import { AgendaIntakeForm } from "@/components/AgendaIntakeForm";
-import { AIIntelligencePanel } from "@/components/AIIntelligencePanel";
-import { AdvancedIntelligencePanel } from "@/components/AdvancedIntelligencePanel";
-import { AIMinutesGenerator } from "@/components/AIMinutesGenerator";
-import { DocumentVersionControl } from "@/components/DocumentVersionControl";
-import { MultiChannelDistribution } from "@/components/MultiChannelDistribution";
-import { IntegrationManager } from "@/components/IntegrationManager";
-import { TranscriptionDocumentExport } from "@/components/TranscriptionDocumentExport";
-import { MeetingSignaturesPanel } from "@/components/MeetingSignaturesPanel";
-import { LazyTabContent } from "@/components/LazyTabContent";
-import { MeetingAudioPlayback } from "@/components/MeetingAudioPlayback";
-import { CreateSignatureRequestDialog } from "@/components/CreateSignatureRequestDialog";
-import { ShareMeetingDialog } from "@/components/ShareMeetingDialog";
-import { ParticipantDashboard } from "@/components/ParticipantDashboard";
-import { SpeakerQueue } from "@/components/SpeakerQueue";
-import { AutoAssignmentControls } from "@/components/AutoAssignmentControls";
-import { MeetingAnalytics } from "@/components/MeetingAnalytics";
-import { RealTimePresence } from "@/components/RealTimePresence";
-import { AuditLogViewer } from "@/components/AuditLogViewer";
-import { BreakoutRoomsManager } from "@/components/BreakoutRoomsManager";
-import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
-import { NotificationPreferences } from "@/components/NotificationPreferences";
-import { LivePolling } from "@/components/LivePolling";
-import { CollaborativeNotes } from "@/components/CollaborativeNotes";
-import { MeetingBookmarks } from "@/components/MeetingBookmarks";
-import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
-import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
-import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
-import { EnhancedDocumentsTab } from "@/components/EnhancedDocumentsTab";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import { format } from "date-fns";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
-import { TimeBasedAccessGuard } from "@/components/TimeBasedAccessGuard";
-import { ProtectedElement } from "@/components/ProtectedElement";
-import { HostManagementPanel } from "@/components/HostManagementPanel";
 import { useIsGuest } from "@/hooks/useIsGuest";
-import { GuestLayout } from "@/components/GuestLayout";
-import { GuestMeetingView } from "@/components/GuestMeetingView";
-import { PDFGenerationPanel } from "@/components/PDFGenerationPanel";
-import { SystemTestPanel } from "@/components/SystemTestPanel";
-import { TranscriptionProviderToggle } from "@/components/TranscriptionProviderToggle";
+import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
+import { useAuth } from "@/hooks/useAuth";
+import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
+import { localStorageCache } from "@/utils/localStorage";
+
+// Lazy load heavy components
+const LiveTranscription = lazy(() => import("@/components/LiveTranscription").then(m => ({ default: m.LiveTranscription })));
+const BrowserSpeechRecognition = lazy(() => import("@/components/BrowserSpeechRecognition").then(m => ({ default: m.BrowserSpeechRecognition })));
+const LiveAudioRecorder = lazy(() => import("@/components/LiveAudioRecorder").then(m => ({ default: m.LiveAudioRecorder })));
+const VirtualMeetingRoom = lazy(() => import("@/components/VirtualMeetingRoom").then(m => ({ default: m.VirtualMeetingRoom })));
+const AudioToMinutesWorkflow = lazy(() => import("@/components/AudioToMinutesWorkflow").then(m => ({ default: m.AudioToMinutesWorkflow })));
+const JitsiMeetEmbed = lazy(() => import("@/components/JitsiMeetEmbed").then(m => ({ default: m.JitsiMeetEmbed })));
+const GenerateMinutesDialog = lazy(() => import("@/components/GenerateMinutesDialog").then(m => ({ default: m.GenerateMinutesDialog })));
+const ViewMinutesDialog = lazy(() => import("@/components/ViewMinutesDialog").then(m => ({ default: m.ViewMinutesDialog })));
+const MeetingChatPanel = lazy(() => import("@/components/MeetingChatPanel"));
+const MeetingStudioPanel = lazy(() => import("@/components/MeetingStudioPanel"));
+const RescheduleMeetingDialog = lazy(() => import("@/components/RescheduleMeetingDialog").then(m => ({ default: m.RescheduleMeetingDialog })));
+const ManageAttendeesDialog = lazy(() => import("@/components/ManageAttendeesDialog").then(m => ({ default: m.ManageAttendeesDialog })));
+const AgendaIntakeForm = lazy(() => import("@/components/AgendaIntakeForm").then(m => ({ default: m.AgendaIntakeForm })));
+const AIIntelligencePanel = lazy(() => import("@/components/AIIntelligencePanel").then(m => ({ default: m.AIIntelligencePanel })));
+const AdvancedIntelligencePanel = lazy(() => import("@/components/AdvancedIntelligencePanel").then(m => ({ default: m.AdvancedIntelligencePanel })));
+const AIMinutesGenerator = lazy(() => import("@/components/AIMinutesGenerator").then(m => ({ default: m.AIMinutesGenerator })));
+const DocumentVersionControl = lazy(() => import("@/components/DocumentVersionControl").then(m => ({ default: m.DocumentVersionControl })));
+const MultiChannelDistribution = lazy(() => import("@/components/MultiChannelDistribution").then(m => ({ default: m.MultiChannelDistribution })));
+const IntegrationManager = lazy(() => import("@/components/IntegrationManager").then(m => ({ default: m.IntegrationManager })));
+const TranscriptionDocumentExport = lazy(() => import("@/components/TranscriptionDocumentExport").then(m => ({ default: m.TranscriptionDocumentExport })));
+const MeetingSignaturesPanel = lazy(() => import("@/components/MeetingSignaturesPanel").then(m => ({ default: m.MeetingSignaturesPanel })));
+const LazyTabContent = lazy(() => import("@/components/LazyTabContent").then(m => ({ default: m.LazyTabContent })));
+const MeetingAudioPlayback = lazy(() => import("@/components/MeetingAudioPlayback").then(m => ({ default: m.MeetingAudioPlayback })));
+const CreateSignatureRequestDialog = lazy(() => import("@/components/CreateSignatureRequestDialog").then(m => ({ default: m.CreateSignatureRequestDialog })));
+const ShareMeetingDialog = lazy(() => import("@/components/ShareMeetingDialog").then(m => ({ default: m.ShareMeetingDialog })));
+const ParticipantDashboard = lazy(() => import("@/components/ParticipantDashboard").then(m => ({ default: m.ParticipantDashboard })));
+const SpeakerQueue = lazy(() => import("@/components/SpeakerQueue").then(m => ({ default: m.SpeakerQueue })));
+const AutoAssignmentControls = lazy(() => import("@/components/AutoAssignmentControls").then(m => ({ default: m.AutoAssignmentControls })));
+const MeetingAnalytics = lazy(() => import("@/components/MeetingAnalytics").then(m => ({ default: m.MeetingAnalytics })));
+const RealTimePresence = lazy(() => import("@/components/RealTimePresence").then(m => ({ default: m.RealTimePresence })));
+const AuditLogViewer = lazy(() => import("@/components/AuditLogViewer").then(m => ({ default: m.AuditLogViewer })));
+const BreakoutRoomsManager = lazy(() => import("@/components/BreakoutRoomsManager").then(m => ({ default: m.BreakoutRoomsManager })));
+const MeetingTemplateManager = lazy(() => import("@/components/MeetingTemplateManager").then(m => ({ default: m.MeetingTemplateManager })));
+const NotificationPreferences = lazy(() => import("@/components/NotificationPreferences").then(m => ({ default: m.NotificationPreferences })));
+const LivePolling = lazy(() => import("@/components/LivePolling").then(m => ({ default: m.LivePolling })));
+const CollaborativeNotes = lazy(() => import("@/components/CollaborativeNotes").then(m => ({ default: m.CollaborativeNotes })));
+const MeetingBookmarks = lazy(() => import("@/components/MeetingBookmarks").then(m => ({ default: m.MeetingBookmarks })));
+const MeetingSummaryCard = lazy(() => import("@/components/MeetingSummaryCard").then(m => ({ default: m.MeetingSummaryCard })));
+const MeetingKeyPointsSummary = lazy(() => import("@/components/MeetingKeyPointsSummary").then(m => ({ default: m.MeetingKeyPointsSummary })));
+const MeetingKeywordSearch = lazy(() => import("@/components/MeetingKeywordSearch").then(m => ({ default: m.MeetingKeywordSearch })));
+const EnhancedDocumentsTab = lazy(() => import("@/components/EnhancedDocumentsTab").then(m => ({ default: m.EnhancedDocumentsTab })));
+const TimeBasedAccessGuard = lazy(() => import("@/components/TimeBasedAccessGuard").then(m => ({ default: m.TimeBasedAccessGuard })));
+const ProtectedElement = lazy(() => import("@/components/ProtectedElement").then(m => ({ default: m.ProtectedElement })));
+const HostManagementPanel = lazy(() => import("@/components/HostManagementPanel").then(m => ({ default: m.HostManagementPanel })));
+const GuestLayout = lazy(() => import("@/components/GuestLayout").then(m => ({ default: m.GuestLayout })));
+const GuestMeetingView = lazy(() => import("@/components/GuestMeetingView").then(m => ({ default: m.GuestMeetingView })));
+const PDFGenerationPanel = lazy(() => import("@/components/PDFGenerationPanel").then(m => ({ default: m.PDFGenerationPanel })));
+const SystemTestPanel = lazy(() => import("@/components/SystemTestPanel").then(m => ({ default: m.SystemTestPanel })));
+const TranscriptionProviderToggle = lazy(() => import("@/components/TranscriptionProviderToggle").then(m => ({ default: m.TranscriptionProviderToggle })));
+
+// Import hooks normally (cannot be lazy loaded)
 import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
 import { useRealtimeAgenda } from "@/hooks/useRealtimeAgenda";
-import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
 
 interface AgendaItem {
   id: string;
@@ -169,6 +176,7 @@ const MeetingDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { theme } = useTheme();
+  const { user, loading: authLoading } = useAuth();
   const isEthioTelecom = theme === 'ethio-telecom';
   const [showMinutesDialog, setShowMinutesDialog] = useState(false);
   const [showViewMinutesDialog, setShowViewMinutesDialog] = useState(false);
@@ -178,13 +186,9 @@ const MeetingDetail = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showVirtualRoom, setShowVirtualRoom] = useState(false);
   const [showHostPanel, setShowHostPanel] = useState(false);
-  const [userId, setUserId] = useState<string>("");
-  const [userFullName, setUserFullName] = useState<string>("");
-  const [meeting, setMeeting] = useState<any>(null);
   const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
-  const [loading, setLoading] = useState(true);
   const wasRecordingRef = useRef(false);
   const [isAutoGenerating, setIsAutoGenerating] = useState(false);
   const [recordingSeconds, setRecordingSeconds] = useState(0);
@@ -201,6 +205,10 @@ const MeetingDetail = () => {
   
   const meetingId = id || "demo-meeting-id";
   
+  // User info from cached auth
+  const userId = user?.id || "";
+  const userFullName = useMemo(() => user?.user_metadata?.full_name || "User", [user]);
+  
   // Realtime data hooks
   const { agenda: realtimeAgenda } = useRealtimeAgenda(meetingId);
   const { transcriptions: realtimeTranscriptions } = useRealtimeTranscriptions(meetingId);
@@ -215,6 +223,54 @@ const MeetingDetail = () => {
     pauseRecording, 
     resumeRecording 
   } = useAudioRecorder(meetingId);
+
+  // Optimized meeting data fetch with caching
+  const fetchMeetingData = useCallback(async () => {
+    if (!id) return null;
+
+    // Batch all queries in parallel
+    const [meetingResult, attendeesResult, agendaResult] = await Promise.all([
+      supabase
+        .from("meetings")
+        .select("*")
+        .eq("id", id)
+        .maybeSingle(),
+      supabase
+        .from("meeting_attendees")
+        .select("*, profiles(full_name, email)")
+        .eq("meeting_id", id),
+      supabase
+        .from("agenda_items")
+        .select("*")
+        .eq("meeting_id", id)
+        .order("order_index")
+    ]);
+
+    if (meetingResult.error) throw meetingResult.error;
+    if (!meetingResult.data) return null;
+
+    const result = {
+      meeting: meetingResult.data,
+      attendees: attendeesResult.data || [],
+      agenda: agendaResult.data || [],
+    };
+
+    // Cache for 2 minutes
+    localStorageCache.set(`meeting_${id}`, result, 2 * 60 * 1000);
+
+    return result;
+  }, [id]);
+
+  const { data: meetingData, loading, refetch } = useOptimizedQuery(
+    `meeting_${id}`,
+    fetchMeetingData,
+    {
+      enabled: !authLoading && !!user && !!id,
+      cacheDuration: 2 * 60 * 1000,
+    }
+  );
+
+  const meeting = meetingData?.meeting || null;
 
   // Real-time updates for meeting data
   useEffect(() => {
@@ -231,7 +287,7 @@ const MeetingDetail = () => {
           filter: `id=eq.${id}`
         },
         () => {
-          fetchMeetingDetails();
+          refetch();
         }
       )
       .on(
@@ -243,7 +299,7 @@ const MeetingDetail = () => {
           filter: `meeting_id=eq.${id}`
         },
         () => {
-          fetchMeetingDetails();
+          refetch();
         }
       )
       .subscribe();
@@ -251,34 +307,56 @@ const MeetingDetail = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id]);
+  }, [id, refetch]);
 
+  // Set virtual room status
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-        
-        // Get user's full name
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("id", user.id)
-          .single();
-        
-        if (profile) {
-          setUserFullName(profile.full_name || "User");
-        }
+    if (meeting) {
+      setIsVirtualRoomMeeting(meeting.video_provider === 'jitsi_meet' || meeting.meeting_type === 'virtual_room');
+      
+      // Auto-open virtual room for virtual meetings
+      if (meeting.meeting_type === 'virtual_room') {
+        setShowVirtualRoom(true);
       }
-    };
-    getUser();
-    
-    if (id) {
-      fetchMeetingDetails();
-    } else {
-      setLoading(false);
+      
+      // Set active tab based on meeting type
+      if ((meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && 
+          (meeting.video_conference_url || meeting.meeting_type === 'virtual_room')) {
+        setActiveTab('video');
+      }
     }
-  }, [id]);
+  }, [meeting]);
+
+  // Update agenda and attendees when data changes
+  useEffect(() => {
+    if (meetingData?.agenda) {
+      const formattedAgenda = meetingData.agenda.map((item: any) => ({
+        id: item.id,
+        title: item.title,
+        duration: `${item.duration_minutes || 20} min`,
+        presenter: item.presenter_id || "TBD",
+        status: item.status as "pending" | "in-progress" | "completed",
+      }));
+      setAgendaData(formattedAgenda);
+    }
+
+    if (meetingData?.attendees) {
+      const formattedAttendees = meetingData.attendees.map((attendee: any) => {
+        const profile = attendee.profiles;
+        const name = profile?.full_name || "Unknown";
+        const role = profile?.title || profile?.email || "Participant";
+        const initials = name
+          .split(" ")
+          .map((n: string) => n[0])
+          .join("")
+          .toUpperCase()
+          .substring(0, 2);
+
+        return { name, initials, role };
+      });
+      setAttendeesData(formattedAttendees);
+    }
+  }, [meetingData]);
 
   // Cleanup recording timer on unmount
   useEffect(() => {
@@ -635,86 +713,6 @@ const MeetingDetail = () => {
     autoGenerateMinutes();
   }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting]);
 
-  const fetchMeetingDetails = async () => {
-    try {
-      // Fetch meeting with agenda and attendees
-      const { data: meetingData, error: meetingError } = await supabase
-        .from("meetings")
-        .select(`
-          *,
-          agenda_items(*),
-          meeting_attendees(
-            user_id,
-            attended,
-            profiles:user_id(full_name, email, title)
-          )
-        `)
-        .eq("id", id)
-        .maybeSingle();
-
-      if (meetingError) throw meetingError;
-
-      setMeeting(meetingData);
-
-      // Set active tab based on meeting type
-      if ((meetingData.meeting_type === 'video_conference' || meetingData.meeting_type === 'virtual_room') && 
-          (meetingData.video_conference_url || meetingData.meeting_type === 'virtual_room')) {
-        setActiveTab('video');
-      } else {
-        setActiveTab('transcription');
-      }
-
-      // Check if this is a virtual room meeting - auto-open virtual room
-      if (meetingData.meeting_type === 'virtual_room') {
-        setIsVirtualRoomMeeting(true);
-        setShowVirtualRoom(true);
-      }
-
-      // Format agenda items
-      if (meetingData.agenda_items && meetingData.agenda_items.length > 0) {
-        const formattedAgenda = meetingData.agenda_items.map((item: any) => ({
-          id: item.id,
-          title: item.title,
-          duration: `${item.duration_minutes || 20} min`,
-          presenter: item.presenter_id || "TBD",
-          status: item.status as "pending" | "in-progress" | "completed",
-        }));
-        setAgendaData(formattedAgenda);
-      }
-
-      // Format attendees
-      if (meetingData.meeting_attendees && meetingData.meeting_attendees.length > 0) {
-        const formattedAttendees = meetingData.meeting_attendees.map((attendee: any) => {
-          const profile = attendee.profiles;
-          const name = profile?.full_name || "Unknown";
-          const role = profile?.title || profile?.email || "Participant";
-          const initials = name
-            .split(" ")
-            .map((n: string) => n[0])
-            .join("")
-            .toUpperCase()
-            .substring(0, 2);
-
-          return {
-            name,
-            initials,
-            role,
-          };
-        });
-        setAttendeesData(formattedAttendees);
-      }
-    } catch (error) {
-      console.error("Error fetching meeting details:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load meeting details",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const completedItems = agendaData.filter((item) => item.status === "completed").length;
   const progress = agendaData.length > 0 ? (completedItems / agendaData.length) * 100 : 0;
 
@@ -932,7 +930,7 @@ const MeetingDetail = () => {
                           });
                           
                           // Refresh meeting data
-                          fetchMeetingDetails();
+                          refetch();
                         } catch (error) {
                           console.error('Error completing meeting:', error);
                           toast({
@@ -1461,14 +1459,14 @@ const MeetingDetail = () => {
           meetingId={meetingId}
           open={showRescheduleDialog}
           onOpenChange={setShowRescheduleDialog}
-          onSuccess={fetchMeetingDetails}
+          onSuccess={refetch}
         />
 
         <ManageAttendeesDialog
           meetingId={meetingId}
           open={showManageAttendeesDialog}
           onOpenChange={setShowManageAttendeesDialog}
-          onSuccess={fetchMeetingDetails}
+          onSuccess={refetch}
         />
 
         <CreateSignatureRequestDialog

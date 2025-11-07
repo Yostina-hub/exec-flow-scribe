@@ -1,7 +1,5 @@
 import { Layout } from "@/components/Layout";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
-import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
-import { InstantMeetingDialog } from "@/components/InstantMeetingDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,13 +14,25 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Calendar, Plus, Filter, Clock, Users, TrendingUp, Sparkles, Video, MapPin } from "lucide-react";
+import { Search, Calendar, Plus, Filter, Clock, Users, TrendingUp, Sparkles, Video, MapPin, Loader2 } from "lucide-react";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useDebounce } from "@/hooks/useDebounce";
+import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
+import { localStorageCache } from "@/utils/localStorage";
+
+// Lazy load dialogs
+const CreateMeetingDialog = React.lazy(() => 
+  import("@/components/CreateMeetingDialog").then(m => ({ default: m.CreateMeetingDialog }))
+);
+const InstantMeetingDialog = React.lazy(() => 
+  import("@/components/InstantMeetingDialog").then(m => ({ default: m.InstantMeetingDialog }))
+);
 
 interface MeetingAttendee {
   id: string;
@@ -90,152 +100,97 @@ export default function Meetings() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { theme } = useTheme();
+  const { user, loading: authLoading } = useAuth();
   const isEthioTelecom = theme === 'ethio-telecom';
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [meetings, setMeetings] = React.useState<Meeting[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const debouncedSearch = useDebounce(searchQuery, 300);
   const [currentPageUpcoming, setCurrentPageUpcoming] = React.useState(1);
   const [currentPageCompleted, setCurrentPageCompleted] = React.useState(1);
   const [currentPageAll, setCurrentPageAll] = React.useState(1);
-  const [stats, setStats] = React.useState({ upcoming: 0, inProgress: 0, completed: 0, total: 0 });
+
+  // Optimized data fetching with cache
+  const fetchMeetingsData = React.useCallback(async () => {
+    const { data: meetingsData, error: meetingsError } = await supabase
+      .from("meetings")
+      .select(`
+        *,
+        meeting_attendees(count),
+        agenda_items(count)
+      `)
+      .order("created_at", { ascending: false });
+
+    if (meetingsError) throw meetingsError;
+
+    const enrichedMeetings = (meetingsData || []).map(meeting => ({
+      ...meeting,
+      attendee_count: meeting.meeting_attendees?.[0]?.count || 0,
+      agenda_count: meeting.agenda_items?.[0]?.count || 0,
+    }));
+
+    // Cache in localStorage
+    localStorageCache.set('meetings_list', enrichedMeetings, 2 * 60 * 1000);
+
+    return enrichedMeetings;
+  }, []);
+
+  const { data: meetings = [], loading, refetch } = useOptimizedQuery<Meeting[]>(
+    'meetings_list',
+    fetchMeetingsData,
+    {
+      enabled: !authLoading && !!user,
+      cacheDuration: 2 * 60 * 1000,
+    }
+  );
+
+  // Memoized stats calculation
+  const stats = React.useMemo(() => {
+    const now = new Date();
+    const upcoming = meetings.filter(m => {
+      const startTime = new Date(m.start_time);
+      return m.status !== "completed" && startTime > now;
+    }).length;
+    const inProgress = meetings.filter(m => {
+      const startTime = new Date(m.start_time);
+      const endTime = new Date(m.end_time);
+      return now >= startTime && now <= endTime;
+    }).length;
+    const completed = meetings.filter(m => m.status === "completed").length;
+
+    return { upcoming, inProgress, completed, total: meetings.length };
+  }, [meetings]);
 
   React.useEffect(() => {
-    fetchMeetings();
-    
+    if (!authLoading && !user) {
+      navigate('/auth');
+      return;
+    }
+
     const meetingsChannel = supabase
       .channel('meetings-changes')
       .on('postgres_changes', { 
-        event: 'INSERT', 
+        event: '*', 
         schema: 'public', 
         table: 'meetings' 
-      }, async (payload) => {
-        console.log('🆕 New meeting created:', payload);
-        
-        // Fetch the new meeting with attendees and agenda counts
-        const { data: newMeeting } = await supabase
-          .from("meetings")
-          .select(`
-            *,
-            meeting_attendees(count),
-            agenda_items(count)
-          `)
-          .eq('id', payload.new.id)
-          .single();
-
-        if (newMeeting) {
-          const enrichedMeeting = {
-            ...newMeeting,
-            attendee_count: newMeeting.meeting_attendees?.[0]?.count || 0,
-            agenda_count: newMeeting.agenda_items?.[0]?.count || 0,
-          };
-          
-          // Add to the beginning of the list immediately
-          setMeetings(prev => [enrichedMeeting, ...prev]);
-          
-          toast({
-            title: "Meeting created",
-            description: `${newMeeting.title} has been added`,
-          });
-        }
-      })
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'meetings' 
-      }, (payload) => {
-        console.log('📝 Meeting updated:', payload);
-        // Update the specific meeting in state
-        setMeetings(prev => 
-          prev.map(m => m.id === payload.new.id ? { ...m, ...payload.new } : m)
-        );
-      })
-      .on('postgres_changes', { 
-        event: 'DELETE', 
-        schema: 'public', 
-        table: 'meetings' 
-      }, (payload) => {
-        console.log('🗑️ Meeting deleted:', payload);
-        // Remove the meeting from state
-        setMeetings(prev => prev.filter(m => m.id !== payload.old.id));
+      }, () => {
+        console.log('Meeting changed, refetching...');
+        refetch();
       })
       .on('postgres_changes', { 
         event: '*', 
         schema: 'public', 
         table: 'agenda_items' 
       }, () => {
-        console.log('📋 Agenda items changed, refreshing...');
-        fetchMeetings();
+        console.log('Agenda changed, refetching...');
+        refetch();
       })
-      .subscribe((status) => {
-        console.log('📡 Realtime subscription status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ Successfully subscribed to meetings updates');
-        }
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(meetingsChannel);
     };
-  }, [toast]);
-
-
-  const fetchMeetings = async () => {
-    try {
-      const { data: meetingsData, error: meetingsError } = await supabase
-        .from("meetings")
-        .select(`
-          *,
-          meeting_attendees(count),
-          agenda_items(count)
-        `)
-        .order("created_at", { ascending: false });
-
-      if (meetingsError) throw meetingsError;
-
-      const enrichedMeetings = (meetingsData || []).map(meeting => ({
-        ...meeting,
-        attendee_count: meeting.meeting_attendees?.[0]?.count || 0,
-        agenda_count: meeting.agenda_items?.[0]?.count || 0,
-      }));
-
-      setMeetings(enrichedMeetings);
-
-      // Calculate stats
-      const now = new Date();
-      const upcoming = enrichedMeetings.filter(m => {
-        const startTime = new Date(m.start_time);
-        return m.status !== "completed" && startTime > now;
-      }).length;
-      const inProgress = enrichedMeetings.filter(m => {
-        const startTime = new Date(m.start_time);
-        const endTime = new Date(m.end_time);
-        return now >= startTime && now <= endTime;
-      }).length;
-      const completed = enrichedMeetings.filter(m => m.status === "completed").length;
-
-      setStats({
-        upcoming,
-        inProgress,
-        completed,
-        total: enrichedMeetings.length
-      });
-    } catch (error) {
-      console.error("Failed to fetch meetings:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [authLoading, user, navigate, refetch]);
   
-  // Fallback: ensure immediate list update on creation (even if realtime not ready)
-  React.useEffect(() => {
-    const handler = (e: any) => {
-      fetchMeetings();
-    };
-    window.addEventListener('meeting:created', handler);
-    return () => window.removeEventListener('meeting:created', handler);
-  }, []);
-  
-  const formatMeetingCard = (meeting: Meeting): FormattedMeeting => {
+  const formatMeetingCard = React.useCallback((meeting: Meeting): FormattedMeeting => {
     const startTime = new Date(meeting.start_time);
     const endTime = new Date(meeting.end_time);
     const duration = Math.round((endTime.getTime() - startTime.getTime()) / 60000);
@@ -262,26 +217,26 @@ export default function Meetings() {
       videoConferenceUrl: meeting.video_conference_url,
       createdBy: meeting.created_by,
     };
-  };
+  }, []);
 
-  const filterMeetings = (meetings: FormattedMeeting[]) => {
-    if (!searchQuery) return meetings;
+  // Memoized filtered meetings using debounced search
+  const { upcomingMeetings, completedMeetings, allMeetingsFormatted } = React.useMemo(() => {
+    const formatted = meetings.map(formatMeetingCard);
     
-    return meetings.filter((meeting) =>
-      meeting.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      meeting.location.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
+    const filterBySearch = (items: FormattedMeeting[]) => {
+      if (!debouncedSearch) return items;
+      return items.filter((meeting) =>
+        meeting.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+        meeting.location.toLowerCase().includes(debouncedSearch.toLowerCase())
+      );
+    };
 
-  const upcomingMeetings = filterMeetings(
-    meetings.filter((m) => m.status !== "completed").map(formatMeetingCard)
-  );
-  
-  const completedMeetings = filterMeetings(
-    meetings.filter((m) => m.status === "completed").map(formatMeetingCard)
-  );
-  
-  const allMeetingsFormatted = filterMeetings(meetings.map(formatMeetingCard));
+    return {
+      upcomingMeetings: filterBySearch(formatted.filter((m) => m.status !== "completed")),
+      completedMeetings: filterBySearch(formatted.filter((m) => m.status === "completed")),
+      allMeetingsFormatted: filterBySearch(formatted),
+    };
+  }, [meetings, debouncedSearch, formatMeetingCard]);
 
   // Pagination logic
   const paginateData = (data: any[], currentPage: number) => {
@@ -351,11 +306,12 @@ export default function Meetings() {
     );
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <Layout>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Calendar className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-center min-h-[60vh] gap-3">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="text-muted-foreground">Loading meetings...</span>
         </div>
       </Layout>
     );
@@ -419,8 +375,10 @@ export default function Meetings() {
             </div>
             
             <div className="flex gap-2">
-              <CreateMeetingDialog />
-              <InstantMeetingDialog />
+              <React.Suspense fallback={<Loader2 className="h-5 w-5 animate-spin" />}>
+                <CreateMeetingDialog />
+                <InstantMeetingDialog />
+              </React.Suspense>
             </div>
           </div>
         </div>
