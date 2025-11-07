@@ -106,6 +106,8 @@ const SystemTestPanel = lazy(() => import("@/components/SystemTestPanel").then(m
 const TranscriptionProviderToggle = lazy(() => import("@/components/TranscriptionProviderToggle").then(m => ({ default: m.TranscriptionProviderToggle })));
 const EmotionalAnalyticsDashboard = lazy(() => import("@/components/EmotionalAnalyticsDashboard").then(m => ({ default: m.EmotionalAnalyticsDashboard })));
 const SpeakerEmotionalProfiles = lazy(() => import("@/components/SpeakerEmotionalProfiles").then(m => ({ default: m.SpeakerEmotionalProfiles })));
+const SemanticSearchPanel = lazy(() => import("@/components/SemanticSearchPanel").then(m => ({ default: m.SemanticSearchPanel })));
+const SemanticWaveform = lazy(() => import("@/components/SemanticWaveform").then(m => ({ default: m.SemanticWaveform })));
 
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
@@ -1116,6 +1118,14 @@ const MeetingDetail = () => {
                   <Brain className="h-4 w-4" />
                   Speaker Profiles
                 </TabsTrigger>
+                <TabsTrigger value="semantic-search" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <Brain className="h-4 w-4" />
+                  Semantic Search
+                </TabsTrigger>
+                <TabsTrigger value="semantic-waveform" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
+                  <Sparkles className="h-4 w-4" />
+                  Semantic Waveform
+                </TabsTrigger>
               </TabsList>
               </div>
 
@@ -1453,6 +1463,34 @@ const MeetingDetail = () => {
               <TabsContent value="speaker-profiles" className="space-y-4">
                 <LazyTabContent>
                   <SpeakerEmotionalProfiles meetingId={meetingId} />
+                </LazyTabContent>
+              </TabsContent>
+
+              <TabsContent value="semantic-search" className="space-y-4">
+                <LazyTabContent>
+                  <SemanticSearchPanel 
+                    meetingId={meetingId}
+                    onResultClick={(timestamp) => {
+                      toast({
+                        title: "Jumping to moment",
+                        description: `Seeking to ${timestamp}`,
+                      });
+                    }}
+                  />
+                </LazyTabContent>
+              </TabsContent>
+
+              <TabsContent value="semantic-waveform" className="space-y-4">
+                <LazyTabContent>
+                  <SemanticWaveform 
+                    meetingId={meetingId}
+                    onSeek={(time) => {
+                      toast({
+                        title: "Seeking",
+                        description: `Jumping to ${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`,
+                      });
+                    }}
+                  />
                 </LazyTabContent>
               </TabsContent>
             </Tabs>
