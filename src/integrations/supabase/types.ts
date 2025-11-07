@@ -16,11 +16,14 @@ export type Database = {
     Tables: {
       action_items: {
         Row: {
+          ai_generated: boolean | null
           assigned_to: string
           blocked_reason: string | null
           completed_at: string | null
+          confidence_score: number | null
           created_at: string
           created_by: string
+          department_id: string | null
           description: string | null
           due_date: string | null
           escalated_at: string | null
@@ -31,17 +34,21 @@ export type Database = {
           last_nudge_sent: string | null
           meeting_id: string | null
           priority: Database["public"]["Enums"]["action_priority"]
+          source_proposal_id: string | null
           status: Database["public"]["Enums"]["action_status"]
           status_detail: string | null
           title: string
           updated_at: string
         }
         Insert: {
+          ai_generated?: boolean | null
           assigned_to: string
           blocked_reason?: string | null
           completed_at?: string | null
+          confidence_score?: number | null
           created_at?: string
           created_by: string
+          department_id?: string | null
           description?: string | null
           due_date?: string | null
           escalated_at?: string | null
@@ -52,17 +59,21 @@ export type Database = {
           last_nudge_sent?: string | null
           meeting_id?: string | null
           priority?: Database["public"]["Enums"]["action_priority"]
+          source_proposal_id?: string | null
           status?: Database["public"]["Enums"]["action_status"]
           status_detail?: string | null
           title: string
           updated_at?: string
         }
         Update: {
+          ai_generated?: boolean | null
           assigned_to?: string
           blocked_reason?: string | null
           completed_at?: string | null
+          confidence_score?: number | null
           created_at?: string
           created_by?: string
+          department_id?: string | null
           description?: string | null
           due_date?: string | null
           escalated_at?: string | null
@@ -73,6 +84,7 @@ export type Database = {
           last_nudge_sent?: string | null
           meeting_id?: string | null
           priority?: Database["public"]["Enums"]["action_priority"]
+          source_proposal_id?: string | null
           status?: Database["public"]["Enums"]["action_status"]
           status_detail?: string | null
           title?: string
@@ -80,10 +92,24 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "action_items_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "action_items_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "action_items_source_proposal_id_fkey"
+            columns: ["source_proposal_id"]
+            isOneToOne: false
+            referencedRelation: "guba_task_proposals"
             referencedColumns: ["id"]
           },
         ]
@@ -909,6 +935,50 @@ export type Database = {
           },
         ]
       }
+      departments: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          head_user_id: string | null
+          id: string
+          level: number
+          name: string
+          name_am: string | null
+          parent_department_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          head_user_id?: string | null
+          id?: string
+          level?: number
+          name: string
+          name_am?: string | null
+          parent_department_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          head_user_id?: string | null
+          id?: string
+          level?: number
+          name?: string
+          name_am?: string | null
+          parent_department_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_parent_department_id_fkey"
+            columns: ["parent_department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       distribution_channels: {
         Row: {
           channel_type: string
@@ -1554,6 +1624,86 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "fact_checks_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      guba_settings: {
+        Row: {
+          auto_assign_enabled: boolean | null
+          auto_generate_on_minutes: boolean | null
+          created_at: string | null
+          enabled: boolean | null
+          id: string
+          preferred_language: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          auto_assign_enabled?: boolean | null
+          auto_generate_on_minutes?: boolean | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          preferred_language?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          auto_assign_enabled?: boolean | null
+          auto_generate_on_minutes?: boolean | null
+          created_at?: string | null
+          enabled?: boolean | null
+          id?: string
+          preferred_language?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      guba_task_proposals: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          generated_tasks: Json
+          id: string
+          language: string | null
+          meeting_id: string | null
+          selected_task_ids: string[] | null
+          source_id: string | null
+          source_type: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          generated_tasks: Json
+          id?: string
+          language?: string | null
+          meeting_id?: string | null
+          selected_task_ids?: string[] | null
+          source_id?: string | null
+          source_type: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          generated_tasks?: Json
+          id?: string
+          language?: string | null
+          meeting_id?: string | null
+          selected_task_ids?: string[] | null
+          source_id?: string | null
+          source_type?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guba_task_proposals_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
@@ -4083,6 +4233,38 @@ export type Database = {
           priority_level?: number | null
         }
         Relationships: []
+      }
+      user_departments: {
+        Row: {
+          created_at: string | null
+          department_id: string
+          id: string
+          is_primary: boolean | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          department_id: string
+          id?: string
+          is_primary?: boolean | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          department_id?: string
+          id?: string
+          is_primary?: boolean | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_departments_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

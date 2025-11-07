@@ -1,6 +1,10 @@
 import { Layout } from "@/components/Layout";
 import { CreateActionDialog } from "@/components/CreateActionDialog";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
+import { GubaTaskProposals } from "@/components/guba/GubaTaskProposals";
+import { GubaDashboard } from "@/components/guba/GubaDashboard";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +52,24 @@ const Actions = () => {
   const [viewMode, setViewMode] = useState<"list" | "grid">("list");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"due_date" | "priority" | "status">("due_date");
+  const [gubaEnabled, setGubaEnabled] = useState(false);
+  const [showGubaDashboard, setShowGubaDashboard] = useState(false);
+
+  useEffect(() => {
+    const checkGubaStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('guba_settings')
+        .select('enabled')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      
+      setGubaEnabled(data?.enabled || false);
+    };
+    checkGubaStatus();
+  }, []);
 
   useEffect(() => {
     fetchActions();
@@ -256,7 +278,13 @@ const Actions = () => {
               <h1 className="text-5xl font-black font-['Space_Grotesk']">Action Items</h1>
               <p className="text-muted-foreground text-lg">Track and manage follow-ups and deliverables</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3 items-center">
+              {gubaEnabled && (
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30">
+                  <Switch checked={showGubaDashboard} onCheckedChange={setShowGubaDashboard} />
+                  <Label className="cursor-pointer">Guba Dashboard</Label>
+                </div>
+              )}
               <Button variant="outline" className="gap-2 hover-scale">
                 <BarChart3 className="h-4 w-4" />
                 Analytics

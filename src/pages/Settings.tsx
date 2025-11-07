@@ -26,6 +26,7 @@ import { JitsiSettings } from "@/components/settings/JitsiSettings";
 import { TwoWayCalendarSync } from "@/components/calendar/TwoWayCalendarSync";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { EnhancedWhatsAppReminders } from "@/components/notifications/EnhancedWhatsAppReminders";
+import { GubaTaskSettings } from "@/components/settings/GubaTaskSettings";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -412,6 +413,7 @@ const Settings = () => {
             <TabsTrigger value="escalation">Escalation</TabsTrigger>
             <TabsTrigger value="branding">Branding</TabsTrigger>
             <TabsTrigger value="distribution">Distribution</TabsTrigger>
+            <TabsTrigger value="guba">Guba Tasks</TabsTrigger>
             <TabsTrigger value="tmeet">TMeet</TabsTrigger>
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
@@ -941,6 +943,11 @@ const Settings = () => {
           {/* Distribution Tab */}
           <TabsContent value="distribution" className="space-y-6">
             <DistributionManager />
+          </TabsContent>
+
+          {/* Guba Tasks Tab */}
+          <TabsContent value="guba" className="space-y-6">
+            <GubaTaskSettings />
           </TabsContent>
 
           {/* Security Tab */}
