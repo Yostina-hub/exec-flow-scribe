@@ -69,3 +69,5 @@ export function ProtectedElement({
 
   return <>{children}</>;
 }
+
+export default ProtectedElement;
