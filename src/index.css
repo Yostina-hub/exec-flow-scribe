@@ -121,9 +121,9 @@ All colors MUST be HSL.
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  /* Ethio Telecom Theme */
+  /* Ethio Telecom Theme - Official Branding */
   .theme-ethio-telecom {
-    --background: 0 0% 100%;
+    --background: 0 0% 96%;
     --foreground: 0 6% 13%;
 
     --card: 0 0% 100%;

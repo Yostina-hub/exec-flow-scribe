@@ -12,7 +12,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
     const stored = localStorage.getItem('app-theme');
-    return (stored as Theme) || 'ethio-telecom';
+    return (stored as Theme) || 'ethio-telecom'; // Default to Ethio Telecom branding
   });
 
   useEffect(() => {
