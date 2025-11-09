@@ -108,6 +108,7 @@ const TranscriptionProviderToggle = lazy(() => import("@/components/Transcriptio
 const UnifiedEmotionIntelligence = lazy(() => import("@/components/UnifiedEmotionIntelligence").then(m => ({ default: m.UnifiedEmotionIntelligence })));
 const LiveQAGenerator = lazy(() => import("@/components/LiveQAGenerator").then(m => ({ default: m.LiveQAGenerator })));
 const MeetingClosingSummary = lazy(() => import("@/components/MeetingClosingSummary").then(m => ({ default: m.MeetingClosingSummary })));
+const MeetingEffectivenessScoring = lazy(() => import("@/components/MeetingEffectivenessScoring").then(m => ({ default: m.MeetingEffectivenessScoring })));
 
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
@@ -1455,6 +1456,7 @@ const MeetingDetail = () => {
                     <MeetingKeyPointsSummary meetingId={meetingId} />
                     <LiveQAGenerator meetingId={meetingId} />
                   </div>
+                  <MeetingEffectivenessScoring meetingId={meetingId} />
                   <MeetingClosingSummary 
                     meetingId={meetingId}
                     meetingStatus={meeting?.status || ''}
