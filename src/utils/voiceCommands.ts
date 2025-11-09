@@ -123,6 +123,30 @@ export function matchDictation(transcript: string): { type: 'action' | 'decision
   return null;
 }
 
+export function matchAssignment(transcript: string): { assigneeName: string } | null {
+  const normalized = transcript.toLowerCase().trim();
+  
+  // Assignment patterns: "assign this to NAME", "give this to NAME", "reassign to NAME"
+  const patterns = [
+    /(?:assign|give|reassign)(?:\s+this)?(?:\s+task)?(?:\s+to)\s+(.+)/i,
+    /(?:make)\s+(.+?)(?:\s+the)?(?:\s+assignee)/i,
+    /(?:change|switch)(?:\s+assignee)?(?:\s+to)\s+(.+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = transcript.match(pattern);
+    if (match && match[1]) {
+      // Clean up the extracted name
+      let name = match[1].trim();
+      // Remove trailing words that might be captured
+      name = name.replace(/\s+(please|thanks|thank you)$/i, '').trim();
+      return { assigneeName: name };
+    }
+  }
+  
+  return null;
+}
+
 export function getCommandsByCategory(category: VoiceCommand['category']): VoiceCommand[] {
   return ALL_COMMANDS.filter(cmd => cmd.category === category);
 }

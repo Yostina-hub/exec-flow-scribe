@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Command, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ALL_COMMANDS, matchCommand, matchDictation, type VoiceCommand } from '@/utils/voiceCommands';
+import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, type VoiceCommand } from '@/utils/voiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceCommandControllerProps {
@@ -33,6 +33,7 @@ export const VoiceCommandController = ({
   const [isListening, setIsListening] = useState(false);
   const [lastCommand, setLastCommand] = useState<string>('');
   const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [lastCreatedActionId, setLastCreatedActionId] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
   const timeoutRef = useRef<NodeJS.Timeout>();
 
@@ -61,14 +62,21 @@ export const VoiceCommandController = ({
       const transcript = event.results[last][0].transcript.trim();
       
       if (event.results[last].isFinal) {
-        // First check for dictation patterns
+        // First check for assignment patterns
+        const assignment = matchAssignment(transcript);
+        if (assignment) {
+          handleAssignment(assignment.assigneeName);
+          return;
+        }
+        
+        // Then check for dictation patterns
         const dictation = matchDictation(transcript);
         if (dictation) {
           handleDictation(dictation.type, dictation.content);
           return;
         }
         
-        // Then check for regular commands
+        // Finally check for regular commands
         const matchedCommand = matchCommand(transcript);
         if (matchedCommand) {
           handleCommand(matchedCommand.action, matchedCommand.description);
@@ -108,6 +116,71 @@ export const VoiceCommandController = ({
     };
   }, [commands, isListening]);
 
+  const handleAssignment = useCallback(async (assigneeName: string) => {
+    if (!lastCreatedActionId) {
+      toast({
+        title: 'No Recent Action',
+        description: 'Create an action first before assigning it',
+        variant: 'destructive',
+      });
+      speakFeedback('No action to assign');
+      return;
+    }
+
+    setLastCommand(`Assigning to ${assigneeName}...`);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (voiceEnabled) {
+      playCommandSound();
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      speakFeedback(`Assigning to ${assigneeName}`);
+      
+      const { data, error } = await supabase.functions.invoke('assign-task-by-voice', {
+        body: { 
+          assigneeName, 
+          actionId: lastCreatedActionId,
+          userId: user.id 
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Task Assigned',
+        description: `Assigned to ${data.assignedTo.name}`,
+      });
+      
+      speakFeedback(`Task assigned to ${data.assignedTo.name}`);
+    } catch (error: any) {
+      console.error('Assignment error:', error);
+      toast({
+        title: 'Assignment Failed',
+        description: error.message || 'Could not assign task',
+        variant: 'destructive',
+      });
+      speakFeedback('Failed to assign task');
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setLastCommand('');
+    }, 5000);
+  }, [lastCreatedActionId, voiceEnabled, toast]);
+
   const handleDictation = useCallback(async (type: 'action' | 'decision', content: string) => {
     setLastCommand(`Dictating ${type}: ${content.substring(0, 50)}...`);
     
@@ -138,6 +211,9 @@ export const VoiceCommandController = ({
         });
 
         if (error) throw error;
+
+        // Store the action ID for assignment
+        setLastCreatedActionId(data.action.id);
 
         toast({
           title: 'Action Created',
@@ -355,6 +431,9 @@ export const VoiceCommandController = ({
           <p className="font-medium text-primary mt-2">✨ Voice Dictation:</p>
           <p>Say "Add action: Follow up with team by Friday"</p>
           <p>Say "Add decision: Approved the Q4 budget"</p>
+          <p className="font-medium text-primary mt-2">👥 Assign Tasks:</p>
+          <p>After creating an action, say "Assign this to John"</p>
+          <p>Or "Give this task to Sarah"</p>
         </div>
       </CardContent>
     </Card>

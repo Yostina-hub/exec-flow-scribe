@@ -257,3 +257,6 @@ verify_jwt = false
 
 [functions.create-dictated-decision]
 verify_jwt = false
+
+[functions.assign-task-by-voice]
+verify_jwt = false

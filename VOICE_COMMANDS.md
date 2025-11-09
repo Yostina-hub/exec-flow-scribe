@@ -106,6 +106,71 @@ Record decisions with context instantly:
 
 **Note:** Dictated decisions are automatically approved since they're being recorded during the meeting.
 
+---
+
+## 👥 Voice Task Assignment (NEW!)
+
+Assign tasks to team members using voice commands. After creating an action item, simply say who should do it!
+
+### How It Works
+
+1. **Create an action first** (using any method: voice dictation, UI, etc.)
+2. **Say assignment command** within a few seconds
+3. **System assigns automatically** and notifies the team member
+
+### Assignment Commands
+
+| What You Say | What Happens |
+|-------------|--------------|
+| "Assign this to John" | Assigns most recent action to user named John |
+| "Give this task to Sarah" | Assigns most recent action to Sarah |
+| "Reassign to Michael" | Changes assignment to Michael |
+| "Make David the assignee" | Sets David as the assignee |
+| "Change assignee to Lisa" | Switches assignment to Lisa |
+
+### Smart Name Matching
+
+The system intelligently finds team members:
+- ✅ **Partial names**: "Assign to John" finds "John Smith" or "John Doe"
+- ✅ **Full names**: "Give this to Sarah Johnson" 
+- ✅ **Email addresses**: "Assign to john@company.com"
+- ✅ **Case insensitive**: "JOHN", "john", or "John" all work
+
+### Complete Workflow Example
+
+```
+You say: "Add action: Review marketing proposal priority high"
+System: ✓ Creates action item
+
+You say: "Assign this to Sarah"
+System: ✓ Finds Sarah in team directory
+        ✓ Assigns task to Sarah
+        ✓ Sends notification to Sarah
+        ✓ Confirms "Task assigned to Sarah Johnson"
+```
+
+### Permissions
+
+- **Action creator** can always reassign their own tasks
+- **Admins/Managers** can reassign any task
+- **Others** cannot reassign tasks they didn't create
+
+### Troubleshooting
+
+**Problem**: "No user found matching..."
+- ✓ Check the name spelling
+- ✓ Try using email address instead
+- ✓ Use their display name from the system
+
+**Problem**: "No recent action"
+- ✓ Create an action first
+- ✓ Assignment must follow within 30 seconds
+- ✓ Only works with tasks you just created
+
+**Problem**: "You do not have permission..."
+- ✓ Only creator or admin can reassign
+- ✓ Create your own task first
+
 ### 📊 Meeting Functions
 
 | Command (English) | Command (Amharic) | What It Does |
