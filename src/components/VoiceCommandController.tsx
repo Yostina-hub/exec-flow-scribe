@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Command, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ALL_COMMANDS, matchCommand, type VoiceCommand } from '@/utils/voiceCommands';
+import { ALL_COMMANDS, matchCommand, matchDictation, type VoiceCommand } from '@/utils/voiceCommands';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceCommandControllerProps {
   meetingId: string;
@@ -57,13 +58,21 @@ export const VoiceCommandController = ({
 
     recognition.onresult = (event: any) => {
       const last = event.results.length - 1;
-      const transcript = event.results[last][0].transcript.toLowerCase().trim();
+      const transcript = event.results[last][0].transcript.trim();
       
-      // Check if transcript matches any command using the utility function
-      const matchedCommand = matchCommand(transcript);
-
-      if (matchedCommand && event.results[last].isFinal) {
-        handleCommand(matchedCommand.action, matchedCommand.description);
+      if (event.results[last].isFinal) {
+        // First check for dictation patterns
+        const dictation = matchDictation(transcript);
+        if (dictation) {
+          handleDictation(dictation.type, dictation.content);
+          return;
+        }
+        
+        // Then check for regular commands
+        const matchedCommand = matchCommand(transcript);
+        if (matchedCommand) {
+          handleCommand(matchedCommand.action, matchedCommand.description);
+        }
       }
     };
 
@@ -98,6 +107,74 @@ export const VoiceCommandController = ({
       }
     };
   }, [commands, isListening]);
+
+  const handleDictation = useCallback(async (type: 'action' | 'decision', content: string) => {
+    setLastCommand(`Dictating ${type}: ${content.substring(0, 50)}...`);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (voiceEnabled) {
+      playCommandSound();
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in to create items',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (type === 'action') {
+        speakFeedback('Creating action item');
+        
+        const { data, error } = await supabase.functions.invoke('create-dictated-action', {
+          body: { dictation: content, meetingId, userId: user.id }
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: 'Action Created',
+          description: `Created: ${data.parsedDetails.title}`,
+        });
+        
+        speakFeedback('Action item created successfully');
+      } else {
+        speakFeedback('Recording decision');
+        
+        const { data, error } = await supabase.functions.invoke('create-dictated-decision', {
+          body: { dictation: content, meetingId, userId: user.id }
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: 'Decision Recorded',
+          description: `Recorded: ${data.parsedDetails.decisionText}`,
+        });
+        
+        speakFeedback('Decision recorded successfully');
+      }
+    } catch (error: any) {
+      console.error('Dictation error:', error);
+      toast({
+        title: 'Error',
+        description: error.message || `Failed to create ${type}`,
+        variant: 'destructive',
+      });
+      speakFeedback(`Failed to create ${type}`);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setLastCommand('');
+    }, 5000);
+  }, [meetingId, voiceEnabled, toast]);
 
   const handleCommand = useCallback((action: string, description: string) => {
     setLastCommand(description);
@@ -275,6 +352,9 @@ export const VoiceCommandController = ({
           <p>💡 Speak clearly and naturally</p>
           <p>🎤 Works in Amharic and English</p>
           <p>🔊 Audio feedback can be toggled on/off</p>
+          <p className="font-medium text-primary mt-2">✨ Voice Dictation:</p>
+          <p>Say "Add action: Follow up with team by Friday"</p>
+          <p>Say "Add decision: Approved the Q4 budget"</p>
         </div>
       </CardContent>
     </Card>

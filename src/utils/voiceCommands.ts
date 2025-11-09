@@ -4,7 +4,8 @@ export interface VoiceCommand {
   phrases: string[];
   action: string;
   description: string;
-  category: 'recording' | 'actions' | 'meeting' | 'navigation';
+  category: 'recording' | 'actions' | 'meeting' | 'navigation' | 'dictation';
+  isDictation?: boolean;
 }
 
 export const AMHARIC_COMMANDS = {
@@ -92,6 +93,34 @@ export function matchCommand(transcript: string): VoiceCommand | null {
       return normalized.includes(phraseNormalized) || phraseNormalized.includes(normalized);
     })
   ) || null;
+}
+
+export function matchDictation(transcript: string): { type: 'action' | 'decision', content: string } | null {
+  const normalized = transcript.toLowerCase().trim();
+  
+  // Action dictation patterns
+  const actionPrefixes = ['add action:', 'create task:', 'action item:', 'new action:', 'task:'];
+  for (const prefix of actionPrefixes) {
+    if (normalized.startsWith(prefix)) {
+      return {
+        type: 'action',
+        content: transcript.trim()
+      };
+    }
+  }
+  
+  // Decision dictation patterns
+  const decisionPrefixes = ['add decision:', 'record decision:', 'new decision:', 'decision:'];
+  for (const prefix of decisionPrefixes) {
+    if (normalized.startsWith(prefix)) {
+      return {
+        type: 'decision',
+        content: transcript.trim()
+      };
+    }
+  }
+  
+  return null;
 }
 
 export function getCommandsByCategory(category: VoiceCommand['category']): VoiceCommand[] {

@@ -64,6 +64,48 @@ Simply say any of the supported commands naturally. The system will:
 | "New decision" | "ውሳኔ መዝግብ" | Log decision |
 | "Save decision" | "ውሳኔ ፃፍ" | Alternative save command |
 
+### ✨ Voice Dictation (NEW!)
+
+Create action items and decisions instantly by dictating the full details:
+
+#### Action Item Dictation
+
+Say the complete action with optional details, and the system will automatically create it:
+
+**Examples:**
+
+| What You Say | What Gets Created |
+|-------------|-------------------|
+| "Add action: Follow up with marketing team by Friday" | Action: "Follow up with marketing team"<br>Due: This Friday<br>Priority: Medium |
+| "Create task: Review Q4 budget by tomorrow" | Action: "Review Q4 budget"<br>Due: Tomorrow<br>Priority: Medium |
+| "Action item: Call vendor about pricing priority high" | Action: "Call vendor about pricing"<br>Due: 7 days from now<br>Priority: High |
+| "New action: Schedule team meeting by Monday" | Action: "Schedule team meeting"<br>Due: Next Monday<br>Priority: Medium |
+
+**Supported Date Formats:**
+- "by tomorrow" / "due tomorrow"
+- "by Friday" / "due Monday" (any day of week)
+- "by 12/25" / "due 3/15" (MM/DD format)
+
+**Priority Levels:**
+- Add "priority high" for urgent tasks
+- Add "priority low" for non-urgent tasks
+- Default is "priority medium"
+
+#### Decision Dictation
+
+Record decisions with context instantly:
+
+**Examples:**
+
+| What You Say | What Gets Recorded |
+|-------------|-------------------|
+| "Add decision: Approved Q4 marketing budget" | Decision: "Approved Q4 marketing budget"<br>Status: Approved |
+| "Record decision: Postponed server upgrade to Q1" | Decision: "Postponed server upgrade to Q1"<br>Status: Approved |
+| "Decision: Hired three new engineers by CEO" | Decision: "Hired three new engineers"<br>Context: "by CEO" |
+| "New decision: Changed vendor to CompanyX" | Decision: "Changed vendor to CompanyX"<br>Status: Approved |
+
+**Note:** Dictated decisions are automatically approved since they're being recorded during the meeting.
+
 ### 📊 Meeting Functions
 
 | Command (English) | Command (Amharic) | What It Does |

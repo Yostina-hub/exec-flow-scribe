@@ -82,6 +82,26 @@ Control meeting functions using voice commands in **Amharic** and **English** wi
 - 💡 Audio feedback can be muted while keeping voice commands active
 - 💡 Commands work best in quiet environments
 
+### Voice Dictation (NEW!)
+In addition to simple commands, you can now **dictate full action items and decisions** using natural language:
+
+#### Action Dictation Examples
+- "Add action: Follow up with marketing team by Friday" → Creates action with deadline
+- "Create task: Review Q4 budget priority high" → Creates high-priority action
+- "Action item: Call vendor by tomorrow" → Creates action due tomorrow
+
+#### Decision Dictation Examples
+- "Add decision: Approved Q4 marketing budget" → Records approved decision
+- "Record decision: Postponed server upgrade to Q1" → Records decision with context
+- "Decision: Hired three new engineers by CEO" → Records decision with attribution
+
+The AI automatically:
+- ✅ Extracts the main task/decision from your speech
+- ✅ Parses dates (today, tomorrow, Friday, MM/DD format)
+- ✅ Identifies priority levels (high, medium, low)
+- ✅ Assigns the item to you automatically
+- ✅ Saves everything to the database
+
 ---
 
 ## 🤖 What AI Provider We Use
