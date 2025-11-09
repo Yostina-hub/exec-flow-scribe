@@ -9,6 +9,7 @@ import { localStorageCache } from '@/utils/localStorage';
 import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen } from 'lucide-react';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
+import { MeetingKeyPointsSummary } from '@/components/MeetingKeyPointsSummary';
 
 // Lazy load heavy components
 const SignaturePackageViewer = lazy(() => 
@@ -408,6 +409,9 @@ export default function SignatureApproval() {
                   Non-Technical
                 </Button>
               </>
+            )}
+            {signatureRequest?.meeting_id && (
+              <MeetingKeyPointsSummary meetingId={signatureRequest.meeting_id} />
             )}
             {isApproved && (
               <Button 
