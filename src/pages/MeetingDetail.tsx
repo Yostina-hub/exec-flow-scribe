@@ -805,6 +805,10 @@ const MeetingDetail = () => {
   const isOnlineMeeting = meeting?.meeting_type === 'online' || meeting?.meeting_type === 'hybrid';
   const hasVideoLink = !!meeting?.video_conference_url;
 
+  if (!meeting) {
+    return <MeetingDetailSkeleton />;
+  }
+
   return (
     <TimeBasedAccessGuard meetingId={meetingId}>
       <div className="flex flex-col min-h-screen">

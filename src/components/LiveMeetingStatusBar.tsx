@@ -29,6 +29,7 @@ export const LiveMeetingStatusBar = ({
   onGenerateMinutes,
   networkHealth = "good",
 }: LiveMeetingStatusBarProps) => {
+  if (!meetingTitle) return null;
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);

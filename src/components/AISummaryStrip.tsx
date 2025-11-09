@@ -15,6 +15,8 @@ interface Chapter {
 }
 
 export const AISummaryStrip = ({ meetingId, isRecording }: AISummaryStripProps) => {
+  if (!meetingId) return null;
+  
   const [chapters, setChapters] = useState<Chapter[]>([
     { id: "1", title: "Introductions", timestamp: "00:00", type: "intro" },
   ]);
