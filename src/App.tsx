@@ -1,7 +1,8 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequirePermission } from "@/components/RequirePermission";
+import { Layout } from "@/components/Layout";
 import { useSystemIntegration } from "@/hooks/useSystemIntegration";
 import { useCalendarActionSync } from "@/hooks/useCalendarActionSync";
 import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
@@ -45,54 +46,64 @@ const IntegrationProvider = ({ children }: { children: React.ReactNode }) => {
   useSystemIntegration();
   useCalendarActionSync();
   useNotificationDispatcher();
-  useGubaAutoGeneration(); // Enable Guba auto-generation globally
+  useGubaAutoGeneration();
   return <>{children}</>;
 };
+
+// Protected layout wrapper that persists across routes
+const ProtectedLayout = () => (
+  <ProtectedRoute>
+    <Layout>
+      <Outlet />
+    </Layout>
+  </ProtectedRoute>
+);
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
       <BrowserRouter>
-          <IntegrationProvider>
-            <Routes>
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/guest-signup" element={<GuestSignup />} />
-              <Route 
-                path="/google-oauth-callback" 
-                element={
-                  <ProtectedRoute>
-                    <GoogleOAuthCallback />
-                  </ProtectedRoute>
-                } 
-              />
-              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-              <Route path="/guest" element={<ProtectedRoute><GuestDashboard /></ProtectedRoute>} />
-              <Route path="/calendar" element={<ProtectedRoute><CalendarView /></ProtectedRoute>} />
-              <Route path="/meetings" element={<ProtectedRoute><Meetings /></ProtectedRoute>} />
-              <Route path="/meetings/:id" element={<ProtectedRoute><MeetingDetail /></ProtectedRoute>} />
-              <Route path="/meetings/:meetingId/minutes" element={<ProtectedRoute><MinutesEditor /></ProtectedRoute>} />
-              <Route path="/drive" element={<ProtectedRoute><DriveIntegration /></ProtectedRoute>} />
-              <Route path="/notebooks" element={<ProtectedRoute><NotebooksLibrary /></ProtectedRoute>} />
-              <Route path="/notebook" element={<ProtectedRoute><Notebook /></ProtectedRoute>} />
-              <Route path="/signature/:requestId" element={<ProtectedRoute><SignatureApproval /></ProtectedRoute>} />
-              <Route path="/actions" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Actions /></RequirePermission></ProtectedRoute>} />
-              <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Notifications /></RequirePermission></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><Administration /></RequirePermission></ProtectedRoute>} />
-              <Route path="/integration-test" element={<ProtectedRoute><RequirePermission resource="users" action="manage"><IntegrationTest /></RequirePermission></ProtectedRoute>} />
-              <Route path="/document" element={<DocumentViewer />} />
-              <Route path="/quick-join" element={<QuickJoinMeeting />} />
-              <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </IntegrationProvider>
-        </BrowserRouter>
-      </ThemeProvider>
+        <IntegrationProvider>
+          <Routes>
+            {/* Public routes */}
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/guest-signup" element={<GuestSignup />} />
+            <Route path="/document" element={<DocumentViewer />} />
+            <Route path="/quick-join" element={<QuickJoinMeeting />} />
+            <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
+            
+            {/* Protected routes with persistent Layout */}
+            <Route element={<ProtectedLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/guest" element={<GuestDashboard />} />
+              <Route path="/calendar" element={<CalendarView />} />
+              <Route path="/meetings" element={<Meetings />} />
+              <Route path="/meetings/:id" element={<MeetingDetail />} />
+              <Route path="/meetings/:meetingId/minutes" element={<MinutesEditor />} />
+              <Route path="/drive" element={<DriveIntegration />} />
+              <Route path="/notebooks" element={<NotebooksLibrary />} />
+              <Route path="/notebook" element={<Notebook />} />
+              <Route path="/signature/:requestId" element={<SignatureApproval />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/google-oauth-callback" element={<GoogleOAuthCallback />} />
+              
+              {/* Permission-protected routes */}
+              <Route path="/actions" element={<RequirePermission resource="users" action="manage"><Actions /></RequirePermission>} />
+              <Route path="/notifications" element={<RequirePermission resource="users" action="manage"><Notifications /></RequirePermission>} />
+              <Route path="/admin" element={<RequirePermission resource="users" action="manage"><Administration /></RequirePermission>} />
+              <Route path="/integration-test" element={<RequirePermission resource="users" action="manage"><IntegrationTest /></RequirePermission>} />
+            </Route>
+            
+            {/* 404 catch-all */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </IntegrationProvider>
+      </BrowserRouter>
       <Toaster />
-    </QueryClientProvider>
+    </ThemeProvider>
+  </QueryClientProvider>
 );
 
 export default App;

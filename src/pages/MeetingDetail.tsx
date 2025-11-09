@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -738,18 +737,16 @@ const MeetingDetail = () => {
   // Show loading only until we have the basic meeting row
   if (!meeting && (meetingRealtimeLoading || loading)) {
     return (
-      <Layout>
-        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-fade-in">
-          <div className="relative">
-            <Loader2 className="h-16 w-16 animate-spin text-primary" />
-            <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
-          </div>
-          <div className="text-center space-y-2">
-            <p className="text-lg font-medium">Loading meeting details</p>
-            <p className="text-sm text-muted-foreground">Preparing your workspace...</p>
-          </div>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-fade-in">
+        <div className="relative">
+          <Loader2 className="h-16 w-16 animate-spin text-primary" />
+          <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
         </div>
-      </Layout>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-medium">Loading meeting details</p>
+          <p className="text-sm text-muted-foreground">Preparing your workspace...</p>
+        </div>
+      </div>
     );
   }
 
@@ -828,9 +825,8 @@ const MeetingDetail = () => {
   const hasVideoLink = !!meeting?.video_conference_url;
 
   return (
-    <Layout>
-      <TimeBasedAccessGuard meetingId={meetingId}>
-        <div className="space-y-6 animate-fade-in">
+    <TimeBasedAccessGuard meetingId={meetingId}>
+      <div className="space-y-6 animate-fade-in">
         {/* Header */}
         <div className="flex items-start gap-4">
           <Button variant="ghost" size="icon" asChild>
@@ -1516,8 +1512,7 @@ const MeetingDetail = () => {
           />
         )}
       </div>
-      </TimeBasedAccessGuard>
-    </Layout>
+    </TimeBasedAccessGuard>
   );
 };
 

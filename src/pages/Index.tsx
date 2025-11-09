@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { ExecutiveDashboard } from "@/components/ExecutiveDashboard";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { CEOBriefing } from "@/components/CEOBriefing";
@@ -242,7 +241,7 @@ export default function Index() {
   }
 
   return (
-    <Layout>
+    <>
       <div className="space-y-4 lg:space-y-8 pb-16 lg:pb-20">
         {/* Enhanced Animated Hero Section */}
         <div className={`relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-10 border-2 shadow-2xl transition-all duration-500 hover:shadow-3xl ${isEthioTelecom ? 'bg-gradient-to-br from-white via-gray-50 to-white border-[#8DC63F]/30' : 'bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 border-purple-500/30'}`}>
@@ -673,6 +672,6 @@ export default function Index() {
       <CEOBriefing open={showBriefing} onClose={() => setShowBriefing(false)} />
 
       <QuickActionFAB />
-    </Layout>
+    </>
   );
 }

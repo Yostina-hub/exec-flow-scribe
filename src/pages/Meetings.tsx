@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -356,18 +355,15 @@ export default function Meetings() {
 
   if (authLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[60vh] gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <span className="text-muted-foreground">Loading...</span>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[60vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="text-muted-foreground">Loading...</span>
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="space-y-6 pb-20 animate-fade-in">
         {/* Enhanced Header with Stats */}
         <div className={`relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-10 border-2 shadow-2xl transition-all duration-500 ${isEthioTelecom ? 'bg-gradient-to-br from-white via-gray-50 to-white border-[#8DC63F]/30' : 'bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10 border-purple-500/30'}`}>
           {!isEthioTelecom ? (
@@ -632,6 +628,5 @@ export default function Meetings() {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
   );
 }
