@@ -63,6 +63,9 @@ export const LiveTranscriptPanel = ({
 
   // Reverse to show latest first
   const sortedTranscriptions = [...transcriptions].reverse();
+  
+  console.log('[LiveTranscriptPanel] Rendering', transcriptions.length, 'transcriptions');
+  console.log('[LiveTranscriptPanel] Latest transcription:', transcriptions[transcriptions.length - 1]);
 
   return (
     <ScrollArea className="h-[600px]">
