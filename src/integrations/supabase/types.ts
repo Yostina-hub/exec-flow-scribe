@@ -1020,6 +1020,151 @@ export type Database = {
           },
         ]
       }
+      distribution_approval_requests: {
+        Row: {
+          approval_threshold: string
+          completed_at: string | null
+          created_at: string | null
+          current_approvals: number
+          distribution_history_id: string | null
+          expires_at: string | null
+          id: string
+          meeting_id: string
+          metadata: Json | null
+          notes: string | null
+          requested_at: string | null
+          requested_by: string
+          required_approvals: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          approval_threshold?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_approvals?: number
+          distribution_history_id?: string | null
+          expires_at?: string | null
+          id?: string
+          meeting_id: string
+          metadata?: Json | null
+          notes?: string | null
+          requested_at?: string | null
+          requested_by: string
+          required_approvals?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          approval_threshold?: string
+          completed_at?: string | null
+          created_at?: string | null
+          current_approvals?: number
+          distribution_history_id?: string | null
+          expires_at?: string | null
+          id?: string
+          meeting_id?: string
+          metadata?: Json | null
+          notes?: string | null
+          requested_at?: string | null
+          requested_by?: string
+          required_approvals?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_approval_requests_distribution_history_id_fkey"
+            columns: ["distribution_history_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribution_approval_requests_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      distribution_approval_responses: {
+        Row: {
+          approval_request_id: string
+          approver_id: string
+          comments: string | null
+          created_at: string | null
+          id: string
+          responded_at: string | null
+          response: string
+        }
+        Insert: {
+          approval_request_id: string
+          approver_id: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          responded_at?: string | null
+          response: string
+        }
+        Update: {
+          approval_request_id?: string
+          approver_id?: string
+          comments?: string | null
+          created_at?: string | null
+          id?: string
+          responded_at?: string | null
+          response?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_approval_responses_approval_request_id_fkey"
+            columns: ["approval_request_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_approval_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      distribution_approvers: {
+        Row: {
+          approval_order: number | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          is_required: boolean | null
+          meeting_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approval_order?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_required?: boolean | null
+          meeting_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approval_order?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          is_required?: boolean | null
+          meeting_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_approvers_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       distribution_channels: {
         Row: {
           channel_type: string
@@ -5100,6 +5245,10 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_attendee: {
         Args: { _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_distribution_approved: {
+        Args: { _meeting_id: string }
         Returns: boolean
       }
       is_guest: { Args: { _user_id: string }; Returns: boolean }

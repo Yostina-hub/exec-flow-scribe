@@ -3,11 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History } from 'lucide-react';
+import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History, Shield } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ScheduledDistributionDialog } from './ScheduledDistributionDialog';
 import { DistributionHistoryViewer } from './DistributionHistoryViewer';
+import { DistributionApprovalDialog } from './DistributionApprovalDialog';
+import { ManageApproversDialog } from './ManageApproversDialog';
 
 interface EmailDistributionDialogProps {
   open: boolean;
@@ -35,12 +37,35 @@ export function EmailDistributionDialog({
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(true);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showApprovalDialog, setShowApprovalDialog] = useState(false);
+  const [showManageApproversDialog, setShowManageApproversDialog] = useState(false);
+  const [isApproved, setIsApproved] = useState(false);
+  const [isCheckingApproval, setIsCheckingApproval] = useState(true);
 
   useEffect(() => {
     if (open) {
       fetchRecipients();
+      checkApprovalStatus();
     }
   }, [open, meetingId]);
+
+  const checkApprovalStatus = async () => {
+    setIsCheckingApproval(true);
+    try {
+      const { data, error } = await supabase.rpc('is_distribution_approved', {
+        _meeting_id: meetingId,
+      });
+
+      if (error) throw error;
+      setIsApproved(data || false);
+    } catch (error: any) {
+      console.error('Error checking approval:', error);
+      // Default to approved if check fails
+      setIsApproved(true);
+    } finally {
+      setIsCheckingApproval(false);
+    }
+  };
 
   const fetchRecipients = async () => {
     setIsLoadingRecipients(true);
@@ -71,6 +96,16 @@ export function EmailDistributionDialog({
   };
 
   const handleDistribute = async () => {
+    if (!isApproved) {
+      toast({
+        title: 'Approval Required',
+        description: 'Distribution requires approval before sending',
+        variant: 'destructive',
+      });
+      setShowApprovalDialog(true);
+      return;
+    }
+
     if (recipients.length === 0) {
       toast({
         title: 'No Recipients',
@@ -284,14 +319,24 @@ export function EmailDistributionDialog({
 
           {/* Actions */}
           <div className="flex justify-between items-center">
-            <Button
-              variant="ghost"
-              onClick={() => setShowHistoryDialog(true)}
-              disabled={isDistributing}
-            >
-              <History className="w-4 h-4 mr-2" />
-              View History
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                onClick={() => setShowHistoryDialog(true)}
+                disabled={isDistributing}
+              >
+                <History className="w-4 h-4 mr-2" />
+                History
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowManageApproversDialog(true)}
+                disabled={isDistributing}
+              >
+                <Shield className="w-4 h-4 mr-2" />
+                Approvers
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -300,8 +345,18 @@ export function EmailDistributionDialog({
               >
                 {distributionResults.length > 0 ? 'Close' : 'Cancel'}
               </Button>
-            {distributionResults.length === 0 ? (
+              {distributionResults.length === 0 ? (
               <>
+                {!isApproved && !isCheckingApproval && (
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowApprovalDialog(true)}
+                    disabled={isDistributing}
+                  >
+                    <Shield className="w-4 h-4 mr-2" />
+                    Request Approval
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   onClick={() => setShowScheduleDialog(true)}
@@ -312,7 +367,7 @@ export function EmailDistributionDialog({
                 </Button>
                 <Button
                   onClick={handleDistribute}
-                  disabled={isDistributing || recipients.length === 0 || isLoadingRecipients}
+                  disabled={isDistributing || recipients.length === 0 || isLoadingRecipients || !isApproved}
                   className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
                 >
                   {isDistributing ? (
@@ -323,7 +378,7 @@ export function EmailDistributionDialog({
                   ) : (
                     <>
                       <Send className="w-4 h-4 mr-2" />
-                      Send Now
+                      {isApproved ? 'Send Now' : 'Approval Required'}
                     </>
                   )}
                 </Button>
@@ -352,6 +407,22 @@ export function EmailDistributionDialog({
       <DistributionHistoryViewer
         open={showHistoryDialog}
         onOpenChange={setShowHistoryDialog}
+        meetingId={meetingId}
+      />
+
+      <DistributionApprovalDialog
+        open={showApprovalDialog}
+        onOpenChange={setShowApprovalDialog}
+        meetingId={meetingId}
+        onApprovalComplete={() => {
+          checkApprovalStatus();
+          setShowApprovalDialog(false);
+        }}
+      />
+
+      <ManageApproversDialog
+        open={showManageApproversDialog}
+        onOpenChange={setShowManageApproversDialog}
         meetingId={meetingId}
       />
     </Dialog>
