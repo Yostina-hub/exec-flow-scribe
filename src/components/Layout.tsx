@@ -33,6 +33,7 @@ interface LayoutProps {
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: LayoutDashboard },
+  { name: "Executive Advisor", href: "/advisor", icon: Brain, premium: true },
   { name: "Calendar", href: "/calendar", icon: Calendar },
   { name: "Meetings", href: "/meetings", icon: Calendar },
   { name: "Smart Drive", href: "/drive", icon: Cloud },
@@ -52,27 +53,13 @@ function AppSidebar() {
   const { canAccessRoute, loading } = useUserPermissions();
   const { theme } = useTheme();
   const isEthioTelecom = theme === 'ethio-telecom';
-  const [showAdvisorPrompt, setShowAdvisorPrompt] = useState(false);
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
-  // Check if we're on a meeting detail page
-  const isMeetingPage = location.pathname.includes('/meeting/');
-  
   // Filter navigation items based on user permissions
   const visibleNavigation = navigation.filter(item => canAccessRoute(item.href));
-
-  useEffect(() => {
-    // Show advisor prompt when on meeting page
-    if (isMeetingPage) {
-      const timer = setTimeout(() => setShowAdvisorPrompt(true), 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setShowAdvisorPrompt(false);
-    }
-  }, [isMeetingPage]);
 
   return (
     <Sidebar collapsible="icon" className={`border-r ${isEthioTelecom ? 'bg-white border-gray-200' : 'border-border/50'}`}>
@@ -91,45 +78,6 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className={`py-4 ${isEthioTelecom ? 'bg-white' : ''}`}>
-        {/* Executive Advisor - Shows when on meeting pages */}
-        {isMeetingPage && (
-          <SidebarGroup className="mb-4">
-            <SidebarGroupLabel className={`px-4 text-xs font-semibold uppercase tracking-wider ${isEthioTelecom ? 'text-gray-500' : 'text-muted-foreground/70'}`}>
-              AI Assistant
-            </SidebarGroupLabel>
-            <SidebarGroupContent className="px-2">
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    onClick={() => {
-                      const event = new CustomEvent('openExecutiveAdvisor');
-                      window.dispatchEvent(event);
-                    }}
-                    className="relative group bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white hover:opacity-90 transition-all animate-pulse-slow shadow-lg"
-                  >
-                    <Brain className="h-5 w-5 animate-pulse" />
-                    <span className="font-semibold">Executive Advisor</span>
-                    {showAdvisorPrompt && open && (
-                      <div className="absolute -right-2 -top-2 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                      </div>
-                    )}
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              </SidebarMenu>
-              {open && showAdvisorPrompt && (
-                <div className="mt-2 mx-2 p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-primary/20 animate-slide-in-right">
-                  <p className="text-xs font-medium mb-1">🧠 AI Advisor Ready</p>
-                  <p className="text-xs text-muted-foreground">
-                    Get real-time coaching, tempo insights, and success metrics for this meeting
-                  </p>
-                </div>
-              )}
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
         <SidebarGroup>
           <SidebarGroupLabel className={`px-4 text-xs font-semibold uppercase tracking-wider ${isEthioTelecom ? 'text-gray-500' : 'text-muted-foreground/70'}`}>
             Navigation
@@ -148,10 +96,16 @@ function AppSidebar() {
                         isActive={isActive}
                         className={`
                           relative group transition-all duration-200
+                          ${(item as any).premium && !isActive
+                            ? 'bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 border border-primary/20'
+                            : ''
+                          }
                           ${isActive 
                             ? isEthioTelecom
                               ? 'bg-gradient-to-r from-[#8DC63F]/10 to-[#0072BC]/10 text-[#8DC63F] font-semibold shadow-sm'
-                              : 'bg-gradient-to-r from-primary/10 to-secondary/10 text-primary font-medium shadow-sm'
+                              : (item as any).premium
+                                ? 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white font-semibold shadow-lg'
+                                : 'bg-gradient-to-r from-primary/10 to-secondary/10 text-primary font-medium shadow-sm'
                             : isEthioTelecom
                               ? 'hover:bg-gray-100 hover:translate-x-1 text-gray-700'
                               : 'hover:bg-accent/50 hover:translate-x-1'
@@ -159,10 +113,21 @@ function AppSidebar() {
                         `}
                       >
                         <NavLink to={item.href}>
-                          <item.icon className={`h-4 w-4 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'}`} />
-                          <span>{item.name}</span>
+                          <item.icon className={`h-4 w-4 transition-transform ${isActive ? 'scale-110' : 'group-hover:scale-110'} ${(item as any).premium && isActive ? 'animate-pulse' : ''}`} />
+                          <span className={(item as any).premium && isActive ? 'font-semibold' : ''}>{item.name}</span>
+                          {(item as any).premium && !isActive && (
+                            <span className="ml-auto text-xs px-1.5 py-0.5 rounded bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium">
+                              AI
+                            </span>
+                          )}
                           {isActive && (
-                            <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full ${isEthioTelecom ? 'bg-gradient-to-b from-[#8DC63F] to-[#0072BC]' : 'bg-gradient-to-b from-primary to-secondary'}`} />
+                            <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full ${
+                              isEthioTelecom 
+                                ? 'bg-gradient-to-b from-[#8DC63F] to-[#0072BC]' 
+                                : (item as any).premium
+                                  ? 'bg-gradient-to-b from-blue-600 via-purple-600 to-pink-600'
+                                  : 'bg-gradient-to-b from-primary to-secondary'
+                            }`} />
                           )}
                         </NavLink>
                       </SidebarMenuButton>
