@@ -6,6 +6,7 @@ import { Progress } from './ui/progress';
 import { ScrollArea } from './ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Input } from './ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   Brain, 
   Mic, 
@@ -27,7 +28,10 @@ import {
   Minimize2,
   Maximize2,
   Send,
-  History
+  History,
+  Search,
+  Filter,
+  Calendar
 } from 'lucide-react';
 import { RealtimeAssistant, ConversationMessage } from '@/utils/RealtimeAssistant';
 import { supabase } from '@/integrations/supabase/client';
@@ -118,6 +122,11 @@ export function ExecutiveMeetingAdvisor({
   // Live transcriptions state
   const [liveTranscriptions, setLiveTranscriptions] = useState<Transcription[]>([]);
   const transcriptScrollRef = useRef<HTMLDivElement>(null);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSpeaker, setSelectedSpeaker] = useState<string>('all');
+  const [timeRange, setTimeRange] = useState<string>('all');
 
   useEffect(() => {
     connectAdvisor();
@@ -474,6 +483,61 @@ export function ExecutiveMeetingAdvisor({
     }
   };
 
+  // Filter transcriptions based on search and filters
+  const getFilteredTranscriptions = () => {
+    let filtered = [...liveTranscriptions];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(t => 
+        t.content.toLowerCase().includes(query) ||
+        t.profiles?.full_name?.toLowerCase().includes(query)
+      );
+    }
+
+    // Speaker filter
+    if (selectedSpeaker !== 'all') {
+      filtered = filtered.filter(t => t.speaker_id === selectedSpeaker);
+    }
+
+    // Time range filter
+    if (timeRange !== 'all') {
+      const now = new Date();
+      const cutoffTime = new Date();
+      
+      switch (timeRange) {
+        case '5min':
+          cutoffTime.setMinutes(now.getMinutes() - 5);
+          break;
+        case '15min':
+          cutoffTime.setMinutes(now.getMinutes() - 15);
+          break;
+        case '30min':
+          cutoffTime.setMinutes(now.getMinutes() - 30);
+          break;
+        case '1hour':
+          cutoffTime.setHours(now.getHours() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(t => new Date(t.timestamp) >= cutoffTime);
+    }
+
+    return filtered;
+  };
+
+  // Get unique speakers for filter dropdown
+  const uniqueSpeakers = Array.from(
+    new Map(
+      liveTranscriptions
+        .filter(t => t.speaker_id && t.profiles?.full_name)
+        .map(t => [t.speaker_id, t.profiles?.full_name])
+    ).entries()
+  ).map(([id, name]) => ({ id, name: name || 'Unknown' }));
+
+  const filteredTranscriptions = getFilteredTranscriptions();
+
   if (isMinimized) {
     return (
       <motion.div
@@ -712,27 +776,94 @@ export function ExecutiveMeetingAdvisor({
             <TabsContent value="transcriptions" className="flex-1 flex flex-col overflow-hidden">
               <Card className="flex-1 flex flex-col overflow-hidden border-2 border-green-500/20">
                 <CardHeader className="pb-3 bg-muted/30">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Users className="h-5 w-5 text-green-600" />
-                    Live Participant Conversations
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Users className="h-5 w-5 text-green-600" />
+                      Live Participant Conversations
+                    </CardTitle>
+                    <Badge variant="secondary">
+                      {filteredTranscriptions.length} / {liveTranscriptions.length}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-4">
                     Real-time transcription of what participants are saying
                   </p>
+                  
+                  {/* Search and Filter Controls */}
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search by keyword or speaker name..."
+                        className="pl-9"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <Select value={selectedSpeaker} onValueChange={setSelectedSpeaker}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Filter by speaker" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Speakers</SelectItem>
+                          {uniqueSpeakers.map(speaker => (
+                            <SelectItem key={speaker.id} value={speaker.id}>
+                              {speaker.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      <Select value={timeRange} onValueChange={setTimeRange}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Time range" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Time</SelectItem>
+                          <SelectItem value="5min">Last 5 minutes</SelectItem>
+                          <SelectItem value="15min">Last 15 minutes</SelectItem>
+                          <SelectItem value="30min">Last 30 minutes</SelectItem>
+                          <SelectItem value="1hour">Last hour</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {(searchQuery || selectedSpeaker !== 'all' || timeRange !== 'all') && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setSelectedSpeaker('all');
+                          setTimeRange('all');
+                        }}
+                        className="w-full"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Clear Filters
+                      </Button>
+                    )}
+                  </div>
                 </CardHeader>
                 <CardContent className="flex-1 p-4 overflow-hidden">
                   <ScrollArea className="h-full pr-4" ref={transcriptScrollRef}>
-                    {liveTranscriptions.length === 0 ? (
+                    {filteredTranscriptions.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <Users className="h-16 w-16 mb-4 text-green-500/30" />
-                        <h3 className="text-xl font-semibold mb-2">No Conversations Yet</h3>
+                        <h3 className="text-xl font-semibold mb-2">
+                          {liveTranscriptions.length === 0 ? 'No Conversations Yet' : 'No Results Found'}
+                        </h3>
                         <p className="text-muted-foreground max-w-md">
-                          Participant conversations will appear here in real-time as they speak during the meeting.
+                          {liveTranscriptions.length === 0 
+                            ? 'Participant conversations will appear here in real-time as they speak during the meeting.'
+                            : 'Try adjusting your search or filter criteria to find what you\'re looking for.'}
                         </p>
                       </div>
                     ) : (
                       <div className="space-y-3 pb-4">
-                        {liveTranscriptions.map((transcript) => (
+                        {filteredTranscriptions.map((transcript) => (
                           <motion.div
                             key={transcript.id}
                             initial={{ opacity: 0, x: -20 }}
@@ -757,7 +888,16 @@ export function ExecutiveMeetingAdvisor({
                               </div>
                             </div>
                             <p className="text-sm mt-2 leading-relaxed ml-10">
-                              {transcript.content}
+                              {searchQuery && transcript.content.toLowerCase().includes(searchQuery.toLowerCase()) ? (
+                                <span dangerouslySetInnerHTML={{
+                                  __html: transcript.content.replace(
+                                    new RegExp(`(${searchQuery})`, 'gi'),
+                                    '<mark class="bg-yellow-200 dark:bg-yellow-800">$1</mark>'
+                                  )
+                                }} />
+                              ) : (
+                                transcript.content
+                              )}
                             </p>
                           </motion.div>
                         ))}
