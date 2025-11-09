@@ -823,14 +823,14 @@ const MeetingDetail = () => {
           meetingTitle={meetingTitle}
           isRecording={isRecording}
           recordingSeconds={recordingSeconds}
-          onStartRecording={() => {
-            setRecordingSeconds(0);
-            recordingStartTimeRef.current = null;
-            pausedDurationRef.current = 0;
-            pauseStartTimeRef.current = null;
-            startRecording();
-            setShowLiveModal(true);
-          }}
+            onStartRecording={() => {
+              setRecordingSeconds(0);
+              recordingStartTimeRef.current = null;
+              pausedDurationRef.current = 0;
+              pauseStartTimeRef.current = null;
+              startRecording();
+              // Show transcription inline (no modal)
+            }}
           onStopRecording={() => {
             stopRecording();
             setShowLiveModal(false);
