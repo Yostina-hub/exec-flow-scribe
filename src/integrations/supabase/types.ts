@@ -238,6 +238,48 @@ export type Database = {
         }
         Relationships: []
       }
+      approval_rules: {
+        Row: {
+          approver_user_ids: string[]
+          conditions: Json
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          priority: number
+          require_all_approvers: boolean | null
+          rule_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          approver_user_ids?: string[]
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number
+          require_all_approvers?: boolean | null
+          rule_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          approver_user_ids?: string[]
+          conditions?: Json
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          priority?: number
+          require_all_approvers?: boolean | null
+          rule_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action_details: Json | null
@@ -3650,6 +3692,7 @@ export type Database = {
           organizer_notes: string | null
           recording_url: string | null
           requires_offline_support: boolean | null
+          sensitivity_level: string | null
           start_time: string
           status: Database["public"]["Enums"]["meeting_status"]
           timezone: string | null
@@ -3675,6 +3718,7 @@ export type Database = {
           organizer_notes?: string | null
           recording_url?: string | null
           requires_offline_support?: boolean | null
+          sensitivity_level?: string | null
           start_time: string
           status?: Database["public"]["Enums"]["meeting_status"]
           timezone?: string | null
@@ -3700,6 +3744,7 @@ export type Database = {
           organizer_notes?: string | null
           recording_url?: string | null
           requires_offline_support?: boolean | null
+          sensitivity_level?: string | null
           start_time?: string
           status?: Database["public"]["Enums"]["meeting_status"]
           timezone?: string | null
@@ -5253,6 +5298,16 @@ export type Database = {
       }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
       is_senior_role: { Args: { _user_id: string }; Returns: boolean }
+      match_approval_rules: {
+        Args: { p_meeting_id: string }
+        Returns: {
+          approver_ids: string[]
+          priority: number
+          require_all: boolean
+          rule_id: string
+          rule_name: string
+        }[]
+      }
       match_transcriptions: {
         Args: {
           match_count?: number

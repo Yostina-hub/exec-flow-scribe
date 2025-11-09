@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History, Shield } from 'lucide-react';
+import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History, Shield, Settings, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ScheduledDistributionDialog } from './ScheduledDistributionDialog';
 import { DistributionHistoryViewer } from './DistributionHistoryViewer';
 import { DistributionApprovalDialog } from './DistributionApprovalDialog';
 import { ManageApproversDialog } from './ManageApproversDialog';
+import { ApprovalRulesManager } from './ApprovalRulesManager';
 
 interface EmailDistributionDialogProps {
   open: boolean;
@@ -39,6 +40,7 @@ export function EmailDistributionDialog({
   const [showHistoryDialog, setShowHistoryDialog] = useState(false);
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showManageApproversDialog, setShowManageApproversDialog] = useState(false);
+  const [showApprovalRules, setShowApprovalRules] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(true);
 
@@ -64,6 +66,49 @@ export function EmailDistributionDialog({
       setIsApproved(true);
     } finally {
       setIsCheckingApproval(false);
+    }
+  };
+
+  const autoAssignApprovers = async () => {
+    try {
+      const { data: matchedRules, error } = await supabase.rpc('match_approval_rules', {
+        p_meeting_id: meetingId,
+      });
+
+      if (error) throw error;
+
+      if (matchedRules && matchedRules.length > 0) {
+        const topRule = matchedRules[0];
+        
+        // Clear existing approvers
+        await supabase
+          .from('distribution_approvers')
+          .delete()
+          .eq('meeting_id', meetingId);
+
+        // Insert new approvers based on rule
+        const approvers = topRule.approver_ids.map((userId: string, index: number) => ({
+          meeting_id: meetingId,
+          user_id: userId,
+          is_required: topRule.require_all,
+          approval_order: index + 1,
+        }));
+
+        await supabase
+          .from('distribution_approvers')
+          .insert(approvers);
+
+        toast({
+          title: 'Approvers Assigned',
+          description: `Applied rule: ${topRule.rule_name}`,
+        });
+
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      console.error('Error auto-assigning approvers:', error);
+      return false;
     }
   };
 
@@ -330,10 +375,29 @@ export function EmailDistributionDialog({
               </Button>
               <Button
                 variant="ghost"
-                onClick={() => setShowManageApproversDialog(true)}
+                onClick={() => setShowApprovalRules(true)}
                 disabled={isDistributing}
               >
-                <Shield className="w-4 h-4 mr-2" />
+                <Settings className="w-4 h-4 mr-2" />
+                Rules
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={async () => {
+                  const assigned = await autoAssignApprovers();
+                  if (assigned) {
+                    setShowManageApproversDialog(true);
+                  } else {
+                    toast({
+                      title: 'No Rules Matched',
+                      description: 'Configure approvers manually',
+                    });
+                    setShowManageApproversDialog(true);
+                  }
+                }}
+                disabled={isDistributing}
+              >
+                <UserCheck className="w-4 h-4 mr-2" />
                 Approvers
               </Button>
             </div>
@@ -418,6 +482,11 @@ export function EmailDistributionDialog({
           checkApprovalStatus();
           setShowApprovalDialog(false);
         }}
+      />
+
+      <ApprovalRulesManager
+        open={showApprovalRules}
+        onOpenChange={setShowApprovalRules}
       />
 
       <ManageApproversDialog
