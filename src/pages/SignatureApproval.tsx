@@ -187,6 +187,11 @@ export default function SignatureApproval() {
       return;
     }
 
+    toast({
+      title: 'Generating PDF...',
+      description: 'Creating official Ethio Telecom branded document',
+    });
+
     // Check cache first
     const cacheKey = `pdf_${signatureRequest.meeting_id}_${requestId}`;
     const cachedPdf = localStorageCache.get<string>(cacheKey);
@@ -196,11 +201,16 @@ export default function SignatureApproval() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ethiotelecom-approved-${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `EthioTelecom-Minutes-Document-${new Date().toISOString().split('T')[0]}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      
+      toast({
+        title: '✓ PDF Downloaded',
+        description: 'Official Ethio Telecom approved document saved',
+      });
       return;
     }
 
@@ -250,15 +260,15 @@ export default function SignatureApproval() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ethiotelecom-approved-${new Date().toISOString().split('T')[0]}.html`;
+      a.download = `EthioTelecom-Minutes-${pdfData.metadata?.meeting_title || 'Document'}-${new Date().toISOString().split('T')[0]}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
       toast({
-        title: '✓ Branded PDF Downloaded',
-        description: 'Ethio Telecom approved minutes saved',
+        title: '✓ Official PDF Downloaded',
+        description: `Ethio Telecom approved document with digital signature - ${pdfData.metadata?.meeting_title || 'Document'}`,
       });
     } catch (error: any) {
       console.error('Download error:', error);
@@ -391,9 +401,13 @@ export default function SignatureApproval() {
               </>
             )}
             {isApproved && (
-              <Button onClick={handleDownloadPDF} size="lg" variant="outline">
+              <Button 
+                onClick={handleDownloadPDF} 
+                size="lg" 
+                className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651] text-white shadow-lg"
+              >
                 <Download className="w-5 h-5 mr-2" />
-                Download Approved PDF
+                Download Official PDF
               </Button>
             )}
             {canSign && (

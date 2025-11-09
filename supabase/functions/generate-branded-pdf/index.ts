@@ -481,14 +481,10 @@ function generatePDFHTML(params: any): string {
     .stamp-icon {
       width: 56px;
       height: 56px;
-      background: rgba(255, 255, 255, 0.25);
-      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 28pt;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      flex-shrink: 0;
     }
     
     .stamp-title-section { flex: 1; margin-left: 16px; }
@@ -935,19 +931,26 @@ function generatePDFHTML(params: any): string {
 <body>
   <div class="corner-ornament"></div>
   <div class="document-container">
-    <!-- Ultra-Modern Header -->
+    <!-- Ethio Telecom Professional Header -->
     <div class="header">
       <div class="header-content">
         <div class="logo-section">
-          ${brandKit?.logo_url ? `<img src="${brandKit.logo_url}" class="logo" alt="${orgName} Logo" />` : ''}
+          ${brandKit?.logo_url ? `<img src="${brandKit.logo_url}" class="logo" alt="${orgName} Logo" />` : `
+          <svg width="120" height="60" viewBox="0 0 120 60" xmlns="http://www.w3.org/2000/svg" class="logo">
+            <rect width="120" height="60" fill="white" opacity="0.1"/>
+            <text x="10" y="35" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white">ETHIO</text>
+            <text x="10" y="52" font-family="Arial, sans-serif" font-size="14" fill="white" opacity="0.9">TELECOM</text>
+          </svg>
+          `}
           <div class="org-info">
             <div class="org-name">${orgName}</div>
-            <div class="document-type">Official Meeting Minutes</div>
+            <div class="document-type">Official Meeting Minutes Document</div>
           </div>
         </div>
         <div class="header-meta">
           <div class="doc-id">DOC-${docHash.toUpperCase()}</div>
-          <div>${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+          <div style="margin-top: 4px; font-size: 8pt; opacity: 0.8;">Classification: Internal</div>
+          <div style="margin-top: 2px;">${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
         </div>
       </div>
     </div>
@@ -984,36 +987,54 @@ function generatePDFHTML(params: any): string {
     </div>
 
     ${approvalStamp ? `
-    <!-- Modern Approval Stamp -->
+    <!-- Ethio Telecom Official Approval Stamp -->
     <div class="approval-stamp">
       <div class="stamp-header">
-        <div>
-          <div class="stamp-icon">✓</div>
+        <div class="stamp-icon">
+          <svg width="56" height="56" viewBox="0 0 56 56" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="28" cy="28" r="26" fill="rgba(255,255,255,0.2)" stroke="white" stroke-width="2"/>
+            <path d="M16 28 L24 36 L40 20" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
         </div>
         <div class="stamp-title-section">
-          <div class="stamp-title">OFFICIALLY APPROVED & SIGNED</div>
-          <div class="stamp-subtitle">This document has been digitally verified</div>
+          <div class="stamp-title">✓ OFFICIALLY APPROVED & DIGITALLY SIGNED</div>
+          <div class="stamp-subtitle">This document has been authenticated and verified by ${orgName}</div>
         </div>
       </div>
       <div class="stamp-details">
         <div class="stamp-detail-item">
-          <div class="stamp-detail-label">Approved By</div>
+          <div class="stamp-detail-label">🖊️ Authorized Signatory</div>
           <div class="stamp-detail-value">${approvalStamp.approved_by}</div>
         </div>
         <div class="stamp-detail-item">
-          <div class="stamp-detail-label">Timestamp</div>
+          <div class="stamp-detail-label">📅 Approval Date & Time</div>
           <div class="stamp-detail-value">${new Date(approvalStamp.approved_at).toLocaleString('en-US', {
-            dateStyle: 'medium',
-            timeStyle: 'short'
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
           })}</div>
         </div>
         <div class="stamp-detail-item">
-          <div class="stamp-detail-label">Version</div>
-          <div class="stamp-detail-value">v${approvalStamp.version_number}</div>
+          <div class="stamp-detail-label">📋 Document Version</div>
+          <div class="stamp-detail-value">Version ${approvalStamp.version_number}.0</div>
         </div>
         <div class="stamp-detail-item">
-          <div class="stamp-detail-label">Security Hash</div>
-          <div class="stamp-detail-value" style="font-family: monospace; font-size: 7pt; word-break: break-all;">${approvalStamp.hash.substring(0, 24)}...</div>
+          <div class="stamp-detail-label">🔐 Digital Signature Hash</div>
+          <div class="stamp-detail-value" style="font-family: monospace; font-size: 7pt; word-break: break-all;">${approvalStamp.hash.substring(0, 32)}...</div>
+        </div>
+      </div>
+      <div style="margin-top: 16px; padding: 12px; background: rgba(255,255,255,0.15); border-radius: 8px; text-align: center; border: 1px solid rgba(255,255,255,0.3);">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+          <div style="font-size: 9pt; opacity: 0.95;">
+            <strong>Verification Code:</strong> ${docHash.toUpperCase().substring(0, 8)}-${new Date(approvalStamp.approved_at).getFullYear()}
+          </div>
+          <div style="width: 1px; height: 20px; background: rgba(255,255,255,0.3);"></div>
+          <div style="font-size: 9pt; opacity: 0.95;">
+            <strong>Status:</strong> <span style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 4px;">APPROVED</span>
+          </div>
         </div>
       </div>
     </div>
@@ -1118,31 +1139,56 @@ function generatePDFHTML(params: any): string {
     </div>
     ` : ''}
 
-    <!-- Enhanced Footer -->
+    <!-- Ethio Telecom Professional Footer -->
     <div class="footer">
       <div class="footer-content">
         <div class="footer-left">
           <div><strong>${orgName}</strong></div>
-          <div>Official Meeting Minutes Document</div>
+          <div style="margin-top: 4px; font-size: 8.5pt;">Official Meeting Minutes Document</div>
+          <div style="margin-top: 8px; font-size: 8pt; opacity: 0.8; line-height: 1.5;">
+            ${orgName === 'Ethio Telecom' ? `
+            📍 Churchill Avenue, Addis Ababa, Ethiopia<br/>
+            📞 +251-115-515-000 | 📧 info@ethiotelecom.et<br/>
+            🌐 www.ethiotelecom.et
+            ` : `Contact: info@${orgName.toLowerCase().replace(/\s+/g, '')}.et`}
+          </div>
         </div>
         <div class="footer-right">
-          <div>Generated: ${new Date().toLocaleDateString('en-US', {
+          <div style="margin-bottom: 6px;"><strong>Document Information</strong></div>
+          <div style="font-size: 8.5pt;">Generated: ${new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
             day: 'numeric'
           })}</div>
-          <div>Time: ${new Date().toLocaleTimeString('en-US', {
+          <div style="font-size: 8.5pt; margin-top: 2px;">Time: ${new Date().toLocaleTimeString('en-US', {
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            timeZoneName: 'short'
           })}</div>
+          <div style="font-size: 8pt; margin-top: 4px; opacity: 0.8;">Page 1 of 1</div>
         </div>
       </div>
+      
+      ${approvalStamp ? `
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 12px 20px; border-radius: 8px; margin: 16px 0; text-align: center; font-size: 9pt; font-weight: 600; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);">
+        ✓ This is an officially approved and digitally signed document
+      </div>
+      ` : `
       <div class="confidential-notice">
         🔒 CONFIDENTIAL & PROPRIETARY - This document contains sensitive information for authorized recipients only
       </div>
+      `}
+      
       <div class="document-hash">
-        <strong>Document Verification Code:</strong>
-        <code>${docHash.toUpperCase()}-${new Date().getFullYear()}</code>
+        <strong>🔐 Document Verification Code:</strong>
+        <code>${docHash.toUpperCase()}-${new Date().getFullYear()}-ET</code>
+        <div style="margin-top: 6px; font-size: 7pt; opacity: 0.7;">
+          Verify this document at: verify.ethiotelecom.et/doc/${docHash.substring(0, 12)}
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 16px; padding-top: 16px; border-top: 1px solid #cbd5e1; font-size: 7pt; color: #64748b;">
+        © ${new Date().getFullYear()} ${orgName}. All rights reserved. | Document ID: ${docHash.substring(0, 8).toUpperCase()}
       </div>
     </div>
   </div>
