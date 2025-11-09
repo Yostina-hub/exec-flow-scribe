@@ -6,7 +6,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { localStorageCache } from '@/utils/localStorage';
-import { ArrowLeft, FileSignature, Download, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen } from 'lucide-react';
+import { detectLanguage } from '@/utils/langDetect';
 
 // Lazy load heavy components
 const SignaturePackageViewer = lazy(() => 
@@ -19,6 +20,11 @@ const SignOffDialog = lazy(() =>
     default: module.SignOffDialog 
   }))
 );
+const NonTechnicalSummaryDialog = lazy(() => 
+  import('@/components/NonTechnicalSummaryDialog').then(module => ({ 
+    default: module.NonTechnicalSummaryDialog 
+  }))
+);
 
 export default function SignatureApproval() {
   const { requestId } = useParams();
@@ -26,6 +32,10 @@ export default function SignatureApproval() {
   const { toast } = useToast();
   const { user, loading: authLoading } = useAuth();
   const [signOffOpen, setSignOffOpen] = useState(false);
+  const [showNonTechnical, setShowNonTechnical] = useState(false);
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedMinutes, setTranslatedMinutes] = useState<string>('');
 
   // Check localStorage first for faster initial load
   const cachedRequest = useMemo(() => 
@@ -121,6 +131,49 @@ export default function SignatureApproval() {
       description: 'Sign-off processed successfully',
     });
   }, [requestId, refetch, toast]);
+
+  useEffect(() => {
+    if (signatureRequest?.package_data?.minutes) {
+      const detected = detectLanguage(signatureRequest.package_data.minutes);
+      if (detected === 'am' || detected === 'en' || detected === 'ar') {
+        setCurrentLanguage(detected);
+      }
+    }
+  }, [signatureRequest]);
+
+  const handleLanguageToggle = useCallback(async (targetLang: 'am' | 'en' | 'ar') => {
+    if (targetLang === currentLanguage || !signatureRequest?.package_data?.minutes) return;
+    
+    setIsTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-minutes', {
+        body: {
+          content: signatureRequest.package_data.minutes,
+          targetLanguage: targetLang,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.translatedContent) {
+        setTranslatedMinutes(data.translatedContent);
+        setCurrentLanguage(targetLang);
+        toast({
+          title: 'Translated',
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'ar' ? 'Arabic' : 'English'}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Translation error:', error);
+      toast({
+        title: 'Translation Failed',
+        description: error.message || 'Failed to translate minutes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  }, [currentLanguage, signatureRequest, toast]);
 
   const handleDownloadPDF = useCallback(async () => {
     if (!signatureRequest?.meeting_id) {
@@ -259,7 +312,58 @@ export default function SignatureApproval() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            {signatureRequest?.package_data?.minutes && (
+              <>
+                <div className="flex gap-1 mr-2">
+                  <Button
+                    variant={currentLanguage === 'am' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('am')}
+                    disabled={isTranslating}
+                  >
+                    {isTranslating && currentLanguage !== 'am' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'አማርኛ'
+                    )}
+                  </Button>
+                  <Button
+                    variant={currentLanguage === 'en' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('en')}
+                    disabled={isTranslating}
+                  >
+                    {isTranslating && currentLanguage !== 'en' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'English'
+                    )}
+                  </Button>
+                  <Button
+                    variant={currentLanguage === 'ar' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('ar')}
+                    disabled={isTranslating}
+                  >
+                    {isTranslating && currentLanguage !== 'ar' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'العربية'
+                    )}
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNonTechnical(true)}
+                  className="gap-2 mr-2"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Non-Technical
+                </Button>
+              </>
+            )}
             {isApproved && (
               <Button onClick={handleDownloadPDF} size="lg" variant="outline">
                 <Download className="w-5 h-5 mr-2" />
@@ -283,7 +387,10 @@ export default function SignatureApproval() {
             </div>
           }>
             <SignaturePackageViewer
-              packageData={signatureRequest.package_data}
+              packageData={{
+                ...signatureRequest.package_data,
+                minutes: translatedMinutes || signatureRequest.package_data.minutes
+              }}
               status={signatureRequest.status}
               delegationChain={delegationChain}
             />
@@ -298,6 +405,18 @@ export default function SignatureApproval() {
             onOpenChange={setSignOffOpen}
             signatureRequestId={requestId!}
             onSuccess={handleSuccess}
+          />
+        </Suspense>
+      )}
+
+      {showNonTechnical && signatureRequest?.package_data?.minutes && (
+        <Suspense fallback={null}>
+          <NonTechnicalSummaryDialog
+            content={translatedMinutes || signatureRequest.package_data.minutes}
+            language={currentLanguage}
+            meetingTitle="Meeting Minutes"
+            open={showNonTechnical}
+            onOpenChange={setShowNonTechnical}
           />
         </Suspense>
       )}

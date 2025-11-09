@@ -11,12 +11,14 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileText, Download, Copy, Brain, BookOpen } from 'lucide-react';
+import { Loader2, FileText, Download, Copy, Brain, BookOpen, Languages } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
+import { NonTechnicalSummaryDialog } from './NonTechnicalSummaryDialog';
+import { detectLanguage } from '@/utils/langDetect';
 
 interface GenerateMinutesDialogProps {
   meetingId: string;
@@ -31,15 +33,38 @@ export const GenerateMinutesDialog = ({
 }: GenerateMinutesDialogProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [minutes, setMinutes] = useState<string>('');
+  const [originalMinutes, setOriginalMinutes] = useState<string>('');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [isTranslating, setIsTranslating] = useState(false);
   const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
+  const [showNonTechnical, setShowNonTechnical] = useState(false);
+  const [meetingTitle, setMeetingTitle] = useState('');
   const { toast } = useToast();
 
   useEffect(() => {
     if (open) {
       fetchAIProvider();
       fetchExistingMinutes();
+      fetchMeetingTitle();
     }
   }, [open]);
+
+  const fetchMeetingTitle = async () => {
+    try {
+      const { data } = await supabase
+        .from('meetings')
+        .select('title')
+        .eq('id', meetingId)
+        .single();
+      
+      if (data) {
+        setMeetingTitle(data.title);
+      }
+    } catch (error) {
+      console.error('Error fetching meeting title:', error);
+    }
+  };
 
   const fetchExistingMinutes = async () => {
     try {
@@ -54,6 +79,14 @@ export const GenerateMinutesDialog = ({
 
       if (!error && latest?.content) {
         setMinutes(latest.content);
+        setOriginalMinutes(latest.content);
+        
+        // Detect language
+        const detected = detectLanguage(latest.content);
+        if (detected === 'am' || detected === 'en' || detected === 'ar') {
+          setDetectedLanguage(detected);
+          setCurrentLanguage(detected);
+        }
       } else {
         // Fallback for legacy flows where raw markdown might be in meetings.minutes_url
         const { data: m } = await supabase
@@ -113,10 +146,22 @@ export const GenerateMinutesDialog = ({
       }
 
       setMinutes(data.minutes);
+      setOriginalMinutes(data.minutes);
+      
+      // Detect language (default to Amharic)
+      const detected = detectLanguage(data.minutes);
+      if (detected === 'am' || detected === 'en' || detected === 'ar') {
+        setDetectedLanguage(detected);
+        setCurrentLanguage(detected);
+      } else {
+        setDetectedLanguage('am');
+        setCurrentLanguage('am');
+      }
       
       toast({
-        title: 'Minutes generated',
-        description: 'AI has successfully generated your meeting minutes',
+        title: 'Success!',
+        description: 'Meeting minutes generated successfully in ' + 
+          (detected === 'am' ? 'Amharic' : detected === 'ar' ? 'Arabic' : 'English'),
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
@@ -162,12 +207,47 @@ export const GenerateMinutesDialog = ({
     }
   };
 
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'ar') => {
+    if (targetLang === currentLanguage) return;
+    
+    setIsTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-minutes', {
+        body: {
+          content: originalMinutes,
+          targetLanguage: targetLang,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.translatedContent) {
+        setMinutes(data.translatedContent);
+        setCurrentLanguage(targetLang);
+        toast({
+          title: 'Translated',
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'ar' ? 'Arabic' : 'English'}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Translation error:', error);
+      toast({
+        title: 'Translation Failed',
+        description: error.message || 'Failed to translate minutes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTranslating(false);
+    }
+  };
+
   const handleDownload = () => {
     const blob = new Blob([minutes], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `meeting-minutes-${new Date().toISOString().split('T')[0]}.md`;
+    const langSuffix = currentLanguage === 'am' ? '-amharic' : currentLanguage === 'ar' ? '-arabic' : '-english';
+    a.download = `meeting-minutes${langSuffix}-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -231,19 +311,75 @@ export const GenerateMinutesDialog = ({
 
         {minutes && !isGenerating && (
           <>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
-                <Copy className="h-4 w-4" />
-                Copy
-              </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
-                <Download className="h-4 w-4" />
-                Download
-              </Button>
-              <Button size="sm" onClick={handleGenerate} className="gap-2">
-                <FileText className="h-4 w-4" />
-                Regenerate
-              </Button>
+            <div className="flex gap-2 justify-between items-center mb-4">
+              <div className="flex gap-2">
+                <Button
+                  variant={currentLanguage === 'am' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('am')}
+                  disabled={isTranslating}
+                  className="gap-2"
+                >
+                  {isTranslating && currentLanguage !== 'am' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4" />
+                  )}
+                  አማርኛ
+                </Button>
+                <Button
+                  variant={currentLanguage === 'en' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('en')}
+                  disabled={isTranslating}
+                  className="gap-2"
+                >
+                  {isTranslating && currentLanguage !== 'en' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4" />
+                  )}
+                  English
+                </Button>
+                <Button
+                  variant={currentLanguage === 'ar' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('ar')}
+                  disabled={isTranslating}
+                  className="gap-2"
+                >
+                  {isTranslating && currentLanguage !== 'ar' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4" />
+                  )}
+                  العربية
+                </Button>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNonTechnical(true)}
+                  className="gap-2"
+                >
+                  <BookOpen className="h-4 w-4" />
+                  Non-Technical
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+                  <Copy className="h-4 w-4" />
+                  Copy
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+                <Button size="sm" onClick={handleGenerate} className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Regenerate
+                </Button>
+              </div>
             </div>
 
             <ScrollArea className="h-[500px] pr-4">
@@ -285,6 +421,14 @@ export const GenerateMinutesDialog = ({
             </ScrollArea>
           </>
         )}
+
+        <NonTechnicalSummaryDialog
+          content={minutes}
+          language={currentLanguage}
+          meetingTitle={meetingTitle}
+          open={showNonTechnical}
+          onOpenChange={setShowNonTechnical}
+        />
       </DialogContent>
     </Dialog>
   );

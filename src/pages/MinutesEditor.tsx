@@ -6,12 +6,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2, Copy, Brain } from 'lucide-react';
+import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2, Copy, Brain, Languages, BookOpen } from 'lucide-react';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
 import { AIMinutesEnhancer } from '@/components/AIMinutesEnhancer';
+import { NonTechnicalSummaryDialog } from '@/components/NonTechnicalSummaryDialog';
 import { Badge } from '@/components/ui/badge';
+import { detectLanguage } from '@/utils/langDetect';
 
 interface TranscriptSegment {
   id: string;
@@ -30,6 +32,10 @@ export default function MinutesEditor() {
   
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [minutes, setMinutes] = useState('');
+  const [originalMinutes, setOriginalMinutes] = useState('');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -228,7 +234,14 @@ export default function MinutesEditor() {
 
       if (minutesData?.content) {
         setMinutes(minutesData.content);
+        setOriginalMinutes(minutesData.content);
         setLatestMinutesVersionId(minutesData.id);
+        
+        // Detect language
+        const detected = detectLanguage(minutesData.content);
+        if (detected === 'am' || detected === 'en' || detected === 'ar') {
+          setCurrentLanguage(detected);
+        }
       } else {
         // Fallback: if no version yet, use latest from meeting record
         const { data: m } = await supabase
@@ -297,6 +310,16 @@ export default function MinutesEditor() {
 
       if (data?.minutes) {
         setMinutes(data.minutes);
+        setOriginalMinutes(data.minutes);
+        
+        // Detect language
+        const detected = detectLanguage(data.minutes);
+        if (detected === 'am' || detected === 'en' || detected === 'ar') {
+          setCurrentLanguage(detected);
+        } else {
+          setCurrentLanguage('am');
+        }
+        
         toast({
           title: 'Success!',
           description: 'Meeting minutes generated successfully',
@@ -311,6 +334,40 @@ export default function MinutesEditor() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'ar') => {
+    if (targetLang === currentLanguage || !originalMinutes) return;
+    
+    setIsTranslating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-minutes', {
+        body: {
+          content: originalMinutes,
+          targetLanguage: targetLang,
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.translatedContent) {
+        setMinutes(data.translatedContent);
+        setCurrentLanguage(targetLang);
+        toast({
+          title: 'Translated',
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'ar' ? 'Arabic' : 'English'}`,
+        });
+      }
+    } catch (error: any) {
+      console.error('Translation error:', error);
+      toast({
+        title: 'Translation Failed',
+        description: error.message || 'Failed to translate minutes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsTranslating(false);
     }
   };
 
@@ -616,8 +673,59 @@ export default function MinutesEditor() {
               </div>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
+          <div className="flex gap-2 items-center">
+            {minutes && (
+              <>
+                <div className="flex gap-1 mr-2">
+                  <Button
+                    variant={currentLanguage === 'am' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('am')}
+                    disabled={isTranslating || !originalMinutes}
+                  >
+                    {isTranslating && currentLanguage !== 'am' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'አማርኛ'
+                    )}
+                  </Button>
+                  <Button
+                    variant={currentLanguage === 'en' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('en')}
+                    disabled={isTranslating || !originalMinutes}
+                  >
+                    {isTranslating && currentLanguage !== 'en' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'English'
+                    )}
+                  </Button>
+                  <Button
+                    variant={currentLanguage === 'ar' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('ar')}
+                    disabled={isTranslating || !originalMinutes}
+                  >
+                    {isTranslating && currentLanguage !== 'ar' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'العربية'
+                    )}
+                  </Button>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowNonTechnical(true)}
+                  className="gap-2"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Non-Technical
+                </Button>
+              </>
+            )}
+            <Button
               onClick={handleGenerateMinutes} 
               disabled={isGenerating || transcript.length === 0}
               variant="secondary"
@@ -807,6 +915,14 @@ The AI assistant can help generate a professional structure for you."
           />
         </div>
       </div>
+      
+      <NonTechnicalSummaryDialog
+        content={minutes}
+        language={currentLanguage}
+        meetingTitle={meetingTitle}
+        open={showNonTechnical}
+        onOpenChange={setShowNonTechnical}
+      />
     </>
   );
 }
