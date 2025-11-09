@@ -24,10 +24,10 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get meeting transcriptions
+    // Get meeting transcriptions with speaker names
     const { data: transcriptions, error: transcriptError } = await supabase
       .from("transcriptions")
-      .select("content, speaker")
+      .select("content, speaker_id, profiles(full_name)")
       .eq("meeting_id", meetingId)
       .order("timestamp", { ascending: true });
 
@@ -42,7 +42,10 @@ serve(async (req) => {
 
     // Build conversation context
     const context = transcriptions
-      .map((t) => `${t.speaker}: ${t.content}`)
+      .map((t: any) => {
+        const speakerName = t.profiles?.full_name || 'Unknown Speaker';
+        return `${speakerName}: ${t.content}`;
+      })
       .join("\n");
 
     // Call Lovable AI to generate questions
