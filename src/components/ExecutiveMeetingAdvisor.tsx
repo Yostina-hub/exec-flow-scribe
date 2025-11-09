@@ -31,7 +31,8 @@ import {
   History,
   Search,
   Filter,
-  Calendar
+  Calendar,
+  MessageCircleQuestion
 } from 'lucide-react';
 import { RealtimeAssistant, ConversationMessage } from '@/utils/RealtimeAssistant';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +78,18 @@ interface Transcription {
   profiles?: {
     full_name: string;
   };
+}
+
+interface ParticipantQuestion {
+  id: string;
+  question: string;
+  askedBy: string;
+  askedByName?: string;
+  timestamp: string;
+  answer?: string;
+  answeredBy?: string;
+  answeredByName?: string;
+  answeredAt?: string;
 }
 
 export function ExecutiveMeetingAdvisor({ 
@@ -128,10 +141,15 @@ export function ExecutiveMeetingAdvisor({
   const [selectedSpeaker, setSelectedSpeaker] = useState<string>('all');
   const [timeRange, setTimeRange] = useState<string>('all');
 
+  // Participant questions state
+  const [participantQuestions, setParticipantQuestions] = useState<ParticipantQuestion[]>([]);
+  const [answerText, setAnswerText] = useState<{ [key: string]: string }>({});
+
   useEffect(() => {
     connectAdvisor();
     const cleanup = startRealtimeMonitoring();
     loadRecentTranscriptions();
+    loadParticipantQuestions();
     
     return () => {
       if (assistantRef.current) {
@@ -314,6 +332,152 @@ export function ExecutiveMeetingAdvisor({
     }
   };
 
+  const loadParticipantQuestions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('meeting_questions')
+        .select('*')
+        .eq('meeting_id', meetingId)
+        .order('generated_at', { ascending: false });
+
+      if (error) throw error;
+
+      if (data) {
+        // Fetch profile info for answerers
+        const userIds = [...new Set(data.map(q => q.answered_by).filter(Boolean))];
+
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', userIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+
+        const questions: ParticipantQuestion[] = data.map(q => ({
+          id: q.id,
+          question: q.question,
+          askedBy: '',
+          askedByName: 'Participant',
+          timestamp: q.generated_at,
+          answer: q.answer || undefined,
+          answeredBy: q.answered_by || undefined,
+          answeredByName: q.answered_by ? profileMap.get(q.answered_by) : undefined,
+          answeredAt: q.answered_at || undefined
+        }));
+
+        setParticipantQuestions(questions);
+      }
+    } catch (error) {
+      console.error('Error loading participant questions:', error);
+    }
+  };
+
+  const detectQuestion = (content: string): boolean => {
+    // Check if content contains question mark or question words
+    const questionIndicators = [
+      '?',
+      /\b(what|how|why|when|where|who|which|whose|whom|can|could|would|should|is|are|do|does|did)\b/i
+    ];
+
+    return questionIndicators.some(indicator => {
+      if (typeof indicator === 'string') {
+        return content.includes(indicator);
+      }
+      return indicator.test(content);
+    });
+  };
+
+  const saveParticipantQuestion = async (content: string, speakerId: string, speakerName: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('meeting_questions')
+        .insert({
+          meeting_id: meetingId,
+          question: content,
+          generated_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        const newQuestion: ParticipantQuestion = {
+          id: data.id,
+          question: data.question,
+          askedBy: speakerId,
+          askedByName: speakerName,
+          timestamp: data.generated_at
+        };
+        
+        setParticipantQuestions(prev => [newQuestion, ...prev]);
+        
+        toast({
+          title: "Question Detected",
+          description: `Question from ${speakerName} added to Q&A`,
+        });
+      }
+    } catch (error) {
+      console.error('Error saving participant question:', error);
+    }
+  };
+
+  const answerParticipantQuestion = async (questionId: string) => {
+    const answer = answerText[questionId]?.trim();
+    if (!answer) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('meeting_questions')
+        .update({
+          answer,
+          answered_by: user.id,
+          answered_at: new Date().toISOString()
+        })
+        .eq('id', questionId);
+
+      if (error) throw error;
+
+      // Update local state
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      setParticipantQuestions(prev =>
+        prev.map(q =>
+          q.id === questionId
+            ? {
+                ...q,
+                answer,
+                answeredBy: user.id,
+                answeredByName: profile?.full_name,
+                answeredAt: new Date().toISOString()
+              }
+            : q
+        )
+      );
+
+      setAnswerText(prev => ({ ...prev, [questionId]: '' }));
+
+      toast({
+        title: "Answer Submitted",
+        description: "Your answer has been recorded",
+      });
+    } catch (error) {
+      console.error('Error answering question:', error);
+      toast({
+        title: "Error",
+        description: "Failed to submit answer",
+        variant: "destructive"
+      });
+    }
+  };
+
   const startRealtimeMonitoring = () => {
     // Monitor transcriptions for key points and live display
     const channel = supabase
@@ -342,6 +506,23 @@ export function ExecutiveMeetingAdvisor({
         };
         
         setLiveTranscriptions(prev => [...prev, newTranscript]);
+
+        // Detect if this is a question
+        if (detectQuestion(payload.new.content)) {
+          await saveParticipantQuestion(
+            payload.new.content,
+            payload.new.speaker_id,
+            profile?.full_name || 'Unknown'
+          );
+        }
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'meeting_questions',
+        filter: `meeting_id=eq.${meetingId}`,
+      }, () => {
+        loadParticipantQuestions();
       })
       .on('postgres_changes', {
         event: 'INSERT',
@@ -622,10 +803,19 @@ export function ExecutiveMeetingAdvisor({
 
         <CardContent className="flex-1 p-6 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-6 mb-4">
+            <TabsList className="grid w-full grid-cols-7 mb-4">
               <TabsTrigger value="advisor" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
-                AI Advisor
+                AI Coach
+              </TabsTrigger>
+              <TabsTrigger value="questions" className="flex items-center gap-2">
+                <MessageCircleQuestion className="h-4 w-4" />
+                Q&A
+                {participantQuestions.filter(q => !q.answer).length > 0 && (
+                  <Badge variant="destructive" className="ml-1">
+                    {participantQuestions.filter(q => !q.answer).length}
+                  </Badge>
+                )}
               </TabsTrigger>
               <TabsTrigger value="transcriptions" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -768,6 +958,118 @@ export function ExecutiveMeetingAdvisor({
                       )}
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Participant Q&A Tab */}
+            <TabsContent value="questions" className="flex-1 flex flex-col overflow-hidden">
+              <Card className="flex-1 flex flex-col overflow-hidden border-2 border-blue-500/20">
+                <CardHeader className="pb-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <MessageCircleQuestion className="h-5 w-5 text-blue-600" />
+                      Participant Questions & Answers
+                    </CardTitle>
+                    <Badge variant="secondary">
+                      {participantQuestions.filter(q => !q.answer).length} Pending
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Questions automatically detected from participant conversations
+                  </p>
+                </CardHeader>
+                <CardContent className="flex-1 p-4 overflow-hidden">
+                  <ScrollArea className="h-full pr-4">
+                    {participantQuestions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center">
+                        <MessageCircleQuestion className="h-16 w-16 mb-4 text-blue-500/30" />
+                        <h3 className="text-xl font-semibold mb-2">No Questions Yet</h3>
+                        <p className="text-muted-foreground max-w-md">
+                          When participants ask questions during the meeting, they'll appear here automatically for answering.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4 pb-4">
+                        {/* Unanswered Questions */}
+                        {participantQuestions.filter(q => !q.answer).length > 0 && (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-yellow-600">
+                              <Clock className="h-4 w-4" />
+                              Pending Questions ({participantQuestions.filter(q => !q.answer).length})
+                            </div>
+                            {participantQuestions.filter(q => !q.answer).map((q) => (
+                              <Card key={q.id} className="border-yellow-500/30 bg-yellow-50 dark:bg-yellow-900/10">
+                                <CardContent className="p-4 space-y-3">
+                                  <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium mb-1">{q.question}</p>
+                                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                        <span className="font-semibold">{q.askedByName}</span>
+                                        <span>•</span>
+                                        <span>{new Date(q.timestamp).toLocaleTimeString()}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Input
+                                      placeholder="Type your answer..."
+                                      value={answerText[q.id] || ''}
+                                      onChange={(e) =>
+                                        setAnswerText({ ...answerText, [q.id]: e.target.value })
+                                      }
+                                      onKeyPress={(e) => {
+                                        if (e.key === 'Enter') answerParticipantQuestion(q.id);
+                                      }}
+                                    />
+                                    <Button
+                                      size="sm"
+                                      onClick={() => answerParticipantQuestion(q.id)}
+                                      disabled={!answerText[q.id]?.trim()}
+                                    >
+                                      <Send className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Answered Questions */}
+                        {participantQuestions.filter(q => q.answer).length > 0 && (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-2 text-sm font-semibold text-green-600">
+                              <CheckCircle2 className="h-4 w-4" />
+                              Answered Questions ({participantQuestions.filter(q => q.answer).length})
+                            </div>
+                            {participantQuestions.filter(q => q.answer).map((q) => (
+                              <Card key={q.id} className="border-green-500/30 bg-green-50 dark:bg-green-900/10">
+                                <CardContent className="p-4 space-y-3">
+                                  <div>
+                                    <p className="text-sm font-medium mb-1">{q.question}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <span className="font-semibold">{q.askedByName}</span>
+                                      <span>•</span>
+                                      <span>{new Date(q.timestamp).toLocaleTimeString()}</span>
+                                    </div>
+                                  </div>
+                                  <div className="bg-background p-3 rounded-md border-l-4 border-green-500">
+                                    <p className="text-sm mb-2">{q.answer}</p>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <span className="font-semibold">Answer by: {q.answeredByName || 'Unknown'}</span>
+                                      <span>•</span>
+                                      <span>{q.answeredAt ? new Date(q.answeredAt).toLocaleTimeString() : ''}</span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </TabsContent>
