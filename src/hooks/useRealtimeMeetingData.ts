@@ -26,7 +26,7 @@ export const useRealtimeMeetingData = (meetingId: string) => {
         .from('meetings')
         .select('*')
         .eq('id', meetingId)
-        .single();
+        .maybeSingle();
 
       if (data && !error) {
         setMeeting(data);

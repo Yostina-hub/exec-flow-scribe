@@ -75,14 +75,22 @@ export const ViewMinutesDialog = ({
           .from('meetings')
           .select('title, minutes_url')
           .eq('id', meetingId)
-          .single(),
+          .maybeSingle(),
       ]);
 
       const { data: latestMinutes, error: minutesError } = latestMinutesRes as any;
       const { data: meeting, error: meetingError } = meetingRes as any;
 
-      if (meetingError) throw meetingError;
-      setMeetingTitle(meeting?.title || '');
+      if (meetingError) {
+        console.error('Error fetching meeting:', meetingError);
+        throw meetingError;
+      }
+      
+      if (!meeting) {
+        throw new Error('Meeting not found');
+      }
+      
+      setMeetingTitle(meeting?.title || 'Untitled Meeting');
 
       // Prefer minutes_versions.content; fallback to meetings.minutes_url if someone stored raw markdown there
       const content: string = latestMinutes?.content || meeting?.minutes_url || '';
