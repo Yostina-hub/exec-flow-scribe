@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { NotificationPreferencesForm } from "@/components/NotificationPreferencesForm";
@@ -21,8 +20,7 @@ const Notifications = () => {
   ];
 
   return (
-    <Layout>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         {/* Executive Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-pink-500/10 p-8 border border-indigo-500/20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-indigo-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
@@ -142,7 +140,6 @@ const Notifications = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
   );
 };
 

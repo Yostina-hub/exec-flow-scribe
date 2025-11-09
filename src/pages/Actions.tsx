@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { CreateActionDialog } from "@/components/CreateActionDialog";
 import { TaskExportManager } from "@/components/actions/TaskExportManager";
 import { GubaTaskProposals } from "@/components/guba/GubaTaskProposals";
@@ -295,17 +294,14 @@ const Actions = () => {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="flex min-h-screen">
+    <div className="flex min-h-screen">
         <div className="flex-1 space-y-6 animate-fade-in p-6">
         {/* Executive Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10 p-8 border border-blue-500/20">
@@ -769,7 +765,6 @@ const Actions = () => {
           />
         )}
       </div>
-    </Layout>
   );
 };
 

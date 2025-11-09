@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -411,8 +410,7 @@ const IntegrationTest = () => {
   ];
 
   return (
-    <Layout>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="text-4xl font-bold tracking-tight">System Integration Tests</h1>
           <p className="text-muted-foreground mt-2">
@@ -510,7 +508,6 @@ const IntegrationTest = () => {
           </CardContent>
         </Card>
       </div>
-    </Layout>
   );
 };
 

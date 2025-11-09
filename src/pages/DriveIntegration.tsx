@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Layout } from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -258,8 +257,7 @@ export default function DriveIntegration() {
   };
 
   return (
-    <Layout>
-      <div className="space-y-8 animate-fade-in">
+    <div className="space-y-8 animate-fade-in">
         {/* Hero Section */}
         <div className={`relative overflow-hidden rounded-2xl p-10 shadow-xl border animate-fade-in ${
           isEthioTelecom 
@@ -892,6 +890,5 @@ export default function DriveIntegration() {
           </DialogContent>
         </Dialog>
       </div>
-    </Layout>
   );
 }

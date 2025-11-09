@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -222,17 +221,14 @@ const CalendarView = () => {
 
   if (loading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
     );
   }
 
   return (
-    <Layout>
-      <div className="space-y-6 pb-20 animate-fade-in">
+    <div className="space-y-6 pb-20 animate-fade-in">
         {/* Enhanced Header with Stats */}
         <div className={`relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-8 border-2 shadow-2xl ${isEthioTelecom ? 'bg-gradient-to-br from-white via-gray-50 to-white border-[#8DC63F]/30' : 'bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 border-purple-500/30'}`}>
           {!isEthioTelecom ? (
@@ -612,7 +608,6 @@ const CalendarView = () => {
           />
         )}
       </div>
-    </Layout>
   );
 };
 

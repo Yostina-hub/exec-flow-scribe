@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Layout } from "@/components/Layout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Settings, Zap, UserCog, Activity, Database, History, Lock, Users, TrendingUp, AlertCircle, Server, CheckCircle } from "lucide-react";
 import { UserManagementTab } from "@/components/admin/UserManagementTab";
@@ -25,8 +24,7 @@ export default function Administration() {
   ];
 
   return (
-    <Layout>
-      <div className="container mx-auto py-6 space-y-6 animate-fade-in">
+    <div className="container mx-auto py-6 space-y-6 animate-fade-in">
         {/* Executive Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500/10 via-orange-500/5 to-amber-500/10 p-8 border border-red-500/20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-red-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
@@ -215,6 +213,5 @@ export default function Administration() {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
   );
 }

@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Layout } from "@/components/Layout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -140,7 +139,7 @@ const NotebooksLibrary = () => {
   const recentNotebooks = sortedNotebooks;
 
   return (
-    <Layout>
+    <>
       <div className="min-h-screen bg-background animate-fade-in">
         {/* Executive Header */}
         <div className="border-b bg-gradient-to-r from-primary/5 via-primary/10 to-primary/5 backdrop-blur-sm">
@@ -452,7 +451,7 @@ const NotebooksLibrary = () => {
         onOpenChange={setShowCreateDialog}
         onNotebookCreated={handleNotebookCreated}
       />
-    </Layout>
+    </>
   );
 };
 

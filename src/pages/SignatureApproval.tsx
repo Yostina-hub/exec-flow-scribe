@@ -1,6 +1,5 @@
 import { useState, useEffect, lazy, Suspense, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -229,27 +228,23 @@ export default function SignatureApproval() {
 
   if (authLoading || isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          <span className="ml-3 text-muted-foreground">Loading signature request...</span>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Loading signature request...</span>
+      </div>
     );
   }
 
   if (!signatureRequest) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-full">
-          <div className="text-muted-foreground">Signature request not found</div>
-        </div>
-      </Layout>
+      <div className="flex items-center justify-center h-full">
+        <div className="text-muted-foreground">Signature request not found</div>
+      </div>
     );
   }
 
   return (
-    <Layout>
+    <>
       <div className="h-full flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
@@ -306,6 +301,6 @@ export default function SignatureApproval() {
           />
         </Suspense>
       )}
-    </Layout>
+    </>
   );
 }

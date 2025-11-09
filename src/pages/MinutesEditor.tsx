@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Layout } from '@/components/Layout';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -528,21 +527,19 @@ export default function MinutesEditor() {
 
   if (isLoading) {
     return (
-      <Layout>
-        <div className="flex items-center justify-center h-full">
-          <div className="flex flex-col items-center gap-4">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-muted-foreground">Loading meeting data...</p>
-          </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading meeting data...</p>
         </div>
-      </Layout>
+      </div>
     );
   }
 
   const wordCount = minutes.split(/\s+/).filter(w => w).length;
 
   return (
-    <Layout>
+    <>
       <div className="h-full flex flex-col">
         {/* Draft Recovery Banner */}
         {hasDraft && (
@@ -810,6 +807,6 @@ The AI assistant can help generate a professional structure for you."
           />
         </div>
       </div>
-    </Layout>
+    </>
   );
 }

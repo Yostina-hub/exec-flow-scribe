@@ -1,4 +1,3 @@
-import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -384,8 +383,7 @@ const Settings = () => {
   };
 
   return (
-    <Layout>
-      <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
         {/* Executive Header */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-500/10 via-blue-500/5 to-indigo-500/10 p-8 border border-cyan-500/20">
           <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/20 to-transparent rounded-full blur-3xl animate-pulse" />
@@ -1105,7 +1103,6 @@ const Settings = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </Layout>
   );
 };
 
