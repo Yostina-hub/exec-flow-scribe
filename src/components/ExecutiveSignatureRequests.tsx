@@ -93,7 +93,7 @@ export function ExecutiveSignatureRequests() {
   };
 
   const handleViewDetails = (requestId: string) => {
-    navigate(`/signature-approval/${requestId}`);
+    navigate(`/signature/${requestId}`);
   };
 
   const getStatusIcon = (status: string) => {
