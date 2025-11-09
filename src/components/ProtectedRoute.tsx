@@ -3,6 +3,9 @@ import { Navigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
 
+let guestCache: { userId: string; isGuest: boolean; timestamp: number } | null = null;
+const GUEST_CACHE_MS = 5 * 60 * 1000; // 5 minutes
+
 export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -45,15 +48,26 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       setAuthenticated(!!session);
 
       if (session?.user) {
-        // Check if user is a guest
-        const { data: guestAccess } = await supabase
-          .from('guest_access_requests')
-          .select('id')
-          .eq('user_id', session.user.id)
-          .eq('status', 'approved')
-          .maybeSingle();
+        const now = Date.now();
+        if (
+          guestCache &&
+          guestCache.userId === session.user.id &&
+          now - guestCache.timestamp < GUEST_CACHE_MS
+        ) {
+          setIsGuest(guestCache.isGuest);
+        } else {
+          // Check if user is a guest (cached if recently checked)
+          const { data: guestAccess } = await supabase
+            .from('guest_access_requests')
+            .select('id')
+            .eq('user_id', session.user.id)
+            .eq('status', 'approved')
+            .maybeSingle();
 
-        setIsGuest(!!guestAccess);
+          const isGuestValue = !!guestAccess;
+          setIsGuest(isGuestValue);
+          guestCache = { userId: session.user.id, isGuest: isGuestValue, timestamp: now };
+        }
       }
     } catch (error) {
       console.error("Error checking auth status:", error);

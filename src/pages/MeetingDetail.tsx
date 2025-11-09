@@ -44,7 +44,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useState, useEffect, useRef, lazy, Suspense, useCallback, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import { format } from "date-fns";
@@ -834,9 +834,9 @@ const MeetingDetail = () => {
         {/* Header */}
         <div className="flex items-start gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <a href="/meetings">
+            <Link to="/meetings">
               <ArrowLeft className="h-5 w-5" />
-            </a>
+            </Link>
           </Button>
           <div className="flex-1">
             <div className="flex items-start justify-between gap-4">
