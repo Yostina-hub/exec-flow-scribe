@@ -202,9 +202,7 @@ export const useAudioRecorder = (meetingId: string) => {
             .maybeSingle();
 
           const provider = preferences?.provider || 'lovable_ai';
-          const language = preferences?.language || 'am-ET'; // Default to Amharic
-
-          console.log('📝 Transcription settings:', { provider, language, meetingId: normalizedMeetingId });
+          const language = preferences?.language || 'auto';
 
           try {
             // Determine provider behavior
@@ -273,16 +271,13 @@ export const useAudioRecorder = (meetingId: string) => {
               console.log('Browser transcription (PCM):', text);
 
               if (text && text.trim()) {
-                const { data: { user: currentUser } } = await supabase.auth.getUser();
-                const speakerName = currentUser?.user_metadata?.full_name || 'Unknown';
-
                 const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
                   body: {
                     meetingId: normalizedMeetingId,
                     content: text,
                     timestamp: new Date().toISOString(),
-                    speaker: speakerName,
-                    detectedLanguage: language, // Use saved language preference
+                    speaker: 'Unknown',
+                    detectedLanguage: language || 'auto'
                   }
                 });
                 if (saveErr) throw saveErr;

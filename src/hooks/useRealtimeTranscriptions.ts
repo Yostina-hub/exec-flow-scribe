@@ -23,18 +23,14 @@ export const useRealtimeTranscriptions = (meetingId: string) => {
 
     // Fetch initial data
     const fetchTranscriptions = async () => {
-      console.log('[useRealtimeTranscriptions] Fetching transcriptions for meeting:', meetingId);
       const { data, error } = await supabase
         .from('transcriptions')
         .select('*')
         .eq('meeting_id', meetingId)
-        .order('created_at', { ascending: true });
+        .order('timestamp', { ascending: true });
 
       if (data && !error) {
-        console.log('[useRealtimeTranscriptions] Fetched', data.length, 'transcriptions');
         setTranscriptions(data);
-      } else if (error) {
-        console.error('[useRealtimeTranscriptions] Error fetching:', error);
       }
       setLoading(false);
     };
@@ -42,7 +38,6 @@ export const useRealtimeTranscriptions = (meetingId: string) => {
     fetchTranscriptions();
 
     // Subscribe to realtime changes
-    console.log('[useRealtimeTranscriptions] Subscribing to realtime for meeting:', meetingId);
     const channel = supabase
       .channel(`transcriptions-${meetingId}`)
       .on(
@@ -54,13 +49,10 @@ export const useRealtimeTranscriptions = (meetingId: string) => {
           filter: `meeting_id=eq.${meetingId}`,
         },
         (payload) => {
-          console.log('[useRealtimeTranscriptions] NEW transcription received:', payload.new);
           setTranscriptions((prev) => [...prev, payload.new as Transcription]);
         }
       )
-      .subscribe((status) => {
-        console.log('[useRealtimeTranscriptions] Subscription status:', status);
-      });
+      .subscribe();
 
     return () => {
       supabase.removeChannel(channel);

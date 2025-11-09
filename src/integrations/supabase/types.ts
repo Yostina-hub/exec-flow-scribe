@@ -2455,57 +2455,6 @@ export type Database = {
           },
         ]
       }
-      meeting_chapters: {
-        Row: {
-          confidence_score: number | null
-          created_at: string | null
-          id: string
-          meeting_id: string
-          start_transcription_id: string | null
-          timestamp: unknown
-          title: string
-          type: string
-          updated_at: string | null
-        }
-        Insert: {
-          confidence_score?: number | null
-          created_at?: string | null
-          id?: string
-          meeting_id: string
-          start_transcription_id?: string | null
-          timestamp: unknown
-          title: string
-          type: string
-          updated_at?: string | null
-        }
-        Update: {
-          confidence_score?: number | null
-          created_at?: string | null
-          id?: string
-          meeting_id?: string
-          start_transcription_id?: string | null
-          timestamp?: unknown
-          title?: string
-          type?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "meeting_chapters_meeting_id_fkey"
-            columns: ["meeting_id"]
-            isOneToOne: false
-            referencedRelation: "meetings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "meeting_chapters_start_transcription_id_fkey"
-            columns: ["start_transcription_id"]
-            isOneToOne: false
-            referencedRelation: "transcriptions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       meeting_chat_messages: {
         Row: {
           content: string

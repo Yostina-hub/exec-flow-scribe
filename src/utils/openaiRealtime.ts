@@ -286,12 +286,9 @@ export class OpenAIRealtimeClient {
           
           // Send session update to enable transcription
           if (this.dc && this.dc.readyState === 'open') {
-            const isAmharic = this.sessionLanguage?.startsWith('am'); // Handles 'am', 'am-ET', etc.
-            const isArabic = this.sessionLanguage?.startsWith('ar');
-            
-            const instructions = isAmharic
+            const instructions = this.sessionLanguage === 'am'
               ? "You are a silent meeting transcription system for AMHARIC language. CRITICAL RULES FOR AMHARIC:\n1. This is AMHARIC (አማርኛ), NOT ARABIC\n2. ALWAYS write in Ge'ez/Ethiopic script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)\n3. NEVER use Latin letters (a-z)\n4. NEVER use Arabic script (ا ب ت)\n5. Example correct: 'ሰላም ነው' 'እንዴት ነህ' 'ጥሩ ነው'\n6. Use Amharic punctuation (።፣፤፥፦)\n7. Identify speakers as ተናጋሪ 1, ተናጋሪ 2, etc.\n8. DO NOT respond or speak back. Only transcribe silently."
-              : isArabic
+              : this.sessionLanguage === 'ar'
               ? "You are a silent meeting transcription system for ARABIC language. CRITICAL: Always write in Arabic script (ا ب ت ث ج ح خ د ذ ر ز س ش ص ض ط ظ ع غ ف ق ك ل م ن ه و ي). Never use Latin letters. Identify speakers as متحدث 1, متحدث 2, etc. DO NOT respond or speak back. Only transcribe silently."
               : "You are a silent meeting transcription system. CRITICAL: Auto-detect language and SUPPORT CODE-SWITCHING between Amharic and English in the same utterance. Always transcribe in the ORIGINAL SCRIPT (no romanization). For Amharic, use Ge'ez/Ethiopic script (አማርኛ ሀ ለ ሐ መ), NOT Arabic script. For Arabic, use Arabic script. Identify speakers as Speaker 1, Speaker 2, etc. DO NOT respond or speak back. Only transcribe silently.";
             
@@ -303,10 +300,10 @@ export class OpenAIRealtimeClient {
                 input_audio_format: "pcm16",
                  input_audio_transcription: (() => {
                    const tx: Record<string, any> = { model: 'whisper-1' };
-                   if (isAmharic) {
+                   if (this.sessionLanguage === 'am') {
                      // Do NOT set language for Amharic (unsupported in Realtime param); bias with prompt only
                      tx.prompt = "አማርኛ ጌዝ። Use Ge'ez/Ethiopic only; never Latin/Arabic.";
-                   } else if (isArabic) {
+                   } else if (this.sessionLanguage === 'ar') {
                      tx.language = 'ar';
                    }
                    return tx;
@@ -560,9 +557,9 @@ export class OpenAIRealtimeClient {
       // Convert collected PCM to WAV base64
       const audioBase64 = float32ToWavBase64(finalAudio, 24000);
       
-      // Get user's language preference (default to Amharic)
+      // Get user's language preference
       const { data: userData } = await supabase.auth.getUser();
-      let language = 'am-ET'; // Default to Amharic
+      let language = 'auto';
       if (userData?.user?.id) {
         const { data: prefs } = await supabase
           .from('transcription_preferences')
@@ -573,7 +570,6 @@ export class OpenAIRealtimeClient {
           language = prefs.language;
         }
       }
-      console.log('🌍 OpenAI Realtime using language:', language);
       
       // Transcribe using Whisper API with script preservation
       const { data, error } = await supabase.functions.invoke('transcribe-audio', {
@@ -628,12 +624,9 @@ export class OpenAIRealtimeClient {
     try {
       if (!this.dc || this.dc.readyState !== 'open') return;
       const useLang = nextLang && nextLang !== 'auto' ? nextLang : null;
-      const isAmharic = useLang?.startsWith('am'); // Handles 'am', 'am-ET', etc.
-      const isArabic = useLang?.startsWith('ar');
-      
-      const instructions = isAmharic
+      const instructions = useLang === 'am'
         ? "You are a silent meeting transcription system for AMHARIC language. CRITICAL: This is AMHARIC (አማርኛ), NOT ARABIC. Always write in Ge'ez/Ethiopic script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ). NEVER use Arabic script. Examples: ሰላም, እንዴት ነህ, ጥሩ ነው. Use Amharic punctuation (።). DO NOT respond."
-        : isArabic
+        : useLang === 'ar'
         ? "You are a silent meeting transcription system for ARABIC language. Always write in Arabic script. Do not romanize. DO NOT respond."
         : "You are a silent meeting transcription system. Auto-detect language. For Amharic use Ge'ez/Ethiopic script (NOT Arabic). Do not respond. Only transcribe.";
       this.dc.send(JSON.stringify({

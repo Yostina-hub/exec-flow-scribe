@@ -243,14 +243,6 @@ All colors MUST be HSL.
     font-family: 'Space Grotesk', system-ui, sans-serif;
   }
   
-  /* Amharic text support */
-  [lang="am"],
-  .amharic-text {
-    font-family: 'Noto Sans Ethiopic', 'Nyala', system-ui, sans-serif;
-    font-feature-settings: "kern" 1;
-    text-rendering: optimizeLegibility;
-  }
-  
   /* Mobile app-like experience */
   @media (max-width: 768px) {
     body {
