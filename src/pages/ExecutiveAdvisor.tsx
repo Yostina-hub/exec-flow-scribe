@@ -50,6 +50,26 @@ export default function ExecutiveAdvisor() {
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<MeetingCategory | null>(null);
+  
+  // Track last viewed timestamps for each category
+  const [lastViewedTimestamps, setLastViewedTimestamps] = useState<Record<MeetingCategory, Date>>(() => {
+    const stored = localStorage.getItem('executive_advisor_last_viewed');
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      return {
+        upcoming: parsed.upcoming ? new Date(parsed.upcoming) : new Date(0),
+        completed: parsed.completed ? new Date(parsed.completed) : new Date(0),
+        signoff_pending: parsed.signoff_pending ? new Date(parsed.signoff_pending) : new Date(0),
+        signoff_approved: parsed.signoff_approved ? new Date(parsed.signoff_approved) : new Date(0),
+      };
+    }
+    return {
+      upcoming: new Date(0),
+      completed: new Date(0),
+      signoff_pending: new Date(0),
+      signoff_approved: new Date(0),
+    };
+  });
 
   const fetchMeetings = async () => {
     if (!user?.id) return;
@@ -203,6 +223,45 @@ export default function ExecutiveAdvisor() {
 
   const handleBackToCategories = () => {
     setSelectedCategory(null);
+  };
+
+  const handleCategoryClick = (category: MeetingCategory) => {
+    // Mark category as viewed
+    const now = new Date();
+    const updated = { ...lastViewedTimestamps, [category]: now };
+    setLastViewedTimestamps(updated);
+    
+    // Persist to localStorage
+    localStorage.setItem('executive_advisor_last_viewed', JSON.stringify({
+      upcoming: updated.upcoming.toISOString(),
+      completed: updated.completed.toISOString(),
+      signoff_pending: updated.signoff_pending.toISOString(),
+      signoff_approved: updated.signoff_approved.toISOString(),
+    }));
+    
+    setSelectedCategory(category);
+  };
+
+  // Check if a category has new meetings
+  const hasNewMeetings = (category: MeetingCategory): boolean => {
+    const categoryMeetings = categorizedMeetings[category];
+    const lastViewed = lastViewedTimestamps[category];
+    
+    return categoryMeetings.some(meeting => {
+      const meetingDate = new Date(meeting.start_time);
+      return meetingDate > lastViewed;
+    });
+  };
+
+  // Count new meetings in a category
+  const getNewMeetingsCount = (category: MeetingCategory): number => {
+    const categoryMeetings = categorizedMeetings[category];
+    const lastViewed = lastViewedTimestamps[category];
+    
+    return categoryMeetings.filter(meeting => {
+      const meetingDate = new Date(meeting.start_time);
+      return meetingDate > lastViewed;
+    }).length;
   };
 
   const getCategoryConfig = (category: MeetingCategory) => {
@@ -406,8 +465,15 @@ export default function ExecutiveAdvisor() {
               {/* Upcoming Meetings Card */}
               <Card 
                 className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                onClick={() => setSelectedCategory('upcoming')}
+                onClick={() => handleCategoryClick('upcoming')}
               >
+                {hasNewMeetings('upcoming') && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-destructive text-destructive-foreground animate-pulse shadow-lg">
+                      {getNewMeetingsCount('upcoming')} NEW
+                    </Badge>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <CardContent className="relative p-8">
                   <div className="flex items-center justify-between mb-6">
@@ -434,8 +500,15 @@ export default function ExecutiveAdvisor() {
               {/* Completed Meetings Card */}
               <Card 
                 className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                onClick={() => setSelectedCategory('completed')}
+                onClick={() => handleCategoryClick('completed')}
               >
+                {hasNewMeetings('completed') && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-destructive text-destructive-foreground animate-pulse shadow-lg">
+                      {getNewMeetingsCount('completed')} NEW
+                    </Badge>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <CardContent className="relative p-8">
                   <div className="flex items-center justify-between mb-6">
@@ -462,8 +535,15 @@ export default function ExecutiveAdvisor() {
               {/* Signature Pending Card */}
               <Card 
                 className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                onClick={() => setSelectedCategory('signoff_pending')}
+                onClick={() => handleCategoryClick('signoff_pending')}
               >
+                {hasNewMeetings('signoff_pending') && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-destructive text-destructive-foreground animate-pulse shadow-lg">
+                      {getNewMeetingsCount('signoff_pending')} NEW
+                    </Badge>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-r from-warning/0 via-warning/10 to-warning/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <CardContent className="relative p-8">
                   <div className="flex items-center justify-between mb-6">
@@ -490,8 +570,15 @@ export default function ExecutiveAdvisor() {
               {/* Signature Approved Card */}
               <Card 
                 className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                onClick={() => setSelectedCategory('signoff_approved')}
+                onClick={() => handleCategoryClick('signoff_approved')}
               >
+                {hasNewMeetings('signoff_approved') && (
+                  <div className="absolute top-4 right-4 z-10">
+                    <Badge className="bg-destructive text-destructive-foreground animate-pulse shadow-lg">
+                      {getNewMeetingsCount('signoff_approved')} NEW
+                    </Badge>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <CardContent className="relative p-8">
                   <div className="flex items-center justify-between mb-6">
