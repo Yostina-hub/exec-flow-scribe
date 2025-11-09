@@ -65,6 +65,16 @@ interface SuccessMetric {
   status: 'excellent' | 'good' | 'needs-attention';
 }
 
+interface Transcription {
+  id: string;
+  content: string;
+  speaker_id: string;
+  timestamp: string;
+  profiles?: {
+    full_name: string;
+  };
+}
+
 export function ExecutiveMeetingAdvisor({ 
   meetingId, 
   isHost, 
@@ -105,15 +115,21 @@ export function ExecutiveMeetingAdvisor({
     { name: 'Agenda Coverage', value: 65, trend: 'up', status: 'good' }
   ]);
 
+  // Live transcriptions state
+  const [liveTranscriptions, setLiveTranscriptions] = useState<Transcription[]>([]);
+  const transcriptScrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     connectAdvisor();
-    startRealtimeMonitoring();
+    const cleanup = startRealtimeMonitoring();
+    loadRecentTranscriptions();
     
     return () => {
       if (assistantRef.current) {
         assistantRef.current.disconnect();
       }
       endConversationSession();
+      cleanup();
     };
   }, []);
 
@@ -122,6 +138,12 @@ export function ExecutiveMeetingAdvisor({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    if (transcriptScrollRef.current) {
+      transcriptScrollRef.current.scrollTop = transcriptScrollRef.current.scrollHeight;
+    }
+  }, [liveTranscriptions]);
 
   const createConversationSession = async () => {
     try {
@@ -247,8 +269,44 @@ export function ExecutiveMeetingAdvisor({
     }
   };
 
+  const loadRecentTranscriptions = async () => {
+    try {
+      const { data: transcripts, error: transcriptsError } = await supabase
+        .from('transcriptions')
+        .select('id, content, speaker_id, timestamp')
+        .eq('meeting_id', meetingId)
+        .order('timestamp', { ascending: true })
+        .limit(50);
+
+      if (transcriptsError) throw transcriptsError;
+      
+      if (transcripts && transcripts.length > 0) {
+        // Fetch profiles separately
+        const speakerIds = [...new Set(transcripts.map(t => t.speaker_id).filter(Boolean))];
+        
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .in('id', speakerIds);
+
+        const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
+        
+        const enrichedTranscripts: Transcription[] = transcripts.map(t => ({
+          ...t,
+          profiles: t.speaker_id && profileMap.has(t.speaker_id) 
+            ? { full_name: profileMap.get(t.speaker_id)! } 
+            : undefined
+        }));
+        
+        setLiveTranscriptions(enrichedTranscripts);
+      }
+    } catch (error) {
+      console.error('Error loading transcriptions:', error);
+    }
+  };
+
   const startRealtimeMonitoring = () => {
-    // Monitor transcriptions for key points
+    // Monitor transcriptions for key points and live display
     const channel = supabase
       .channel(`advisor-${meetingId}`)
       .on('postgres_changes', {
@@ -256,8 +314,25 @@ export function ExecutiveMeetingAdvisor({
         schema: 'public',
         table: 'transcriptions',
         filter: `meeting_id=eq.${meetingId}`,
-      }, (payload) => {
+      }, async (payload) => {
         analyzeTranscription(payload.new);
+        
+        // Fetch speaker info for new transcription
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', payload.new.speaker_id)
+          .single();
+
+        const newTranscript: Transcription = {
+          id: payload.new.id,
+          content: payload.new.content,
+          speaker_id: payload.new.speaker_id,
+          timestamp: payload.new.timestamp,
+          profiles: profile ? { full_name: profile.full_name } : undefined
+        };
+        
+        setLiveTranscriptions(prev => [...prev, newTranscript]);
       })
       .on('postgres_changes', {
         event: 'INSERT',
@@ -483,14 +558,21 @@ export function ExecutiveMeetingAdvisor({
 
         <CardContent className="flex-1 p-6 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-5 mb-4">
+            <TabsList className="grid w-full grid-cols-6 mb-4">
               <TabsTrigger value="advisor" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
                 AI Advisor
               </TabsTrigger>
+              <TabsTrigger value="transcriptions" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Live Talk
+                {liveTranscriptions.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{liveTranscriptions.length}</Badge>
+                )}
+              </TabsTrigger>
               <TabsTrigger value="tempo" className="flex items-center gap-2">
                 <Gauge className="h-4 w-4" />
-                Meeting Tempo
+                Tempo
               </TabsTrigger>
               <TabsTrigger value="keypoints" className="flex items-center gap-2">
                 <FileCheck className="h-4 w-4" />
@@ -501,7 +583,7 @@ export function ExecutiveMeetingAdvisor({
               </TabsTrigger>
               <TabsTrigger value="success" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
-                Success Metrics
+                Metrics
               </TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-2">
                 <History className="h-4 w-4" />
@@ -622,6 +704,66 @@ export function ExecutiveMeetingAdvisor({
                       )}
                     </p>
                   </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Live Transcriptions Tab */}
+            <TabsContent value="transcriptions" className="flex-1 flex flex-col overflow-hidden">
+              <Card className="flex-1 flex flex-col overflow-hidden border-2 border-green-500/20">
+                <CardHeader className="pb-3 bg-muted/30">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Users className="h-5 w-5 text-green-600" />
+                    Live Participant Conversations
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Real-time transcription of what participants are saying
+                  </p>
+                </CardHeader>
+                <CardContent className="flex-1 p-4 overflow-hidden">
+                  <ScrollArea className="h-full pr-4" ref={transcriptScrollRef}>
+                    {liveTranscriptions.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-center">
+                        <Users className="h-16 w-16 mb-4 text-green-500/30" />
+                        <h3 className="text-xl font-semibold mb-2">No Conversations Yet</h3>
+                        <p className="text-muted-foreground max-w-md">
+                          Participant conversations will appear here in real-time as they speak during the meeting.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 pb-4">
+                        {liveTranscriptions.map((transcript) => (
+                          <motion.div
+                            key={transcript.id}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="border-l-4 border-green-500 pl-4 py-2"
+                          >
+                            <div className="flex items-start justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                                  <span className="text-sm font-semibold text-green-700">
+                                    {transcript.profiles?.full_name?.charAt(0) || '?'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <p className="text-sm font-semibold">
+                                    {transcript.profiles?.full_name || 'Unknown Speaker'}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {new Date(transcript.timestamp).toLocaleTimeString()}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                            <p className="text-sm mt-2 leading-relaxed ml-10">
+                              {transcript.content}
+                            </p>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </TabsContent>
