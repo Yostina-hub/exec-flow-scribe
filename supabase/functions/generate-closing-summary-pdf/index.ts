@@ -72,7 +72,7 @@ serve(async (req) => {
 
     // Generate a simple PDF using pdf-lib
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage([612, 792]); // Letter size
+    let page = pdfDoc.addPage([612, 792]); // Letter size
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
     const margin = 50;
@@ -92,7 +92,7 @@ serve(async (req) => {
       if (y < 120) {
         const newPage = pdfDoc.addPage([612, 792]);
         y = 742;
-        (page as any) = newPage;
+        page = newPage;
       }
       // Heading
       drawText(section.heading, 14);
@@ -101,7 +101,7 @@ serve(async (req) => {
         if (y < 60) {
           const newPage = pdfDoc.addPage([612, 792]);
           y = 742;
-          (page as any) = newPage;
+          page = newPage;
         }
         drawText(`• ${item}`, 12);
       }

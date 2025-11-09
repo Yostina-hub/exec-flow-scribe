@@ -24,10 +24,10 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get meeting transcriptions with speaker names
+    // Get meeting transcriptions first (no joins to avoid FK requirements)
     const { data: transcriptions, error: transcriptError } = await supabase
       .from("transcriptions")
-      .select("content, speaker_id, profiles(full_name)")
+      .select("content, speaker_id")
       .eq("meeting_id", meetingId)
       .order("timestamp", { ascending: true });
 
@@ -40,10 +40,27 @@ serve(async (req) => {
       );
     }
 
+    // Fetch speaker names separately from profiles
+    const speakerIds = Array.from(
+      new Set((transcriptions as any[]).map(t => t.speaker_id).filter((id: string | null) => !!id))
+    );
+
+    let nameById = new Map<string, string>();
+    if (speakerIds.length > 0) {
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", speakerIds as string[]);
+      if (profilesError) throw profilesError;
+      for (const p of profiles || []) {
+        if (p && (p as any).id) nameById.set((p as any).id, (p as any).full_name || "");
+      }
+    }
+
     // Build conversation context
-    const context = transcriptions
-      .map((t: any) => {
-        const speakerName = t.profiles?.full_name || 'Unknown Speaker';
+    const context = (transcriptions as any[])
+      .map((t) => {
+        const speakerName = (t.speaker_id && nameById.get(t.speaker_id)) || 'Unknown Speaker';
         return `${speakerName}: ${t.content}`;
       })
       .join("\n");
@@ -129,7 +146,8 @@ Format: Return ONLY a JSON array of question strings, nothing else.`,
     });
   } catch (error) {
     console.error("Error:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const err: any = error;
+    const errorMessage = err?.message || err?.error || err?.details || "Unknown error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
