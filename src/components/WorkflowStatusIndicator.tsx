@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import { useTheme } from '@/contexts/ThemeContext';
 
 interface WorkflowStage {
   key: string;
@@ -24,6 +25,8 @@ export function WorkflowStatusIndicator({
   pdfStatus,
   workflowStage
 }: WorkflowStatusIndicatorProps) {
+  const { theme } = useTheme();
+  const isEthioTelecom = theme === 'ethio-telecom';
   
   const stages: WorkflowStage[] = [
     {
@@ -122,7 +125,10 @@ export function WorkflowStatusIndicator({
             </motion.div>
             Workflow Progress
           </CardTitle>
-          <Badge variant={getStatusBadge(stages.find(s => s.status === 'in-progress')?.status || 'pending') as any}>
+          <Badge 
+            variant={getStatusBadge(stages.find(s => s.status === 'in-progress')?.status || 'pending') as any}
+            className={isEthioTelecom ? 'bg-[#0072BC] text-white hover:bg-[#005A9C]' : ''}
+          >
             {stages.find(s => s.status === 'in-progress')?.label || 'Ready'}
           </Badge>
         </div>

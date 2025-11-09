@@ -992,7 +992,11 @@ const MeetingDetail = () => {
                       pauseStartTimeRef.current = null;
                       startRecording(); 
                     }} 
-                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+                    className={`gap-2 shadow-lg transition-all duration-300 hover:scale-105 ${
+                      isEthioTelecom 
+                        ? 'bg-gradient-to-r from-[#8DC63F] to-[#7AB62F] hover:from-[#7AB62F] hover:to-[#6AA61F] hover:shadow-[#8DC63F]/50'
+                        : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 hover:shadow-purple-500/50'
+                    }`}
                   >
                     <Mic className="h-4 w-4" />
                     Start Recording
