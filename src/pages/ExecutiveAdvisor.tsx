@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3 } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ExecutiveSignatureRequests } from '@/components/ExecutiveSignatureRequests';
+import { ExecutiveMeetingAdvisor } from '@/components/ExecutiveMeetingAdvisor';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -38,6 +39,7 @@ export default function ExecutiveAdvisor() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
+  const [showAdvisorModal, setShowAdvisorModal] = useState(false);
 
   const fetchMeetings = async () => {
     if (!user?.id) return;
@@ -255,8 +257,8 @@ export default function ExecutiveAdvisor() {
   // Meeting detail view with AI features
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with back button */}
-      <div className="flex items-center gap-4">
+      {/* Header with back button and AI Coach */}
+      <div className="flex items-center justify-between gap-4">
         <Button 
           variant="ghost" 
           size="sm" 
@@ -265,6 +267,13 @@ export default function ExecutiveAdvisor() {
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Meetings
+        </Button>
+        <Button 
+          onClick={() => setShowAdvisorModal(true)}
+          className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+        >
+          <Headphones className="h-4 w-4" />
+          Open AI Coach
         </Button>
       </div>
 
@@ -360,6 +369,16 @@ export default function ExecutiveAdvisor() {
           </Suspense>
         </TabsContent>
       </Tabs>
+
+      {/* AI Coach Modal */}
+      {showAdvisorModal && selectedMeeting && (
+        <ExecutiveMeetingAdvisor
+          meetingId={selectedMeetingId!}
+          isHost={true}
+          meetingData={selectedMeeting}
+          onClose={() => setShowAdvisorModal(false)}
+        />
+      )}
     </div>
   );
 }
