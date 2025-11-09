@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,10 +15,6 @@ export default function ExecutiveAdvisor() {
   const [recentMeetings, setRecentMeetings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  useState(() => {
-    fetchRecentMeetings();
-  });
-
   const fetchRecentMeetings = async () => {
     if (!user?.id) return;
     
@@ -32,6 +28,10 @@ export default function ExecutiveAdvisor() {
       setRecentMeetings(data);
     }
   };
+
+  useEffect(() => {
+    fetchRecentMeetings();
+  }, [user?.id]);
 
   const launchAdvisor = (meetingId: string) => {
     navigate(`/meeting/${meetingId}`);
