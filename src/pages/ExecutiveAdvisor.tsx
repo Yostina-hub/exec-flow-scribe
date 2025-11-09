@@ -96,52 +96,55 @@ export default function ExecutiveAdvisor() {
   if (!selectedMeetingId) {
     return (
       <div className="space-y-6 animate-fade-in">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 via-purple-600 to-pink-600 p-8 lg:p-12 text-white shadow-2xl">
+        {/* Hero Section - Ethio Telecom Branded */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-primary p-8 lg:p-12 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 animate-pulse"></div>
           <div className="relative z-10">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-xl bg-white/20 backdrop-blur-sm">
-                <Brain className="h-8 w-8 animate-pulse" />
+              <div className="p-3 rounded-xl glass backdrop-blur-xl border-white/30">
+                <Brain className="h-8 w-8 animate-pulse drop-shadow-lg" />
               </div>
-              <Badge variant="secondary" className="text-sm px-3 py-1">
-                AI-Powered
+              <Badge variant="secondary" className="text-sm px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                AI-Powered Intelligence
               </Badge>
             </div>
-            <h1 className="text-4xl lg:text-5xl font-bold mb-4">
+            <h1 className="text-4xl lg:text-5xl font-display font-bold mb-4 drop-shadow-lg">
               Executive Meeting Advisor
             </h1>
-            <p className="text-lg lg:text-xl text-white/90 max-w-2xl mb-8">
+            <p className="text-lg lg:text-xl text-white/95 max-w-2xl mb-8 drop-shadow-md">
               Your intelligent AI copilot for strategic meetings. Get real-time coaching on tempo management, 
-              decision-making, and success optimization.
+              decision-making, and success optimization powered by Ethiopian Telecom innovation.
             </p>
           </div>
         </div>
 
-        {/* Features Grid */}
+        {/* Features Grid - Modern Glassmorphism */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-2 border-blue-500/20 hover:border-blue-500/40 transition-colors">
-            <CardHeader className="pb-3">
-              <div className="p-2 w-fit rounded-lg bg-blue-500/10 mb-2">
-                <Brain className="h-5 w-5 text-blue-600" />
+          <Card className="border-0 bg-gradient-to-br from-background to-primary/5 backdrop-blur-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <CardHeader className="pb-3 relative">
+              <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg mb-2">
+                <Brain className="h-5 w-5 text-white" />
               </div>
-              <CardTitle className="text-lg">AI Coaching</CardTitle>
+              <CardTitle className="text-lg font-display">AI Coaching</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="relative">
               <p className="text-sm text-muted-foreground">
                 Real-time strategic guidance and meeting facilitation tips
               </p>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-purple-500/20 hover:border-purple-500/40 transition-colors">
-            <CardHeader className="pb-3">
-              <div className="p-2 w-fit rounded-lg bg-purple-500/10 mb-2">
-                <TrendingUp className="h-5 w-5 text-purple-600" />
+          <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 backdrop-blur-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
+            <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <CardHeader className="pb-3 relative">
+              <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg mb-2">
+                <TrendingUp className="h-5 w-5 text-white" />
               </div>
-              <CardTitle className="text-lg">Effectiveness Scoring</CardTitle>
+              <CardTitle className="text-lg font-display">Effectiveness Scoring</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="relative">
               <p className="text-sm text-muted-foreground">
                 Participation balance, decision quality, and tempo adherence
               </p>

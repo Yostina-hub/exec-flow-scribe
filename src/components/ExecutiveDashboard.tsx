@@ -42,8 +42,8 @@ export const ExecutiveDashboard = ({
       change: "+12%",
       trend: "up",
       icon: Calendar,
-      gradient: "from-blue-500 to-cyan-500",
-      bgGradient: "from-blue-500/10 to-cyan-500/5"
+      gradient: "from-primary to-primary-dark",
+      bgGradient: "from-primary/10 to-primary-dark/5"
     },
     {
       title: "Completion Rate",
@@ -51,8 +51,8 @@ export const ExecutiveDashboard = ({
       change: "+8%",
       trend: "up",
       icon: Target,
-      gradient: "from-emerald-500 to-teal-500",
-      bgGradient: "from-emerald-500/10 to-teal-500/5"
+      gradient: "from-success to-success/80",
+      bgGradient: "from-success/10 to-success/5"
     },
     {
       title: "Urgent Actions",
@@ -60,8 +60,8 @@ export const ExecutiveDashboard = ({
       change: "-3",
       trend: "down",
       icon: AlertCircle,
-      gradient: "from-orange-500 to-red-500",
-      bgGradient: "from-orange-500/10 to-red-500/5"
+      gradient: "from-warning to-destructive",
+      bgGradient: "from-warning/10 to-destructive/5"
     },
     {
       title: "Team Productivity",
@@ -69,31 +69,32 @@ export const ExecutiveDashboard = ({
       change: "+5%",
       trend: "up",
       icon: Activity,
-      gradient: "from-purple-500 to-pink-500",
-      bgGradient: "from-purple-500/10 to-pink-500/5"
+      gradient: "from-secondary to-secondary/80",
+      bgGradient: "from-secondary/10 to-secondary/5"
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Executive KPIs Grid */}
+      {/* Executive KPIs Grid - Enhanced */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {kpis.map((kpi, index) => (
           <Card 
             key={index}
-            className="relative overflow-hidden border-0 bg-gradient-to-br from-background to-muted/30 backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group animate-scale-in"
+            className="relative overflow-hidden border-0 glass backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group animate-scale-in"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className={`absolute inset-0 bg-gradient-to-br ${kpi.bgGradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             
             <CardContent className="p-6 relative">
               <div className="flex items-start justify-between mb-4">
-                <div className={`p-3 rounded-xl bg-gradient-to-br ${kpi.gradient} shadow-lg group-hover:shadow-2xl transition-all duration-300`}>
+                <div className={`p-3 rounded-xl bg-gradient-to-br ${kpi.gradient} shadow-lg group-hover:shadow-2xl group-hover:scale-110 transition-all duration-300`}>
                   <kpi.icon className="h-6 w-6 text-white" />
                 </div>
                 <Badge 
                   variant="secondary" 
-                  className={`gap-1 ${kpi.trend === 'up' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-600'} border-0`}
+                  className={`gap-1 backdrop-blur-sm ${kpi.trend === 'up' ? 'bg-success/10 text-success border-success/20' : 'bg-destructive/10 text-destructive border-destructive/20'}`}
                 >
                   {kpi.trend === 'up' ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                   {kpi.change}
@@ -101,7 +102,7 @@ export const ExecutiveDashboard = ({
               </div>
               
               <h3 className="text-sm font-medium text-muted-foreground mb-1">{kpi.title}</h3>
-              <p className="text-3xl font-black font-['Space_Grotesk']">{kpi.value}</p>
+              <p className="text-3xl font-black font-display bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">{kpi.value}</p>
             </CardContent>
           </Card>
         ))}

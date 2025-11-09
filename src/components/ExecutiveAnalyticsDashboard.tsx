@@ -73,7 +73,7 @@ export const ExecutiveAnalyticsDashboard = () => {
       change: `+${stats.monthlyTrend}%`,
       trend: 'up',
       icon: Calendar,
-      color: 'from-blue-500 to-cyan-500'
+      color: 'from-primary to-primary-dark'
     },
     {
       title: 'Completion Rate',
@@ -81,7 +81,7 @@ export const ExecutiveAnalyticsDashboard = () => {
       change: '+5%',
       trend: 'up',
       icon: CheckCircle2,
-      color: 'from-green-500 to-emerald-500'
+      color: 'from-success to-success/80'
     },
     {
       title: 'Avg Duration',
@@ -89,7 +89,7 @@ export const ExecutiveAnalyticsDashboard = () => {
       change: '-8%',
       trend: 'down',
       icon: Clock,
-      color: 'from-purple-500 to-pink-500'
+      color: 'from-secondary to-secondary/80'
     },
     {
       title: 'Action Items',
@@ -97,27 +97,33 @@ export const ExecutiveAnalyticsDashboard = () => {
       change: `${stats.actionItemsCompleted} done`,
       trend: 'up',
       icon: Target,
-      color: 'from-orange-500 to-red-500'
+      color: 'from-warning to-destructive'
     }
   ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold">Executive Analytics</h2>
-          <p className="text-muted-foreground mt-1">
-            Strategic insights for Ethiopian Telecom leadership
-          </p>
+      {/* Header - Enhanced Branding */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/5 to-primary/5 p-8 border-0 shadow-xl backdrop-blur-xl">
+        <div className="absolute inset-0 bg-grid-white/5 opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 animate-pulse" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h2 className="text-4xl font-bold font-display bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+              Executive Analytics
+            </h2>
+            <p className="text-muted-foreground mt-1">
+              Strategic insights for Ethiopian Telecom leadership 🇪🇹
+            </p>
+          </div>
+          <Badge className="gap-2 glass backdrop-blur-xl border-primary/20 bg-primary/10 text-primary-foreground hover:bg-primary/20">
+            <Activity className="h-3 w-3" />
+            Real-time Data
+          </Badge>
         </div>
-        <Badge variant="secondary" className="gap-2">
-          <Activity className="h-3 w-3" />
-          Real-time Data
-        </Badge>
       </div>
 
-      {/* Key Metrics */}
+      {/* Key Metrics - Modernized */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {metrics.map((metric, index) => {
           const Icon = metric.icon;
@@ -128,20 +134,22 @@ export const ExecutiveAnalyticsDashboard = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="border-2 hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
+              <Card className="border-0 glass backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+                <CardHeader className="pb-3 relative">
                   <div className="flex items-center justify-between">
-                    <div className={`p-2 rounded-lg bg-gradient-to-br ${metric.color}`}>
+                    <div className={`p-2.5 rounded-xl bg-gradient-to-br ${metric.color} shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <Badge variant={metric.trend === 'up' ? 'default' : 'secondary'}>
+                    <Badge className={`backdrop-blur-sm ${metric.trend === 'up' ? 'bg-success/10 text-success border-success/20' : 'bg-muted/50 border-border'}`}>
                       {metric.trend === 'up' ? <TrendingUp className="h-3 w-3 mr-1" /> : <TrendingDown className="h-3 w-3 mr-1" />}
                       {metric.change}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{metric.value}</div>
+                <CardContent className="relative">
+                  <div className="text-3xl font-bold font-display">{metric.value}</div>
                   <p className="text-sm text-muted-foreground mt-1">{metric.title}</p>
                 </CardContent>
               </Card>

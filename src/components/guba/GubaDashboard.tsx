@@ -123,61 +123,89 @@ export const GubaDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold">{getDashboardTitle()}</h2>
-        <p className="text-muted-foreground">
-          {userRole === 'executive' && 'Organization-wide task overview and strategic insights'}
-          {userRole === 'manager' && 'Department-level coordination and task management'}
-          {userRole === 'team' && 'Your personal tasks and deliverables'}
-        </p>
+      {/* Header - Ethio Telecom Branded */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/5 to-primary/5 p-8 border-0 shadow-xl backdrop-blur-xl">
+        <div className="absolute inset-0 bg-grid-white/5 opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-secondary/10 animate-pulse" />
+        <div className="relative">
+          <h2 className="text-4xl font-bold font-display bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-2">
+            {getDashboardTitle()}
+          </h2>
+          <p className="text-muted-foreground">
+            {userRole === 'executive' && 'Organization-wide task overview and strategic insights 🇪🇹'}
+            {userRole === 'manager' && 'Department-level coordination and task management'}
+            {userRole === 'team' && 'Your personal tasks and deliverables'}
+          </p>
+        </div>
       </div>
 
-      {/* Key Metrics */}
+      {/* Key Metrics - Enhanced with Glassmorphism */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="border-0 glass backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-3 relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg">
+                <Target className="h-5 w-5 text-white" />
+              </div>
+            </div>
             <CardDescription>Total Tasks</CardDescription>
-            <CardTitle className="text-3xl">{stats.totalTasks}</CardTitle>
+            <CardTitle className="text-3xl font-display">{stats.totalTasks}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Target className="h-3 w-3" />
               All active assignments
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="border-0 glass backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-success/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-3 relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-success to-success/80 shadow-lg">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
+            </div>
             <CardDescription>Completion Rate</CardDescription>
-            <CardTitle className="text-3xl">{stats.completionRate}%</CardTitle>
+            <CardTitle className="text-3xl font-display">{stats.completionRate}%</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <Progress value={stats.completionRate} className="h-2" />
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="border-0 glass backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-destructive/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-3 relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-destructive to-warning shadow-lg">
+                <AlertTriangle className="h-5 w-5 text-white" />
+              </div>
+            </div>
             <CardDescription>High Priority</CardDescription>
-            <CardTitle className="text-3xl text-destructive">{stats.highPriorityTasks}</CardTitle>
+            <CardTitle className="text-3xl font-display text-destructive">{stats.highPriorityTasks}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <AlertTriangle className="h-3 w-3 text-destructive" />
               Requires immediate attention
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="pb-3">
+        <Card className="border-0 glass backdrop-blur-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-warning/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+          <CardHeader className="pb-3 relative">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2.5 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-lg">
+                <Clock className="h-5 w-5 text-white" />
+              </div>
+            </div>
             <CardDescription>Overdue</CardDescription>
-            <CardTitle className="text-3xl text-warning">{stats.overdueTasks}</CardTitle>
+            <CardTitle className="text-3xl font-display text-warning">{stats.overdueTasks}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="relative">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3 text-warning" />
               Past due date
             </div>
           </CardContent>

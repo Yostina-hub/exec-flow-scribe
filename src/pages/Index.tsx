@@ -223,44 +223,37 @@ export default function Index() {
   return (
     <>
       <div className="space-y-4 lg:space-y-8 pb-16 lg:pb-20">
-        {/* Enhanced Animated Hero Section */}
-        <div className={`relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-10 border-2 shadow-2xl transition-all duration-500 hover:shadow-3xl ${isEthioTelecom ? 'bg-gradient-to-br from-white via-gray-50 to-white border-[#8DC63F]/30' : 'bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 border-purple-500/30'}`}>
-          {!isEthioTelecom ? (
-            <>
-              <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-purple-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-blue-500/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
-            </>
-          ) : (
-            <>
-              <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-[#8DC63F]/15 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
-              <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-[#0072BC]/15 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
-            </>
-          )}
+        {/* Enhanced Animated Hero Section - Ethio Telecom Branded */}
+        <div className="relative overflow-hidden rounded-2xl lg:rounded-3xl p-6 lg:p-10 border-0 shadow-2xl transition-all duration-500 hover:shadow-3xl glass backdrop-blur-xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-primary/5" />
+          <div className="absolute inset-0 bg-grid-white/5 opacity-50" />
+          <div className="absolute top-0 right-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-br from-primary/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 lg:w-96 lg:h-96 bg-gradient-to-tr from-secondary/20 to-transparent rounded-full blur-3xl animate-pulse hidden lg:block" style={{ animationDelay: '1s' }} />
           
           <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-6">
             <div className="space-y-4 lg:space-y-5 flex-1">
-              <div className={`inline-flex items-center gap-2 px-4 lg:px-5 py-2 lg:py-2.5 rounded-full backdrop-blur-sm border-2 shadow-lg transition-all duration-300 hover:scale-105 ${isEthioTelecom ? 'bg-[#8DC63F]/20 border-[#8DC63F]/40' : 'bg-white/20 border-white/30'}`}>
-                <Sparkles className={`h-4 w-4 lg:h-5 lg:w-5 animate-pulse ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`} />
-                <span className={`text-sm lg:text-base font-semibold ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-white'}`}>
+              <div className="inline-flex items-center gap-2 px-4 lg:px-5 py-2 lg:py-2.5 rounded-full glass backdrop-blur-sm border-2 border-primary/20 shadow-lg transition-all duration-300 hover:scale-105">
+                <Sparkles className="h-4 w-4 lg:h-5 lg:w-5 animate-pulse text-primary" />
+                <span className="text-sm lg:text-base font-semibold text-foreground">
                   {isCEO ? 'AI-Powered Executive Dashboard' : 'Live Dashboard'}
                 </span>
               </div>
               
-              <h1 className={`text-4xl lg:text-6xl font-black leading-tight animate-fade-in ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"] text-foreground'}`}>
+              <h1 className="text-4xl lg:text-6xl font-black leading-tight animate-fade-in font-display bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent drop-shadow-sm">
                 Welcome Back! 
                 <span className="inline-block animate-bounce ml-2 lg:ml-3">👋</span>
               </h1>
               
-              <p className={`text-base lg:text-xl max-w-2xl leading-relaxed ${isEthioTelecom ? 'text-gray-700' : 'text-muted-foreground'}`}>
-                You have <span className={`font-bold text-lg lg:text-2xl ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-500'}`}>{todayMeetingsCount}</span> meeting{todayMeetingsCount !== 1 ? 's' : ''} today and{' '}
-                <span className={`font-bold text-lg lg:text-2xl ${isEthioTelecom ? 'text-[#0072BC]' : 'text-blue-500'}`}>{pendingActionsCount}</span> pending action{pendingActionsCount !== 1 ? 's' : ''}
+              <p className="text-base lg:text-xl max-w-2xl leading-relaxed text-muted-foreground">
+                You have <span className="font-bold text-lg lg:text-2xl text-primary">{todayMeetingsCount}</span> meeting{todayMeetingsCount !== 1 ? 's' : ''} today and{' '}
+                <span className="font-bold text-lg lg:text-2xl text-secondary">{pendingActionsCount}</span> pending action{pendingActionsCount !== 1 ? 's' : ''}
               </p>
 
               {isCEO && (
                 <Button
                   onClick={() => setShowBriefing(true)}
                   size="lg"
-                  className={`gap-2 mt-4 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl ${isEthioTelecom ? 'bg-gradient-to-r from-[#8DC63F] to-[#7AB62F] hover:from-[#7AB62F] hover:to-[#6AA520] text-white' : 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'}`}
+                  className="gap-2 mt-4 shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl bg-gradient-to-r from-primary to-secondary hover:opacity-90"
                 >
                   <Brain className="h-5 w-5 group-hover:rotate-12 transition-transform" />
                   AI Executive Briefing
@@ -270,32 +263,33 @@ export default function Index() {
             </div>
             
             <div className="text-right space-y-3 animate-scale-in lg:min-w-[200px]">
-              <div className={`text-3xl lg:text-5xl font-black tracking-tight ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-transparent bg-clip-text bg-gradient-to-r from-[#8DC63F] to-[#0072BC]' : 'font-["Space_Grotesk"] text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500'}`}>
+              <div className="text-3xl lg:text-5xl font-black tracking-tight font-display bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                 {format(currentTime, 'HH:mm')}
               </div>
-              <div className={`text-sm lg:text-base font-medium ${isEthioTelecom ? 'text-gray-700' : 'text-muted-foreground'}`}>
+              <div className="text-sm lg:text-base font-medium text-muted-foreground">
                 {format(currentTime, 'EEEE, MMM d')}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Enhanced Stats Grid with Modern Design */}
+        {/* Enhanced Stats Grid with Modern Glassmorphism */}
         <div className="grid gap-4 lg:gap-6 grid-cols-2 lg:grid-cols-4">
         {[
-            { icon: Calendar, label: "Today's Meetings", value: todayMeetingsCount, color: isEthioTelecom ? "from-[#0072BC] to-[#005A9C]" : "from-blue-500 to-cyan-500", bgColor: isEthioTelecom ? "bg-[#0072BC]/5" : "bg-blue-500/5", delay: "0" },
-            { icon: Target, label: "Pending Actions", value: pendingActionsCount, color: isEthioTelecom ? "from-[#8DC63F] to-[#7AB62F]" : "from-purple-500 to-pink-500", bgColor: isEthioTelecom ? "bg-[#8DC63F]/5" : "bg-purple-500/5", delay: "100" },
-            { icon: Activity, label: "Total Actions", value: totalActions, color: isEthioTelecom ? "from-[#8DC63F] to-[#0072BC]" : "from-green-500 to-emerald-500", bgColor: isEthioTelecom ? "bg-[#8DC63F]/5" : "bg-green-500/5", delay: "200" },
-            { icon: TrendingUp, label: "Completion Rate", value: `${completionRate}%`, color: isEthioTelecom ? "from-[#0072BC] to-[#8DC63F]" : "from-orange-500 to-red-500", bgColor: isEthioTelecom ? "bg-[#0072BC]/5" : "bg-orange-500/5", delay: "300" },
+            { icon: Calendar, label: "Today's Meetings", value: todayMeetingsCount, color: "from-secondary to-secondary/80", bgColor: "bg-secondary/5", delay: "0" },
+            { icon: Target, label: "Pending Actions", value: pendingActionsCount, color: "from-primary to-primary-dark", bgColor: "bg-primary/5", delay: "100" },
+            { icon: Activity, label: "Total Actions", value: totalActions, color: "from-success to-success/80", bgColor: "bg-success/5", delay: "200" },
+            { icon: TrendingUp, label: "Completion Rate", value: `${completionRate}%`, color: "from-primary to-secondary", bgColor: "bg-primary/5", delay: "300" },
           ].map((stat, i) => (
             <Card 
               key={i}
-              className={`relative overflow-hidden group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border-2 ${isEthioTelecom ? 'bg-white border-gray-200 hover:border-[#8DC63F]/50' : 'bg-gradient-to-br from-background to-muted/50 border-border/50 hover:border-primary/50 backdrop-blur-xl'}`}
+              className="relative overflow-hidden group cursor-pointer transition-all duration-500 hover:shadow-2xl hover:-translate-y-2 border-0 glass backdrop-blur-xl"
               style={{ animationDelay: `${stat.delay}ms` }}
             >
               <div className={`absolute inset-0 ${stat.bgColor} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
               <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${stat.color} opacity-5 rounded-full blur-2xl" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+              <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${stat.color} opacity-5 rounded-full blur-2xl`} />
               
               <CardContent className="p-4 lg:p-6 relative">
                 <div className="flex flex-col gap-4">
