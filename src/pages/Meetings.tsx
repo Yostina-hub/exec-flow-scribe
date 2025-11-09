@@ -25,13 +25,9 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useDebounce } from "@/hooks/useDebounce";
 
-// Lazy load dialogs
-const CreateMeetingDialog = React.lazy(() => 
-  import("@/components/CreateMeetingDialog").then(m => ({ default: m.CreateMeetingDialog }))
-);
-const InstantMeetingDialog = React.lazy(() => 
-  import("@/components/InstantMeetingDialog").then(m => ({ default: m.InstantMeetingDialog }))
-);
+// Import dialogs directly since they're used immediately on page load
+import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
+import { InstantMeetingDialog } from "@/components/InstantMeetingDialog";
 
 interface MeetingAttendee {
   id: string;
@@ -415,10 +411,8 @@ export default function Meetings() {
             </div>
             
             <div className="flex gap-2">
-              <React.Suspense fallback={<Loader2 className="h-5 w-5 animate-spin" />}>
-                <CreateMeetingDialog />
-                <InstantMeetingDialog />
-              </React.Suspense>
+              <CreateMeetingDialog />
+              <InstantMeetingDialog />
             </div>
           </div>
         </div>
