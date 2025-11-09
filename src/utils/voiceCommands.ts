@@ -30,54 +30,135 @@ export const ENGLISH_COMMANDS = {
   resumeRecording: ['resume recording', 'continue recording', 'unpause recording'],
 };
 
+export const TIGRINYA_COMMANDS = {
+  startRecording: ['ምዝገባ ጀምር', 'ቀረፃ ጀምር', 'ምቕራፅ ጀምር', 'ምዝገባ አብዝ'],
+  stopRecording: ['ምዝገባ ደው በል', 'ቀረፃ ደው በል', 'ምቕራፅ ደው በል', 'ምዝገባ ኣቋርፅ'],
+  addAction: ['ተግባር ውስኸ', 'ሓድሽ ተግባር', 'ስራሕ ውስኸ', 'ዕማም ውስኸ'],
+  addDecision: ['ውሳኔ ውስኸ', 'ሓድሽ ውሳኔ', 'ውሳኔ መዝግብ', 'ውሳኔ ፃሓፍ'],
+  generateMinutes: ['ደቒቕ ፍጠር', 'ጽማቕ ፍጠር', 'ሪፖርት ፍጠር', 'ደቒቕ ሰርሕ'],
+  endMeeting: ['ኣኼባ ደምድም', 'ኣኼባ ዕጸዎ', 'ኣኼባ ወድእ', 'ኣኼባ ጨርስ'],
+  pauseRecording: ['ምዝገባ ቆይም', 'ንኣፍታ ደው በል', 'ምዝገባ ኣቋርፅ'],
+  resumeRecording: ['ምዝገባ ቀፅል', 'ዳግማይ ጀምር', 'ምዝገባ ተወሳኺ'],
+};
+
+export const OROMO_COMMANDS = {
+  startRecording: ['galmeessuu jalqabi', 'galmee jalqabi', 'cuqaasuu jalqabi', 'amma cuqaasi'],
+  stopRecording: ['galmeessuu dhaabi', 'galmee dhaabi', 'cuqaasuu dhaabi', 'galmee xumuri'],
+  addAction: ['gocha ida\'i', 'gocha haaraa', 'hojii ida\'i', 'wanta hojjatamu ida\'i'],
+  addDecision: ['murtii ida\'i', 'murtii haaraa', 'murtii galmeessi', 'murtii barreessi'],
+  generateMinutes: ['galfata uumi', 'cuunfaa uumi', 'gabaasa uumi', 'galfata barreessi'],
+  endMeeting: ['walgahii xumuri', 'walgahii dhaabi', 'walgahii xumurii', 'walgahii cufii'],
+  pauseRecording: ['galmeessuu dhaabbii', 'yeroodhaaf dhaabi', 'tursiisuu dhaabi'],
+  resumeRecording: ['galmeessuu itti fufi', 'deebi\'ii jalqabi', 'itti fufi'],
+};
+
+export const SOMALI_COMMANDS = {
+  startRecording: ['bilow duubista', 'duubi bilow', 'bilow qaadista', 'hadda duubi'],
+  stopRecording: ['jooji duubista', 'jooji duubida', 'jooji qaadista', 'dhamaystir duubista'],
+  addAction: ['ku dar falka', 'fal cusub', 'ku dar shaqada', 'hawl cusub ku dar'],
+  addDecision: ['ku dar go\'aanka', 'go\'aan cusub', 'diiwaangeli go\'aanka', 'qor go\'aanka'],
+  generateMinutes: ['samee miisaska', 'samee soo koobista', 'warbixin samee', 'miisaska qor'],
+  endMeeting: ['dhamaystir kulanka', 'xir kulanka', 'kulanka jooji', 'kulanka soo gabo'],
+  pauseRecording: ['hakad duubista', 'muddo hakad', 'jooji duubista'],
+  resumeRecording: ['sii wad duubista', 'mar kale bilow', 'duubista sii wad'],
+};
+
 export const ALL_COMMANDS: VoiceCommand[] = [
   // Recording commands
   {
-    phrases: [...ENGLISH_COMMANDS.startRecording, ...AMHARIC_COMMANDS.startRecording],
+    phrases: [
+      ...ENGLISH_COMMANDS.startRecording, 
+      ...AMHARIC_COMMANDS.startRecording,
+      ...TIGRINYA_COMMANDS.startRecording,
+      ...OROMO_COMMANDS.startRecording,
+      ...SOMALI_COMMANDS.startRecording
+    ],
     action: 'startRecording',
     description: 'Start recording the meeting',
     category: 'recording',
   },
   {
-    phrases: [...ENGLISH_COMMANDS.stopRecording, ...AMHARIC_COMMANDS.stopRecording],
+    phrases: [
+      ...ENGLISH_COMMANDS.stopRecording, 
+      ...AMHARIC_COMMANDS.stopRecording,
+      ...TIGRINYA_COMMANDS.stopRecording,
+      ...OROMO_COMMANDS.stopRecording,
+      ...SOMALI_COMMANDS.stopRecording
+    ],
     action: 'stopRecording',
     description: 'Stop recording the meeting',
     category: 'recording',
   },
   {
-    phrases: [...ENGLISH_COMMANDS.pauseRecording, ...AMHARIC_COMMANDS.pauseRecording],
+    phrases: [
+      ...ENGLISH_COMMANDS.pauseRecording, 
+      ...AMHARIC_COMMANDS.pauseRecording,
+      ...TIGRINYA_COMMANDS.pauseRecording,
+      ...OROMO_COMMANDS.pauseRecording,
+      ...SOMALI_COMMANDS.pauseRecording
+    ],
     action: 'pauseRecording',
     description: 'Pause the recording',
     category: 'recording',
   },
   {
-    phrases: [...ENGLISH_COMMANDS.resumeRecording, ...AMHARIC_COMMANDS.resumeRecording],
+    phrases: [
+      ...ENGLISH_COMMANDS.resumeRecording, 
+      ...AMHARIC_COMMANDS.resumeRecording,
+      ...TIGRINYA_COMMANDS.resumeRecording,
+      ...OROMO_COMMANDS.resumeRecording,
+      ...SOMALI_COMMANDS.resumeRecording
+    ],
     action: 'resumeRecording',
     description: 'Resume the recording',
     category: 'recording',
   },
   // Action item commands
   {
-    phrases: [...ENGLISH_COMMANDS.addAction, ...AMHARIC_COMMANDS.addAction],
+    phrases: [
+      ...ENGLISH_COMMANDS.addAction, 
+      ...AMHARIC_COMMANDS.addAction,
+      ...TIGRINYA_COMMANDS.addAction,
+      ...OROMO_COMMANDS.addAction,
+      ...SOMALI_COMMANDS.addAction
+    ],
     action: 'addAction',
     description: 'Navigate to add action item',
     category: 'actions',
   },
   {
-    phrases: [...ENGLISH_COMMANDS.addDecision, ...AMHARIC_COMMANDS.addDecision],
+    phrases: [
+      ...ENGLISH_COMMANDS.addDecision, 
+      ...AMHARIC_COMMANDS.addDecision,
+      ...TIGRINYA_COMMANDS.addDecision,
+      ...OROMO_COMMANDS.addDecision,
+      ...SOMALI_COMMANDS.addDecision
+    ],
     action: 'addDecision',
     description: 'Navigate to record decision',
     category: 'actions',
   },
   // Meeting commands
   {
-    phrases: [...ENGLISH_COMMANDS.generateMinutes, ...AMHARIC_COMMANDS.generateMinutes],
+    phrases: [
+      ...ENGLISH_COMMANDS.generateMinutes, 
+      ...AMHARIC_COMMANDS.generateMinutes,
+      ...TIGRINYA_COMMANDS.generateMinutes,
+      ...OROMO_COMMANDS.generateMinutes,
+      ...SOMALI_COMMANDS.generateMinutes
+    ],
     action: 'generateMinutes',
     description: 'Generate meeting minutes',
     category: 'meeting',
   },
   {
-    phrases: [...ENGLISH_COMMANDS.endMeeting, ...AMHARIC_COMMANDS.endMeeting],
+    phrases: [
+      ...ENGLISH_COMMANDS.endMeeting, 
+      ...AMHARIC_COMMANDS.endMeeting,
+      ...TIGRINYA_COMMANDS.endMeeting,
+      ...OROMO_COMMANDS.endMeeting,
+      ...SOMALI_COMMANDS.endMeeting
+    ],
     action: 'endMeeting',
     description: 'End the meeting session',
     category: 'meeting',
@@ -98,10 +179,16 @@ export function matchCommand(transcript: string): VoiceCommand | null {
 export function matchDictation(transcript: string): { type: 'action' | 'decision', content: string } | null {
   const normalized = transcript.toLowerCase().trim();
   
-  // Action dictation patterns
-  const actionPrefixes = ['add action:', 'create task:', 'action item:', 'new action:', 'task:'];
+  // Action dictation patterns (English, Amharic, Tigrinya, Oromo, Somali)
+  const actionPrefixes = [
+    'add action:', 'create task:', 'action item:', 'new action:', 'task:',
+    'ተግባር ጨምር:', 'ስራ ጨምር:', 'ታስክ ጨምር:', 'አዲስ ተግባር:',
+    'ተግባር ውስኸ:', 'ስራሕ ውስኸ:', 'ዕማም ውስኸ:', 'ሓድሽ ተግባር:',
+    'gocha ida\'i:', 'hojii ida\'i:', 'gocha haaraa:', 'wanta hojjatamu:',
+    'ku dar falka:', 'ku dar shaqada:', 'fal cusub:', 'hawl cusub:'
+  ];
   for (const prefix of actionPrefixes) {
-    if (normalized.startsWith(prefix)) {
+    if (normalized.startsWith(prefix.toLowerCase())) {
       return {
         type: 'action',
         content: transcript.trim()
@@ -109,10 +196,16 @@ export function matchDictation(transcript: string): { type: 'action' | 'decision
     }
   }
   
-  // Decision dictation patterns
-  const decisionPrefixes = ['add decision:', 'record decision:', 'new decision:', 'decision:'];
+  // Decision dictation patterns (English, Amharic, Tigrinya, Oromo, Somali)
+  const decisionPrefixes = [
+    'add decision:', 'record decision:', 'new decision:', 'decision:',
+    'ውሳኔ ጨምር:', 'ውሳኔ መዝግብ:', 'አዲስ ውሳኔ:', 'ውሳኔ:',
+    'ውሳኔ ውስኸ:', 'ውሳኔ መዝግብ:', 'ሓድሽ ውሳኔ:', 'ውሳኔ:',
+    'murtii ida\'i:', 'murtii galmeessi:', 'murtii haaraa:', 'murtii:',
+    'ku dar go\'aanka:', 'diiwaangeli go\'aanka:', 'go\'aan cusub:', 'go\'aan:'
+  ];
   for (const prefix of decisionPrefixes) {
-    if (normalized.startsWith(prefix)) {
+    if (normalized.startsWith(prefix.toLowerCase())) {
       return {
         type: 'decision',
         content: transcript.trim()
