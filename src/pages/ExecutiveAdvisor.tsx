@@ -250,25 +250,35 @@ export default function ExecutiveAdvisor() {
                         {categorizedMeetings.upcoming.map((meeting) => (
                           <Card 
                             key={meeting.id}
-                            className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50 border-l-4 border-l-primary group"
+                            className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-primary hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-primary/5"
                             onClick={() => handleMeetingSelect(meeting.id)}
                           >
-                            <CardContent className="p-4">
+                            <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <CardContent className="p-4 relative">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold mb-2 truncate group-hover:text-primary transition-colors">{meeting.title}</h4>
-                                  <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                  <h4 className="font-semibold mb-2 truncate group-hover:text-primary transition-colors text-base">{meeting.title}</h4>
+                                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                        <Calendar className="h-3 w-3 text-primary" />
+                                      </div>
+                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                                        <Clock className="h-3 w-3 text-primary" />
+                                      </div>
+                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
                                     </div>
                                   </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary flex-shrink-0 mt-1 transition-colors" />
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="p-2 rounded-full bg-primary/10 group-hover:bg-primary group-hover:text-white transition-all duration-200">
+                                    <ChevronRight className="h-5 w-5 text-primary group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                  </div>
+                                  <span className="text-[10px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">View</span>
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -312,25 +322,35 @@ export default function ExecutiveAdvisor() {
                         {categorizedMeetings.completed.map((meeting) => (
                           <Card 
                             key={meeting.id}
-                            className="hover:shadow-md transition-all cursor-pointer hover:border-success/50 border-l-4 border-l-success group"
+                            className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-success hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-success/5"
                             onClick={() => handleMeetingSelect(meeting.id)}
                           >
-                            <CardContent className="p-4">
+                            <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/5 to-success/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                            <CardContent className="p-4 relative">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold mb-2 truncate group-hover:text-success transition-colors">{meeting.title}</h4>
-                                  <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                  <h4 className="font-semibold mb-2 truncate group-hover:text-success transition-colors text-base">{meeting.title}</h4>
+                                  <div className="space-y-1.5 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-1 rounded bg-success/10 group-hover:bg-success/20 transition-colors">
+                                        <Calendar className="h-3 w-3 text-success" />
+                                      </div>
+                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
                                     </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-1 rounded bg-success/10 group-hover:bg-success/20 transition-colors">
+                                        <Clock className="h-3 w-3 text-success" />
+                                      </div>
+                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
                                     </div>
                                   </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-success flex-shrink-0 mt-1 transition-colors" />
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="p-2 rounded-full bg-success/10 group-hover:bg-success group-hover:text-white transition-all duration-200">
+                                    <ChevronRight className="h-5 w-5 text-success group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                  </div>
+                                  <span className="text-[10px] font-medium text-success opacity-0 group-hover:opacity-100 transition-opacity">View</span>
+                                </div>
                               </div>
                             </CardContent>
                           </Card>
@@ -390,30 +410,40 @@ export default function ExecutiveAdvisor() {
                       {categorizedMeetings.signoff_pending.map((meeting) => (
                         <Card 
                           key={meeting.id}
-                          className="hover:shadow-md transition-all cursor-pointer hover:border-warning/50 border-l-4 border-l-warning group"
+                          className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-warning hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-warning/5"
                           onClick={() => handleMeetingSelect(meeting.id)}
                         >
-                          <CardContent className="p-4">
+                          <div className="absolute inset-0 bg-gradient-to-r from-warning/0 via-warning/5 to-warning/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <CardContent className="p-4 relative">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-semibold truncate flex-1 group-hover:text-warning transition-colors">{meeting.title}</h4>
-                                  <Badge variant="outline" className="text-xs border-warning text-warning flex-shrink-0">
+                                  <h4 className="font-semibold truncate flex-1 group-hover:text-warning transition-colors text-base">{meeting.title}</h4>
+                                  <Badge variant="outline" className="text-[10px] border-warning/50 text-warning bg-warning/5 flex-shrink-0 group-hover:bg-warning/10 transition-colors">
                                     Pending
                                   </Badge>
                                 </div>
-                                <div className="space-y-1 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1.5">
-                                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                                    <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                <div className="space-y-1.5 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 rounded bg-warning/10 group-hover:bg-warning/20 transition-colors">
+                                      <Calendar className="h-3 w-3 text-warning" />
+                                    </div>
+                                    <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <PenTool className="h-3 w-3 flex-shrink-0" />
-                                    <span>{meeting.signature_requests?.length || 0} signature(s) pending</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 rounded bg-warning/10 group-hover:bg-warning/20 transition-colors">
+                                      <PenTool className="h-3 w-3 text-warning" />
+                                    </div>
+                                    <span className="font-medium">{meeting.signature_requests?.length || 0} signature(s) pending</span>
                                   </div>
                                 </div>
                               </div>
-                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-warning flex-shrink-0 mt-1 transition-colors" />
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="p-2 rounded-full bg-warning/10 group-hover:bg-warning group-hover:text-white transition-all duration-200">
+                                  <ChevronRight className="h-5 w-5 text-warning group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                </div>
+                                <span className="text-[10px] font-medium text-warning opacity-0 group-hover:opacity-100 transition-opacity">View</span>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
@@ -457,30 +487,40 @@ export default function ExecutiveAdvisor() {
                       {categorizedMeetings.signoff_approved.map((meeting) => (
                         <Card 
                           key={meeting.id}
-                          className="hover:shadow-md transition-all cursor-pointer hover:border-secondary/50 border-l-4 border-l-secondary group"
+                          className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-secondary hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-secondary/5"
                           onClick={() => handleMeetingSelect(meeting.id)}
                         >
-                          <CardContent className="p-4">
+                          <div className="absolute inset-0 bg-gradient-to-r from-secondary/0 via-secondary/5 to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                          <CardContent className="p-4 relative">
                             <div className="flex items-start justify-between gap-3">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-semibold truncate flex-1 group-hover:text-secondary transition-colors">{meeting.title}</h4>
-                                  <Badge variant="outline" className="text-xs border-secondary text-secondary flex-shrink-0">
+                                  <h4 className="font-semibold truncate flex-1 group-hover:text-secondary transition-colors text-base">{meeting.title}</h4>
+                                  <Badge variant="outline" className="text-[10px] border-secondary/50 text-secondary bg-secondary/5 flex-shrink-0 group-hover:bg-secondary/10 transition-colors">
                                     Approved
                                   </Badge>
                                 </div>
-                                <div className="space-y-1 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-1.5">
-                                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                                    <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                <div className="space-y-1.5 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 rounded bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
+                                      <Calendar className="h-3 w-3 text-secondary" />
+                                    </div>
+                                    <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
                                   </div>
-                                  <div className="flex items-center gap-1.5">
-                                    <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
-                                    <span>{meeting.signature_requests?.length || 0} signature(s) completed</span>
+                                  <div className="flex items-center gap-2">
+                                    <div className="p-1 rounded bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
+                                      <CheckCircle2 className="h-3 w-3 text-secondary" />
+                                    </div>
+                                    <span className="font-medium">{meeting.signature_requests?.length || 0} signature(s) completed</span>
                                   </div>
                                 </div>
                               </div>
-                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-secondary flex-shrink-0 mt-1 transition-colors" />
+                              <div className="flex flex-col items-center gap-1">
+                                <div className="p-2 rounded-full bg-secondary/10 group-hover:bg-secondary group-hover:text-white transition-all duration-200">
+                                  <ChevronRight className="h-5 w-5 text-secondary group-hover:text-white group-hover:translate-x-1 transition-all" />
+                                </div>
+                                <span className="text-[10px] font-medium text-secondary opacity-0 group-hover:opacity-100 transition-opacity">View</span>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
