@@ -118,29 +118,37 @@ export function MeetingClosingSummary({
 
       if (error) throw error;
 
-      if (data.pdfBase64) {
-        const blob = new Uint8Array(
-          atob(data.pdfBase64)
-            .split('')
-            .map((c) => c.charCodeAt(0))
-        );
-        const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+      // Preferred path: API returns base64-encoded PDF
+      if (data && (data as any).pdfBase64) {
+        const bytes = Uint8Array.from(atob((data as any).pdfBase64), c => c.charCodeAt(0));
+        const url = window.URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
         const link = document.createElement('a');
         link.href = url;
         link.download = `meeting-summary-${new Date().toISOString().split('T')[0]}.pdf`;
         link.click();
         window.URL.revokeObjectURL(url);
-
-        toast({
-          title: 'PDF Downloaded',
-          description: 'Meeting summary PDF has been downloaded',
-        });
+        toast({ title: 'PDF Downloaded', description: 'Meeting summary PDF has been downloaded' });
+        return;
       }
+
+      // Fallback: API returned plain text (current implementation)
+      if (typeof data === 'string') {
+        const url = window.URL.createObjectURL(new Blob([data], { type: 'text/plain' }));
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `meeting-summary-${new Date().toISOString().split('T')[0]}.txt`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+        toast({ title: 'Summary Downloaded', description: 'Downloaded as a text file for now.' });
+        return;
+      }
+
+      throw new Error('Unexpected response from download function');
     } catch (error: any) {
       console.error('Error downloading PDF:', error);
       toast({
         title: 'Download Failed',
-        description: error.message || 'Failed to download PDF',
+        description: error.message || 'Failed to download Summary',
         variant: 'destructive',
       });
     } finally {
@@ -210,7 +218,7 @@ export function MeetingClosingSummary({
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Download PDF
+                    Download
                   </>
                 )}
               </Button>
