@@ -2,7 +2,36 @@
 
 ## 🎯 Quick Overview
 
-This meeting management system uses **Lovable AI** to automatically generate comprehensive meeting minutes, summaries, and insights from your discussions.
+This meeting management system uses **Lovable AI** to automatically generate comprehensive meeting minutes, summaries, and insights from your discussions. It also features **multilingual voice-to-text transcription** for Amharic, English, and Arabic.
+
+---
+
+## 🎤 Multilingual Voice Transcription
+
+### What It Does
+The system automatically listens to meetings and converts speech to text in **Amharic (አማርኛ)**, **English**, and **Arabic (العربية)** in real-time.
+
+### How It Works
+1. **Recording**: Audio is captured in 10-second chunks for near real-time processing
+2. **Language Detection**: AI automatically identifies which language is being spoken using OpenAI Whisper
+3. **Transcription**: Speech is converted to written text with timestamps
+4. **Display**: Transcripts appear with color-coded language badges:
+   - 🟢 Green = Amharic (አማርኛ)
+   - 🔵 Blue = English
+   - 🟣 Purple = Arabic (العربية)
+5. **Storage**: All transcripts are saved to the database for generating meeting minutes
+
+### Key Features
+- ✅ **Automatic Language Switching**: Seamlessly handles meetings where multiple languages are spoken
+- ✅ **Real-Time Processing**: See transcripts appear as people speak (10-second delay)
+- ✅ **High Accuracy**: Uses OpenAI Whisper AI for industry-leading transcription quality
+- ✅ **Speaker Attribution**: Automatically tracks who said what
+- ✅ **Saved for Minutes**: All transcripts feed into AI meeting minutes generation
+
+### Supported Audio Formats
+- WebM (primary)
+- MP3, WAV, M4A (via file upload)
+- Direct microphone input
 
 ---
 

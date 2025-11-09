@@ -55,6 +55,7 @@ import { localStorageCache } from "@/utils/localStorage";
 
 // Lazy load heavy components
 const LiveTranscription = lazy(() => import("@/components/LiveTranscription").then(m => ({ default: m.LiveTranscription })));
+const MultilingualLiveTranscription = lazy(() => import("@/components/MultilingualLiveTranscription").then(m => ({ default: m.MultilingualLiveTranscription })));
 const BrowserSpeechRecognition = lazy(() => import("@/components/BrowserSpeechRecognition").then(m => ({ default: m.BrowserSpeechRecognition })));
 const LiveAudioRecorder = lazy(() => import("@/components/LiveAudioRecorder").then(m => ({ default: m.LiveAudioRecorder })));
 const VirtualMeetingRoom = lazy(() => import("@/components/VirtualMeetingRoom").then(m => ({ default: m.VirtualMeetingRoom })));
@@ -1171,7 +1172,15 @@ const MeetingDetail = () => {
                         selectedLanguage={transcriptionLanguage}
                       />
                       <MeetingAudioPlayback meetingId={meetingId} />
-                      <LiveTranscription 
+                      
+                      <MultilingualLiveTranscription 
+                        meetingId={meetingId}
+                        onTranscriptUpdate={(segments) => {
+                          console.log('Multilingual transcripts:', segments);
+                        }}
+                      />
+                      
+                      <LiveTranscription
                         meetingId={meetingId} 
                         isRecording={isRecording}
                         currentUserName={userFullName || 'Unknown User'}
