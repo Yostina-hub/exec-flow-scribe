@@ -194,7 +194,7 @@ export default function ExecutiveAdvisor() {
       // Get the signature request ID for this meeting
       const meeting = meetings.find(m => m.id === meetingId);
       if (meeting?.signature_requests?.[0]?.id) {
-        navigate(`/signature-approval/${meeting.signature_requests[0].id}`);
+        navigate(`/signature/${meeting.signature_requests[0].id}`);
         return;
       }
     } else if (category === 'signoff_approved') {
