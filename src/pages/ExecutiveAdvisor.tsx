@@ -126,6 +126,48 @@ export default function ExecutiveAdvisor() {
     fetchMeetings();
   }, [user?.id]);
 
+  // Set up realtime subscriptions for automatic updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const meetingsChannel = supabase
+      .channel('meetings-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'meetings'
+        },
+        () => {
+          // Refetch meetings when any meeting changes
+          fetchMeetings();
+        }
+      )
+      .subscribe();
+
+    const signatureRequestsChannel = supabase
+      .channel('signature-requests-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'signature_requests'
+        },
+        () => {
+          // Refetch meetings when any signature request changes
+          fetchMeetings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(meetingsChannel);
+      supabase.removeChannel(signatureRequestsChannel);
+    };
+  }, [user?.id]);
+
   const handleMeetingSelect = async (meetingId: string, category?: MeetingCategory) => {
     // Route to appropriate page based on category
     if (category === 'signoff_pending') {
