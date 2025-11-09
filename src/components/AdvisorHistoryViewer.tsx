@@ -4,10 +4,12 @@ import { ScrollArea } from './ui/scroll-area';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { History, MessageCircle, Calendar, Clock, Sparkles, ChevronRight } from 'lucide-react';
+import { History, MessageCircle, Calendar, Clock, Sparkles, ChevronRight, Download, Share2, FileText, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
+import { ShareInsightsDialog } from './ShareInsightsDialog';
 
 interface AdvisorHistoryViewerProps {
   meetingId: string;
@@ -31,10 +33,13 @@ interface Message {
 }
 
 export function AdvisorHistoryViewer({ meetingId, currentConversationId }: AdvisorHistoryViewerProps) {
+  const { toast } = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
 
   useEffect(() => {
     loadConversations();
@@ -99,6 +104,52 @@ export function AdvisorHistoryViewer({ meetingId, currentConversationId }: Advis
     } catch (error) {
       console.error('Failed to load messages:', error);
     }
+  };
+
+  const handleExportPDF = async () => {
+    if (!selectedConversation) return;
+
+    setExporting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-advisor-report', {
+        body: { conversationId: selectedConversation, format: 'html' }
+      });
+
+      if (error) throw error;
+
+      // Create blob from HTML and trigger download
+      const blob = new Blob([data], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `advisor-session-${new Date().toISOString().split('T')[0]}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Report exported successfully",
+        description: "Your advisor session report has been downloaded",
+      });
+    } catch (error) {
+      console.error('Failed to export report:', error);
+      toast({
+        title: "Export failed",
+        description: "Failed to generate the report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleShareInsights = () => {
+    setShowShareDialog(true);
+  };
+
+  const getCurrentConversation = () => {
+    return conversations.find(c => c.id === selectedConversation);
   };
 
   if (loading) {
@@ -197,10 +248,45 @@ export function AdvisorHistoryViewer({ meetingId, currentConversationId }: Advis
       {/* Messages View */}
       <Card className="col-span-2 border-2 border-primary/20">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            {selectedConversation ? 'Conversation Details' : 'Select a Session'}
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              {selectedConversation ? 'Conversation Details' : 'Select a Session'}
+            </CardTitle>
+            {selectedConversation && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleShareInsights}
+                  disabled={!getCurrentConversation()?.key_insights || 
+                    !Array.isArray(getCurrentConversation()?.key_insights) ||
+                    getCurrentConversation()?.key_insights.length === 0}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Insights
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportPDF}
+                  disabled={exporting}
+                >
+                  {exporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export PDF
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {!selectedConversation ? (
@@ -274,6 +360,17 @@ export function AdvisorHistoryViewer({ meetingId, currentConversationId }: Advis
           )}
         </CardContent>
       </Card>
+
+      {/* Share Insights Dialog */}
+      <ShareInsightsDialog
+        isOpen={showShareDialog}
+        onClose={() => setShowShareDialog(false)}
+        conversationId={selectedConversation || ''}
+        meetingId={meetingId}
+        insights={Array.isArray(getCurrentConversation()?.key_insights) 
+          ? getCurrentConversation()!.key_insights 
+          : []}
+      />
     </div>
   );
 }
