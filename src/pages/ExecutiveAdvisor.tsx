@@ -7,6 +7,7 @@ import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight 
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { ExecutiveSignatureRequests } from '@/components/ExecutiveSignatureRequests';
 
 export default function ExecutiveAdvisor() {
   const navigate = useNavigate();
@@ -142,6 +143,9 @@ export default function ExecutiveAdvisor() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Signature Requests - Priority Section */}
+      <ExecutiveSignatureRequests />
 
       {/* Recent Meetings */}
       <Card className="border-2 border-primary/20">
