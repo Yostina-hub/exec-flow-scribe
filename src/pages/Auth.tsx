@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Sparkles, Zap, Shield, TrendingUp } from "lucide-react";
-import { useIsGuest } from "@/hooks/useIsGuest";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { useTheme } from "@/contexts/ThemeContext";
 import ethioTelecomLogo from "@/assets/ethio-telecom-logo.png";
@@ -21,7 +20,6 @@ const Auth = () => {
   const [title, setTitle] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isGuest, loading: guestLoading } = useIsGuest();
   const { theme } = useTheme();
   const isEthioTelecom = theme === 'ethio-telecom';
 
@@ -34,8 +32,8 @@ const Auth = () => {
         return;
       }
       
-      if (session && !guestLoading) {
-        navigate(isGuest ? "/guest" : "/");
+      if (session) {
+        navigate("/");
       }
     });
 
@@ -50,17 +48,12 @@ const Auth = () => {
       }
       
       if (session) {
-        // Small delay to allow guest status to update
-        setTimeout(() => {
-          if (!guestLoading) {
-            navigate(isGuest ? "/guest" : "/");
-          }
-        }, 300);
+        navigate("/");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, isGuest, guestLoading]);
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();

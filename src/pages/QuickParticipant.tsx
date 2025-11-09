@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { GuestLayout } from '@/components/GuestLayout';
 
 export default function QuickParticipant() {
   const { meetingId } = useParams();
@@ -179,66 +178,62 @@ export default function QuickParticipant() {
 
   if (!joined) {
     return (
-      <GuestLayout guestName={guestName || undefined}>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="w-full max-w-md p-6">
-            <div className="space-y-6">
-              <div className="text-center">
-                <h1 className="text-2xl font-bold mb-2">{meeting?.title}</h1>
-                <p className="text-muted-foreground">Enter your name to join</p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="guestName">Your Name</Label>
-                  <Input
-                    id="guestName"
-                    placeholder="John Doe"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleJoinAsGuest()}
-                  />
-                </div>
-
-                <Button 
-                  className="w-full" 
-                  onClick={handleJoinAsGuest}
-                  disabled={loading}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Joining...
-                    </>
-                  ) : (
-                    'Join Meeting'
-                  )}
-                </Button>
-              </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                By joining, you agree to the meeting terms and conditions.
-                Your access will be limited to this meeting only.
-              </p>
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md p-6">
+          <div className="space-y-6">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold mb-2">{meeting?.title}</h1>
+              <p className="text-muted-foreground">Enter your name to join</p>
             </div>
-          </Card>
-        </div>
-      </GuestLayout>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="guestName">Your Name</Label>
+                <Input
+                  id="guestName"
+                  placeholder="John Doe"
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleJoinAsGuest()}
+                />
+              </div>
+
+              <Button 
+                className="w-full" 
+                onClick={handleJoinAsGuest}
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Joining...
+                  </>
+                ) : (
+                  'Join Meeting'
+                )}
+              </Button>
+            </div>
+
+            <p className="text-xs text-muted-foreground text-center">
+              By joining, you agree to the meeting terms and conditions.
+              Your access will be limited to this meeting only.
+            </p>
+          </div>
+        </Card>
+      </div>
     );
   }
 
   if (!meeting || meeting.status !== 'in_progress') {
     return (
-      <GuestLayout guestName={guestName || undefined}>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="p-6 text-center">
-            <h2 className="text-xl font-semibold mb-2">Meeting Not Available</h2>
-            <p className="text-muted-foreground">
-              This meeting is not currently active.
-            </p>
-          </Card>
-        </div>
-      </GuestLayout>
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <Card className="p-6 text-center">
+          <h2 className="text-xl font-semibold mb-2">Meeting Not Available</h2>
+          <p className="text-muted-foreground">
+            This meeting is not currently active.
+          </p>
+        </Card>
+      </div>
     );
   }
 

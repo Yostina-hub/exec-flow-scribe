@@ -27,11 +27,9 @@ import Notebook from "./pages/Notebook";
 import NotebooksLibrary from "./pages/NotebooksLibrary";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
-import GuestSignup from "./pages/GuestSignup";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import DocumentViewer from "./components/DocumentViewer";
-import GuestDashboard from "./pages/GuestDashboard";
 import { Toaster } from "@/components/ui/toaster";
 
 const queryClient = new QueryClient({
@@ -67,7 +65,6 @@ const App = () => (
           <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
-            <Route path="/guest-signup" element={<GuestSignup />} />
             <Route path="/document" element={<DocumentViewer />} />
             <Route path="/quick-join" element={<QuickJoinMeeting />} />
             <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
@@ -75,7 +72,6 @@ const App = () => (
             {/* Protected routes with persistent Layout */}
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Index />} />
-              <Route path="/guest" element={<GuestDashboard />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/meetings" element={<Meetings />} />
               <Route path="/meetings/:id" element={<MeetingDetail />} />

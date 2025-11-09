@@ -48,7 +48,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useTheme } from "@/contexts/ThemeContext";
 import { format } from "date-fns";
 import { useMeetingAccess } from "@/hooks/useMeetingAccess";
-import { useIsGuest } from "@/hooks/useIsGuest";
 import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
@@ -98,8 +97,6 @@ const EnhancedDocumentsTab = lazy(() => import("@/components/EnhancedDocumentsTa
 const TimeBasedAccessGuard = lazy(() => import("@/components/TimeBasedAccessGuard").then(m => ({ default: m.TimeBasedAccessGuard })));
 const ProtectedElement = lazy(() => import("@/components/ProtectedElement").then(m => ({ default: m.ProtectedElement })));
 const HostManagementPanel = lazy(() => import("@/components/HostManagementPanel").then(m => ({ default: m.HostManagementPanel })));
-const GuestLayout = lazy(() => import("@/components/GuestLayout").then(m => ({ default: m.GuestLayout })));
-const GuestMeetingView = lazy(() => import("@/components/GuestMeetingView").then(m => ({ default: m.GuestMeetingView })));
 const PDFGenerationPanel = lazy(() => import("@/components/PDFGenerationPanel").then(m => ({ default: m.PDFGenerationPanel })));
 const SystemTestPanel = lazy(() => import("@/components/SystemTestPanel").then(m => ({ default: m.SystemTestPanel })));
 const TranscriptionProviderToggle = lazy(() => import("@/components/TranscriptionProviderToggle").then(m => ({ default: m.TranscriptionProviderToggle })));
@@ -221,9 +218,8 @@ const MeetingDetail = () => {
   const { transcriptions: realtimeTranscriptions } = useRealtimeTranscriptions(meetingId);
   
   const meetingAccess = useMeetingAccess(id);
-  const { isGuest, guestName, loading: guestLoading } = useIsGuest(id);
   const { 
-    isRecording, 
+    isRecording,
     isPaused, 
     startRecording, 
     stopRecording, 
@@ -747,15 +743,6 @@ const MeetingDetail = () => {
           <p className="text-sm text-muted-foreground">Preparing your workspace...</p>
         </div>
       </div>
-    );
-  }
-
-  // Guest users get a completely different experience
-  if (isGuest && userId) {
-    return (
-      <GuestLayout guestName={guestName}>
-        <GuestMeetingView meetingId={meetingId} userId={userId} />
-      </GuestLayout>
     );
   }
 

@@ -1,9 +1,6 @@
 import { ExecutiveDashboard } from "@/components/ExecutiveDashboard";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { CEOBriefing } from "@/components/CEOBriefing";
-import { GuestAccessStatus } from "@/components/GuestAccessStatus";
-import { useIsGuest } from "@/hooks/useIsGuest";
-import GuestDashboard from "./GuestDashboard";
 import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
@@ -23,7 +20,6 @@ import { format, isToday, isTomorrow, startOfWeek, endOfWeek, isSameDay } from "
 
 export default function Index() {
   const navigate = useNavigate();
-  const { isGuest, loading: guestLoading } = useIsGuest();
   const { theme } = useTheme();
   const isEthioTelecom = theme === 'ethio-telecom';
   const [meetings, setMeetings] = useState<any[]>([]);
@@ -38,13 +34,6 @@ export default function Index() {
   const [isCEO, setIsCEO] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const openedRef = useRef(false);
-
-  // Redirect guests to their dedicated dashboard
-  useEffect(() => {
-    if (!guestLoading && isGuest) {
-      navigate("/guest");
-    }
-  }, [isGuest, guestLoading, navigate]);
 
   useEffect(() => {
     checkUserRole();
@@ -227,17 +216,12 @@ export default function Index() {
   const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
   // Show neutral loading screen while checking guest status - no layout to prevent flash
-  if (loading || guestLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
-  }
-
-  // Return null while navigation happens for guests - prevents any flash of regular dashboard
-  if (isGuest) {
-    return null;
   }
 
   return (
@@ -337,9 +321,6 @@ export default function Index() {
             </Card>
           ))}
         </div>
-
-        {/* Guest Access Status */}
-        <GuestAccessStatus />
 
         {/* Executive Dashboard Component */}
         <ExecutiveDashboard
