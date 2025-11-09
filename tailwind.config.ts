@@ -130,6 +130,8 @@ export default {
         "fade-in": "fade-in 0.3s ease-out",
         "scale-in": "scale-in 0.2s ease-out",
         "shimmer": "shimmer 2s infinite",
+        "shimmer-slow": "shimmer 3s infinite",
+        "shimmer-fast": "shimmer 1s infinite",
       },
     },
   },
