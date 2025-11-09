@@ -83,6 +83,7 @@ const App = () => (
               <Route path="/notebooks" element={<NotebooksLibrary />} />
               <Route path="/notebook" element={<Notebook />} />
               <Route path="/signature/:requestId" element={<SignatureApproval />} />
+              <Route path="/signature-approval/:requestId" element={<SignatureApproval />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/settings" element={<Settings />} />
