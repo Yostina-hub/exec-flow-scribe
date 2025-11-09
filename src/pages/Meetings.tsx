@@ -1,4 +1,5 @@
 import { InlineMeetingCard } from "@/components/InlineMeetingCard";
+import { MeetingsListSkeleton } from "@/components/skeletons/MeetingsListSkeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -354,12 +355,7 @@ export default function Meetings() {
   };
 
   if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh] gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="text-muted-foreground">Loading...</span>
-      </div>
-    );
+    return <MeetingsListSkeleton />;
   }
 
   return (

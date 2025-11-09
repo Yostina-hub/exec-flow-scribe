@@ -1,11 +1,12 @@
 import { CreateMeetingDialog } from "@/components/CreateMeetingDialog";
+import { CalendarSkeleton } from "@/components/skeletons/CalendarSkeleton";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Loader2, Bell, ExternalLink, Plus, Filter, Sparkles, Users, Clock, MapPin, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Bell, ExternalLink, Plus, Filter, Sparkles, Users, Clock, MapPin, TrendingUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isToday, isSameDay } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -220,11 +221,7 @@ const CalendarView = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <CalendarSkeleton />;
   }
 
   return (

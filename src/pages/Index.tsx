@@ -1,10 +1,11 @@
 import { ExecutiveDashboard } from "@/components/ExecutiveDashboard";
 import { QuickActionFAB } from "@/components/QuickActionFAB";
 import { CEOBriefing } from "@/components/CEOBriefing";
+import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton";
 import { useTheme } from "@/contexts/ThemeContext";
 import { 
   Calendar, Play, FileText, TrendingUp, Clock, 
-  Users, Zap, Target, CheckSquare, Loader2, Sparkles,
+  Users, Zap, Target, CheckSquare, Sparkles,
   BarChart3, Activity, Rocket, CalendarDays, ArrowUpRight, Brain, Search
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -215,13 +216,8 @@ export default function Index() {
   // Calculate dates with meetings for calendar
   const datesWithMeetings = weekMeetings.map(m => new Date(m.start_time));
 
-  // Show neutral loading screen while checking guest status - no layout to prevent flash
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   return (

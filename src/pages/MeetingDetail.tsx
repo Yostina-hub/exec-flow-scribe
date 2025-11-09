@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { MeetingDetailSkeleton } from "@/components/skeletons/MeetingDetailSkeleton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,7 +31,6 @@ import {
   ArrowLeft,
   MoreHorizontal,
   Plus,
-  Loader2,
   Sparkles,
   ListChecks,
   FileSignature,
@@ -732,18 +732,7 @@ const MeetingDetail = () => {
 
   // Show loading only until we have the basic meeting row
   if (!meeting && (meetingRealtimeLoading || loading)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6 animate-fade-in">
-        <div className="relative">
-          <Loader2 className="h-16 w-16 animate-spin text-primary" />
-          <div className="absolute inset-0 bg-primary/20 blur-2xl animate-pulse" />
-        </div>
-        <div className="text-center space-y-2">
-          <p className="text-lg font-medium">Loading meeting details</p>
-          <p className="text-sm text-muted-foreground">Preparing your workspace...</p>
-        </div>
-      </div>
-    );
+    return <MeetingDetailSkeleton />;
   }
 
   // For virtual room type meetings, ONLY show virtual room interface - no standard meeting UI

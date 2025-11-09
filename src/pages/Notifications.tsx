@@ -1,3 +1,4 @@
+import { NotificationsSkeleton } from "@/components/skeletons/NotificationsSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { NotificationPreferencesForm } from "@/components/NotificationPreferencesForm";

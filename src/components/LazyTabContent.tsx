@@ -1,6 +1,6 @@
 import { ReactNode, Suspense, lazy } from 'react';
-import { Loader2 } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 
 interface LazyTabContentProps {
   children: ReactNode;
@@ -8,14 +8,21 @@ interface LazyTabContentProps {
 }
 
 const LoadingFallback = () => (
-  <Card>
-    <CardContent className="flex items-center justify-center py-12">
-      <div className="flex flex-col items-center gap-3">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-muted-foreground">Loading...</p>
-      </div>
-    </CardContent>
-  </Card>
+  <div className="space-y-4 animate-fade-in">
+    <Card>
+      <CardHeader>
+        <Skeleton className="h-6 w-48" />
+        <Skeleton className="h-4 w-64 mt-2" />
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full" />
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  </div>
 );
 
 export const LazyTabContent = ({ children, fallback }: LazyTabContentProps) => {
