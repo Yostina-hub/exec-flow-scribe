@@ -95,6 +95,7 @@ const MeetingKeyPointsSummary = lazy(() => import("@/components/MeetingKeyPoints
 const MeetingKeywordSearch = lazy(() => import("@/components/MeetingKeywordSearch").then(m => ({ default: m.MeetingKeywordSearch })));
 const EnhancedDocumentsTab = lazy(() => import("@/components/EnhancedDocumentsTab").then(m => ({ default: m.EnhancedDocumentsTab })));
 const EnhancedDecisionsList = lazy(() => import("@/components/EnhancedDecisionsList").then(m => ({ default: m.EnhancedDecisionsList })));
+const AIGenerationInsights = lazy(() => import("@/components/AIGenerationInsights").then(m => ({ default: m.AIGenerationInsights })));
 const TimeBasedAccessGuard = lazy(() => import("@/components/TimeBasedAccessGuard").then(m => ({ default: m.TimeBasedAccessGuard })));
 const ProtectedElement = lazy(() => import("@/components/ProtectedElement").then(m => ({ default: m.ProtectedElement })));
 const HostManagementPanel = lazy(() => import("@/components/HostManagementPanel").then(m => ({ default: m.HostManagementPanel })));
@@ -1384,6 +1385,7 @@ const MeetingDetail = () => {
 
               <TabsContent value="ai-intelligence" className="space-y-4">
                 <LazyTabContent>
+                  <AIGenerationInsights meetingId={meetingId} />
                   <UnifiedEmotionIntelligence 
                     meetingId={meetingId}
                     onSemanticResultClick={(timestamp) => {
