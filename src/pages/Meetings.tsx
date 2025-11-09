@@ -15,7 +15,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { Search, Calendar, Plus, Filter, Clock, Users, TrendingUp, Sparkles, Video, MapPin, Loader2, AlertCircle, PenTool, CheckCircle2 } from "lucide-react";
+import { Search, Calendar, Plus, Filter, Clock, Users, TrendingUp, Sparkles, Video, MapPin, Loader2 } from "lucide-react";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -106,17 +106,15 @@ export default function Meetings() {
   const [currentPageUpcoming, setCurrentPageUpcoming] = React.useState(1);
   const [currentPageCompleted, setCurrentPageCompleted] = React.useState(1);
   const [currentPageAll, setCurrentPageAll] = React.useState(1);
-  const [currentPageSignoffPending, setCurrentPageSignoffPending] = React.useState(1);
-  const [currentPageSignoffApproved, setCurrentPageSignoffApproved] = React.useState(1);
-  const [activeTab, setActiveTab] = React.useState<'upcoming' | 'completed' | 'all' | 'signoff_pending' | 'signoff_approved'>('upcoming');
-  const [totalCounts, setTotalCounts] = React.useState({ upcoming: 0, completed: 0, all: 0, signoff_pending: 0, signoff_approved: 0 });
+  const [activeTab, setActiveTab] = React.useState<'upcoming' | 'completed' | 'all'>('upcoming');
+  const [totalCounts, setTotalCounts] = React.useState({ upcoming: 0, completed: 0, all: 0 });
   const [meetings, setMeetings] = React.useState<Meeting[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [hasLoadedTab, setHasLoadedTab] = React.useState<{ [key: string]: boolean }>({});
 
   // Server-side pagination fetch
   const fetchMeetingsPage = React.useCallback(async (
-    status: 'upcoming' | 'completed' | 'all' | 'signoff_pending' | 'signoff_approved',
+    status: 'upcoming' | 'completed' | 'all',
     page: number,
     search?: string
   ) => {
@@ -141,9 +139,6 @@ export default function Meetings() {
         query = query.neq('status', 'completed').gte('start_time', now);
       } else if (status === 'completed') {
         query = query.eq('status', 'completed');
-      } else if (status === 'signoff_pending' || status === 'signoff_approved') {
-        // For signoff tabs, we'll filter in memory after fetching with signature_requests
-        // No status filter here - we need all meetings with signature requests
       }
       // For 'all', no filter is applied
 
@@ -165,21 +160,8 @@ export default function Meetings() {
         agenda_count: meeting.agenda_items?.[0]?.count || 0,
       }));
 
-      // Filter for signoff categories
-      if (status === 'signoff_pending') {
-        enrichedMeetings = enrichedMeetings.filter(m => 
-          m.signature_requests && m.signature_requests.length > 0 &&
-          m.signature_requests.some(sr => sr.status === 'pending')
-        );
-      } else if (status === 'signoff_approved') {
-        enrichedMeetings = enrichedMeetings.filter(m => 
-          m.signature_requests && m.signature_requests.length > 0 &&
-          m.signature_requests.every(sr => sr.status === 'completed')
-        );
-      }
-
       setMeetings(enrichedMeetings);
-      setTotalCounts(prev => ({ ...prev, [status]: status === 'signoff_pending' || status === 'signoff_approved' ? enrichedMeetings.length : (count || 0) }));
+      setTotalCounts(prev => ({ ...prev, [status]: count || 0 }));
       setHasLoadedTab(prev => ({ ...prev, [status]: true }));
     } catch (error) {
       console.error('Error fetching meetings:', error);
@@ -198,32 +180,18 @@ export default function Meetings() {
     try {
       const now = new Date().toISOString();
       
-      const [upcomingRes, completedRes, totalRes, allMeetingsWithSignatures] = await Promise.all([
+      const [upcomingRes, completedRes, totalRes] = await Promise.all([
         supabase.from("meetings").select('id', { count: 'exact', head: true })
           .neq('status', 'completed').gte('start_time', now),
         supabase.from("meetings").select('id', { count: 'exact', head: true })
           .eq('status', 'completed'),
-        supabase.from("meetings").select('id', { count: 'exact', head: true }),
-        supabase.from("meetings").select('id, signature_requests(id, status)')
+        supabase.from("meetings").select('id', { count: 'exact', head: true })
       ]);
-
-      // Calculate signoff counts
-      const signoffPending = (allMeetingsWithSignatures.data || []).filter(m =>
-        m.signature_requests && m.signature_requests.length > 0 &&
-        m.signature_requests.some((sr: any) => sr.status === 'pending')
-      ).length;
-
-      const signoffApproved = (allMeetingsWithSignatures.data || []).filter(m =>
-        m.signature_requests && m.signature_requests.length > 0 &&
-        m.signature_requests.every((sr: any) => sr.status === 'completed')
-      ).length;
 
       setTotalCounts({
         upcoming: upcomingRes.count || 0,
         completed: completedRes.count || 0,
-        all: totalRes.count || 0,
-        signoff_pending: signoffPending,
-        signoff_approved: signoffApproved,
+        all: totalRes.count || 0
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -246,13 +214,11 @@ export default function Meetings() {
 
     const currentPage = activeTab === 'upcoming' ? currentPageUpcoming 
       : activeTab === 'completed' ? currentPageCompleted 
-      : activeTab === 'signoff_pending' ? currentPageSignoffPending
-      : activeTab === 'signoff_approved' ? currentPageSignoffApproved
       : currentPageAll;
     
     // Only fetch if tab hasn't been loaded yet, or page/search changed
     fetchMeetingsPage(activeTab, currentPage, debouncedSearch);
-  }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, currentPageSignoffPending, currentPageSignoffApproved, debouncedSearch, fetchMeetingsPage]);
+  }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, debouncedSearch, fetchMeetingsPage]);
 
   // Real-time updates
   React.useEffect(() => {
@@ -269,8 +235,6 @@ export default function Meetings() {
         fetchStats();
         const currentPage = activeTab === 'upcoming' ? currentPageUpcoming 
           : activeTab === 'completed' ? currentPageCompleted 
-          : activeTab === 'signoff_pending' ? currentPageSignoffPending
-          : activeTab === 'signoff_approved' ? currentPageSignoffApproved
           : currentPageAll;
         fetchMeetingsPage(activeTab, currentPage, debouncedSearch);
       })
@@ -279,7 +243,7 @@ export default function Meetings() {
     return () => {
       supabase.removeChannel(meetingsChannel);
     };
-  }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, currentPageSignoffPending, currentPageSignoffApproved, debouncedSearch, fetchStats, fetchMeetingsPage]);
+  }, [user, activeTab, currentPageUpcoming, currentPageCompleted, currentPageAll, debouncedSearch, fetchStats, fetchMeetingsPage]);
 
   const stats = React.useMemo(() => ({
     upcoming: totalCounts.upcoming,
@@ -327,18 +291,14 @@ export default function Meetings() {
   const totalPagesUpcoming = getTotalPages(totalCounts.upcoming);
   const totalPagesCompleted = getTotalPages(totalCounts.completed);
   const totalPagesAll = getTotalPages(totalCounts.all);
-  const totalPagesSignoffPending = getTotalPages(totalCounts.signoff_pending);
-  const totalPagesSignoffApproved = getTotalPages(totalCounts.signoff_approved);
 
   const handleTabChange = (value: string) => {
-    const newTab = value as 'upcoming' | 'completed' | 'all' | 'signoff_pending' | 'signoff_approved';
+    const newTab = value as 'upcoming' | 'completed' | 'all';
     setActiveTab(newTab);
 
     // Reset pagination when switching tabs
     if (newTab === 'upcoming') setCurrentPageUpcoming(1);
     else if (newTab === 'completed') setCurrentPageCompleted(1);
-    else if (newTab === 'signoff_pending') setCurrentPageSignoffPending(1);
-    else if (newTab === 'signoff_approved') setCurrentPageSignoffApproved(1);
     else setCurrentPageAll(1);
   };
 
@@ -483,7 +443,7 @@ export default function Meetings() {
 
         {/* Enhanced Meetings Tabs */}
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
-          <TabsList className={`grid w-full grid-cols-2 md:grid-cols-5 h-auto md:h-14 backdrop-blur-sm border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : 'bg-muted/50'}`}>
+          <TabsList className={`grid w-full grid-cols-3 h-auto md:h-14 backdrop-blur-sm border-2 ${isEthioTelecom ? 'bg-white border-gray-200' : 'bg-muted/50'}`}>
             <TabsTrigger 
               value="upcoming" 
               className={`font-bold transition-all duration-300 text-xs md:text-sm ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0072BC] data-[state=active]:to-[#005A9C] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white'}`}
@@ -497,20 +457,6 @@ export default function Meetings() {
             >
               <TrendingUp className="h-4 w-4 mr-1 md:mr-2" />
               Completed ({totalCounts.completed})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="signoff_pending"
-              className={`font-bold transition-all duration-300 text-xs md:text-sm ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-orange-600 data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-amber-500 data-[state=active]:text-white'}`}
-            >
-              <AlertCircle className="h-4 w-4 mr-1 md:mr-2" />
-              Pending ({totalCounts.signoff_pending})
-            </TabsTrigger>
-            <TabsTrigger 
-              value="signoff_approved"
-              className={`font-bold transition-all duration-300 text-xs md:text-sm ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#0072BC] data-[state=active]:to-[#8DC63F] data-[state=active]:text-white' : 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white'}`}
-            >
-              <CheckCircle2 className="h-4 w-4 mr-1 md:mr-2" />
-              Approved ({totalCounts.signoff_approved})
             </TabsTrigger>
             <TabsTrigger 
               value="all"
@@ -610,96 +556,6 @@ export default function Meetings() {
                   ))}
                 </div>
                 {renderPagination(currentPageCompleted, totalPagesCompleted, setCurrentPageCompleted)}
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="signoff_pending" className="mt-6">
-            {loading && !hasLoadedTab["signoff_pending"] ? (
-              <div className="flex items-center justify-center py-16 gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading meetings...</span>
-              </div>
-            ) : formattedMeetings.length === 0 ? (
-              <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-orange-500/10' : 'bg-orange-500/10'}`}>
-                    <AlertCircle className={`h-16 w-16 ${isEthioTelecom ? 'text-orange-600' : 'text-orange-500'}`} />
-                  </div>
-                  <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Pending Sign-offs</h3>
-                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
-                    {searchQuery ? "No meetings match your search." : "Meetings awaiting signature approval will appear here"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-                  {formattedMeetings.map((meeting, index) => (
-                    <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
-                      <InlineMeetingCard
-                        id={meeting.id}
-                        title={meeting.title}
-                        date={meeting.date}
-                        time={meeting.time}
-                        duration={meeting.duration}
-                        location={meeting.location}
-                        attendees={meeting.attendees}
-                        status={meeting.status}
-                        agendaItems={meeting.agendaItems}
-                        meetingType={meeting.meetingType}
-                        videoConferenceUrl={meeting.videoConferenceUrl}
-                        createdBy={meeting.createdBy}
-                      />
-                    </div>
-                  ))}
-                </div>
-                {renderPagination(currentPageSignoffPending, totalPagesSignoffPending, setCurrentPageSignoffPending)}
-              </>
-            )}
-          </TabsContent>
-
-          <TabsContent value="signoff_approved" className="mt-6">
-            {loading && !hasLoadedTab["signoff_approved"] ? (
-              <div className="flex items-center justify-center py-16 gap-3">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                <span className="text-muted-foreground">Loading meetings...</span>
-              </div>
-            ) : formattedMeetings.length === 0 ? (
-              <Card className={`border-2 border-dashed ${isEthioTelecom ? 'bg-white border-gray-300' : ''}`}>
-                <CardContent className="flex flex-col items-center justify-center py-16">
-                  <div className={`p-6 rounded-2xl mb-4 ${isEthioTelecom ? 'bg-[#0072BC]/10' : 'bg-indigo-500/10'}`}>
-                    <CheckCircle2 className={`h-16 w-16 ${isEthioTelecom ? 'text-[#0072BC]' : 'text-indigo-500'}`} />
-                  </div>
-                  <h3 className={`text-xl font-bold mb-2 ${isEthioTelecom ? 'text-gray-900' : ''}`}>No Approved Sign-offs</h3>
-                  <p className={`${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
-                    {searchQuery ? "No meetings match your search." : "Fully approved meetings will appear here"}
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-                  {formattedMeetings.map((meeting, index) => (
-                    <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
-                      <InlineMeetingCard
-                        id={meeting.id}
-                        title={meeting.title}
-                        date={meeting.date}
-                        time={meeting.time}
-                        duration={meeting.duration}
-                        location={meeting.location}
-                        attendees={meeting.attendees}
-                        status={meeting.status}
-                        agendaItems={meeting.agendaItems}
-                        meetingType={meeting.meetingType}
-                        videoConferenceUrl={meeting.videoConferenceUrl}
-                        createdBy={meeting.createdBy}
-                      />
-                    </div>
-                  ))}
-                </div>
-                {renderPagination(currentPageSignoffApproved, totalPagesSignoffApproved, setCurrentPageSignoffApproved)}
               </>
             )}
           </TabsContent>
