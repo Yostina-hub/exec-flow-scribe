@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ExecutiveSignatureRequests } from '@/components/ExecutiveSignatureRequests';
@@ -40,6 +41,7 @@ export default function ExecutiveAdvisor() {
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
+  const [showHelpGuide, setShowHelpGuide] = useState(false);
 
   const fetchMeetings = async () => {
     if (!user?.id) return;
@@ -101,13 +103,24 @@ export default function ExecutiveAdvisor() {
           <div className="absolute inset-0 bg-grid-white/10"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 animate-pulse"></div>
           <div className="relative z-10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 rounded-xl glass backdrop-blur-xl border-white/30">
-                <Brain className="h-8 w-8 animate-pulse drop-shadow-lg" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-xl glass backdrop-blur-xl border-white/30">
+                  <Brain className="h-8 w-8 animate-pulse drop-shadow-lg" />
+                </div>
+                <Badge variant="secondary" className="text-sm px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                  AI-Powered Intelligence
+                </Badge>
               </div>
-              <Badge variant="secondary" className="text-sm px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30 text-white">
-                AI-Powered Intelligence
-              </Badge>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowHelpGuide(true)}
+                className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 gap-2"
+              >
+                <HelpCircle className="h-4 w-4" />
+                User Guide
+              </Button>
             </div>
             <h1 className="text-4xl lg:text-5xl font-display font-bold mb-4 drop-shadow-lg">
               Executive Meeting Advisor
@@ -117,67 +130,6 @@ export default function ExecutiveAdvisor() {
               decision-making, and success optimization powered by Ethiopian Telecom innovation.
             </p>
           </div>
-        </div>
-
-        {/* Features Grid - Modern Glassmorphism */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card className="border-0 bg-gradient-to-br from-background to-primary/5 backdrop-blur-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <CardHeader className="pb-3 relative">
-              <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg mb-2">
-                <Brain className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-lg font-display">AI Coaching</CardTitle>
-            </CardHeader>
-            <CardContent className="relative">
-              <p className="text-sm text-muted-foreground">
-                Real-time strategic guidance and meeting facilitation tips
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 backdrop-blur-xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group">
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <CardHeader className="pb-3 relative">
-              <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg mb-2">
-                <TrendingUp className="h-5 w-5 text-white" />
-              </div>
-              <CardTitle className="text-lg font-display">Effectiveness Scoring</CardTitle>
-            </CardHeader>
-            <CardContent className="relative">
-              <p className="text-sm text-muted-foreground">
-                Participation balance, decision quality, and tempo adherence
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-pink-500/20 hover:border-pink-500/40 transition-colors">
-            <CardHeader className="pb-3">
-              <div className="p-2 w-fit rounded-lg bg-pink-500/10 mb-2">
-                <Sparkles className="h-5 w-5 text-pink-600" />
-              </div>
-              <CardTitle className="text-lg">Key Points & Q&A</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Automatic insights extraction and intelligent Q&A generation
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-2 border-green-500/20 hover:border-green-500/40 transition-colors">
-            <CardHeader className="pb-3">
-              <div className="p-2 w-fit rounded-lg bg-green-500/10 mb-2">
-                <FileText className="h-5 w-5 text-green-600" />
-              </div>
-              <CardTitle className="text-lg">Closing Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                AI-generated summaries based on meeting status and tempo
-              </p>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Signature Requests */}
@@ -382,6 +334,103 @@ export default function ExecutiveAdvisor() {
           onClose={() => setShowAdvisorModal(false)}
         />
       )}
+
+      {/* Help Guide Sheet */}
+      <Sheet open={showHelpGuide} onOpenChange={setShowHelpGuide}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-primary" />
+              AI Features User Guide
+            </SheetTitle>
+            <SheetDescription>
+              Learn how to use the AI-powered features in the Executive Meeting Advisor
+            </SheetDescription>
+          </SheetHeader>
+          
+          <div className="mt-6 space-y-4">
+            <Card className="border-0 bg-gradient-to-br from-background to-primary/5 backdrop-blur-xl shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg mb-2">
+                  <Brain className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg font-display">AI Coaching</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Real-time strategic guidance and meeting facilitation tips
+                </p>
+                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                  <li>Get live coaching during active meetings</li>
+                  <li>Receive tempo management suggestions</li>
+                  <li>Optimize decision-making processes</li>
+                  <li>Balance participation across attendees</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 backdrop-blur-xl shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg mb-2">
+                  <TrendingUp className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg font-display">Effectiveness Scoring</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Participation balance, decision quality, and tempo adherence
+                </p>
+                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                  <li>Track meeting effectiveness metrics</li>
+                  <li>Monitor participant engagement levels</li>
+                  <li>Analyze decision quality patterns</li>
+                  <li>Review tempo and time management</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-gradient-to-br from-background to-pink-500/5 backdrop-blur-xl shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg mb-2">
+                  <Sparkles className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg font-display">Key Points & Q&A</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Automatic insights extraction and intelligent Q&A generation
+                </p>
+                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                  <li>Auto-extract key discussion points</li>
+                  <li>Generate relevant questions from context</li>
+                  <li>Get AI-powered answer suggestions</li>
+                  <li>Track Q&A sessions throughout meetings</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 bg-gradient-to-br from-background to-success/5 backdrop-blur-xl shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-success to-success/80 shadow-lg mb-2">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+                <CardTitle className="text-lg font-display">Closing Summary</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground mb-3">
+                  AI-generated summaries based on meeting status and tempo
+                </p>
+                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                  <li>Automatically summarize meeting outcomes</li>
+                  <li>Highlight key decisions and action items</li>
+                  <li>Generate comprehensive closing reports</li>
+                  <li>Export summaries in multiple formats</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
