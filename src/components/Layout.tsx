@@ -1,5 +1,5 @@
-import { ReactNode } from "react";
-import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud, Bell } from "lucide-react";
+import { ReactNode, useState, useEffect } from "react";
+import { Calendar, LayoutDashboard, CheckSquare, Settings, BarChart3, FileText, LogOut, Shield, Activity, Sparkles, Cloud, Bell, Brain } from "lucide-react";
 import { QuickSearch } from "@/components/QuickSearch";
 import { NotificationBell } from "@/components/NotificationBell";
 import { ActiveRecordingIndicator } from "@/components/ActiveRecordingIndicator";
@@ -52,13 +52,27 @@ function AppSidebar() {
   const { canAccessRoute, loading } = useUserPermissions();
   const { theme } = useTheme();
   const isEthioTelecom = theme === 'ethio-telecom';
+  const [showAdvisorPrompt, setShowAdvisorPrompt] = useState(false);
   
   const handleLogout = async () => {
     await supabase.auth.signOut();
   };
 
+  // Check if we're on a meeting detail page
+  const isMeetingPage = location.pathname.includes('/meeting/');
+  
   // Filter navigation items based on user permissions
   const visibleNavigation = navigation.filter(item => canAccessRoute(item.href));
+
+  useEffect(() => {
+    // Show advisor prompt when on meeting page
+    if (isMeetingPage) {
+      const timer = setTimeout(() => setShowAdvisorPrompt(true), 1000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowAdvisorPrompt(false);
+    }
+  }, [isMeetingPage]);
 
   return (
     <Sidebar collapsible="icon" className={`border-r ${isEthioTelecom ? 'bg-white border-gray-200' : 'border-border/50'}`}>
@@ -77,6 +91,45 @@ function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className={`py-4 ${isEthioTelecom ? 'bg-white' : ''}`}>
+        {/* Executive Advisor - Shows when on meeting pages */}
+        {isMeetingPage && (
+          <SidebarGroup className="mb-4">
+            <SidebarGroupLabel className={`px-4 text-xs font-semibold uppercase tracking-wider ${isEthioTelecom ? 'text-gray-500' : 'text-muted-foreground/70'}`}>
+              AI Assistant
+            </SidebarGroupLabel>
+            <SidebarGroupContent className="px-2">
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    onClick={() => {
+                      const event = new CustomEvent('openExecutiveAdvisor');
+                      window.dispatchEvent(event);
+                    }}
+                    className="relative group bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white hover:opacity-90 transition-all animate-pulse-slow shadow-lg"
+                  >
+                    <Brain className="h-5 w-5 animate-pulse" />
+                    <span className="font-semibold">Executive Advisor</span>
+                    {showAdvisorPrompt && open && (
+                      <div className="absolute -right-2 -top-2 flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                      </div>
+                    )}
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+              {open && showAdvisorPrompt && (
+                <div className="mt-2 mx-2 p-3 rounded-lg bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-primary/20 animate-slide-in-right">
+                  <p className="text-xs font-medium mb-1">🧠 AI Advisor Ready</p>
+                  <p className="text-xs text-muted-foreground">
+                    Get real-time coaching, tempo insights, and success metrics for this meeting
+                  </p>
+                </div>
+              )}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
           <SidebarGroupLabel className={`px-4 text-xs font-semibold uppercase tracking-wider ${isEthioTelecom ? 'text-gray-500' : 'text-muted-foreground/70'}`}>
             Navigation

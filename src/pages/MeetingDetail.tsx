@@ -203,6 +203,16 @@ const MeetingDetail = () => {
   // Fast initial meeting fetch (realtime) to avoid long loading state
   const { meeting: meetingRealtime, loading: meetingRealtimeLoading } = useRealtimeMeetingData(meetingId);
   
+  // Listen for sidebar advisor trigger
+  useEffect(() => {
+    const handleOpenAdvisor = () => {
+      setShowExecutiveAdvisor(true);
+    };
+    
+    window.addEventListener('openExecutiveAdvisor', handleOpenAdvisor);
+    return () => window.removeEventListener('openExecutiveAdvisor', handleOpenAdvisor);
+  }, []);
+  
   // User info from cached auth
   const userId = user?.id || "";
   const userFullName = useMemo(() => user?.user_metadata?.full_name || "User", [user]);
