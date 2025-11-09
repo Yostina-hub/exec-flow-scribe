@@ -383,26 +383,6 @@ export default function Meetings() {
                 Organize and manage all your meetings in one place
               </p>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-                {[
-                  { label: "Upcoming", value: stats.upcoming, icon: Clock, color: isEthioTelecom ? "from-[#0072BC] to-[#005A9C]" : "from-blue-500 to-cyan-500" },
-                  { label: "Completed", value: stats.completed, icon: TrendingUp, color: isEthioTelecom ? "from-[#8DC63F] to-[#0072BC]" : "from-green-500 to-emerald-500" },
-                  { label: "Total", value: stats.total, icon: Users, color: isEthioTelecom ? "from-[#0072BC] to-[#8DC63F]" : "from-orange-500 to-red-500" },
-                ].map((stat, i) => (
-                  <div key={i} className={`p-3 rounded-xl backdrop-blur-sm border ${isEthioTelecom ? 'bg-white/80 border-gray-200' : 'bg-white/10 border-white/20'} hover:scale-105 transition-transform duration-300`}>
-                    <div className="flex items-center gap-2">
-                      <div className={`p-2 rounded-lg bg-gradient-to-br ${stat.color}`}>
-                        <stat.icon className="h-4 w-4 text-white" />
-                      </div>
-                      <div>
-                        <p className={`text-xs font-medium ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>{stat.label}</p>
-                        <p className={`text-xl font-black ${isEthioTelecom ? 'text-gray-900' : 'text-foreground'}`}>{stat.value}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
             </div>
             
             <div className="flex gap-2">
