@@ -177,10 +177,11 @@ async function generateDocumentHash(content: string): Promise<string> {
 function generatePDFHTML(params: any): string {
   const { meeting, minutesVersion, brandKit, exhibits, decisions, actions, approvalStamp, watermark } = params;
 
-  const primaryColor = brandKit?.color_primary || "#6366f1";
-  const secondaryColor = brandKit?.color_secondary || "#8b5cf6";
-  const accentColor = brandKit?.color_accent || "#ec4899";
-  const orgName = brandKit?.organization_name || "Organization";
+  // Ethio Telecom Brand Colors
+  const primaryColor = brandKit?.color_primary || "#FF6B00"; // Ethio Telecom Orange
+  const secondaryColor = brandKit?.color_secondary || "#00A651"; // Ethio Telecom Green
+  const accentColor = brandKit?.color_accent || "#FF8C00"; // Light Orange
+  const orgName = brandKit?.organization_name || "Ethio Telecom";
   
   const docHash = approvalStamp?.hash?.substring(0, 12) || 'UNVERIFIED';
   const qrCodeData = `https://verify.docs/${docHash}`;
@@ -204,6 +205,9 @@ function generatePDFHTML(params: any): string {
     })
     .join('\n');
 
+  // Check if content has Ethiopic script
+  const hasEthiopicScript = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF]/.test(minutesVersion.content);
+
   return `
 <!DOCTYPE html>
 <html lang="en">
@@ -212,9 +216,9 @@ function generatePDFHTML(params: any): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="${meeting.title} - Official Meeting Minutes Document">
   <meta name="document-hash" content="${docHash}">
-  <title>${meeting.title} - Official Minutes</title>
+  <title>${meeting.title} - Ethio Telecom Official Minutes</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@700&family=Noto+Sans+Ethiopic:wght@300;400;500;600;700&display=swap');
     
     @page { 
       margin: 1.5cm 2cm;
@@ -233,13 +237,14 @@ function generatePDFHTML(params: any): string {
     }
     
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      line-height: 1.7;
+      font-family: ${hasEthiopicScript ? "'Noto Sans Ethiopic', " : ""}'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: ${hasEthiopicScript ? '2.0' : '1.7'};
       color: #0f172a;
       background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
-      font-size: 10.5pt;
+      font-size: ${hasEthiopicScript ? '11pt' : '10.5pt'};
       position: relative;
       overflow-x: hidden;
+      letter-spacing: ${hasEthiopicScript ? '0.3px' : 'normal'};
     }
     
     ${watermark ? `
@@ -639,17 +644,21 @@ function generatePDFHTML(params: any): string {
     .content-p {
       margin: 10px 0;
       text-align: justify;
-      line-height: 1.9;
+      line-height: ${hasEthiopicScript ? '2.2' : '1.9'};
       color: #334155;
       hyphens: auto;
+      font-size: ${hasEthiopicScript ? '11.5pt' : 'inherit'};
+      letter-spacing: ${hasEthiopicScript ? '0.4px' : 'normal'};
     }
     
     .content-li {
       margin: 8px 0 8px 32px;
       list-style-type: none;
-      line-height: 1.8;
+      line-height: ${hasEthiopicScript ? '2.1' : '1.8'};
       position: relative;
       padding-left: 8px;
+      font-size: ${hasEthiopicScript ? '11.5pt' : 'inherit'};
+      letter-spacing: ${hasEthiopicScript ? '0.4px' : 'normal'};
     }
     
     .content-li::before {
