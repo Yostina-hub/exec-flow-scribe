@@ -1,4 +1,4 @@
-export type DetectedLang = 'am' | 'en' | 'or' | 'so' | 'mixed' | 'other';
+export type DetectedLang = 'am' | 'en' | 'or' | 'so' | 'ti' | 'mixed' | 'other';
 
 // Unicode ranges for script detection
 const ETHIOPIC_REGEX = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]/g; // Ge'ez/Ethiopic
@@ -40,7 +40,14 @@ export function detectLanguage(text: string): DetectedLang {
     return 'en';
   }
 
-  if (etRatio > laRatio) return 'am';
+  // For Ethiopic script, check for Tigrinya-specific patterns
+  if (etRatio > laRatio) {
+    const tigrinyaPatterns = /\b(ክቡር|እንተ|እዚ|ንሱ|ኣብ|ዝኾነ|ከም|ምስ|ናይ)\b/i;
+    if (tigrinyaPatterns.test(text)) {
+      return 'ti';
+    }
+    return 'am';
+  }
   return 'other';
 }
 

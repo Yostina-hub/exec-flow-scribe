@@ -33,7 +33,7 @@ export default function MinutesEditor() {
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [minutes, setMinutes] = useState('');
   const [originalMinutes, setOriginalMinutes] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);
@@ -239,7 +239,7 @@ export default function MinutesEditor() {
         
         // Detect language
         const detected = detectLanguage(minutesData.content);
-        if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so') {
+        if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so' || detected === 'ti') {
           setCurrentLanguage(detected);
         }
       } else {
@@ -337,7 +337,7 @@ export default function MinutesEditor() {
     }
   };
 
-  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or' | 'so') => {
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or' | 'so' | 'ti') => {
     if (targetLang === currentLanguage || !originalMinutes) return;
     
     setIsTranslating(true);
@@ -356,7 +356,7 @@ export default function MinutesEditor() {
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : targetLang === 'ti' ? 'Tigrinya' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -723,6 +723,18 @@ export default function MinutesEditor() {
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     'Af-Soomaali'
+                  )}
+                </Button>
+                <Button
+                  variant={currentLanguage === 'ti' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('ti')}
+                  disabled={isTranslating || !originalMinutes}
+                >
+                  {isTranslating && currentLanguage !== 'ti' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'ትግርኛ'
                   )}
                 </Button>
               </div>

@@ -17,7 +17,7 @@ import jsPDF from 'jspdf';
 
 interface NonTechnicalSummaryDialogProps {
   content: string;
-  language: 'am' | 'en' | 'or' | 'so';
+  language: 'am' | 'en' | 'or' | 'so' | 'ti';
   meetingTitle: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;

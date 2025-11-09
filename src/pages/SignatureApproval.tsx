@@ -33,7 +33,7 @@ export default function SignatureApproval() {
   const { user, loading: authLoading } = useAuth();
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedMinutes, setTranslatedMinutes] = useState<string>('');
 
@@ -135,13 +135,13 @@ export default function SignatureApproval() {
   useEffect(() => {
     if (signatureRequest?.package_data?.minutes) {
       const detected = detectLanguage(signatureRequest.package_data.minutes);
-      if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so') {
+      if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so' || detected === 'ti') {
         setCurrentLanguage(detected);
       }
     }
   }, [signatureRequest]);
 
-  const handleLanguageToggle = useCallback(async (targetLang: 'am' | 'en' | 'or' | 'so') => {
+  const handleLanguageToggle = useCallback(async (targetLang: 'am' | 'en' | 'or' | 'so' | 'ti') => {
     if (targetLang === currentLanguage || !signatureRequest?.package_data?.minutes) return;
     
     setIsTranslating(true);
@@ -160,7 +160,7 @@ export default function SignatureApproval() {
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : targetLang === 'ti' ? 'Tigrinya' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -362,6 +362,18 @@ export default function SignatureApproval() {
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       'Af-Soomaali'
+                    )}
+                  </Button>
+                  <Button
+                    variant={currentLanguage === 'ti' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('ti')}
+                    disabled={isTranslating}
+                  >
+                    {isTranslating && currentLanguage !== 'ti' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'ትግርኛ'
                     )}
                   </Button>
                 </div>

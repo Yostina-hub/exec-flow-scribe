@@ -39,6 +39,10 @@ Use simple, everyday Oromo words that anyone can understand.`,
       'so': `
 Write the summary in SOMALI (AF-SOOMAALI) using Latin script.
 Use simple, everyday Somali words that anyone can understand.`,
+      'ti': `
+Write the summary in TIGRINYA using Ge'ez script.
+Use Ethiopian punctuation: ። (full stop), ፣ (comma), ፦ (colon)
+Use simple, everyday Tigrinya words that anyone can understand.`,
       'en': `
 Write the summary in ENGLISH.
 Use simple, everyday words that anyone can understand.`

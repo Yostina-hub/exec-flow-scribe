@@ -30,7 +30,8 @@ serve(async (req) => {
       'am': 'Amharic (using Ge\'ez script)',
       'en': 'English',
       'or': 'Afaan Oromo (using Latin script - Qubee)',
-      'so': 'Somali / Af-Soomaali (using Latin script)'
+      'so': 'Somali / Af-Soomaali (using Latin script)',
+      'ti': 'Tigrinya (using Ge\'ez script)'
     };
 
     const languageInstructions: Record<string, string> = {
@@ -87,7 +88,24 @@ MAINTAIN:
 • Same structure and formatting as original
 • All markdown headers (##)
 • All lists and tables
-• Professional business Somali vocabulary`
+• Professional business Somali vocabulary`,
+      'ti': `
+CRITICAL TIGRINYA WRITING REQUIREMENTS:
+• Write ENTIRELY in TIGRINYA using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
+• NEVER use Latin letters (a-z) or romanization
+• ALL headings, titles, content MUST be Ge'ez script
+
+ETHIOPIC PUNCTUATION (MANDATORY):
+• ። = Full stop (end of sentence)
+• ፣ = Comma
+• ፤ = Semicolon
+• ፦ = Colon
+
+MAINTAIN:
+• Same structure and formatting as original
+• All markdown headers (##)
+• All lists and tables
+• Professional business Tigrinya vocabulary`
      };
 
     const prompt = `Translate the following meeting minutes to ${languageNames[targetLanguage]}.
