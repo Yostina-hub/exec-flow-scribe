@@ -104,8 +104,14 @@ export default function ExecutiveAdvisor() {
   };
 
   const categorizedMeetings = {
-    upcoming: meetings.filter(m => categorizeMeeting(m) === 'upcoming'),
-    completed: meetings.filter(m => categorizeMeeting(m) === 'completed'),
+    upcoming: meetings.filter(m => {
+      const category = categorizeMeeting(m);
+      return category === 'upcoming' && !m.signature_requests?.length;
+    }),
+    completed: meetings.filter(m => {
+      const category = categorizeMeeting(m);
+      return category === 'completed' && !m.signature_requests?.length;
+    }),
     signoff_pending: meetings.filter(m => categorizeMeeting(m) === 'signoff_pending'),
     signoff_approved: meetings.filter(m => categorizeMeeting(m) === 'signoff_approved'),
   };
@@ -183,20 +189,22 @@ export default function ExecutiveAdvisor() {
           </div>
         </div>
 
-        {/* Signature Requests */}
-        <ExecutiveSignatureRequests />
-
-        {/* Categorized Meetings Selection */}
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-6 w-6 text-primary" />
-            <h2 className="text-2xl font-display font-bold">Select Meeting for AI Analysis</h2>
+        {/* Meeting Analysis Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-dark">
+              <Brain className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-display font-bold">Meeting Analysis</h2>
+              <p className="text-sm text-muted-foreground">Select meetings for AI-powered insights</p>
+            </div>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-48 w-full" />
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {[1, 2].map((i) => (
+                <Skeleton key={i} className="h-[480px] w-full" />
               ))}
             </div>
           ) : meetings.length === 0 ? (
@@ -210,8 +218,8 @@ export default function ExecutiveAdvisor() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Upcoming Meetings */}
-              <Card className="border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg">
-                <CardHeader className="pb-4">
+              <Card className="border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg hover:shadow-xl transition-all duration-300">
+                <CardHeader className="pb-4 border-b">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-md">
@@ -222,30 +230,33 @@ export default function ExecutiveAdvisor() {
                         <CardDescription>Scheduled and future meetings</CardDescription>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                    <Badge variant="secondary" className="text-lg px-3 py-1 bg-primary/10 text-primary">
                       {categorizedMeetings.upcoming.length}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <ScrollArea className="h-[400px] pr-4">
                     {categorizedMeetings.upcoming.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground/60">
-                        <Calendar className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                        <p className="text-sm">No upcoming meetings</p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="p-4 rounded-full bg-primary/10 mb-3">
+                          <Calendar className="h-10 w-10 text-primary/40" />
+                        </div>
+                        <p className="text-sm font-medium text-muted-foreground">No upcoming meetings</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Schedule a meeting to get started</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {categorizedMeetings.upcoming.map((meeting) => (
                           <Card 
                             key={meeting.id}
-                            className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50 border-l-4 border-l-primary"
+                            className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50 border-l-4 border-l-primary group"
                             onClick={() => handleMeetingSelect(meeting.id)}
                           >
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold mb-2 truncate">{meeting.title}</h4>
+                                  <h4 className="font-semibold mb-2 truncate group-hover:text-primary transition-colors">{meeting.title}</h4>
                                   <div className="space-y-1 text-xs text-muted-foreground">
                                     <div className="flex items-center gap-1.5">
                                       <Calendar className="h-3 w-3 flex-shrink-0" />
@@ -257,7 +268,7 @@ export default function ExecutiveAdvisor() {
                                     </div>
                                   </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
+                                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary flex-shrink-0 mt-1 transition-colors" />
                               </div>
                             </CardContent>
                           </Card>
@@ -269,8 +280,8 @@ export default function ExecutiveAdvisor() {
               </Card>
 
               {/* Completed Meetings */}
-              <Card className="border-0 bg-gradient-to-br from-background to-success/5 shadow-lg">
-                <CardHeader className="pb-4">
+              <Card className="border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-xl transition-all duration-300">
+                <CardHeader className="pb-4 border-b">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-xl bg-gradient-to-br from-success to-success/80 shadow-md">
@@ -281,30 +292,33 @@ export default function ExecutiveAdvisor() {
                         <CardDescription>Past meetings with records</CardDescription>
                       </div>
                     </div>
-                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                    <Badge variant="secondary" className="text-lg px-3 py-1 bg-success/10 text-success">
                       {categorizedMeetings.completed.length}
                     </Badge>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-4">
                   <ScrollArea className="h-[400px] pr-4">
                     {categorizedMeetings.completed.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground/60">
-                        <CheckCircle2 className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                        <p className="text-sm">No completed meetings</p>
+                      <div className="flex flex-col items-center justify-center py-12 text-center">
+                        <div className="p-4 rounded-full bg-success/10 mb-3">
+                          <CheckCircle2 className="h-10 w-10 text-success/40" />
+                        </div>
+                        <p className="text-sm font-medium text-muted-foreground">No completed meetings</p>
+                        <p className="text-xs text-muted-foreground/60 mt-1">Completed meetings will appear here</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
                         {categorizedMeetings.completed.map((meeting) => (
                           <Card 
                             key={meeting.id}
-                            className="hover:shadow-md transition-all cursor-pointer hover:border-success/50 border-l-4 border-l-success"
+                            className="hover:shadow-md transition-all cursor-pointer hover:border-success/50 border-l-4 border-l-success group"
                             onClick={() => handleMeetingSelect(meeting.id)}
                           >
                             <CardContent className="p-4">
                               <div className="flex items-start justify-between gap-3">
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold mb-2 truncate">{meeting.title}</h4>
+                                  <h4 className="font-semibold mb-2 truncate group-hover:text-success transition-colors">{meeting.title}</h4>
                                   <div className="space-y-1 text-xs text-muted-foreground">
                                     <div className="flex items-center gap-1.5">
                                       <Calendar className="h-3 w-3 flex-shrink-0" />
@@ -316,135 +330,7 @@ export default function ExecutiveAdvisor() {
                                     </div>
                                   </div>
                                 </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-
-              {/* Sign-off Pending */}
-              <Card className="border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-md">
-                        <AlertCircle className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Sign-off Pending</CardTitle>
-                        <CardDescription>Awaiting signature approval</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="text-lg px-3 py-1">
-                      {categorizedMeetings.signoff_pending.length}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px] pr-4">
-                    {categorizedMeetings.signoff_pending.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground/60">
-                        <AlertCircle className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                        <p className="text-sm">No pending sign-offs</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {categorizedMeetings.signoff_pending.map((meeting) => (
-                          <Card 
-                            key={meeting.id}
-                            className="hover:shadow-md transition-all cursor-pointer hover:border-warning/50 border-l-4 border-l-warning"
-                            onClick={() => handleMeetingSelect(meeting.id)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <h4 className="font-semibold truncate flex-1">{meeting.title}</h4>
-                                    <Badge variant="outline" className="text-xs border-warning text-warning flex-shrink-0">
-                                      Pending
-                                    </Badge>
-                                  </div>
-                                  <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <PenTool className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.signature_requests?.length || 0} signature(s) pending</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
-
-              {/* Sign-off Approved */}
-              <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 shadow-lg">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-md">
-                        <PenTool className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Sign-off Approved</CardTitle>
-                        <CardDescription>Fully signed and approved</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="text-lg px-3 py-1">
-                      {categorizedMeetings.signoff_approved.length}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[400px] pr-4">
-                    {categorizedMeetings.signoff_approved.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground/60">
-                        <PenTool className="h-10 w-10 mx-auto mb-2 opacity-20" />
-                        <p className="text-sm">No approved sign-offs</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {categorizedMeetings.signoff_approved.map((meeting) => (
-                          <Card 
-                            key={meeting.id}
-                            className="hover:shadow-md transition-all cursor-pointer hover:border-secondary/50 border-l-4 border-l-secondary"
-                            onClick={() => handleMeetingSelect(meeting.id)}
-                          >
-                            <CardContent className="p-4">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <h4 className="font-semibold truncate flex-1">{meeting.title}</h4>
-                                    <Badge variant="outline" className="text-xs border-secondary text-secondary flex-shrink-0">
-                                      Approved
-                                    </Badge>
-                                  </div>
-                                  <div className="space-y-1 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-1.5">
-                                      <Calendar className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
-                                      <span>{meeting.signature_requests?.length || 0} signature(s) completed</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
+                                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-success flex-shrink-0 mt-1 transition-colors" />
                               </div>
                             </CardContent>
                           </Card>
@@ -456,6 +342,155 @@ export default function ExecutiveAdvisor() {
               </Card>
             </div>
           )}
+        </div>
+
+        {/* Signature Requests Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-gradient-to-br from-warning to-warning/80">
+              <PenTool className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h2 className="text-2xl font-display font-bold">Signature Requests</h2>
+              <p className="text-sm text-muted-foreground">Manage meeting approvals and sign-offs</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Sign-off Pending */}
+            <Card className="border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-md">
+                      <AlertCircle className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Signature Pending</CardTitle>
+                      <CardDescription>Awaiting signature approval</CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-lg px-3 py-1 bg-warning/10 text-warning">
+                    {categorizedMeetings.signoff_pending.length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <ScrollArea className="h-[400px] pr-4">
+                  {categorizedMeetings.signoff_pending.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="p-4 rounded-full bg-warning/10 mb-3">
+                        <AlertCircle className="h-10 w-10 text-warning/40" />
+                      </div>
+                      <p className="text-sm font-medium text-muted-foreground">No pending sign-offs</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">All signature requests are up to date</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {categorizedMeetings.signoff_pending.map((meeting) => (
+                        <Card 
+                          key={meeting.id}
+                          className="hover:shadow-md transition-all cursor-pointer hover:border-warning/50 border-l-4 border-l-warning group"
+                          onClick={() => handleMeetingSelect(meeting.id)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-semibold truncate flex-1 group-hover:text-warning transition-colors">{meeting.title}</h4>
+                                  <Badge variant="outline" className="text-xs border-warning text-warning flex-shrink-0">
+                                    Pending
+                                  </Badge>
+                                </div>
+                                <div className="space-y-1 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-3 w-3 flex-shrink-0" />
+                                    <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <PenTool className="h-3 w-3 flex-shrink-0" />
+                                    <span>{meeting.signature_requests?.length || 0} signature(s) pending</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-warning flex-shrink-0 mt-1 transition-colors" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Sign-off Approved */}
+            <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 shadow-lg hover:shadow-xl transition-all duration-300">
+              <CardHeader className="pb-4 border-b">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-md">
+                      <CheckCircle2 className="h-5 w-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Signature Approved</CardTitle>
+                      <CardDescription>Fully signed and approved</CardDescription>
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="text-lg px-3 py-1 bg-secondary/10 text-secondary">
+                    {categorizedMeetings.signoff_approved.length}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <ScrollArea className="h-[400px] pr-4">
+                  {categorizedMeetings.signoff_approved.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                      <div className="p-4 rounded-full bg-secondary/10 mb-3">
+                        <CheckCircle2 className="h-10 w-10 text-secondary/40" />
+                      </div>
+                      <p className="text-sm font-medium text-muted-foreground">No approved sign-offs</p>
+                      <p className="text-xs text-muted-foreground/60 mt-1">Approved meetings will appear here</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {categorizedMeetings.signoff_approved.map((meeting) => (
+                        <Card 
+                          key={meeting.id}
+                          className="hover:shadow-md transition-all cursor-pointer hover:border-secondary/50 border-l-4 border-l-secondary group"
+                          onClick={() => handleMeetingSelect(meeting.id)}
+                        >
+                          <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <h4 className="font-semibold truncate flex-1 group-hover:text-secondary transition-colors">{meeting.title}</h4>
+                                  <Badge variant="outline" className="text-xs border-secondary text-secondary flex-shrink-0">
+                                    Approved
+                                  </Badge>
+                                </div>
+                                <div className="space-y-1 text-xs text-muted-foreground">
+                                  <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-3 w-3 flex-shrink-0" />
+                                    <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                    <span>{meeting.signature_requests?.length || 0} signature(s) completed</span>
+                                  </div>
+                                </div>
+                              </div>
+                              <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-secondary flex-shrink-0 mt-1 transition-colors" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
