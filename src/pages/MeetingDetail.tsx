@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { useChapterDetection } from "@/hooks/useChapterDetection";
 import { useState, useEffect, useRef, lazy, Suspense, useCallback, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -233,6 +234,9 @@ const MeetingDetail = () => {
     pauseRecording, 
     resumeRecording 
   } = useAudioRecorder(meetingId);
+
+  // Auto-detect chapters from transcriptions
+  useChapterDetection(meetingId, realtimeTranscriptions, isRecording);
 
   // Optimized meeting data fetch with caching
   const fetchMeetingData = useCallback(async () => {

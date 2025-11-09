@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface AISummaryStripProps {
   meetingId: string;
@@ -11,34 +12,81 @@ interface Chapter {
   id: string;
   title: string;
   timestamp: string;
-  type: "intro" | "discussion" | "decision" | "action";
+  type: "intro" | "discussion" | "decision" | "action" | "conclusion";
 }
 
 export const AISummaryStrip = ({ meetingId, isRecording }: AISummaryStripProps) => {
   if (!meetingId) return null;
   
-  const [chapters, setChapters] = useState<Chapter[]>([
-    { id: "1", title: "Introductions", timestamp: "00:00", type: "intro" },
-  ]);
+  const [chapters, setChapters] = useState<Chapter[]>([]);
 
-  // Mock: Add new chapters as meeting progresses
+  // Fetch initial chapters
   useEffect(() => {
-    if (!isRecording) return;
+    const fetchChapters = async () => {
+      const { data, error } = await supabase
+        .from('meeting_chapters')
+        .select('id, title, timestamp, type')
+        .eq('meeting_id', meetingId)
+        .order('timestamp', { ascending: true });
 
-    const timer = setTimeout(() => {
-      setChapters(prev => [
-        ...prev,
-        { 
-          id: String(prev.length + 1), 
-          title: "Budget Discussion", 
-          timestamp: "05:30", 
-          type: "discussion" 
+      if (data && !error) {
+        const formattedChapters = data.map(ch => ({
+          id: ch.id,
+          title: ch.title,
+          timestamp: formatInterval(ch.timestamp),
+          type: ch.type as Chapter['type']
+        }));
+        setChapters(formattedChapters);
+      }
+    };
+
+    fetchChapters();
+  }, [meetingId]);
+
+  // Subscribe to real-time chapter updates
+  useEffect(() => {
+    const channel = supabase
+      .channel(`chapters-${meetingId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'meeting_chapters',
+          filter: `meeting_id=eq.${meetingId}`,
+        },
+        (payload) => {
+          const newChapter = payload.new as any;
+          setChapters(prev => [...prev, {
+            id: newChapter.id,
+            title: newChapter.title,
+            timestamp: formatInterval(newChapter.timestamp),
+            type: newChapter.type
+          }]);
         }
-      ]);
-    }, 5000);
+      )
+      .subscribe();
 
-    return () => clearTimeout(timer);
-  }, [isRecording, chapters.length]);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [meetingId]);
+
+  const formatInterval = (interval: any): string => {
+    // Convert PostgreSQL interval to MM:SS format
+    if (!interval) return "00:00";
+    
+    const intervalStr = String(interval);
+    const match = intervalStr.match(/(\d+):(\d+):(\d+)/);
+    if (match) {
+      const [, hours, minutes, seconds] = match;
+      if (parseInt(hours) > 0) {
+        return `${hours}:${minutes.padStart(2, '0')}:${seconds.padStart(2, '0')}`;
+      }
+      return `${minutes}:${seconds.padStart(2, '0')}`;
+    }
+    return intervalStr;
+  };
 
   const getChapterColor = (type: Chapter["type"]) => {
     switch (type) {
@@ -46,6 +94,7 @@ export const AISummaryStrip = ({ meetingId, isRecording }: AISummaryStripProps) 
       case "discussion": return "bg-purple-500/10 text-purple-700 border-purple-200";
       case "decision": return "bg-green-500/10 text-green-700 border-green-200";
       case "action": return "bg-orange-500/10 text-orange-700 border-orange-200";
+      case "conclusion": return "bg-slate-500/10 text-slate-700 border-slate-200";
       default: return "bg-muted text-muted-foreground";
     }
   };
