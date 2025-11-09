@@ -220,7 +220,7 @@ const MeetingDetail = () => {
   
   // Realtime data hooks
   const { agenda: realtimeAgenda } = useRealtimeAgenda(meetingId);
-  const { transcriptions: realtimeTranscriptions } = useRealtimeTranscriptions(meetingId);
+  const { transcriptions: realtimeTranscriptions, loading: transcriptionsLoading } = useRealtimeTranscriptions(meetingId);
   
   const meetingAccess = useMeetingAccess(id);
   const { 
@@ -856,15 +856,26 @@ const MeetingDetail = () => {
 
                 {/* Transcript Tab */}
                 <TabsContent value="transcript" className="mt-0">
-                  <LiveTranscriptPanel 
-                    transcriptions={realtimeTranscriptions}
-                    onAddAction={(content) => {
-                      toast({ title: "Action added", description: content });
-                    }}
-                    onAddDecision={(content) => {
-                      toast({ title: "Decision recorded", description: content });
-                    }}
-                  />
+                  {transcriptionsLoading ? (
+                    <Card className="p-8 text-center">
+                      <div className="space-y-3">
+                        <div className="h-12 w-12 rounded-full bg-muted mx-auto flex items-center justify-center animate-pulse">
+                          <Mic className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                        <p className="text-sm text-muted-foreground">Loading transcriptions...</p>
+                      </div>
+                    </Card>
+                  ) : (
+                    <LiveTranscriptPanel 
+                      transcriptions={realtimeTranscriptions || []}
+                      onAddAction={(content) => {
+                        toast({ title: "Action added", description: content });
+                      }}
+                      onAddDecision={(content) => {
+                        toast({ title: "Decision recorded", description: content });
+                      }}
+                    />
+                  )}
                 </TabsContent>
 
                 {/* Agenda Tab */}

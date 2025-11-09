@@ -10,10 +10,15 @@ import {
   Brain,
   Plus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Wand2,
+  Sparkles,
+  Search
 } from "lucide-react";
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+
+const AudioToMinutesWorkflow = lazy(() => import("@/components/AudioToMinutesWorkflow").then(m => ({ default: m.AudioToMinutesWorkflow })));
 
 interface MeetingRightDockProps {
   meetingId: string;
@@ -69,23 +74,71 @@ export const MeetingRightDock = ({
         </Button>
       </div>
 
-      <Tabs defaultValue="settings" className="flex-1 flex flex-col">
-        <TabsList className="w-full grid grid-cols-4 h-auto p-1">
-          <TabsTrigger value="settings" className="h-9">
+      <Tabs defaultValue="quickactions" className="flex-1 flex flex-col">
+        <TabsList className="w-full grid grid-cols-5 h-auto p-1">
+          <TabsTrigger value="quickactions" className="h-9" title="Quick Actions">
+            <Sparkles className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="h-9" title="Settings">
             <Settings className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="participants" className="h-9">
-            <Users className="h-4 w-4" />
-          </TabsTrigger>
-          <TabsTrigger value="documents" className="h-9">
+          <TabsTrigger value="documents" className="h-9" title="Documents">
             <FileText className="h-4 w-4" />
           </TabsTrigger>
-          <TabsTrigger value="ai" className="h-9">
+          <TabsTrigger value="audiominutes" className="h-9" title="Audio to Minutes">
+            <Wand2 className="h-4 w-4" />
+          </TabsTrigger>
+          <TabsTrigger value="ai" className="h-9" title="AI Intelligence">
             <Brain className="h-4 w-4" />
           </TabsTrigger>
         </TabsList>
 
         <ScrollArea className="flex-1">
+          {/* Quick Actions Tab */}
+          <TabsContent value="quickactions" className="p-4 space-y-3 m-0">
+            <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
+            
+            <Button variant="outline" size="lg" className="w-full justify-start h-auto py-3">
+              <Sparkles className="h-5 w-5 mr-3" />
+              <span className="text-left">
+                <div className="font-medium">AI Key Points Summary</div>
+              </span>
+            </Button>
+
+            <Button variant="outline" size="lg" className="w-full justify-start h-auto py-3">
+              <Search className="h-5 w-5 mr-3" />
+              <span className="text-left">
+                <div className="font-medium">Keyword Search</div>
+              </span>
+            </Button>
+
+            <div className="my-4 border-t" />
+
+            <Button 
+              size="lg" 
+              className="w-full justify-start h-auto py-3 bg-primary hover:bg-primary/90"
+            >
+              <FileText className="h-5 w-5 mr-3" />
+              <span className="text-left">
+                <div className="font-medium">Generate AI Minutes</div>
+              </span>
+            </Button>
+
+            <Button variant="outline" size="lg" className="w-full justify-start h-auto py-3">
+              <FileText className="h-5 w-5 mr-3" />
+              <span className="text-left">
+                <div className="font-medium">Open Minutes Editor</div>
+              </span>
+            </Button>
+
+            <Button variant="outline" size="lg" className="w-full justify-start h-auto py-3">
+              <Plus className="h-5 w-5 mr-3" />
+              <span className="text-left">
+                <div className="font-medium">Add Agenda Items</div>
+              </span>
+            </Button>
+          </TabsContent>
+
           <TabsContent value="settings" className="p-4 space-y-4 m-0">
             <Card>
               <CardHeader className="pb-3">
@@ -111,29 +164,6 @@ export const MeetingRightDock = ({
             </Card>
           </TabsContent>
 
-          <TabsContent value="participants" className="p-4 space-y-2 m-0">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium">Participants</h3>
-              <Badge variant="secondary">{participants.length || 8}</Badge>
-            </div>
-            {(participants.length > 0 ? participants : Array(8).fill(null)).map((p, i) => (
-              <Card key={i} className="p-3">
-                <div className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-xs font-medium">
-                    {p?.initials || "U"}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {p?.name || `Participant ${i + 1}`}
-                    </div>
-                    <div className="text-xs text-muted-foreground truncate">
-                      {p?.role || "Guest"}
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </TabsContent>
 
           <TabsContent value="documents" className="p-4 space-y-2 m-0">
             <div className="flex items-center justify-between mb-3">
@@ -151,6 +181,20 @@ export const MeetingRightDock = ({
                 </p>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Audio to Minutes Tab */}
+          <TabsContent value="audiominutes" className="p-4 m-0">
+            <Suspense fallback={
+              <Card className="p-8 text-center">
+                <div className="animate-pulse space-y-3">
+                  <div className="h-12 w-12 rounded-full bg-muted mx-auto" />
+                  <p className="text-sm text-muted-foreground">Loading...</p>
+                </div>
+              </Card>
+            }>
+              <AudioToMinutesWorkflow meetingId={meetingId} />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="ai" className="p-4 space-y-4 m-0">
