@@ -48,6 +48,7 @@ export default function ExecutiveAdvisor() {
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
   const [showHelpGuide, setShowHelpGuide] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<MeetingCategory | null>(null);
 
   const fetchMeetings = async () => {
     if (!user?.id) return;
@@ -140,6 +141,48 @@ export default function ExecutiveAdvisor() {
     setSelectedMeeting(null);
   };
 
+  const handleBackToCategories = () => {
+    setSelectedCategory(null);
+  };
+
+  const getCategoryConfig = (category: MeetingCategory) => {
+    const configs = {
+      upcoming: {
+        title: 'Upcoming Meetings',
+        description: 'Scheduled and future meetings',
+        icon: CalendarCheck,
+        color: 'primary',
+        gradient: 'from-primary to-primary-dark',
+        bgGradient: 'from-background to-primary/5',
+      },
+      completed: {
+        title: 'Completed Meetings',
+        description: 'Past meetings with records',
+        icon: CheckCircle2,
+        color: 'success',
+        gradient: 'from-success to-success/80',
+        bgGradient: 'from-background to-success/5',
+      },
+      signoff_pending: {
+        title: 'Signature Pending',
+        description: 'Awaiting sign-off approval',
+        icon: AlertCircle,
+        color: 'warning',
+        gradient: 'from-warning to-warning/80',
+        bgGradient: 'from-background to-warning/5',
+      },
+      signoff_approved: {
+        title: 'Signature Approved',
+        description: 'Sign-off completed',
+        icon: CheckCircle2,
+        color: 'success',
+        gradient: 'from-success to-emerald-600',
+        bgGradient: 'from-background to-success/5',
+      },
+    };
+    return configs[category];
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -151,7 +194,98 @@ export default function ExecutiveAdvisor() {
     );
   }
 
-  // Meeting list view
+  // Category list view (show when viewing a specific category)
+  if (selectedCategory && !selectedMeetingId) {
+    const config = getCategoryConfig(selectedCategory);
+    const Icon = config.icon;
+    const categoryMeetings = categorizedMeetings[selectedCategory];
+    
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleBackToCategories}
+            className="gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Categories
+          </Button>
+        </div>
+
+        <Card className={`border-0 bg-gradient-to-br ${config.bgGradient} shadow-lg`}>
+          <CardHeader className="pb-4 border-b">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className={`p-2.5 rounded-xl bg-gradient-to-br ${config.gradient} shadow-md`}>
+                  <Icon className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">{config.title}</CardTitle>
+                  <CardDescription>{config.description}</CardDescription>
+                </div>
+              </div>
+              <Badge variant="secondary" className={`text-lg px-3 py-1 bg-${config.color}/10 text-${config.color}`}>
+                {categoryMeetings.length}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            {categoryMeetings.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className={`p-4 rounded-full bg-${config.color}/10 mb-3`}>
+                  <Icon className={`h-10 w-10 text-${config.color}/40`} />
+                </div>
+                <p className="text-sm font-medium text-muted-foreground">No meetings in this category</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {categoryMeetings.map((meeting) => (
+                  <Card 
+                    key={meeting.id}
+                    className={`relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-${config.color} hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-${config.color}/5`}
+                    onClick={() => handleMeetingSelect(meeting.id)}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-r from-${config.color}/0 via-${config.color}/5 to-${config.color}/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                    <CardContent className="p-4 relative">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h4 className={`font-semibold mb-2 truncate group-hover:text-${config.color} transition-colors text-base`}>{meeting.title}</h4>
+                          <div className="space-y-1.5 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1 rounded bg-${config.color}/10 group-hover:bg-${config.color}/20 transition-colors`}>
+                                <Calendar className={`h-3 w-3 text-${config.color}`} />
+                              </div>
+                              <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className={`p-1 rounded bg-${config.color}/10 group-hover:bg-${config.color}/20 transition-colors`}>
+                                <Clock className={`h-3 w-3 text-${config.color}`} />
+                              </div>
+                              <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className={`p-2 rounded-full bg-${config.color}/10 group-hover:bg-${config.color} group-hover:text-white transition-all duration-200`}>
+                            <ChevronRight className={`h-5 w-5 text-${config.color} group-hover:text-white group-hover:translate-x-1 transition-all`} />
+                          </div>
+                          <span className={`text-[10px] font-medium text-${config.color} opacity-0 group-hover:opacity-100 transition-opacity`}>View</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Main category cards view
   if (!selectedMeetingId) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -197,44 +331,132 @@ export default function ExecutiveAdvisor() {
             </div>
             <div>
               <h2 className="text-2xl font-display font-bold">Meeting Analysis</h2>
-              <p className="text-sm text-muted-foreground">Select meetings for AI-powered insights</p>
+              <p className="text-sm text-muted-foreground">Click a category to view meetings</p>
             </div>
           </div>
 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[1, 2].map((i) => (
-                <Skeleton key={i} className="h-[480px] w-full" />
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-48 w-full" />
               ))}
             </div>
-          ) : meetings.length === 0 ? (
-            <Card className="border-2 border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Calendar className="h-16 w-16 text-muted-foreground/20 mb-4" />
-                <p className="text-lg font-medium text-muted-foreground">No meetings found</p>
-                <p className="text-sm text-muted-foreground/70">Create a meeting to get started</p>
-              </CardContent>
-            </Card>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Upcoming Meetings */}
-              <Card className="border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardHeader className="pb-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-md">
-                        <CalendarCheck className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Upcoming Meetings</CardTitle>
-                        <CardDescription>Scheduled and future meetings</CardDescription>
-                      </div>
+              {/* Upcoming Meetings Card */}
+              <Card 
+                className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setSelectedCategory('upcoming')}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardContent className="relative p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <CalendarCheck className="h-8 w-8 text-white" />
                     </div>
-                    <Badge variant="secondary" className="text-lg px-3 py-1 bg-primary/10 text-primary">
+                    <Badge variant="secondary" className="text-2xl px-4 py-2 bg-primary/10 text-primary font-bold">
                       {categorizedMeetings.upcoming.length}
                     </Badge>
                   </div>
-                </CardHeader>
+                  <h3 className="text-2xl font-display font-bold mb-2 group-hover:text-primary transition-colors">
+                    Upcoming Meetings
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Scheduled and future meetings
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-primary font-medium group-hover:gap-3 transition-all">
+                    <span>View meetings</span>
+                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Completed Meetings Card */}
+              <Card 
+                className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setSelectedCategory('completed')}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardContent className="relative p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-success to-success/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle2 className="h-8 w-8 text-white" />
+                    </div>
+                    <Badge variant="secondary" className="text-2xl px-4 py-2 bg-success/10 text-success font-bold">
+                      {categorizedMeetings.completed.length}
+                    </Badge>
+                  </div>
+                  <h3 className="text-2xl font-display font-bold mb-2 group-hover:text-success transition-colors">
+                    Completed Meetings
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Past meetings with records
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-success font-medium group-hover:gap-3 transition-all">
+                    <span>View meetings</span>
+                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Signature Pending Card */}
+              <Card 
+                className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setSelectedCategory('signoff_pending')}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-warning/0 via-warning/10 to-warning/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardContent className="relative p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <AlertCircle className="h-8 w-8 text-white" />
+                    </div>
+                    <Badge variant="secondary" className="text-2xl px-4 py-2 bg-warning/10 text-warning font-bold">
+                      {categorizedMeetings.signoff_pending.length}
+                    </Badge>
+                  </div>
+                  <h3 className="text-2xl font-display font-bold mb-2 group-hover:text-warning transition-colors">
+                    Signature Pending
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Awaiting sign-off approval
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-warning font-medium group-hover:gap-3 transition-all">
+                    <span>View meetings</span>
+                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Signature Approved Card */}
+              <Card 
+                className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                onClick={() => setSelectedCategory('signoff_approved')}
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <CardContent className="relative p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-success to-emerald-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                      <CheckCircle2 className="h-8 w-8 text-white" />
+                    </div>
+                    <Badge variant="secondary" className="text-2xl px-4 py-2 bg-success/10 text-success font-bold">
+                      {categorizedMeetings.signoff_approved.length}
+                    </Badge>
+                  </div>
+                  <h3 className="text-2xl font-display font-bold mb-2 group-hover:text-success transition-colors">
+                    Signature Approved
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Sign-off completed
+                  </p>
+                  <div className="flex items-center gap-2 text-sm text-success font-medium group-hover:gap-3 transition-all">
+                    <span>View meetings</span>
+                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
                 <CardContent className="pt-4">
                   <ScrollArea className="h-[400px] pr-4">
                     {categorizedMeetings.upcoming.length === 0 ? (
