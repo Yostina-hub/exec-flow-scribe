@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ExecutiveSignatureRequests } from '@/components/ExecutiveSignatureRequests';
@@ -32,7 +32,13 @@ interface Meeting {
   location: string;
   status: string;
   meeting_type: string;
+  signature_requests?: Array<{
+    id: string;
+    status: string;
+  }>;
 }
+
+type MeetingCategory = 'upcoming' | 'completed' | 'signoff_pending' | 'signoff_approved';
 
 export default function ExecutiveAdvisor() {
   const { user } = useAuth();
@@ -49,14 +55,59 @@ export default function ExecutiveAdvisor() {
     setLoading(true);
     const { data } = await supabase
       .from('meetings')
-      .select('*')
+      .select(`
+        *,
+        signature_requests (
+          id,
+          status
+        )
+      `)
       .order('start_time', { ascending: false })
-      .limit(20);
+      .limit(50);
     
     if (data) {
       setMeetings(data);
     }
     setLoading(false);
+  };
+
+  const categorizeMeeting = (meeting: Meeting): MeetingCategory => {
+    const now = new Date();
+    const startTime = new Date(meeting.start_time);
+    
+    // Check for signature requests
+    const hasSignatureRequests = meeting.signature_requests && meeting.signature_requests.length > 0;
+    const allSignaturesCompleted = hasSignatureRequests && 
+      meeting.signature_requests?.every(sr => sr.status === 'completed');
+    const hasCompletedSignatures = hasSignatureRequests && allSignaturesCompleted;
+    const hasPendingSignatures = hasSignatureRequests && 
+      meeting.signature_requests?.some(sr => sr.status === 'pending');
+    
+    // Priority: Sign-off status > Meeting status > Time-based
+    if (hasCompletedSignatures) {
+      return 'signoff_approved';
+    }
+    
+    if (hasPendingSignatures) {
+      return 'signoff_pending';
+    }
+    
+    if (meeting.status === 'completed') {
+      return 'completed';
+    }
+    
+    if (startTime > now) {
+      return 'upcoming';
+    }
+    
+    return 'completed';
+  };
+
+  const categorizedMeetings = {
+    upcoming: meetings.filter(m => categorizeMeeting(m) === 'upcoming'),
+    completed: meetings.filter(m => categorizeMeeting(m) === 'completed'),
+    signoff_pending: meetings.filter(m => categorizeMeeting(m) === 'signoff_pending'),
+    signoff_approved: meetings.filter(m => categorizeMeeting(m) === 'signoff_approved'),
   };
 
   useEffect(() => {
@@ -135,76 +186,277 @@ export default function ExecutiveAdvisor() {
         {/* Signature Requests */}
         <ExecutiveSignatureRequests />
 
-        {/* Meetings List */}
-        <Card className="border-2 border-primary/20">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Select Meeting for AI Analysis
-                </CardTitle>
-                <CardDescription>Choose a meeting to view AI-powered insights and analytics</CardDescription>
-              </div>
+        {/* Categorized Meetings Selection */}
+        <div className="space-y-6">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-primary" />
+            <h2 className="text-2xl font-display font-bold">Select Meeting for AI Analysis</h2>
+          </div>
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-48 w-full" />
+              ))}
             </div>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-20 w-full" />
-                ))}
-              </div>
-            ) : meetings.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">No meetings found</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="space-y-2">
-                  {meetings.map((meeting) => (
-                    <Card 
-                      key={meeting.id} 
-                      className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50"
-                      onClick={() => handleMeetingSelect(meeting.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold mb-2">{meeting.title}</h4>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
-                              </span>
-                              {meeting.location && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {meeting.location}
-                                </span>
-                              )}
-                              <Badge variant="outline" className="ml-auto">
-                                {meeting.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </ScrollArea>
-            )}
-          </CardContent>
-        </Card>
+          ) : meetings.length === 0 ? (
+            <Card className="border-2 border-dashed">
+              <CardContent className="flex flex-col items-center justify-center py-16">
+                <Calendar className="h-16 w-16 text-muted-foreground/20 mb-4" />
+                <p className="text-lg font-medium text-muted-foreground">No meetings found</p>
+                <p className="text-sm text-muted-foreground/70">Create a meeting to get started</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Upcoming Meetings */}
+              <Card className="border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-md">
+                        <CalendarCheck className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Upcoming Meetings</CardTitle>
+                        <CardDescription>Scheduled and future meetings</CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {categorizedMeetings.upcoming.length}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[400px] pr-4">
+                    {categorizedMeetings.upcoming.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground/60">
+                        <Calendar className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No upcoming meetings</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {categorizedMeetings.upcoming.map((meeting) => (
+                          <Card 
+                            key={meeting.id}
+                            className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50 border-l-4 border-l-primary"
+                            onClick={() => handleMeetingSelect(meeting.id)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold mb-2 truncate">{meeting.title}</h4>
+                                  <div className="space-y-1 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Completed Meetings */}
+              <Card className="border-0 bg-gradient-to-br from-background to-success/5 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-success to-success/80 shadow-md">
+                        <CheckCircle2 className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Completed Meetings</CardTitle>
+                        <CardDescription>Past meetings with records</CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {categorizedMeetings.completed.length}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[400px] pr-4">
+                    {categorizedMeetings.completed.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground/60">
+                        <CheckCircle2 className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No completed meetings</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {categorizedMeetings.completed.map((meeting) => (
+                          <Card 
+                            key={meeting.id}
+                            className="hover:shadow-md transition-all cursor-pointer hover:border-success/50 border-l-4 border-l-success"
+                            onClick={() => handleMeetingSelect(meeting.id)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <h4 className="font-semibold mb-2 truncate">{meeting.title}</h4>
+                                  <div className="space-y-1 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <Clock className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Sign-off Pending */}
+              <Card className="border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-md">
+                        <AlertCircle className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Sign-off Pending</CardTitle>
+                        <CardDescription>Awaiting signature approval</CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {categorizedMeetings.signoff_pending.length}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[400px] pr-4">
+                    {categorizedMeetings.signoff_pending.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground/60">
+                        <AlertCircle className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No pending sign-offs</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {categorizedMeetings.signoff_pending.map((meeting) => (
+                          <Card 
+                            key={meeting.id}
+                            className="hover:shadow-md transition-all cursor-pointer hover:border-warning/50 border-l-4 border-l-warning"
+                            onClick={() => handleMeetingSelect(meeting.id)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h4 className="font-semibold truncate flex-1">{meeting.title}</h4>
+                                    <Badge variant="outline" className="text-xs border-warning text-warning flex-shrink-0">
+                                      Pending
+                                    </Badge>
+                                  </div>
+                                  <div className="space-y-1 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <PenTool className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.signature_requests?.length || 0} signature(s) pending</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* Sign-off Approved */}
+              <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 shadow-lg">
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-md">
+                        <PenTool className="h-5 w-5 text-white" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-lg">Sign-off Approved</CardTitle>
+                        <CardDescription>Fully signed and approved</CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="text-lg px-3 py-1">
+                      {categorizedMeetings.signoff_approved.length}
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-[400px] pr-4">
+                    {categorizedMeetings.signoff_approved.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground/60">
+                        <PenTool className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                        <p className="text-sm">No approved sign-offs</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {categorizedMeetings.signoff_approved.map((meeting) => (
+                          <Card 
+                            key={meeting.id}
+                            className="hover:shadow-md transition-all cursor-pointer hover:border-secondary/50 border-l-4 border-l-secondary"
+                            onClick={() => handleMeetingSelect(meeting.id)}
+                          >
+                            <CardContent className="p-4">
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h4 className="font-semibold truncate flex-1">{meeting.title}</h4>
+                                    <Badge variant="outline" className="text-xs border-secondary text-secondary flex-shrink-0">
+                                      Approved
+                                    </Badge>
+                                  </div>
+                                  <div className="space-y-1 text-xs text-muted-foreground">
+                                    <div className="flex items-center gap-1.5">
+                                      <Calendar className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
+                                    </div>
+                                    <div className="flex items-center gap-1.5">
+                                      <CheckCircle2 className="h-3 w-3 flex-shrink-0" />
+                                      <span>{meeting.signature_requests?.length || 0} signature(s) completed</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <ChevronRight className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1" />
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
