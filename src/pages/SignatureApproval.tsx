@@ -8,6 +8,7 @@ import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { localStorageCache } from '@/utils/localStorage';
 import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen } from 'lucide-react';
 import { detectLanguage } from '@/utils/langDetect';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 
 // Lazy load heavy components
 const SignaturePackageViewer = lazy(() => 
@@ -33,7 +34,8 @@ export default function SignatureApproval() {
   const { user, loading: authLoading } = useAuth();
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>('am');
+  const { preferredLanguage } = useLanguagePreference();
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedMinutes, setTranslatedMinutes] = useState<string>('');
 

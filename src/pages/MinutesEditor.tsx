@@ -14,6 +14,7 @@ import { AIMinutesEnhancer } from '@/components/AIMinutesEnhancer';
 import { NonTechnicalSummaryDialog } from '@/components/NonTechnicalSummaryDialog';
 import { Badge } from '@/components/ui/badge';
 import { detectLanguage } from '@/utils/langDetect';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 
 interface TranscriptSegment {
   id: string;
@@ -33,7 +34,8 @@ export default function MinutesEditor() {
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [minutes, setMinutes] = useState('');
   const [originalMinutes, setOriginalMinutes] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>('am');
+  const { preferredLanguage } = useLanguagePreference();
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);

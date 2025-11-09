@@ -19,6 +19,7 @@ import rehypeRaw from 'rehype-raw';
 import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 import { NonTechnicalSummaryDialog } from './NonTechnicalSummaryDialog';
 import { detectLanguage } from '@/utils/langDetect';
+import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 
 interface GenerateMinutesDialogProps {
   meetingId: string;
@@ -34,8 +35,9 @@ export const GenerateMinutesDialog = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [minutes, setMinutes] = useState<string>('');
   const [originalMinutes, setOriginalMinutes] = useState<string>('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>('am');
-  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>('am');
+  const { preferredLanguage } = useLanguagePreference();
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
+  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
   const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
   const [showNonTechnical, setShowNonTechnical] = useState(false);

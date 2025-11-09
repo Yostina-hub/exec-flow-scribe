@@ -3949,6 +3949,7 @@ export type Database = {
           id: string
           meeting_preferences: Json | null
           notification_preferences: Json | null
+          preferred_language: string | null
           recording_preferences: Json | null
           security_preferences: Json | null
           title: string | null
@@ -3962,6 +3963,7 @@ export type Database = {
           id: string
           meeting_preferences?: Json | null
           notification_preferences?: Json | null
+          preferred_language?: string | null
           recording_preferences?: Json | null
           security_preferences?: Json | null
           title?: string | null
@@ -3975,6 +3977,7 @@ export type Database = {
           id?: string
           meeting_preferences?: Json | null
           notification_preferences?: Json | null
+          preferred_language?: string | null
           recording_preferences?: Json | null
           security_preferences?: Json | null
           title?: string | null
