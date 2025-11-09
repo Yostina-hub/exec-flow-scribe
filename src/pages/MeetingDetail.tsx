@@ -56,6 +56,7 @@ import { localStorageCache } from "@/utils/localStorage";
 // Lazy load heavy components
 const LiveTranscription = lazy(() => import("@/components/LiveTranscription").then(m => ({ default: m.LiveTranscription })));
 const MultilingualLiveTranscription = lazy(() => import("@/components/MultilingualLiveTranscription").then(m => ({ default: m.MultilingualLiveTranscription })));
+const VoiceCommandController = lazy(() => import("@/components/VoiceCommandController").then(m => ({ default: m.VoiceCommandController })));
 const BrowserSpeechRecognition = lazy(() => import("@/components/BrowserSpeechRecognition").then(m => ({ default: m.BrowserSpeechRecognition })));
 const LiveAudioRecorder = lazy(() => import("@/components/LiveAudioRecorder").then(m => ({ default: m.LiveAudioRecorder })));
 const VirtualMeetingRoom = lazy(() => import("@/components/VirtualMeetingRoom").then(m => ({ default: m.VirtualMeetingRoom })));
@@ -1173,7 +1174,35 @@ const MeetingDetail = () => {
                       />
                       <MeetingAudioPlayback meetingId={meetingId} />
                       
-                      <MultilingualLiveTranscription 
+                      <VoiceCommandController
+                        meetingId={meetingId}
+                        isRecording={isRecording}
+                        onStartRecording={startRecording}
+                        onStopRecording={() => stopRecording()}
+                        onAddAction={() => {
+                          setActiveTab('actions');
+                          toast({
+                            title: 'Navigate to Actions',
+                            description: 'Opening Actions tab to add a new task',
+                          });
+                        }}
+                        onAddDecision={() => {
+                          setActiveTab('decisions');
+                          toast({
+                            title: 'Navigate to Decisions',
+                            description: 'Opening Decisions tab to record a decision',
+                          });
+                        }}
+                        onGenerateMinutes={() => setShowMinutesDialog(true)}
+                        onEndMeeting={() => {
+                          toast({
+                            title: 'End Meeting',
+                            description: 'Use the End Meeting button to conclude the session',
+                          });
+                        }}
+                      />
+                      
+                      <MultilingualLiveTranscription
                         meetingId={meetingId}
                         onTranscriptUpdate={(segments) => {
                           console.log('Multilingual transcripts:', segments);

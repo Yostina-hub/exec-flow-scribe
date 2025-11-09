@@ -35,6 +35,55 @@ The system automatically listens to meetings and converts speech to text in **Am
 
 ---
 
+## 🎙️ Voice Commands (Hands-Free Control)
+
+### What It Does
+Control meeting functions using voice commands in **Amharic** and **English** without touching your keyboard or mouse.
+
+### How It Works
+1. **Activate**: Click "Start Voice Commands" button
+2. **Speak Command**: Say commands naturally in Amharic or English
+3. **Execute**: System recognizes command and performs action
+4. **Feedback**: Visual and audio confirmation of command execution
+
+### Available Commands
+
+#### Recording Controls
+| English | Amharic | Action |
+|---------|---------|--------|
+| "Start recording" | "ጀምር መቅረጽ" | Begins meeting recording |
+| "Stop recording" | "አቁም መቅረጽ" | Stops active recording |
+| "Pause recording" | "ቆም መቅረጽ" | Pauses current recording |
+| "Resume recording" | "ቀጥል መቅረጽ" | Resumes paused recording |
+
+#### Task Management
+| English | Amharic | Action |
+|---------|---------|--------|
+| "Add action" | "ተግባር ጨምር" | Navigate to Actions tab |
+| "Add decision" | "ውሳኔ ጨምር" | Navigate to Decisions tab |
+| "Create task" | "ስራ ጨምር" | Open task creation |
+
+#### Meeting Functions
+| English | Amharic | Action |
+|---------|---------|--------|
+| "Generate minutes" | "ደቂቃዎች ፍጠር" | Start AI minutes generation |
+| "End meeting" | "ስብሰባ አብቃ" | Conclude meeting session |
+
+### Key Features
+- ✅ **Bilingual Support**: Works seamlessly in Amharic and English
+- ✅ **Natural Language**: No need for exact phrases - system understands variations
+- ✅ **Audio Feedback**: Optional voice confirmation of commands
+- ✅ **Visual Feedback**: On-screen display of recognized commands
+- ✅ **Toggle On/Off**: Enable/disable audio feedback as needed
+
+### Usage Tips
+- 💡 Speak clearly and naturally
+- 💡 Wait for the command to be recognized before issuing another
+- 💡 Audio feedback can be muted while keeping voice commands active
+- 💡 Commands work best in quiet environments
+
+---
+
 ## 🤖 What AI Provider We Use
 
 ### Primary: **Lovable AI**

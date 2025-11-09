@@ -1,0 +1,103 @@
+// Voice command utilities and definitions
+
+export interface VoiceCommand {
+  phrases: string[];
+  action: string;
+  description: string;
+  category: 'recording' | 'actions' | 'meeting' | 'navigation';
+}
+
+export const AMHARIC_COMMANDS = {
+  startRecording: ['ጀምር መቅረጽ', 'መቅረጽ ጀምር', 'ቅዳ ጀምር', 'ቀረፃ ጀምር'],
+  stopRecording: ['አቁም መቅረጽ', 'መቅረጽ አቁም', 'ቅዳ አቁም', 'ቀረፃ አቁም'],
+  addAction: ['ተግባር ጨምር', 'አዲስ ተግባር', 'ስራ ጨምር', 'ታስክ ጨምር'],
+  addDecision: ['ውሳኔ ጨምር', 'አዲስ ውሳኔ', 'ውሳኔ መዝግብ', 'ውሳኔ ፃፍ'],
+  generateMinutes: ['ደቂቃዎች ፍጠር', 'ማጠቃለያ ፍጠር', 'ሪፖርት ፍጠር', 'ደቂቃዎች ሰራ'],
+  endMeeting: ['ስብሰባ አብቃ', 'ስብሰባ ዝጋ', 'ስብሰባ ጨርስ', 'ስብሰባ አጠናቅ'],
+  pauseRecording: ['ቆም መቅረጽ', 'ለአፍታ ቁም', 'ማቆም'],
+  resumeRecording: ['ቀጥል መቅረጽ', 'እንደገና ጀምር', 'ቀጥል'],
+};
+
+export const ENGLISH_COMMANDS = {
+  startRecording: ['start recording', 'begin recording', 'start capture', 'record now'],
+  stopRecording: ['stop recording', 'end recording', 'stop capture', 'end capture'],
+  addAction: ['add action', 'create action', 'new action', 'add task', 'create task'],
+  addDecision: ['add decision', 'record decision', 'new decision', 'save decision'],
+  generateMinutes: ['generate minutes', 'create minutes', 'make minutes', 'produce minutes'],
+  endMeeting: ['end meeting', 'close meeting', 'finish meeting', 'conclude meeting'],
+  pauseRecording: ['pause recording', 'pause capture', 'hold recording'],
+  resumeRecording: ['resume recording', 'continue recording', 'unpause recording'],
+};
+
+export const ALL_COMMANDS: VoiceCommand[] = [
+  // Recording commands
+  {
+    phrases: [...ENGLISH_COMMANDS.startRecording, ...AMHARIC_COMMANDS.startRecording],
+    action: 'startRecording',
+    description: 'Start recording the meeting',
+    category: 'recording',
+  },
+  {
+    phrases: [...ENGLISH_COMMANDS.stopRecording, ...AMHARIC_COMMANDS.stopRecording],
+    action: 'stopRecording',
+    description: 'Stop recording the meeting',
+    category: 'recording',
+  },
+  {
+    phrases: [...ENGLISH_COMMANDS.pauseRecording, ...AMHARIC_COMMANDS.pauseRecording],
+    action: 'pauseRecording',
+    description: 'Pause the recording',
+    category: 'recording',
+  },
+  {
+    phrases: [...ENGLISH_COMMANDS.resumeRecording, ...AMHARIC_COMMANDS.resumeRecording],
+    action: 'resumeRecording',
+    description: 'Resume the recording',
+    category: 'recording',
+  },
+  // Action item commands
+  {
+    phrases: [...ENGLISH_COMMANDS.addAction, ...AMHARIC_COMMANDS.addAction],
+    action: 'addAction',
+    description: 'Navigate to add action item',
+    category: 'actions',
+  },
+  {
+    phrases: [...ENGLISH_COMMANDS.addDecision, ...AMHARIC_COMMANDS.addDecision],
+    action: 'addDecision',
+    description: 'Navigate to record decision',
+    category: 'actions',
+  },
+  // Meeting commands
+  {
+    phrases: [...ENGLISH_COMMANDS.generateMinutes, ...AMHARIC_COMMANDS.generateMinutes],
+    action: 'generateMinutes',
+    description: 'Generate meeting minutes',
+    category: 'meeting',
+  },
+  {
+    phrases: [...ENGLISH_COMMANDS.endMeeting, ...AMHARIC_COMMANDS.endMeeting],
+    action: 'endMeeting',
+    description: 'End the meeting session',
+    category: 'meeting',
+  },
+];
+
+export function matchCommand(transcript: string): VoiceCommand | null {
+  const normalized = transcript.toLowerCase().trim();
+  
+  return ALL_COMMANDS.find(cmd => 
+    cmd.phrases.some(phrase => {
+      const phraseNormalized = phrase.toLowerCase();
+      return normalized.includes(phraseNormalized) || phraseNormalized.includes(normalized);
+    })
+  ) || null;
+}
+
+export function getCommandsByCategory(category: VoiceCommand['category']): VoiceCommand[] {
+  return ALL_COMMANDS.filter(cmd => cmd.category === category);
+}
+
+export function getAllCommands(): VoiceCommand[] {
+  return ALL_COMMANDS;
+}
