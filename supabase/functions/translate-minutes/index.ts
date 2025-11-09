@@ -29,7 +29,8 @@ serve(async (req) => {
     const languageNames: Record<string, string> = {
       'am': 'Amharic (using Ge\'ez script)',
       'en': 'English',
-      'or': 'Afaan Oromo (using Latin script - Qubee)'
+      'or': 'Afaan Oromo (using Latin script - Qubee)',
+      'so': 'Somali / Af-Soomaali (using Latin script)'
     };
 
     const languageInstructions: Record<string, string> = {
@@ -70,8 +71,24 @@ MAINTAIN:
 ENGLISH REQUIREMENTS:
 • Clear, professional business English
 • Maintain same structure as original
-• Use proper grammar and punctuation`
-    };
+• Use proper grammar and punctuation`,
+      'so': `
+CRITICAL SOMALI / AF-SOOMAALI WRITING REQUIREMENTS:
+• Write ENTIRELY in SOMALI (AF-SOOMAALI) using Latin script
+• Use standard Somali orthography with proper characters
+• ALL headings, titles, content MUST be in Somali
+
+SOMALI SPECIAL CHARACTERS (MANDATORY):
+• Standard Latin letters: a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, w, x, y
+• Important digraphs: dh, kh, sh
+• Proper vowel usage: a, e, i, o, u (short and long)
+
+MAINTAIN:
+• Same structure and formatting as original
+• All markdown headers (##)
+• All lists and tables
+• Professional business Somali vocabulary`
+     };
 
     const prompt = `Translate the following meeting minutes to ${languageNames[targetLanguage]}.
 

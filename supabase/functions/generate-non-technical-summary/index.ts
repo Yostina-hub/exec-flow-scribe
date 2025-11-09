@@ -36,6 +36,9 @@ Use simple, everyday Amharic words that anyone can understand.`,
       'or': `
 Write the summary in AFAAN OROMO using Latin script (Qubee).
 Use simple, everyday Oromo words that anyone can understand.`,
+      'so': `
+Write the summary in SOMALI (AF-SOOMAALI) using Latin script.
+Use simple, everyday Somali words that anyone can understand.`,
       'en': `
 Write the summary in ENGLISH.
 Use simple, everyday words that anyone can understand.`

@@ -1,4 +1,4 @@
-export type DetectedLang = 'am' | 'en' | 'or' | 'mixed' | 'other';
+export type DetectedLang = 'am' | 'en' | 'or' | 'so' | 'mixed' | 'other';
 
 // Unicode ranges for script detection
 const ETHIOPIC_REGEX = /[\u1200-\u137F\u1380-\u139F\u2D80-\u2DDF\uAB00-\uAB2F]/g; // Ge'ez/Ethiopic
@@ -29,8 +29,13 @@ export function detectLanguage(text: string): DetectedLang {
   // Check for Oromo-specific patterns in Latin script text
   if (laRatio > etRatio) {
     const oromoPatterns = /\b(maqaa|garee|qabeenyi|hojii|adeemsa|qooda|waliin|irraa)\b/i;
+    const somaliPatterns = /\b(waa|iyo|ama|soo|ka|ku|ugu|ayaa|baan|aan)\b/i;
+    
     if (oromoPatterns.test(text)) {
       return 'or';
+    }
+    if (somaliPatterns.test(text)) {
+      return 'so';
     }
     return 'en';
   }

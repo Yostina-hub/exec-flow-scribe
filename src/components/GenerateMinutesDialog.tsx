@@ -34,8 +34,8 @@ export const GenerateMinutesDialog = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [minutes, setMinutes] = useState<string>('');
   const [originalMinutes, setOriginalMinutes] = useState<string>('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or'>('am');
-  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'or'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so'>('am');
+  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'or' | 'so'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
   const [showNonTechnical, setShowNonTechnical] = useState(false);
@@ -83,7 +83,7 @@ export const GenerateMinutesDialog = ({
         
         // Detect language
         const detected = detectLanguage(latest.content);
-        if (detected === 'am' || detected === 'en' || detected === 'or') {
+        if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so') {
           setDetectedLanguage(detected);
           setCurrentLanguage(detected);
         }
@@ -150,7 +150,7 @@ export const GenerateMinutesDialog = ({
       
       // Detect language (default to Amharic)
       const detected = detectLanguage(data.minutes);
-      if (detected === 'am' || detected === 'en' || detected === 'or') {
+      if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so') {
         setDetectedLanguage(detected);
         setCurrentLanguage(detected);
       } else {
@@ -161,7 +161,7 @@ export const GenerateMinutesDialog = ({
       toast({
         title: 'Success!',
         description: 'Meeting minutes generated successfully in ' + 
-          (detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : 'English'),
+          (detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : detected === 'so' ? 'Somali' : 'English'),
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
@@ -207,7 +207,7 @@ export const GenerateMinutesDialog = ({
     }
   };
 
-  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or') => {
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or' | 'so') => {
     if (targetLang === currentLanguage) return;
     
     setIsTranslating(true);
@@ -226,7 +226,7 @@ export const GenerateMinutesDialog = ({
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -246,7 +246,7 @@ export const GenerateMinutesDialog = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const langSuffix = currentLanguage === 'am' ? '-amharic' : currentLanguage === 'or' ? '-oromo' : '-english';
+    const langSuffix = currentLanguage === 'am' ? '-amharic' : currentLanguage === 'or' ? '-oromo' : currentLanguage === 'so' ? '-somali' : '-english';
     a.download = `meeting-minutes${langSuffix}-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();
@@ -354,6 +354,20 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   Afaan Oromo
+                </Button>
+                <Button
+                  variant={currentLanguage === 'so' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('so')}
+                  disabled={isTranslating}
+                  className="gap-2"
+                >
+                  {isTranslating && currentLanguage !== 'so' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4" />
+                  )}
+                  Af-Soomaali
                 </Button>
               </div>
               

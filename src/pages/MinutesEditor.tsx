@@ -33,7 +33,7 @@ export default function MinutesEditor() {
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [minutes, setMinutes] = useState('');
   const [originalMinutes, setOriginalMinutes] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);
@@ -239,7 +239,7 @@ export default function MinutesEditor() {
         
         // Detect language
         const detected = detectLanguage(minutesData.content);
-        if (detected === 'am' || detected === 'en' || detected === 'or') {
+        if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so') {
           setCurrentLanguage(detected);
         }
       } else {
@@ -314,7 +314,7 @@ export default function MinutesEditor() {
         
         // Detect language
         const detected = detectLanguage(data.minutes);
-        if (detected === 'am' || detected === 'en' || detected === 'or') {
+        if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so') {
           setCurrentLanguage(detected);
         } else {
           setCurrentLanguage('am');
@@ -337,7 +337,7 @@ export default function MinutesEditor() {
     }
   };
 
-  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or') => {
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or' | 'so') => {
     if (targetLang === currentLanguage || !originalMinutes) return;
     
     setIsTranslating(true);
@@ -356,7 +356,7 @@ export default function MinutesEditor() {
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -710,12 +710,24 @@ export default function MinutesEditor() {
                     {isTranslating && currentLanguage !== 'or' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'Afaan Oromo'
-                    )}
-                  </Button>
-                </div>
+                    'Afaan Oromo'
+                  )}
+                </Button>
                 <Button
-                  variant="outline"
+                  variant={currentLanguage === 'so' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('so')}
+                  disabled={isTranslating || !originalMinutes}
+                >
+                  {isTranslating && currentLanguage !== 'so' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    'Af-Soomaali'
+                  )}
+                </Button>
+              </div>
+              <Button
+                variant="outline"
                   size="sm"
                   onClick={() => setShowNonTechnical(true)}
                   className="gap-2"
