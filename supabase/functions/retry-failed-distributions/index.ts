@@ -150,6 +150,19 @@ serve(async (req) => {
           
           successCount++;
           console.log(`✅ All recipients now successful for ${item.id}`);
+          
+          // Trigger success webhook
+          supabase.functions.invoke('send-webhook', {
+            body: {
+              event: 'distribution.sent',
+              data: {
+                meeting_id: item.meeting_id,
+                retry_attempt: item.retry_count + 1,
+                recovered_count: nowSuccessful.length,
+                timestamp: new Date().toISOString(),
+              },
+            },
+          }).catch(console.error);
         } else if (item.retry_count + 1 >= item.max_retries) {
           // Max retries reached, send failure notification
           await supabase
@@ -185,6 +198,19 @@ serve(async (req) => {
 
           failedCount++;
           console.log(`❌ Max retries reached for ${item.id}, sending failure notification`);
+          
+          // Trigger failure webhook
+          supabase.functions.invoke('send-webhook', {
+            body: {
+              event: 'distribution.failed',
+              data: {
+                meeting_id: item.meeting_id,
+                failed_count: stillFailed.length,
+                max_retries: item.max_retries,
+                timestamp: new Date().toISOString(),
+              },
+            },
+          }).catch(console.error);
         } else {
           // Schedule next retry
           const nextRetry = calculateNextRetry(item.retry_count + 1);

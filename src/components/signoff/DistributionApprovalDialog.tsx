@@ -157,6 +157,19 @@ export function DistributionApprovalDialog({
 
       setApprovalRequest(data);
 
+      // Trigger webhook for approval request
+      supabase.functions.invoke('send-webhook', {
+        body: {
+          event: 'approval.requested',
+          data: {
+            meeting_id: meetingId,
+            approval_request_id: data.id,
+            approver_count: approvers.length,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      }).catch(console.error);
+
       // Send notifications to approvers (store in metadata for now)
       console.log(`Approval request sent to ${approvers.length} approvers`);
 
@@ -198,6 +211,20 @@ export function DistributionApprovalDialog({
         title: response === 'approved' ? 'Approved' : 'Rejected',
         description: `You have ${response} the distribution request`,
       });
+
+      // Trigger webhook for approval event
+      supabase.functions.invoke('send-webhook', {
+        body: {
+          event: response === 'approved' ? 'approval.approved' : 'approval.rejected',
+          data: {
+            meeting_id: meetingId,
+            approver_id: currentUserId,
+            approval_request_id: approvalRequest.id,
+            comments: comments || null,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      }).catch(console.error);
 
       setComments('');
       loadApprovalRequest();

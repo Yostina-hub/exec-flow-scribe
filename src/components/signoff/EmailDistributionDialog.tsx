@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History, Shield, Settings, UserCheck } from 'lucide-react';
+import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History, Shield, Settings, UserCheck, Webhook } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ScheduledDistributionDialog } from './ScheduledDistributionDialog';
@@ -11,6 +11,7 @@ import { DistributionHistoryViewer } from './DistributionHistoryViewer';
 import { DistributionApprovalDialog } from './DistributionApprovalDialog';
 import { ManageApproversDialog } from './ManageApproversDialog';
 import { ApprovalRulesManager } from './ApprovalRulesManager';
+import { WebhookManager } from './WebhookManager';
 
 interface EmailDistributionDialogProps {
   open: boolean;
@@ -41,6 +42,7 @@ export function EmailDistributionDialog({
   const [showApprovalDialog, setShowApprovalDialog] = useState(false);
   const [showManageApproversDialog, setShowManageApproversDialog] = useState(false);
   const [showApprovalRules, setShowApprovalRules] = useState(false);
+  const [showWebhookManager, setShowWebhookManager] = useState(false);
   const [isApproved, setIsApproved] = useState(false);
   const [isCheckingApproval, setIsCheckingApproval] = useState(true);
 
@@ -238,6 +240,21 @@ export function EmailDistributionDialog({
         });
       }
 
+      // Trigger webhook for distribution event
+      const webhookEvent = failedCount === 0 ? 'distribution.sent' : 'distribution.failed';
+      supabase.functions.invoke('send-webhook', {
+        body: {
+          event: webhookEvent,
+          data: {
+            meeting_id: meetingId,
+            recipient_count: recipients.length,
+            success_count: sentCount,
+            failed_count: failedCount,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      }).catch(console.error);
+
       if (failedCount === 0) {
         toast({
           title: '✓ Distribution Complete',
@@ -375,6 +392,14 @@ export function EmailDistributionDialog({
               </Button>
               <Button
                 variant="ghost"
+                onClick={() => setShowWebhookManager(true)}
+                disabled={isDistributing}
+              >
+                <Webhook className="w-4 h-4 mr-2" />
+                Webhooks
+              </Button>
+              <Button
+                variant="ghost"
                 onClick={() => setShowApprovalRules(true)}
                 disabled={isDistributing}
               >
@@ -493,6 +518,11 @@ export function EmailDistributionDialog({
         open={showManageApproversDialog}
         onOpenChange={setShowManageApproversDialog}
         meetingId={meetingId}
+      />
+
+      <WebhookManager
+        open={showWebhookManager}
+        onOpenChange={setShowWebhookManager}
       />
     </Dialog>
   );

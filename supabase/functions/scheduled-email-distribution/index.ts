@@ -155,6 +155,23 @@ serve(async (req) => {
         }
 
         console.log(`✓ Successfully distributed to ${sentCount}/${attendeeEmails.length} recipients for schedule ${schedule.id}`);
+        
+        // Trigger webhook for distribution event
+        const webhookEvent = failedCount === 0 ? 'distribution.sent' : 'distribution.failed';
+        supabaseClient.functions.invoke('send-webhook', {
+          body: {
+            event: webhookEvent,
+            data: {
+              meeting_id: schedule.meeting_id,
+              schedule_id: schedule.id,
+              recipient_count: attendeeEmails.length,
+              success_count: sentCount,
+              failed_count: failedCount,
+              timestamp: new Date().toISOString(),
+            },
+          },
+        }).catch(console.error);
+        
         // Update schedule
         const now = new Date();
         const updates: any = {
