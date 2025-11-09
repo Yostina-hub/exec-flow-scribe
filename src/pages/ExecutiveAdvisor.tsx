@@ -4,11 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Brain, Sparkles, TrendingUp, Calendar, ChevronRight, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { ExecutiveSignatureRequests } from '@/components/ExecutiveSignatureRequests';
 import { ExecutiveMeetingAdvisor } from '@/components/ExecutiveMeetingAdvisor';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -76,7 +75,6 @@ export default function ExecutiveAdvisor() {
     const now = new Date();
     const startTime = new Date(meeting.start_time);
     
-    // Check for signature requests
     const hasSignatureRequests = meeting.signature_requests && meeting.signature_requests.length > 0;
     const allSignaturesCompleted = hasSignatureRequests && 
       meeting.signature_requests?.every(sr => sr.status === 'completed');
@@ -84,7 +82,6 @@ export default function ExecutiveAdvisor() {
     const hasPendingSignatures = hasSignatureRequests && 
       meeting.signature_requests?.some(sr => sr.status === 'pending');
     
-    // Priority: Sign-off status > Meeting status > Time-based
     if (hasCompletedSignatures) {
       return 'signoff_approved';
     }
@@ -124,7 +121,6 @@ export default function ExecutiveAdvisor() {
   const handleMeetingSelect = async (meetingId: string) => {
     setSelectedMeetingId(meetingId);
     
-    // Fetch full meeting details
     const { data } = await supabase
       .from('meetings')
       .select('*')
@@ -194,7 +190,7 @@ export default function ExecutiveAdvisor() {
     );
   }
 
-  // Category list view (show when viewing a specific category)
+  // Category list view
   if (selectedCategory && !selectedMeetingId) {
     const config = getCategoryConfig(selectedCategory);
     const Icon = config.icon;
@@ -289,7 +285,7 @@ export default function ExecutiveAdvisor() {
   if (!selectedMeetingId) {
     return (
       <div className="space-y-6 animate-fade-in">
-        {/* Hero Section - Ethio Telecom Branded */}
+        {/* Hero Section */}
         <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-primary p-8 lg:p-12 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 animate-pulse"></div>
@@ -323,7 +319,7 @@ export default function ExecutiveAdvisor() {
           </div>
         </div>
 
-        {/* Meeting Analysis Section */}
+        {/* Meeting Categories */}
         <div className="space-y-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-dark">
@@ -457,303 +453,103 @@ export default function ExecutiveAdvisor() {
             </div>
           )}
         </div>
-                <CardContent className="pt-4">
-                  <ScrollArea className="h-[400px] pr-4">
-                    {categorizedMeetings.upcoming.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="p-4 rounded-full bg-primary/10 mb-3">
-                          <Calendar className="h-10 w-10 text-primary/40" />
-                        </div>
-                        <p className="text-sm font-medium text-muted-foreground">No upcoming meetings</p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">Schedule a meeting to get started</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {categorizedMeetings.upcoming.map((meeting) => (
-                          <Card 
-                            key={meeting.id}
-                            className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-primary hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-primary/5"
-                            onClick={() => handleMeetingSelect(meeting.id)}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/5 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <CardContent className="p-4 relative">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold mb-2 truncate group-hover:text-primary transition-colors text-base">{meeting.title}</h4>
-                                  <div className="space-y-1.5 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                        <Calendar className="h-3 w-3 text-primary" />
-                                      </div>
-                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-1 rounded bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                                        <Clock className="h-3 w-3 text-primary" />
-                                      </div>
-                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
-                                  <div className="p-2 rounded-full bg-primary/10 group-hover:bg-primary group-hover:text-white transition-all duration-200">
-                                    <ChevronRight className="h-5 w-5 text-primary group-hover:text-white group-hover:translate-x-1 transition-all" />
-                                  </div>
-                                  <span className="text-[10px] font-medium text-primary opacity-0 group-hover:opacity-100 transition-opacity">View</span>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
-                </CardContent>
-              </Card>
 
-              {/* Completed Meetings */}
-              <Card className="border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-xl transition-all duration-300">
-                <CardHeader className="pb-4 border-b">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2.5 rounded-xl bg-gradient-to-br from-success to-success/80 shadow-md">
-                        <CheckCircle2 className="h-5 w-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Completed Meetings</CardTitle>
-                        <CardDescription>Past meetings with records</CardDescription>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="text-lg px-3 py-1 bg-success/10 text-success">
-                      {categorizedMeetings.completed.length}
-                    </Badge>
+        {/* Help Guide Sheet */}
+        <Sheet open={showHelpGuide} onOpenChange={setShowHelpGuide}>
+          <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <HelpCircle className="h-5 w-5 text-primary" />
+                AI Features User Guide
+              </SheetTitle>
+              <SheetDescription>
+                Learn how to use the AI-powered features in the Executive Meeting Advisor
+              </SheetDescription>
+            </SheetHeader>
+            
+            <div className="mt-6 space-y-4">
+              <Card className="border-0 bg-gradient-to-br from-background to-primary/5 backdrop-blur-xl shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg mb-2">
+                    <Brain className="h-5 w-5 text-white" />
                   </div>
+                  <CardTitle className="text-lg font-display">AI Coaching</CardTitle>
                 </CardHeader>
-                <CardContent className="pt-4">
-                  <ScrollArea className="h-[400px] pr-4">
-                    {categorizedMeetings.completed.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center py-12 text-center">
-                        <div className="p-4 rounded-full bg-success/10 mb-3">
-                          <CheckCircle2 className="h-10 w-10 text-success/40" />
-                        </div>
-                        <p className="text-sm font-medium text-muted-foreground">No completed meetings</p>
-                        <p className="text-xs text-muted-foreground/60 mt-1">Completed meetings will appear here</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {categorizedMeetings.completed.map((meeting) => (
-                          <Card 
-                            key={meeting.id}
-                            className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-success hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-success/5"
-                            onClick={() => handleMeetingSelect(meeting.id)}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/5 to-success/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                            <CardContent className="p-4 relative">
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="flex-1 min-w-0">
-                                  <h4 className="font-semibold mb-2 truncate group-hover:text-success transition-colors text-base">{meeting.title}</h4>
-                                  <div className="space-y-1.5 text-xs text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-1 rounded bg-success/10 group-hover:bg-success/20 transition-colors">
-                                        <Calendar className="h-3 w-3 text-success" />
-                                      </div>
-                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <div className="p-1 rounded bg-success/10 group-hover:bg-success/20 transition-colors">
-                                        <Clock className="h-3 w-3 text-success" />
-                                      </div>
-                                      <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="flex flex-col items-center gap-1">
-                                  <div className="p-2 rounded-full bg-success/10 group-hover:bg-success group-hover:text-white transition-all duration-200">
-                                    <ChevronRight className="h-5 w-5 text-success group-hover:text-white group-hover:translate-x-1 transition-all" />
-                                  </div>
-                                  <span className="text-[10px] font-medium text-success opacity-0 group-hover:opacity-100 transition-opacity">View</span>
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        ))}
-                      </div>
-                    )}
-                  </ScrollArea>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Real-time strategic guidance and meeting facilitation tips
+                  </p>
+                  <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                    <li>Get live coaching during active meetings</li>
+                    <li>Receive tempo management suggestions</li>
+                    <li>Optimize decision-making processes</li>
+                    <li>Balance participation across attendees</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 backdrop-blur-xl shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg mb-2">
+                    <TrendingUp className="h-5 w-5 text-white" />
+                  </div>
+                  <CardTitle className="text-lg font-display">Effectiveness Scoring</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Participation balance, decision quality, and tempo adherence
+                  </p>
+                  <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                    <li>Track meeting effectiveness metrics</li>
+                    <li>Monitor participant engagement levels</li>
+                    <li>Analyze decision quality patterns</li>
+                    <li>Review tempo and time management</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-gradient-to-br from-background to-pink-500/5 backdrop-blur-xl shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg mb-2">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  <CardTitle className="text-lg font-display">Key Points & Q&A</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Automatic insights extraction and intelligent Q&A generation
+                  </p>
+                  <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                    <li>Auto-extract key discussion points</li>
+                    <li>Generate relevant questions from context</li>
+                    <li>Get AI-powered answer suggestions</li>
+                    <li>Track Q&A sessions throughout meetings</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 bg-gradient-to-br from-background to-success/5 backdrop-blur-xl shadow-lg">
+                <CardHeader className="pb-3">
+                  <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-success to-success/80 shadow-lg mb-2">
+                    <FileText className="h-5 w-5 text-white" />
+                  </div>
+                  <CardTitle className="text-lg font-display">Closing Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    AI-generated summaries based on meeting status and tempo
+                  </p>
+                  <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
+                    <li>Automatically summarize meeting outcomes</li>
+                    <li>Highlight key decisions and action items</li>
+                    <li>Generate comprehensive closing reports</li>
+                    <li>Export summaries in multiple formats</li>
+                  </ul>
                 </CardContent>
               </Card>
             </div>
-          )}
-        </div>
-
-        {/* Signature Requests Section */}
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-gradient-to-br from-warning to-warning/80">
-              <PenTool className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-display font-bold">Signature Requests</h2>
-              <p className="text-sm text-muted-foreground">Manage meeting approvals and sign-offs</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Sign-off Pending */}
-            <Card className="border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-md">
-                      <AlertCircle className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Signature Pending</CardTitle>
-                      <CardDescription>Awaiting signature approval</CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" className="text-lg px-3 py-1 bg-warning/10 text-warning">
-                    {categorizedMeetings.signoff_pending.length}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <ScrollArea className="h-[400px] pr-4">
-                  {categorizedMeetings.signoff_pending.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="p-4 rounded-full bg-warning/10 mb-3">
-                        <AlertCircle className="h-10 w-10 text-warning/40" />
-                      </div>
-                      <p className="text-sm font-medium text-muted-foreground">No pending sign-offs</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">All signature requests are up to date</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {categorizedMeetings.signoff_pending.map((meeting) => (
-                        <Card 
-                          key={meeting.id}
-                          className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-warning hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-warning/5"
-                          onClick={() => handleMeetingSelect(meeting.id)}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-warning/0 via-warning/5 to-warning/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          <CardContent className="p-4 relative">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-semibold truncate flex-1 group-hover:text-warning transition-colors text-base">{meeting.title}</h4>
-                                  <Badge variant="outline" className="text-[10px] border-warning/50 text-warning bg-warning/5 flex-shrink-0 group-hover:bg-warning/10 transition-colors">
-                                    Pending
-                                  </Badge>
-                                </div>
-                                <div className="space-y-1.5 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1 rounded bg-warning/10 group-hover:bg-warning/20 transition-colors">
-                                      <Calendar className="h-3 w-3 text-warning" />
-                                    </div>
-                                    <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1 rounded bg-warning/10 group-hover:bg-warning/20 transition-colors">
-                                      <PenTool className="h-3 w-3 text-warning" />
-                                    </div>
-                                    <span className="font-medium">{meeting.signature_requests?.length || 0} signature(s) pending</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex flex-col items-center gap-1">
-                                <div className="p-2 rounded-full bg-warning/10 group-hover:bg-warning group-hover:text-white transition-all duration-200">
-                                  <ChevronRight className="h-5 w-5 text-warning group-hover:text-white group-hover:translate-x-1 transition-all" />
-                                </div>
-                                <span className="text-[10px] font-medium text-warning opacity-0 group-hover:opacity-100 transition-opacity">View</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-
-            {/* Sign-off Approved */}
-            <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 shadow-lg hover:shadow-xl transition-all duration-300">
-              <CardHeader className="pb-4 border-b">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2.5 rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-md">
-                      <CheckCircle2 className="h-5 w-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg">Signature Approved</CardTitle>
-                      <CardDescription>Fully signed and approved</CardDescription>
-                    </div>
-                  </div>
-                  <Badge variant="secondary" className="text-lg px-3 py-1 bg-secondary/10 text-secondary">
-                    {categorizedMeetings.signoff_approved.length}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-4">
-                <ScrollArea className="h-[400px] pr-4">
-                  {categorizedMeetings.signoff_approved.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-center">
-                      <div className="p-4 rounded-full bg-secondary/10 mb-3">
-                        <CheckCircle2 className="h-10 w-10 text-secondary/40" />
-                      </div>
-                      <p className="text-sm font-medium text-muted-foreground">No approved sign-offs</p>
-                      <p className="text-xs text-muted-foreground/60 mt-1">Approved meetings will appear here</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {categorizedMeetings.signoff_approved.map((meeting) => (
-                        <Card 
-                          key={meeting.id}
-                          className="relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-secondary hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-secondary/5"
-                          onClick={() => handleMeetingSelect(meeting.id)}
-                        >
-                          <div className="absolute inset-0 bg-gradient-to-r from-secondary/0 via-secondary/5 to-secondary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                          <CardContent className="p-4 relative">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <h4 className="font-semibold truncate flex-1 group-hover:text-secondary transition-colors text-base">{meeting.title}</h4>
-                                  <Badge variant="outline" className="text-[10px] border-secondary/50 text-secondary bg-secondary/5 flex-shrink-0 group-hover:bg-secondary/10 transition-colors">
-                                    Approved
-                                  </Badge>
-                                </div>
-                                <div className="space-y-1.5 text-xs text-muted-foreground">
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1 rounded bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
-                                      <Calendar className="h-3 w-3 text-secondary" />
-                                    </div>
-                                    <span className="font-medium">{meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="p-1 rounded bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
-                                      <CheckCircle2 className="h-3 w-3 text-secondary" />
-                                    </div>
-                                    <span className="font-medium">{meeting.signature_requests?.length || 0} signature(s) completed</span>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex flex-col items-center gap-1">
-                                <div className="p-2 rounded-full bg-secondary/10 group-hover:bg-secondary group-hover:text-white transition-all duration-200">
-                                  <ChevronRight className="h-5 w-5 text-secondary group-hover:text-white group-hover:translate-x-1 transition-all" />
-                                </div>
-                                <span className="text-[10px] font-medium text-secondary opacity-0 group-hover:opacity-100 transition-opacity">View</span>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+          </SheetContent>
+        </Sheet>
       </div>
     );
   }
@@ -761,7 +557,6 @@ export default function ExecutiveAdvisor() {
   // Meeting detail view with AI features
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with back button and AI Coach */}
       <div className="flex items-center justify-between gap-4">
         <Button 
           variant="ghost" 
@@ -781,7 +576,6 @@ export default function ExecutiveAdvisor() {
         </Button>
       </div>
 
-      {/* Meeting Info Card */}
       {selectedMeeting && (
         <Card className="border-2 border-primary/30">
           <CardHeader>
@@ -818,7 +612,6 @@ export default function ExecutiveAdvisor() {
         </Card>
       )}
 
-      {/* AI Features Tabs */}
       <Tabs defaultValue="intelligence" className="space-y-6">
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="intelligence" className="gap-2">
@@ -874,7 +667,6 @@ export default function ExecutiveAdvisor() {
         </TabsContent>
       </Tabs>
 
-      {/* AI Coach Modal */}
       {showAdvisorModal && selectedMeeting && (
         <ExecutiveMeetingAdvisor
           meetingId={selectedMeetingId!}
@@ -883,103 +675,6 @@ export default function ExecutiveAdvisor() {
           onClose={() => setShowAdvisorModal(false)}
         />
       )}
-
-      {/* Help Guide Sheet */}
-      <Sheet open={showHelpGuide} onOpenChange={setShowHelpGuide}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
-              <HelpCircle className="h-5 w-5 text-primary" />
-              AI Features User Guide
-            </SheetTitle>
-            <SheetDescription>
-              Learn how to use the AI-powered features in the Executive Meeting Advisor
-            </SheetDescription>
-          </SheetHeader>
-          
-          <div className="mt-6 space-y-4">
-            <Card className="border-0 bg-gradient-to-br from-background to-primary/5 backdrop-blur-xl shadow-lg">
-              <CardHeader className="pb-3">
-                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg mb-2">
-                  <Brain className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-lg font-display">AI Coaching</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Real-time strategic guidance and meeting facilitation tips
-                </p>
-                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
-                  <li>Get live coaching during active meetings</li>
-                  <li>Receive tempo management suggestions</li>
-                  <li>Optimize decision-making processes</li>
-                  <li>Balance participation across attendees</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-background to-secondary/5 backdrop-blur-xl shadow-lg">
-              <CardHeader className="pb-3">
-                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-secondary to-secondary/80 shadow-lg mb-2">
-                  <TrendingUp className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-lg font-display">Effectiveness Scoring</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Participation balance, decision quality, and tempo adherence
-                </p>
-                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
-                  <li>Track meeting effectiveness metrics</li>
-                  <li>Monitor participant engagement levels</li>
-                  <li>Analyze decision quality patterns</li>
-                  <li>Review tempo and time management</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-background to-pink-500/5 backdrop-blur-xl shadow-lg">
-              <CardHeader className="pb-3">
-                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg mb-2">
-                  <Sparkles className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-lg font-display">Key Points & Q&A</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  Automatic insights extraction and intelligent Q&A generation
-                </p>
-                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
-                  <li>Auto-extract key discussion points</li>
-                  <li>Generate relevant questions from context</li>
-                  <li>Get AI-powered answer suggestions</li>
-                  <li>Track Q&A sessions throughout meetings</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-0 bg-gradient-to-br from-background to-success/5 backdrop-blur-xl shadow-lg">
-              <CardHeader className="pb-3">
-                <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-success to-success/80 shadow-lg mb-2">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <CardTitle className="text-lg font-display">Closing Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-3">
-                  AI-generated summaries based on meeting status and tempo
-                </p>
-                <ul className="text-sm space-y-2 text-muted-foreground list-disc list-inside">
-                  <li>Automatically summarize meeting outcomes</li>
-                  <li>Highlight key decisions and action items</li>
-                  <li>Generate comprehensive closing reports</li>
-                  <li>Export summaries in multiple formats</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
