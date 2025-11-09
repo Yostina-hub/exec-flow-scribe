@@ -57,6 +57,7 @@ import { AISummaryStrip } from "@/components/AISummaryStrip";
 import { ChapterTimeline } from "@/components/ChapterTimeline";
 import { LiveTranscriptPanel } from "@/components/LiveTranscriptPanel";
 import { MeetingRightDock } from "@/components/MeetingRightDock";
+import { LiveTranscriptionModal } from "@/components/LiveTranscriptionModal";
 
 // Lazy load heavy components
 const LiveTranscription = lazy(() => import("@/components/LiveTranscription").then(m => ({ default: m.LiveTranscription })));
@@ -208,6 +209,7 @@ const MeetingDetail = () => {
   const [activeTab, setActiveTab] = useState('transcription');
   const [transcriptionLanguage, setTranscriptionLanguage] = useState('am-ET');
   const hasRestoredRecordingRef = useRef(false);
+  const [showLiveModal, setShowLiveModal] = useState(false);
   
   const meetingId = id || "demo-meeting-id";
   
@@ -823,8 +825,12 @@ const MeetingDetail = () => {
             pausedDurationRef.current = 0;
             pauseStartTimeRef.current = null;
             startRecording();
+            setShowLiveModal(true);
           }}
-          onStopRecording={stopRecording}
+          onStopRecording={() => {
+            stopRecording();
+            setShowLiveModal(false);
+          }}
           onShare={() => setShowShareDialog(true)}
           onGenerateMinutes={() => setShowMinutesDialog(true)}
         />
@@ -1023,6 +1029,15 @@ const MeetingDetail = () => {
             videoConferenceUrl={meeting.video_conference_url}
           />
         )}
+
+        {/* Live Transcription Modal */}
+        <LiveTranscriptionModal
+          isOpen={showLiveModal}
+          onClose={() => setShowLiveModal(false)}
+          meetingTitle={meetingTitle}
+          transcriptions={realtimeTranscriptions}
+          recordingSeconds={recordingSeconds}
+        />
       </div>
     </TimeBasedAccessGuard>
   );

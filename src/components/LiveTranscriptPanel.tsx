@@ -61,10 +61,13 @@ export const LiveTranscriptPanel = ({
     );
   }
 
+  // Reverse to show latest first
+  const sortedTranscriptions = [...transcriptions].reverse();
+
   return (
     <ScrollArea className="h-[600px]">
       <div className="space-y-3">
-        {transcriptions.map((trans) => (
+        {sortedTranscriptions.map((trans) => (
           <Card
             key={trans.id}
             className="group relative p-4 hover:shadow-md transition-all duration-200 animate-fade-in"
