@@ -171,6 +171,92 @@ System: ✓ Finds Sarah in team directory
 - ✓ Only creator or admin can reassign
 - ✓ Create your own task first
 
+---
+
+## ⚡ Voice Priority Control (NEW!)
+
+Change task priority using voice commands. After creating an action item, adjust its priority level instantly!
+
+### How It Works
+
+1. **Create an action first** (using voice dictation or UI)
+2. **Say priority command** within a few seconds
+3. **System updates priority** and notifies if needed
+
+### Priority Commands
+
+| What You Say | Priority Set |
+|-------------|-------------|
+| "Make this high priority" | Sets priority to HIGH |
+| "Change priority to urgent" | Sets priority to HIGH |
+| "Mark this as critical" | Sets priority to HIGH |
+| "Set priority to important" | Sets priority to HIGH |
+| | |
+| "Make this medium priority" | Sets priority to MEDIUM |
+| "Change priority to normal" | Sets priority to MEDIUM |
+| "Set priority to moderate" | Sets priority to MEDIUM |
+| | |
+| "Make this low priority" | Sets priority to LOW |
+| "Change priority to minor" | Sets priority to LOW |
+| "Mark as not urgent" | Sets priority to LOW |
+| | |
+| "Increase the priority" | Increases to HIGH |
+| "Raise priority" | Increases to HIGH |
+| "Lower the priority" | Decreases to LOW |
+| "Decrease priority" | Decreases to LOW |
+
+### Smart Priority Mapping
+
+The system intelligently maps keywords to priority levels:
+
+**High Priority Keywords:**
+- urgent, important, critical, high, top
+
+**Medium Priority Keywords:**
+- medium, normal, moderate, regular
+
+**Low Priority Keywords:**
+- low, minor, not urgent
+
+### Complete Workflow Example
+
+```
+You say: "Add action: Review security audit"
+System: ✓ Creates action (default priority: medium)
+
+You say: "Make this urgent"
+System: ✓ Changes priority to HIGH
+        ✓ Notifies assignee if applicable
+        ✓ Confirms "Priority set to high"
+```
+
+### Notifications
+
+- **High Priority Changes**: Assignee receives notification when priority is raised to high
+- **Automatic Updates**: Priority changes trigger timestamp updates
+- **Audit Trail**: All changes are logged for tracking
+
+### Permissions
+
+- **Task Creator** can always change priority
+- **Task Assignee** can change their own task priority
+- **Admins/Managers** can change any task priority
+
+### Troubleshooting
+
+**Problem**: "No recent action"
+- ✓ Create an action first
+- ✓ Priority change must follow within 30 seconds
+- ✓ Only works with tasks you just created
+
+**Problem**: "You do not have permission..."
+- ✓ Only creator, assignee, or admin can change priority
+- ✓ Must be your task or you must have admin role
+
+**Problem**: "Invalid priority"
+- ✓ Use recognized keywords (urgent, high, medium, low)
+- ✓ Speak clearly for accurate recognition
+
 ### 📊 Meeting Functions
 
 | Command (English) | Command (Amharic) | What It Does |

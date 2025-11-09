@@ -260,3 +260,6 @@ verify_jwt = false
 
 [functions.assign-task-by-voice]
 verify_jwt = false
+
+[functions.change-task-priority]
+verify_jwt = false

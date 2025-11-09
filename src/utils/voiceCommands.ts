@@ -147,6 +147,52 @@ export function matchAssignment(transcript: string): { assigneeName: string } | 
   return null;
 }
 
+export function matchPriorityChange(transcript: string): { priority: 'low' | 'medium' | 'high' } | null {
+  const normalized = transcript.toLowerCase().trim();
+  
+  // Priority change patterns
+  const patterns = [
+    /(?:make|set|change|mark)(?:\s+this)?(?:\s+task)?(?:\s+as)?(?:\s+priority)?(?:\s+to)?\s+(high|urgent|important|critical|top)/i,
+    /(?:make|set|change|mark)(?:\s+this)?(?:\s+task)?(?:\s+as)?(?:\s+priority)?(?:\s+to)?\s+(medium|normal|moderate|regular)/i,
+    /(?:make|set|change|mark)(?:\s+this)?(?:\s+task)?(?:\s+as)?(?:\s+priority)?(?:\s+to)?\s+(low|minor|not urgent)/i,
+    /(?:increase|raise|bump|elevate)(?:\s+the)?(?:\s+priority)/i,
+    /(?:decrease|lower|reduce|downgrade)(?:\s+the)?(?:\s+priority)/i,
+    /(?:urgent|high priority|critical)/i,
+  ];
+  
+  // Check for "increase/raise priority" - default to high
+  if (normalized.match(/(?:increase|raise|bump|elevate)(?:\s+the)?(?:\s+priority)/i)) {
+    return { priority: 'high' };
+  }
+  
+  // Check for "decrease/lower priority" - default to low
+  if (normalized.match(/(?:decrease|lower|reduce|downgrade)(?:\s+the)?(?:\s+priority)/i)) {
+    return { priority: 'low' };
+  }
+  
+  // Map priority keywords to levels
+  const highKeywords = ['high', 'urgent', 'important', 'critical', 'top'];
+  const mediumKeywords = ['medium', 'normal', 'moderate', 'regular'];
+  const lowKeywords = ['low', 'minor', 'not urgent'];
+  
+  for (const pattern of patterns) {
+    const match = transcript.match(pattern);
+    if (match && match[1]) {
+      const keyword = match[1].toLowerCase();
+      
+      if (highKeywords.includes(keyword)) {
+        return { priority: 'high' };
+      } else if (mediumKeywords.includes(keyword)) {
+        return { priority: 'medium' };
+      } else if (lowKeywords.includes(keyword)) {
+        return { priority: 'low' };
+      }
+    }
+  }
+  
+  return null;
+}
+
 export function getCommandsByCategory(category: VoiceCommand['category']): VoiceCommand[] {
   return ALL_COMMANDS.filter(cmd => cmd.category === category);
 }

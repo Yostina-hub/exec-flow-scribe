@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Command, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, type VoiceCommand } from '@/utils/voiceCommands';
+import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, matchPriorityChange, type VoiceCommand } from '@/utils/voiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceCommandControllerProps {
@@ -62,7 +62,14 @@ export const VoiceCommandController = ({
       const transcript = event.results[last][0].transcript.trim();
       
       if (event.results[last].isFinal) {
-        // First check for assignment patterns
+        // Check for priority change first
+        const priorityChange = matchPriorityChange(transcript);
+        if (priorityChange) {
+          handlePriorityChange(priorityChange.priority);
+          return;
+        }
+        
+        // Then check for assignment patterns
         const assignment = matchAssignment(transcript);
         if (assignment) {
           handleAssignment(assignment.assigneeName);
@@ -115,6 +122,71 @@ export const VoiceCommandController = ({
       }
     };
   }, [commands, isListening]);
+
+  const handlePriorityChange = useCallback(async (priority: 'low' | 'medium' | 'high') => {
+    if (!lastCreatedActionId) {
+      toast({
+        title: 'No Recent Action',
+        description: 'Create an action first before changing priority',
+        variant: 'destructive',
+      });
+      speakFeedback('No action to update');
+      return;
+    }
+
+    setLastCommand(`Changing priority to ${priority}...`);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (voiceEnabled) {
+      playCommandSound();
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      speakFeedback(`Setting priority to ${priority}`);
+      
+      const { data, error } = await supabase.functions.invoke('change-task-priority', {
+        body: { 
+          priority, 
+          actionId: lastCreatedActionId,
+          userId: user.id 
+        }
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Priority Updated',
+        description: `Priority changed from ${data.action.oldPriority} to ${data.action.newPriority}`,
+      });
+      
+      speakFeedback(`Priority set to ${priority}`);
+    } catch (error: any) {
+      console.error('Priority change error:', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Could not change priority',
+        variant: 'destructive',
+      });
+      speakFeedback('Failed to change priority');
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setLastCommand('');
+    }, 5000);
+  }, [lastCreatedActionId, voiceEnabled, toast]);
 
   const handleAssignment = useCallback(async (assigneeName: string) => {
     if (!lastCreatedActionId) {
@@ -433,7 +505,8 @@ export const VoiceCommandController = ({
           <p>Say "Add decision: Approved the Q4 budget"</p>
           <p className="font-medium text-primary mt-2">👥 Assign Tasks:</p>
           <p>After creating an action, say "Assign this to John"</p>
-          <p>Or "Give this task to Sarah"</p>
+          <p className="font-medium text-primary mt-2">⚡ Set Priority:</p>
+          <p>Say "Make this high priority" or "Change priority to urgent"</p>
         </div>
       </CardContent>
     </Card>
