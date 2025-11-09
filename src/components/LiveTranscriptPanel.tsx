@@ -19,12 +19,16 @@ interface LiveTranscriptPanelProps {
   transcriptions: any[];
   onAddAction?: (content: string) => void;
   onAddDecision?: (content: string) => void;
+  liveInterimText?: string;
+  liveLanguage?: string;
 }
 
 export const LiveTranscriptPanel = ({
   transcriptions,
   onAddAction,
   onAddDecision,
+  liveInterimText,
+  liveLanguage,
 }: LiveTranscriptPanelProps) => {
   const { toast } = useToast();
   const [displayedText, setDisplayedText] = useState<string>("");
@@ -193,29 +197,29 @@ export const LiveTranscriptPanel = ({
           </Card>
           ))}
           
-          {/* Latest transcription with live typing effect */}
-          {latestTranscription && (
+          {/* Latest transcription with live typing effect or live interim text */}
+          {(liveInterimText || latestTranscription) && (
             <Card
-              key={`live-${latestTranscription.id}`}
+              key={`live-${latestTranscription?.id || 'interim'}`}
               className="group relative p-4 bg-primary/5 border-2 border-primary/20 animate-in fade-in slide-in-from-bottom-2"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge 
                     variant="outline" 
-                    className={getSpeakerColor(latestTranscription.speaker_name || 'Unknown')}
+                    className={getSpeakerColor((latestTranscription?.speaker_name || 'You'))}
                   >
-                    {latestTranscription.speaker_name || 'Unknown Speaker'}
+                    {latestTranscription?.speaker_name || 'You'}
                   </Badge>
                   
-                  {latestTranscription.detected_language && (
+                  {(liveLanguage || latestTranscription?.detected_language) && (
                     <Badge variant="secondary" className="gap-1 text-xs">
                       <Languages className="h-3 w-3" />
-                      {latestTranscription.detected_language}
+                      {(liveLanguage || latestTranscription?.detected_language)}
                     </Badge>
                   )}
                   
-                  {isTyping && (
+                  {(isTyping || !!liveInterimText) && (
                     <Badge variant="outline" className="gap-1.5 animate-pulse border-primary/40 bg-primary/5">
                       <Circle className="h-2 w-2 fill-primary text-primary animate-pulse" />
                       <span className="text-xs">Live</span>
@@ -225,39 +229,38 @@ export const LiveTranscriptPanel = ({
                 
                 <span className="text-xs text-muted-foreground font-mono">
                   <Clock className="inline h-3 w-3 mr-1" />
-                  {latestTranscription.timestamp 
+                  {latestTranscription?.timestamp 
                     ? format(new Date(latestTranscription.timestamp), 'HH:mm:ss')
-                    : '00:00:00'
-                  }
+                    : '—'}
                 </span>
               </div>
 
               <p 
                 className="text-base leading-relaxed whitespace-pre-wrap" 
                 style={{ 
-                  fontFamily: latestTranscription.detected_language === 'am' 
+                  fontFamily: (liveLanguage?.startsWith('am') || latestTranscription?.detected_language === 'am')
                     ? "'Noto Sans Ethiopic', 'Nyala', sans-serif" 
                     : 'inherit',
                   direction: 'ltr',
                   unicodeBidi: 'embed'
                 }}
               >
-                {displayedText}
-                {isTyping && <span className="inline-block w-0.5 h-5 bg-primary ml-1 animate-pulse" />}
+                {liveInterimText ?? displayedText}
+                {(isTyping || !!liveInterimText) && <span className="inline-block w-0.5 h-5 bg-primary ml-1 animate-pulse" />}
               </p>
 
               {/* Quick Actions (shown on hover) */}
               <div 
                 className={`
                   mt-3 flex items-center gap-2 transition-all duration-200
-                  ${hoveredId === latestTranscription.id ? 'opacity-100' : 'opacity-0'}
+                  ${hoveredId === (latestTranscription?.id || 'interim') ? 'opacity-100' : 'opacity-0'}
                 `}
               >
                 <Button
                   size="sm"
                   variant="outline"
                   className="h-7 text-xs gap-1.5"
-                  onClick={() => onAddAction?.(displayedText)}
+                  onClick={() => onAddAction?.(liveInterimText ?? displayedText)}
                 >
                   <Plus className="h-3 w-3" />
                   Add Task
@@ -266,7 +269,7 @@ export const LiveTranscriptPanel = ({
                   size="sm"
                   variant="outline"
                   className="h-7 text-xs gap-1.5"
-                  onClick={() => onAddDecision?.(displayedText)}
+                  onClick={() => onAddDecision?.(liveInterimText ?? displayedText)}
                 >
                   <CheckCircle2 className="h-3 w-3" />
                   Add Decision
@@ -275,7 +278,7 @@ export const LiveTranscriptPanel = ({
                   size="sm"
                   variant="ghost"
                   className="h-7 text-xs gap-1.5"
-                  onClick={() => handleCopy(displayedText)}
+                  onClick={() => handleCopy(liveInterimText ?? displayedText)}
                 >
                   <Copy className="h-3 w-3" />
                   Copy

@@ -59,6 +59,7 @@ import { ChapterTimeline } from "@/components/ChapterTimeline";
 import { LiveTranscriptPanel } from "@/components/LiveTranscriptPanel";
 import { MeetingRightDock } from "@/components/MeetingRightDock";
 import { LiveTranscriptionModal } from "@/components/LiveTranscriptionModal";
+import { useInterimTranscript } from "@/hooks/useInterimTranscript";
 
 // Lazy load heavy components
 const LiveTranscription = lazy(() => import("@/components/LiveTranscription").then(m => ({ default: m.LiveTranscription })));
@@ -234,6 +235,8 @@ const MeetingDetail = () => {
     pauseRecording, 
     resumeRecording 
   } = useAudioRecorder(meetingId);
+  // Live interim transcript (word-by-word) honoring selected language
+  const { interim, language: interimLanguage } = useInterimTranscript(isRecording);
 
   // Auto-detect chapters from transcriptions
   useChapterDetection(meetingId, realtimeTranscriptions, isRecording);
