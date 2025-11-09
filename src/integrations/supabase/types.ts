@@ -3451,6 +3451,54 @@ export type Database = {
           },
         ]
       }
+      meeting_questions: {
+        Row: {
+          answer: string | null
+          answered_at: string | null
+          answered_by: string | null
+          created_at: string | null
+          generated_at: string
+          id: string
+          meeting_id: string
+          question: string
+        }
+        Insert: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string | null
+          generated_at?: string
+          id?: string
+          meeting_id: string
+          question: string
+        }
+        Update: {
+          answer?: string | null
+          answered_at?: string | null
+          answered_by?: string | null
+          created_at?: string | null
+          generated_at?: string
+          id?: string
+          meeting_id?: string
+          question?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_questions_answered_by_fkey"
+            columns: ["answered_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_questions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_resources: {
         Row: {
           created_at: string | null

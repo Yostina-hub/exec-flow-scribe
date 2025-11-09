@@ -106,6 +106,8 @@ const PDFGenerationPanel = lazy(() => import("@/components/PDFGenerationPanel").
 const SystemTestPanel = lazy(() => import("@/components/SystemTestPanel").then(m => ({ default: m.SystemTestPanel })));
 const TranscriptionProviderToggle = lazy(() => import("@/components/TranscriptionProviderToggle").then(m => ({ default: m.TranscriptionProviderToggle })));
 const UnifiedEmotionIntelligence = lazy(() => import("@/components/UnifiedEmotionIntelligence").then(m => ({ default: m.UnifiedEmotionIntelligence })));
+const LiveQAGenerator = lazy(() => import("@/components/LiveQAGenerator").then(m => ({ default: m.LiveQAGenerator })));
+const MeetingClosingSummary = lazy(() => import("@/components/MeetingClosingSummary").then(m => ({ default: m.MeetingClosingSummary })));
 
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
@@ -1449,6 +1451,15 @@ const MeetingDetail = () => {
 
               <TabsContent value="ai-intelligence" className="space-y-4">
                 <LazyTabContent>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <MeetingKeyPointsSummary meetingId={meetingId} />
+                    <LiveQAGenerator meetingId={meetingId} />
+                  </div>
+                  <MeetingClosingSummary 
+                    meetingId={meetingId}
+                    meetingStatus={meeting?.status || ''}
+                    isActive={isRecording}
+                  />
                   <AIGenerationInsights meetingId={meetingId} />
                   <UnifiedEmotionIntelligence 
                     meetingId={meetingId}
