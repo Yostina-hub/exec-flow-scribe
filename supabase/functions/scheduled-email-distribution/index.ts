@@ -17,23 +17,33 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Find meetings that are ready for distribution but haven't been distributed yet
-    const { data: meetings, error: meetingsError } = await supabase
-      .from("meetings")
+    // Find schedules that are due to be sent
+    const { data: schedules, error: schedulesError } = await supabase
+      .from("distribution_schedules")
       .select(`
-        *,
-        meeting_attendees(user_id, users(email))
+        id,
+        meeting_id,
+        schedule_type,
+        recurrence_pattern,
+        meetings!inner(
+          id,
+          title,
+          description,
+          scheduled_at,
+          created_by,
+          minutes_pdf_url
+        )
       `)
-      .eq("status", "completed")
-      .eq("workflow_stage", "signed_off")
-      .is("distributed_at", null)
+      .eq("enabled", true)
+      .lte("next_send_at", new Date().toISOString())
       .limit(10);
 
-    if (meetingsError) throw meetingsError;
+    if (schedulesError) throw schedulesError;
 
     let distributedCount = 0;
 
-    for (const meeting of meetings || []) {
+    for (const schedule of schedules || []) {
+      const meeting = schedule.meetings as any;
       try {
         // Get SMTP settings for the meeting creator
         const { data: smtpSettings } = await supabase
@@ -50,9 +60,14 @@ serve(async (req) => {
           continue;
         }
 
-        // Extract attendee emails
-        const attendeeEmails = meeting.meeting_attendees
-          ?.map((att: any) => att.users?.email)
+        // Get attendee emails separately
+        const { data: attendees } = await supabase
+          .from("meeting_attendees")
+          .select("profiles(email)")
+          .eq("meeting_id", meeting.id);
+
+        const attendeeEmails = attendees
+          ?.map((att: any) => att.profiles?.email)
           .filter(Boolean) || [];
 
         if (attendeeEmails.length === 0) {
@@ -103,6 +118,39 @@ serve(async (req) => {
           subject,
           status: "sent",
         });
+
+        // Update schedule
+        const now = new Date();
+        const updates: any = {
+          last_sent_at: now.toISOString(),
+        };
+
+        // Calculate next send time for recurring schedules
+        if (schedule.schedule_type === 'recurring' && schedule.recurrence_pattern) {
+          let nextSend = new Date(now);
+          
+          switch (schedule.recurrence_pattern) {
+            case 'daily':
+              nextSend.setDate(nextSend.getDate() + 1);
+              break;
+            case 'weekly':
+              nextSend.setDate(nextSend.getDate() + 7);
+              break;
+            case 'monthly':
+              nextSend.setMonth(nextSend.getMonth() + 1);
+              break;
+          }
+          
+          updates.next_send_at = nextSend.toISOString();
+        } else {
+          // For one-time schedules, disable after sending
+          updates.enabled = false;
+        }
+
+        await supabase
+          .from("distribution_schedules")
+          .update(updates)
+          .eq("id", schedule.id);
 
         // Update meeting status
         await supabase

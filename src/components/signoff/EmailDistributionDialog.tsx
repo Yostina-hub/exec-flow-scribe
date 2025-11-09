@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, CheckCircle2, XCircle, Loader2, Users, Send } from 'lucide-react';
+import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScheduledDistributionDialog } from './ScheduledDistributionDialog';
 
 interface EmailDistributionDialogProps {
   open: boolean;
@@ -31,6 +32,7 @@ export function EmailDistributionDialog({
   const [distributionResults, setDistributionResults] = useState<DistributionResult[]>([]);
   const [recipients, setRecipients] = useState<string[]>([]);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(true);
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -262,23 +264,33 @@ export function EmailDistributionDialog({
               {distributionResults.length > 0 ? 'Close' : 'Cancel'}
             </Button>
             {distributionResults.length === 0 ? (
-              <Button
-                onClick={handleDistribute}
-                disabled={isDistributing || recipients.length === 0 || isLoadingRecipients}
-                className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
-              >
-                {isDistributing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Send to All
-                  </>
-                )}
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleDialog(true)}
+                  disabled={isDistributing || recipients.length === 0 || isLoadingRecipients}
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Schedule
+                </Button>
+                <Button
+                  onClick={handleDistribute}
+                  disabled={isDistributing || recipients.length === 0 || isLoadingRecipients}
+                  className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
+                >
+                  {isDistributing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4 mr-2" />
+                      Send Now
+                    </>
+                  )}
+                </Button>
+              </>
             ) : failedCount > 0 ? (
               <Button
                 onClick={handleDistribute}
@@ -292,6 +304,12 @@ export function EmailDistributionDialog({
           </div>
         </div>
       </DialogContent>
+
+      <ScheduledDistributionDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        meetingId={meetingId}
+      />
     </Dialog>
   );
 }

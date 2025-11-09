@@ -1132,6 +1132,59 @@ export type Database = {
           },
         ]
       }
+      distribution_schedules: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          enabled: boolean | null
+          id: string
+          last_sent_at: string | null
+          meeting_id: string | null
+          next_send_at: string | null
+          recurrence_day: number | null
+          recurrence_pattern: string | null
+          schedule_type: string
+          scheduled_time: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          enabled?: boolean | null
+          id?: string
+          last_sent_at?: string | null
+          meeting_id?: string | null
+          next_send_at?: string | null
+          recurrence_day?: number | null
+          recurrence_pattern?: string | null
+          schedule_type: string
+          scheduled_time?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          enabled?: boolean | null
+          id?: string
+          last_sent_at?: string | null
+          meeting_id?: string | null
+          next_send_at?: string | null
+          recurrence_day?: number | null
+          recurrence_pattern?: string | null
+          schedule_type?: string
+          scheduled_time?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_schedules_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_distributions: {
         Row: {
           channel_id: string
@@ -4183,6 +4236,65 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_distributions: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          enabled: boolean | null
+          error_message: string | null
+          id: string
+          last_sent_at: string | null
+          meeting_id: string
+          next_send_at: string | null
+          recipient_emails: string[]
+          recurrence_day: number | null
+          schedule_type: string
+          scheduled_time: string
+          send_count: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          enabled?: boolean | null
+          error_message?: string | null
+          id?: string
+          last_sent_at?: string | null
+          meeting_id: string
+          next_send_at?: string | null
+          recipient_emails: string[]
+          recurrence_day?: number | null
+          schedule_type: string
+          scheduled_time: string
+          send_count?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          enabled?: boolean | null
+          error_message?: string | null
+          id?: string
+          last_sent_at?: string | null
+          meeting_id?: string
+          next_send_at?: string | null
+          recipient_emails?: string[]
+          recurrence_day?: number | null
+          schedule_type?: string
+          scheduled_time?: string
+          send_count?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_distributions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       section_sensitivities: {
         Row: {
           created_at: string | null
@@ -4819,6 +4931,14 @@ export type Database = {
     }
     Functions: {
       calculate_guba_learning_metrics: { Args: never; Returns: undefined }
+      calculate_next_send_time: {
+        Args: {
+          base_time: string
+          recurrence_day?: number
+          schedule_type: string
+        }
+        Returns: string
+      }
       can_access_element: {
         Args: { _element_type: string; _meeting_id: string; _user_id: string }
         Returns: boolean
