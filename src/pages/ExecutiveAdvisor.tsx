@@ -1,4 +1,5 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +42,7 @@ type MeetingCategory = 'upcoming' | 'completed' | 'signoff_pending' | 'signoff_a
 
 export default function ExecutiveAdvisor() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,21 @@ export default function ExecutiveAdvisor() {
     fetchMeetings();
   }, [user?.id]);
 
-  const handleMeetingSelect = async (meetingId: string) => {
+  const handleMeetingSelect = async (meetingId: string, category?: MeetingCategory) => {
+    // Route to appropriate page based on category
+    if (category === 'signoff_pending') {
+      // Get the signature request ID for this meeting
+      const meeting = meetings.find(m => m.id === meetingId);
+      if (meeting?.signature_requests?.[0]?.id) {
+        navigate(`/signature-approval/${meeting.signature_requests[0].id}`);
+        return;
+      }
+    } else if (category === 'signoff_approved') {
+      navigate(`/meetings/${meetingId}`);
+      return;
+    }
+    
+    // For other categories, show detail view in advisor
     setSelectedMeetingId(meetingId);
     
     const { data } = await supabase
@@ -247,7 +263,7 @@ export default function ExecutiveAdvisor() {
                   <Card 
                     key={meeting.id}
                     className={`relative overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-${config.color} hover:scale-[1.02] active:scale-[0.98] group bg-gradient-to-r from-background via-background to-${config.color}/5`}
-                    onClick={() => handleMeetingSelect(meeting.id)}
+                    onClick={() => handleMeetingSelect(meeting.id, selectedCategory)}
                   >
                     <div className={`absolute inset-0 bg-gradient-to-r from-${config.color}/0 via-${config.color}/5 to-${config.color}/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
                     <CardContent className="p-4 relative">
