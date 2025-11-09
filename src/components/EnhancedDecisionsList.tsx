@@ -12,6 +12,15 @@ import { CheckSquare, Plus, Search, Filter, TrendingUp, AlertCircle } from 'luci
 import { motion, AnimatePresence } from 'framer-motion';
 import { format } from 'date-fns';
 
+interface DecisionVote {
+  id: string;
+  decision_id: string;
+  user_id: string;
+  vote: 'approve' | 'reject' | 'abstain';
+  comment?: string;
+  voted_at: string;
+}
+
 interface Decision {
   id: string;
   decision_text: string;
@@ -20,14 +29,22 @@ interface Decision {
   context?: string;
   timestamp?: string;
   meeting_id?: string;
+  status?: string;
+  votes?: DecisionVote[];
+  vote_counts?: {
+    approve: number;
+    reject: number;
+    abstain: number;
+    total: number;
+  };
+  user_vote?: 'approve' | 'reject' | 'abstain' | null;
 }
 
 interface EnhancedDecisionsListProps {
   meetingId: string;
-  isHost: boolean;
 }
 
-export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsListProps) {
+export function EnhancedDecisionsList({ meetingId }: EnhancedDecisionsListProps) {
   const [decisions, setDecisions] = useState<Decision[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [impactFilter, setImpactFilter] = useState<string>('all');
@@ -64,9 +81,21 @@ export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsLi
   }, [meetingId]);
 
   const fetchDecisions = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
     const { data, error } = await supabase
       .from('decisions')
-      .select('*')
+      .select(`
+        *,
+        decision_votes (
+          id,
+          user_id,
+          vote,
+          comment,
+          voted_at
+        )
+      `)
       .eq('meeting_id', meetingId)
       .order('created_at', { ascending: false });
 
@@ -75,7 +104,28 @@ export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsLi
       return;
     }
 
-    setDecisions(data || []);
+    // Process votes and add counts
+    const processedDecisions = (data || []).map((decision: any) => {
+      const votes = decision.decision_votes || [];
+      const approve = votes.filter((v: any) => v.vote === 'approve').length;
+      const reject = votes.filter((v: any) => v.vote === 'reject').length;
+      const abstain = votes.filter((v: any) => v.vote === 'abstain').length;
+      const userVote = votes.find((v: any) => v.user_id === user.id);
+
+      return {
+        ...decision,
+        votes,
+        vote_counts: {
+          approve,
+          reject,
+          abstain,
+          total: votes.length
+        },
+        user_vote: userVote?.vote || null
+      };
+    });
+
+    setDecisions(processedDecisions);
   };
 
   const addDecision = async () => {
@@ -90,7 +140,8 @@ export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsLi
         meeting_id: meetingId,
         decision_text: newDecision,
         created_by: user.id,
-        context: decisionMaker || null
+        context: decisionMaker || null,
+        status: 'pending_vote'
       });
 
     if (error) {
@@ -103,14 +154,58 @@ export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsLi
     }
 
     toast({
-      title: 'Decision Added',
-      description: 'New decision has been recorded'
+      title: 'Decision Proposed',
+      description: 'Decision added and ready for voting'
     });
 
     setNewDecision('');
     setDecisionMaker('');
     setImpactLevel('medium');
     setIsAddOpen(false);
+  };
+
+  const castVote = async (decisionId: string, vote: 'approve' | 'reject' | 'abstain') => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('decision_votes')
+      .upsert({
+        decision_id: decisionId,
+        user_id: user.id,
+        vote
+      }, {
+        onConflict: 'decision_id,user_id'
+      });
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to cast vote',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    toast({
+      title: 'Vote Recorded',
+      description: `You voted to ${vote} this decision`
+    });
+
+    fetchDecisions();
+  };
+
+  const getStatusBadge = (status?: string) => {
+    switch (status) {
+      case 'approved':
+        return <Badge className="bg-green-500 text-white">Approved</Badge>;
+      case 'rejected':
+        return <Badge className="bg-red-500 text-white">Rejected</Badge>;
+      case 'pending_vote':
+        return <Badge variant="outline">Pending Vote</Badge>;
+      default:
+        return null;
+    }
   };
 
   const filteredDecisions = decisions.filter(decision => {
@@ -139,43 +234,41 @@ export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsLi
               className="pl-9"
             />
           </div>
-          {isHost && (
-            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Record New Decision</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-sm font-medium">Decision</label>
-                    <Textarea
-                      value={newDecision}
-                      onChange={(e) => setNewDecision(e.target.value)}
-                      placeholder="Describe the decision..."
-                      rows={4}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Context (Optional)</label>
-                    <Input
-                      value={decisionMaker}
-                      onChange={(e) => setDecisionMaker(e.target.value)}
-                      placeholder="Additional context..."
-                    />
-                  </div>
-                  <Button onClick={addDecision} className="w-full">
-                    Record Decision
-                  </Button>
+          <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Propose Decision
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Propose New Decision</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium">Decision</label>
+                  <Textarea
+                    value={newDecision}
+                    onChange={(e) => setNewDecision(e.target.value)}
+                    placeholder="Describe the decision..."
+                    rows={4}
+                  />
                 </div>
-              </DialogContent>
-            </Dialog>
-          )}
+                <div>
+                  <label className="text-sm font-medium">Context (Optional)</label>
+                  <Input
+                    value={decisionMaker}
+                    onChange={(e) => setDecisionMaker(e.target.value)}
+                    placeholder="Additional context..."
+                  />
+                </div>
+                <Button onClick={addDecision} className="w-full">
+                  Propose Decision
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </CardHeader>
 
@@ -191,21 +284,88 @@ export function EnhancedDecisionsList({ meetingId, isHost }: EnhancedDecisionsLi
             >
               <Card className="transition-all hover:shadow-md bg-background">
                 <CardContent className="p-4">
-                  <div className="flex gap-3">
-                    <CheckSquare className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div className="flex-1 space-y-2">
-                      <p className="text-sm leading-relaxed">{decision.decision_text}</p>
-                      <div className="flex flex-wrap gap-2 text-xs">
-                        {decision.context && (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <CheckSquare className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm leading-relaxed flex-1">{decision.decision_text}</p>
+                          {getStatusBadge(decision.status)}
+                        </div>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {decision.context && (
+                            <Badge variant="outline">
+                              {decision.context}
+                            </Badge>
+                          )}
                           <Badge variant="outline">
-                            {decision.context}
+                            {format(new Date(decision.created_at), 'MMM d, h:mm a')}
                           </Badge>
-                        )}
-                        <Badge variant="outline">
-                          {format(new Date(decision.created_at), 'MMM d, h:mm a')}
-                        </Badge>
+                        </div>
                       </div>
                     </div>
+
+                    {decision.status === 'pending_vote' && decision.vote_counts && (
+                      <div className="space-y-3 pl-8">
+                        <div className="flex gap-2 text-xs">
+                          <Badge variant="outline" className="gap-1">
+                            <TrendingUp className="h-3 w-3 text-green-600" />
+                            {decision.vote_counts.approve} Approve
+                          </Badge>
+                          <Badge variant="outline" className="gap-1">
+                            <AlertCircle className="h-3 w-3 text-red-600" />
+                            {decision.vote_counts.reject} Reject
+                          </Badge>
+                          <Badge variant="outline">
+                            {decision.vote_counts.abstain} Abstain
+                          </Badge>
+                        </div>
+
+                        {!decision.user_vote ? (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="text-green-600 hover:bg-green-50 border-green-600"
+                              onClick={() => castVote(decision.id, 'approve')}
+                            >
+                              Approve
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-red-600 hover:bg-red-50 border-red-600"
+                              onClick={() => castVote(decision.id, 'reject')}
+                            >
+                              Reject
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => castVote(decision.id, 'abstain')}
+                            >
+                              Abstain
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <Badge>You voted: {decision.user_vote}</Badge>
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => {
+                                const currentVote = decision.user_vote;
+                                if (currentVote === 'approve') castVote(decision.id, 'reject');
+                                else if (currentVote === 'reject') castVote(decision.id, 'abstain');
+                                else castVote(decision.id, 'approve');
+                              }}
+                            >
+                              Change Vote
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

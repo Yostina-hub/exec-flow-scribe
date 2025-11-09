@@ -94,6 +94,7 @@ const MeetingSummaryCard = lazy(() => import("@/components/MeetingSummaryCard").
 const MeetingKeyPointsSummary = lazy(() => import("@/components/MeetingKeyPointsSummary").then(m => ({ default: m.MeetingKeyPointsSummary })));
 const MeetingKeywordSearch = lazy(() => import("@/components/MeetingKeywordSearch").then(m => ({ default: m.MeetingKeywordSearch })));
 const EnhancedDocumentsTab = lazy(() => import("@/components/EnhancedDocumentsTab").then(m => ({ default: m.EnhancedDocumentsTab })));
+const EnhancedDecisionsList = lazy(() => import("@/components/EnhancedDecisionsList").then(m => ({ default: m.EnhancedDecisionsList })));
 const TimeBasedAccessGuard = lazy(() => import("@/components/TimeBasedAccessGuard").then(m => ({ default: m.TimeBasedAccessGuard })));
 const ProtectedElement = lazy(() => import("@/components/ProtectedElement").then(m => ({ default: m.ProtectedElement })));
 const HostManagementPanel = lazy(() => import("@/components/HostManagementPanel").then(m => ({ default: m.HostManagementPanel })));
@@ -159,18 +160,6 @@ const attendees = [
   { name: "Personal Assistant", initials: "PA", role: "PA" },
 ];
 
-const decisions = [
-  {
-    id: "1",
-    decision: "Approved Q4 budget reallocation to marketing initiatives",
-    timestamp: "2:15 PM",
-  },
-  {
-    id: "2",
-    decision: "Agreed to expand engineering team by 15% in Q1 2025",
-    timestamp: "2:35 PM",
-  },
-];
 
 const MeetingDetail = () => {
   const { toast } = useToast();
@@ -1326,35 +1315,9 @@ const MeetingDetail = () => {
               </TabsContent>
 
               <TabsContent value="decisions" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Key Decisions</CardTitle>
-                    <CardDescription>
-                      Important decisions made during this meeting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {decisions.map((decision, index) => (
-                      <div key={decision.id}>
-                        <div className="flex gap-3 py-3">
-                          <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="font-medium">{decision.decision}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {decision.timestamp}
-                            </p>
-                          </div>
-                        </div>
-                        {index < decisions.length - 1 && <Separator />}
-                      </div>
-                    ))}
-                    {decisions.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        No decisions recorded yet
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
+                <Suspense fallback={<div className="animate-pulse h-64 bg-muted rounded-lg" />}>
+                  {id && <EnhancedDecisionsList meetingId={id} />}
+                </Suspense>
               </TabsContent>
 
 
