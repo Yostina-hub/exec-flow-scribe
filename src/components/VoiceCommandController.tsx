@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Command, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, matchPriorityChange, type VoiceCommand } from '@/utils/voiceCommands';
+import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, matchPriorityChange, matchDueDate, type VoiceCommand } from '@/utils/voiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceCommandControllerProps {
@@ -62,7 +62,14 @@ export const VoiceCommandController = ({
       const transcript = event.results[last][0].transcript.trim();
       
       if (event.results[last].isFinal) {
-        // Check for priority change first
+        // Check for due date change first
+        const dueDateChange = matchDueDate(transcript);
+        if (dueDateChange) {
+          handleDueDateChange(dueDateChange.dueDate);
+          return;
+        }
+
+        // Check for priority change
         const priorityChange = matchPriorityChange(transcript);
         if (priorityChange) {
           handlePriorityChange(priorityChange.priority);
@@ -181,6 +188,72 @@ export const VoiceCommandController = ({
         variant: 'destructive',
       });
       speakFeedback('Failed to change priority');
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setLastCommand('');
+    }, 5000);
+  }, [lastCreatedActionId, voiceEnabled, toast]);
+
+  const handleDueDateChange = useCallback(async (dueDate: string) => {
+    if (!lastCreatedActionId) {
+      toast({
+        title: 'No Recent Action',
+        description: 'Create an action first before setting due date',
+        variant: 'destructive',
+      });
+      speakFeedback('No action to update');
+      return;
+    }
+
+    setLastCommand(`Setting due date to ${dueDate}...`);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (voiceEnabled) {
+      playCommandSound();
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      speakFeedback(`Setting due date to ${dueDate}`);
+      
+      const { data, error } = await supabase.functions.invoke('update-task-due-date', {
+        body: { 
+          dueDate, 
+          taskId: lastCreatedActionId,
+          userId: user.id 
+        }
+      });
+
+      if (error) throw error;
+
+      const formattedDate = data.dueDate || dueDate;
+      toast({
+        title: 'Due Date Updated',
+        description: `Due date set to ${formattedDate}`,
+      });
+      
+      speakFeedback(`Due date set to ${formattedDate}`);
+    } catch (error: any) {
+      console.error('Due date change error:', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Could not change due date',
+        variant: 'destructive',
+      });
+      speakFeedback('Failed to change due date');
     }
 
     timeoutRef.current = setTimeout(() => {
@@ -507,6 +580,8 @@ export const VoiceCommandController = ({
           <p>After creating an action, say "Assign this to John"</p>
           <p className="font-medium text-primary mt-2">⚡ Set Priority:</p>
           <p>Say "Make this high priority" or "Change priority to urgent"</p>
+          <p className="font-medium text-primary mt-2">🗓️ Set Due Date:</p>
+          <p>Say "Make this due tomorrow" or "Set deadline to Friday"</p>
         </div>
       </CardContent>
     </Card>

@@ -193,6 +193,31 @@ export function matchPriorityChange(transcript: string): { priority: 'low' | 'me
   return null;
 }
 
+export function matchDueDate(transcript: string): { dueDate: string } | null {
+  const normalized = transcript.toLowerCase().trim();
+  
+  // Due date patterns
+  const patterns = [
+    /(?:make|set|change)(?:\s+this)?(?:\s+task)?(?:\s+due)\s+(.+)/i,
+    /(?:set|change)(?:\s+the)?(?:\s+deadline)(?:\s+to)\s+(.+)/i,
+    /(?:due)(?:\s+by)\s+(.+)/i,
+    /(?:change|update)(?:\s+the)?(?:\s+due\s+date)(?:\s+to)\s+(.+)/i,
+    /(?:deadline)\s+(.+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = transcript.match(pattern);
+    if (match && match[1]) {
+      let dateText = match[1].trim();
+      // Remove trailing words that might be captured
+      dateText = dateText.replace(/\s+(please|thanks|thank you)$/i, '').trim();
+      return { dueDate: dateText };
+    }
+  }
+  
+  return null;
+}
+
 export function getCommandsByCategory(category: VoiceCommand['category']): VoiceCommand[] {
   return ALL_COMMANDS.filter(cmd => cmd.category === category);
 }

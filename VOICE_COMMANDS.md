@@ -257,6 +257,118 @@ System: ✓ Changes priority to HIGH
 - ✓ Use recognized keywords (urgent, high, medium, low)
 - ✓ Speak clearly for accurate recognition
 
+---
+
+## 🗓️ Voice Due Date Control (NEW!)
+
+Set task deadlines using natural language with voice commands. Just say when you need something done!
+
+### How It Works
+
+1. **Create an action first** (using voice dictation or UI)
+2. **Say due date command** with natural language
+3. **System parses and sets deadline** automatically
+
+### Due Date Commands
+
+| What You Say | Date Set |
+|-------------|----------|
+| "Make this due tomorrow" | Tomorrow's date |
+| "Set deadline to Friday" | This coming Friday |
+| "Due by next Monday" | Next week Monday |
+| "Change due date to in 3 days" | 3 days from now |
+| "Deadline next week" | 7 days from now |
+| "Make this due today" | Today |
+
+### Supported Date Formats
+
+**Relative Dates:**
+- "tomorrow" - Next day
+- "today" - Current day
+- "yesterday" - Previous day
+
+**Day Names:**
+- "Monday", "Tuesday", "Wednesday", etc.
+- "next Monday" - Next week's Monday
+- "Friday" - This coming Friday
+
+**Relative Periods:**
+- "next week" - 7 days from now
+- "in 3 days" - 3 days from now
+- "in 2 weeks" - 14 days from now
+- "2 weeks from now" - 14 days from now
+
+**Specific Dates:**
+- "January 15" - Specific date
+- "Dec 25" - Short month format
+
+### Smart Date Parsing
+
+The system intelligently understands:
+- **"Friday"** = This coming Friday (or next Friday if today is Friday)
+- **"next Friday"** = Friday of next week
+- **"in 3 days"** = Exactly 3 days from today
+- **"next week"** = Same day next week
+
+### Complete Workflow Example
+
+```
+You say: "Add action: Submit proposal"
+System: ✓ Creates action
+
+You say: "Make this due Friday"
+System: ✓ Parses "Friday" as 2025-11-14
+        ✓ Sets due date
+        ✓ Notifies if assignee exists
+        ✓ Confirms "Due date set to 2025-11-14"
+```
+
+### Notifications
+
+- **Assignee Notifications**: If task has an assignee (other than you), they get notified of deadline
+- **Automatic Updates**: Due date changes trigger timestamp updates
+- **Audit Trail**: All changes are logged
+
+### Permissions
+
+- **Task Creator** can always set/change due date
+- **Task Assignee** can change their own task due date
+- **Meeting Host** can change any meeting task due date
+- **Admins** can change any task due date
+
+### Troubleshooting
+
+**Problem**: "Could not understand the date"
+- ✓ Try simpler phrases: "tomorrow", "Friday", "in 3 days"
+- ✓ Use recognized date formats
+- ✓ Speak clearly for accurate recognition
+
+**Problem**: "No recent action"
+- ✓ Create an action first
+- ✓ Due date command must follow within 30 seconds
+- ✓ Only works with tasks you just created
+
+**Problem**: "You do not have permission..."
+- ✓ Only creator, assignee, meeting host, or admin can change
+- ✓ Must be your task or you must have proper permissions
+
+### Combining Commands
+
+Create powerful workflows by chaining commands:
+
+```
+"Add action: Review security audit priority high"
+→ Creates high priority task
+
+"Assign this to John"
+→ Assigns to John
+
+"Make this due Friday"
+→ Sets deadline to Friday
+
+Result: High priority task for John due Friday, all done hands-free!
+```
+
 ### 📊 Meeting Functions
 
 | Command (English) | Command (Amharic) | What It Does |

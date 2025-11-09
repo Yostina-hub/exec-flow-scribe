@@ -263,3 +263,6 @@ verify_jwt = false
 
 [functions.change-task-priority]
 verify_jwt = false
+
+[functions.update-task-due-date]
+verify_jwt = false
