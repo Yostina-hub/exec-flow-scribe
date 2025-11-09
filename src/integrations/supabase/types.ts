@@ -1061,6 +1061,75 @@ export type Database = {
           },
         ]
       }
+      distribution_history: {
+        Row: {
+          created_at: string | null
+          distribution_schedule_id: string | null
+          distribution_type: string
+          error_message: string | null
+          failed_count: number
+          id: string
+          meeting_id: string
+          metadata: Json | null
+          pdf_generation_id: string | null
+          recipient_details: Json
+          sent_at: string
+          sent_by: string | null
+          status: string
+          successful_count: number
+          total_recipients: number
+        }
+        Insert: {
+          created_at?: string | null
+          distribution_schedule_id?: string | null
+          distribution_type: string
+          error_message?: string | null
+          failed_count?: number
+          id?: string
+          meeting_id: string
+          metadata?: Json | null
+          pdf_generation_id?: string | null
+          recipient_details?: Json
+          sent_at?: string
+          sent_by?: string | null
+          status: string
+          successful_count?: number
+          total_recipients?: number
+        }
+        Update: {
+          created_at?: string | null
+          distribution_schedule_id?: string | null
+          distribution_type?: string
+          error_message?: string | null
+          failed_count?: number
+          id?: string
+          meeting_id?: string
+          metadata?: Json | null
+          pdf_generation_id?: string | null
+          recipient_details?: Json
+          sent_at?: string
+          sent_by?: string | null
+          status?: string
+          successful_count?: number
+          total_recipients?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_history_distribution_schedule_id_fkey"
+            columns: ["distribution_schedule_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribution_history_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       distribution_profiles: {
         Row: {
           audience_type: string

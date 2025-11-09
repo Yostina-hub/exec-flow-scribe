@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,25 +14,12 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = createClient(supabaseUrl, supabaseKey);
 
     // Find schedules that are due to be sent
-    const { data: schedules, error: schedulesError } = await supabase
+    const { data: schedules, error: schedulesError } = await supabaseClient
       .from("distribution_schedules")
-      .select(`
-        id,
-        meeting_id,
-        schedule_type,
-        recurrence_pattern,
-        meetings!inner(
-          id,
-          title,
-          description,
-          scheduled_at,
-          created_by,
-          minutes_pdf_url
-        )
-      `)
+      .select("*")
       .eq("enabled", true)
       .lte("next_send_at", new Date().toISOString())
       .limit(10);
@@ -43,82 +29,118 @@ serve(async (req) => {
     let distributedCount = 0;
 
     for (const schedule of schedules || []) {
-      const meeting = schedule.meetings as any;
       try {
-        // Get SMTP settings for the meeting creator
-        const { data: smtpSettings } = await supabase
-          .from("smtp_settings")
-          .select("*")
-          .eq("user_id", meeting.created_by)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
 
-        if (!smtpSettings) {
-          console.log(`No SMTP settings for meeting ${meeting.id}, skipping`);
-          continue;
-        }
-
-        // Get attendee emails separately
-        const { data: attendees } = await supabase
+        // Get attendee emails
+        const { data: attendees } = await supabaseClient
           .from("meeting_attendees")
-          .select("profiles(email)")
-          .eq("meeting_id", meeting.id);
+          .select("user:profiles!meeting_attendees_user_id_fkey(email)")
+          .eq("meeting_id", schedule.meeting_id);
 
         const attendeeEmails = attendees
-          ?.map((att: any) => att.profiles?.email)
+          ?.map((att: any) => att.user?.email)
           .filter(Boolean) || [];
 
         if (attendeeEmails.length === 0) {
-          console.log(`No attendees for meeting ${meeting.id}, skipping`);
+          console.log(`No attendees for meeting ${schedule.meeting_id}, skipping`);
           continue;
         }
 
-        // Create SMTP client
-        const client = new SMTPClient({
-          connection: {
-            hostname: smtpSettings.host,
-            port: smtpSettings.port,
-            tls: smtpSettings.use_tls,
-            auth: {
-              username: smtpSettings.username,
-              password: smtpSettings.password,
-            },
+        // Get latest minutes version
+        const { data: minutesData } = await supabaseClient
+          .from('minutes_versions')
+          .select('id')
+          .eq('meeting_id', schedule.meeting_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!minutesData) {
+          console.log(`No minutes found for meeting ${schedule.meeting_id}, skipping`);
+          continue;
+        }
+
+        // Get default brand kit
+        const { data: brandKit } = await supabaseClient
+          .from('brand_kits')
+          .select('id')
+          .eq('is_default', true)
+          .limit(1)
+          .maybeSingle();
+
+        // Generate PDF
+        const { data: pdfData, error: pdfError } = await supabaseClient.functions.invoke('generate-branded-pdf', {
+          body: {
+            meeting_id: schedule.meeting_id,
+            minutes_version_id: minutesData.id,
+            brand_kit_id: brandKit?.id,
+            include_watermark: false,
           },
         });
 
-        const subject = `Meeting Minutes: ${meeting.title}`;
-        const html = `
-          <h2>Meeting Minutes</h2>
-          <p><strong>Meeting:</strong> ${meeting.title}</p>
-          <p><strong>Date:</strong> ${new Date(meeting.scheduled_at).toLocaleDateString()}</p>
-          <p><strong>Description:</strong> ${meeting.description || 'N/A'}</p>
-          ${meeting.minutes_pdf_url ? `<p><a href="${meeting.minutes_pdf_url}">Download Minutes PDF</a></p>` : ''}
-          <p>This is an automated distribution of the signed-off meeting minutes.</p>
-        `;
-
-        // Send to each attendee
-        for (const email of attendeeEmails) {
-          await client.send({
-            from: `${smtpSettings.from_name} <${smtpSettings.from_email}>`,
-            to: email,
-            subject,
-            html,
+        if (pdfError) {
+          console.error(`PDF generation error for schedule ${schedule.id}:`, pdfError);
+          
+          // Log failed generation
+          await supabaseClient.from('distribution_history').insert({
+            meeting_id: schedule.meeting_id,
+            distribution_schedule_id: schedule.id,
+            status: 'failed',
+            total_recipients: attendeeEmails.length,
+            successful_count: 0,
+            failed_count: attendeeEmails.length,
+            recipient_details: attendeeEmails.map(email => ({ email, status: 'failed', error: 'PDF generation failed' })),
+            distribution_type: 'scheduled',
+            error_message: pdfError.message,
           });
+          continue;
         }
 
-        await client.close();
-
-        // Log distribution
-        await supabase.from("email_distributions").insert({
-          meeting_id: meeting.id,
-          sent_by: meeting.created_by,
-          recipients: attendeeEmails,
-          subject,
-          status: "sent",
+        // Distribute PDF
+        const { data: distData, error: distError } = await supabaseClient.functions.invoke('distribute-pdf', {
+          body: {
+            pdf_generation_id: pdfData.pdf_generation_id,
+            custom_recipients: attendeeEmails,
+          },
         });
 
+        if (distError) {
+          console.error(`Distribution error for schedule ${schedule.id}:`, distError);
+          
+          // Log failed distribution
+          await supabaseClient.from('distribution_history').insert({
+            meeting_id: schedule.meeting_id,
+            distribution_schedule_id: schedule.id,
+            pdf_generation_id: pdfData.pdf_generation_id,
+            status: 'failed',
+            total_recipients: attendeeEmails.length,
+            successful_count: 0,
+            failed_count: attendeeEmails.length,
+            recipient_details: attendeeEmails.map(email => ({ email, status: 'failed', error: distError.message })),
+            distribution_type: 'scheduled',
+            error_message: distError.message,
+          });
+          continue;
+        }
+
+        const results = distData?.results || [];
+        const sentCount = results.filter((r: any) => r.status === 'sent').length;
+        const failedCount = results.filter((r: any) => r.status === 'failed').length;
+
+        // Log successful distribution
+        await supabaseClient.from('distribution_history').insert({
+          meeting_id: schedule.meeting_id,
+          distribution_schedule_id: schedule.id,
+          pdf_generation_id: pdfData.pdf_generation_id,
+          status: failedCount === 0 ? 'success' : sentCount > 0 ? 'partial' : 'failed',
+          total_recipients: attendeeEmails.length,
+          successful_count: sentCount,
+          failed_count: failedCount,
+          recipient_details: results,
+          distribution_type: 'scheduled',
+        });
+
+        console.log(`✓ Successfully distributed to ${sentCount}/${attendeeEmails.length} recipients for schedule ${schedule.id}`);
         // Update schedule
         const now = new Date();
         const updates: any = {
@@ -147,24 +169,15 @@ serve(async (req) => {
           updates.enabled = false;
         }
 
-        await supabase
+        await supabaseClient
           .from("distribution_schedules")
           .update(updates)
           .eq("id", schedule.id);
 
-        // Update meeting status
-        await supabase
-          .from("meetings")
-          .update({
-            distributed_at: new Date().toISOString(),
-          })
-          .eq("id", meeting.id);
-
         distributedCount++;
-        console.log(`Distributed minutes for meeting ${meeting.id} to ${attendeeEmails.length} recipients`);
       } catch (error: any) {
-        console.error(`Error distributing meeting ${meeting.id}:`, error);
-        // Continue with next meeting
+        console.error(`Error distributing schedule ${schedule.id}:`, error);
+        // Continue with next schedule
       }
     }
 

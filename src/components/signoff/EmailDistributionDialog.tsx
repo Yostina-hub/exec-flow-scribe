@@ -3,10 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock } from 'lucide-react';
+import { Mail, CheckCircle2, XCircle, Loader2, Users, Send, Clock, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ScheduledDistributionDialog } from './ScheduledDistributionDialog';
+import { DistributionHistoryViewer } from './DistributionHistoryViewer';
 
 interface EmailDistributionDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function EmailDistributionDialog({
   const [recipients, setRecipients] = useState<string[]>([]);
   const [isLoadingRecipients, setIsLoadingRecipients] = useState(true);
   const [showScheduleDialog, setShowScheduleDialog] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -129,6 +131,18 @@ export function EmailDistributionDialog({
 
       const sentCount = distributionData.results?.filter((r: DistributionResult) => r.status === 'sent').length || 0;
       const failedCount = distributionData.results?.filter((r: DistributionResult) => r.status === 'failed').length || 0;
+
+      // Log distribution to history
+      await supabase.from('distribution_history').insert({
+        meeting_id: meetingId,
+        pdf_generation_id: pdfData.pdf_generation_id,
+        status: failedCount === 0 ? 'success' : sentCount > 0 ? 'partial' : 'failed',
+        total_recipients: recipients.length,
+        successful_count: sentCount,
+        failed_count: failedCount,
+        recipient_details: distributionData.results,
+        distribution_type: 'manual',
+      });
 
       if (failedCount === 0) {
         toast({
@@ -255,14 +269,23 @@ export function EmailDistributionDialog({
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-between items-center">
             <Button
-              variant="outline"
-              onClick={() => onOpenChange(false)}
+              variant="ghost"
+              onClick={() => setShowHistoryDialog(true)}
               disabled={isDistributing}
             >
-              {distributionResults.length > 0 ? 'Close' : 'Cancel'}
+              <History className="w-4 h-4 mr-2" />
+              View History
             </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isDistributing}
+              >
+                {distributionResults.length > 0 ? 'Close' : 'Cancel'}
+              </Button>
             {distributionResults.length === 0 ? (
               <>
                 <Button
@@ -301,6 +324,7 @@ export function EmailDistributionDialog({
                 Retry Failed
               </Button>
             ) : null}
+            </div>
           </div>
         </div>
       </DialogContent>
@@ -308,6 +332,12 @@ export function EmailDistributionDialog({
       <ScheduledDistributionDialog
         open={showScheduleDialog}
         onOpenChange={setShowScheduleDialog}
+        meetingId={meetingId}
+      />
+
+      <DistributionHistoryViewer
+        open={showHistoryDialog}
+        onOpenChange={setShowHistoryDialog}
         meetingId={meetingId}
       />
     </Dialog>
