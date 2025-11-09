@@ -98,35 +98,46 @@ export function InlineMeetingCard({
     <Card 
       className={cn(
         "group relative overflow-hidden cursor-pointer h-full",
-        "hover:shadow-2xl hover:-translate-y-2 transition-all duration-500",
+        "hover:shadow-2xl hover:-translate-y-2 active:scale-[0.98] transition-all duration-300 animate-scale-in",
+        "border-2",
         isEthioTelecom 
-          ? "bg-white border-2 border-gray-200 hover:border-[#8DC63F]/50"
-          : "bg-gradient-to-br from-background to-muted/30 border-2 hover:border-primary/50"
+          ? "bg-white border-gray-200 hover:border-[#8DC63F] hover:shadow-[#8DC63F]/20"
+          : "bg-gradient-to-br from-background to-muted/30 hover:border-primary hover:shadow-primary/20"
       )}
       onClick={() => navigate(`/meetings/${id}`)}
     >
+      {/* Hover gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-transparent via-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      
+      {/* Top indicator bar */}
       <div className={cn(
-        "absolute top-0 left-0 right-0 h-1.5 transition-all duration-300 group-hover:h-2",
+        "absolute top-0 left-0 right-0 h-1.5 transition-all duration-300 group-hover:h-2.5",
         `bg-gradient-to-r ${isEthioTelecom ? getEthioTelecomGradient(status) : config.gradient}`
       )} />
       
-      <CardContent className="p-5 lg:p-6 space-y-4">
+      <CardContent className="p-5 lg:p-6 space-y-4 relative">
         {/* Header */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 flex-1">
             <div className={cn(
-              "flex flex-col items-center justify-center px-3 py-2 rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-110",
+              "flex flex-col items-center justify-center px-3 py-2 rounded-xl shadow-md transition-all duration-300 group-hover:scale-110 group-hover:shadow-lg",
               isEthioTelecom 
-                ? "bg-gradient-to-br from-[#8DC63F]/10 to-[#0072BC]/10 border border-[#8DC63F]/20"
-                : "bg-gradient-to-br from-background to-muted"
+                ? "bg-gradient-to-br from-[#8DC63F]/10 to-[#0072BC]/10 border border-[#8DC63F]/20 group-hover:border-[#8DC63F]/40"
+                : "bg-gradient-to-br from-background to-muted group-hover:from-primary/10 group-hover:to-primary/5"
             )}>
-              <Calendar className={`h-4 w-4 mb-1 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-muted-foreground'}`} />
-              <span className={`text-xs font-bold uppercase ${isEthioTelecom ? 'text-gray-900' : 'text-muted-foreground'}`}>{date}</span>
+              <Calendar className={cn(
+                "h-4 w-4 mb-1 transition-colors",
+                isEthioTelecom ? 'text-[#8DC63F] group-hover:text-[#7AB62F]' : 'text-muted-foreground group-hover:text-primary'
+              )} />
+              <span className={cn(
+                "text-xs font-bold uppercase transition-colors",
+                isEthioTelecom ? 'text-gray-900' : 'text-muted-foreground group-hover:text-primary'
+              )}>{date}</span>
             </div>
             <Badge 
               variant={config.variant} 
               className={cn(
-                "text-xs font-semibold",
+                "text-xs font-semibold transition-all",
                 isEthioTelecom && status === 'upcoming' && "bg-[#0072BC] text-white hover:bg-[#005A9C]",
                 isEthioTelecom && status === 'in-progress' && "bg-[#8DC63F] text-white hover:bg-[#7AB62F]"
               )}
@@ -143,33 +154,64 @@ export function InlineMeetingCard({
           )}
         </div>
 
-        {/* Title */}
-        <h3 className={cn(
-          "font-black text-base lg:text-lg line-clamp-2 min-h-[56px] transition-colors duration-300",
-          isEthioTelecom 
-            ? 'font-["Noto_Sans_Ethiopic"] text-gray-900 group-hover:text-[#8DC63F]'
-            : 'group-hover:text-primary'
-        )}>
-          {title}
-        </h3>
+        {/* Title with click indicator */}
+        <div className="flex items-start justify-between gap-2">
+          <h3 className={cn(
+            "font-black text-base lg:text-lg line-clamp-2 flex-1 transition-colors duration-300",
+            isEthioTelecom 
+              ? 'font-["Noto_Sans_Ethiopic"] text-gray-900 group-hover:text-[#8DC63F]'
+              : 'group-hover:text-primary'
+          )}>
+            {title}
+          </h3>
+          <div className="flex-shrink-0 mt-1">
+            <div className={cn(
+              "p-2 rounded-full transition-all duration-300",
+              "opacity-60 group-hover:opacity-100",
+              isEthioTelecom 
+                ? "bg-[#8DC63F]/10 group-hover:bg-[#8DC63F]/20"
+                : "bg-primary/10 group-hover:bg-primary/20"
+            )}>
+              <Play className={cn(
+                "h-4 w-4 transition-all duration-300 group-hover:translate-x-0.5",
+                isEthioTelecom ? "text-[#8DC63F]" : "text-primary"
+              )} />
+            </div>
+          </div>
+        </div>
 
         {/* Info Grid */}
-        <div className={`space-y-2 text-sm ${isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'}`}>
+        <div className={cn(
+          "space-y-2 text-sm transition-colors duration-300",
+          isEthioTelecom ? 'text-gray-600' : 'text-muted-foreground'
+        )}>
           <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 flex-shrink-0" />
+            <Clock className={cn(
+              "h-4 w-4 flex-shrink-0 transition-colors",
+              isEthioTelecom ? "group-hover:text-[#0072BC]" : "group-hover:text-primary"
+            )} />
             <span className="truncate font-medium">{time} • {duration}</span>
           </div>
           <div className="flex items-center gap-2">
-            <MapPin className="h-4 w-4 flex-shrink-0" />
+            <MapPin className={cn(
+              "h-4 w-4 flex-shrink-0 transition-colors",
+              isEthioTelecom ? "group-hover:text-[#0072BC]" : "group-hover:text-primary"
+            )} />
             <span className="truncate font-medium">{location}</span>
           </div>
           <div className="flex items-center gap-2 justify-between">
             <div className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
+              <Users className={cn(
+                "h-4 w-4 transition-colors",
+                isEthioTelecom ? "group-hover:text-[#0072BC]" : "group-hover:text-primary"
+              )} />
               <span className="font-semibold">{attendees || 0}</span>
             </div>
             <div className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
+              <FileText className={cn(
+                "h-4 w-4 transition-colors",
+                isEthioTelecom ? "group-hover:text-[#0072BC]" : "group-hover:text-primary"
+              )} />
               <span className="font-semibold">{agendaItems || 0} items</span>
             </div>
           </div>
