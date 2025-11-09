@@ -5,6 +5,7 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { ScrollArea } from './ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+import { Input } from './ui/input';
 import { 
   Brain, 
   Mic, 
@@ -24,7 +25,8 @@ import {
   BarChart3,
   X,
   Minimize2,
-  Maximize2
+  Maximize2,
+  Send
 } from 'lucide-react';
 import { RealtimeAssistant, ConversationMessage } from '@/utils/RealtimeAssistant';
 import { supabase } from '@/integrations/supabase/client';
@@ -73,6 +75,7 @@ export function ExecutiveMeetingAdvisor({
   const [activeTab, setActiveTab] = useState('advisor');
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [inputText, setInputText] = useState('');
   const assistantRef = useRef<RealtimeAssistant | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const PROJECT_ID = 'xtqsvwhwzxcutwdbxzyn';
@@ -309,6 +312,19 @@ export function ExecutiveMeetingAdvisor({
     }
   };
 
+  const handleSendMessage = () => {
+    if (!inputText.trim() || !assistantRef.current) return;
+    assistantRef.current.sendTextMessage(inputText);
+    setInputText('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   if (isMinimized) {
     return (
       <motion.div
@@ -416,27 +432,48 @@ export function ExecutiveMeetingAdvisor({
             </TabsList>
 
             {/* AI Advisor Tab */}
-            <TabsContent value="advisor" className="flex-1 flex flex-col space-y-4 overflow-hidden">
+            <TabsContent value="advisor" className="flex-1 flex flex-col overflow-hidden">
               <Card className="flex-1 flex flex-col overflow-hidden border-2 border-primary/20">
                 <CardHeader className="pb-3 bg-muted/30">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Mic className={isAISpeaking ? 'animate-pulse text-green-500' : ''} />
-                    Live Conversation
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Mic className={isAISpeaking ? 'animate-pulse text-green-500' : ''} />
+                      Live Conversation
+                    </CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={status === 'connected' ? 'default' : 'secondary'} className="text-xs">
+                        {status === 'connected' ? (
+                          <>
+                            <Activity className="h-3 w-3 mr-1 animate-pulse" />
+                            Voice Active
+                          </>
+                        ) : (
+                          status
+                        )}
+                      </Badge>
+                    </div>
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Use voice or text to interact with your AI advisor
+                  </p>
                 </CardHeader>
-                <CardContent className="flex-1 p-4 overflow-hidden">
-                  <ScrollArea className="h-full pr-4" ref={scrollRef}>
+                <CardContent className="flex-1 p-4 overflow-hidden flex flex-col gap-4">
+                  <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <Brain className="h-16 w-16 mb-4 text-primary/30 animate-pulse" />
                         <h3 className="text-xl font-semibold mb-2">Your AI Advisor is Ready</h3>
-                        <p className="text-muted-foreground max-w-md">
+                        <p className="text-muted-foreground max-w-md mb-4">
                           Ask me about meeting strategy, tempo management, decision-making, 
                           or how to improve meeting outcomes. I'm analyzing everything in real-time.
                         </p>
+                        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                          <p>💬 Type a message below</p>
+                          <p>🎤 Or just speak naturally</p>
+                        </div>
                       </div>
                     ) : (
-                      <div className="space-y-4">
+                      <div className="space-y-4 pb-4">
                         {messages.map((msg, idx) => (
                           <motion.div
                             key={idx}
@@ -445,9 +482,9 @@ export function ExecutiveMeetingAdvisor({
                             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[75%] rounded-2xl p-4 ${
+                              className={`max-w-[75%] rounded-2xl p-4 shadow-sm ${
                                 msg.role === 'user'
-                                  ? 'bg-primary text-primary-foreground'
+                                  ? 'bg-gradient-to-br from-blue-600 to-purple-600 text-white'
                                   : 'bg-muted border border-border'
                               }`}
                             >
@@ -460,14 +497,14 @@ export function ExecutiveMeetingAdvisor({
                         ))}
                         {isAISpeaking && (
                           <div className="flex justify-start">
-                            <div className="bg-muted rounded-2xl p-4 border border-border">
+                            <div className="bg-muted rounded-2xl p-4 border border-border shadow-sm">
                               <div className="flex items-center gap-2">
                                 <div className="flex gap-1">
                                   <div className="w-2 h-2 bg-primary rounded-full animate-bounce" />
                                   <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
                                   <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
                                 </div>
-                                <span className="text-sm text-muted-foreground">Speaking...</span>
+                                <span className="text-sm text-muted-foreground">AI is speaking...</span>
                               </div>
                             </div>
                           </div>
@@ -475,6 +512,38 @@ export function ExecutiveMeetingAdvisor({
                       </div>
                     )}
                   </ScrollArea>
+
+                  {/* Text Input Area */}
+                  <div className="border-t pt-4">
+                    <div className="flex gap-2">
+                      <Input
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyDown={handleKeyPress}
+                        placeholder={status === 'connected' ? 'Type a message or speak...' : 'Connecting...'}
+                        disabled={status !== 'connected'}
+                        className="flex-1"
+                      />
+                      <Button
+                        onClick={handleSendMessage}
+                        disabled={!inputText.trim() || status !== 'connected'}
+                        size="icon"
+                        className="shrink-0"
+                      >
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
+                      {status === 'connected' ? (
+                        <>
+                          <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                          Voice is active - speak naturally or type your questions
+                        </>
+                      ) : (
+                        'Connecting to AI advisor...'
+                      )}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
