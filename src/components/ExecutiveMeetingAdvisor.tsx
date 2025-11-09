@@ -26,12 +26,14 @@ import {
   X,
   Minimize2,
   Maximize2,
-  Send
+  Send,
+  History
 } from 'lucide-react';
 import { RealtimeAssistant, ConversationMessage } from '@/utils/RealtimeAssistant';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { AdvisorHistoryViewer } from './AdvisorHistoryViewer';
 
 interface ExecutiveMeetingAdvisorProps {
   meetingId: string;
@@ -76,6 +78,8 @@ export function ExecutiveMeetingAdvisor({
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
   const [inputText, setInputText] = useState('');
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
   const assistantRef = useRef<RealtimeAssistant | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const PROJECT_ID = 'xtqsvwhwzxcutwdbxzyn';
@@ -109,6 +113,7 @@ export function ExecutiveMeetingAdvisor({
       if (assistantRef.current) {
         assistantRef.current.disconnect();
       }
+      endConversationSession();
     };
   }, []);
 
@@ -118,12 +123,81 @@ export function ExecutiveMeetingAdvisor({
     }
   }, [messages]);
 
+  const createConversationSession = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return null;
+
+      const { data, error } = await supabase
+        .from('advisor_conversations')
+        .insert({
+          meeting_id: meetingId,
+          user_id: user.id,
+          started_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data.id;
+    } catch (error) {
+      console.error('Failed to create conversation session:', error);
+      return null;
+    }
+  };
+
+  const saveMessageToHistory = async (message: ConversationMessage) => {
+    if (!conversationId) return;
+
+    try {
+      await supabase
+        .from('advisor_messages')
+        .insert({
+          conversation_id: conversationId,
+          role: message.role,
+          content: message.content,
+          timestamp: message.timestamp.toISOString()
+        });
+    } catch (error) {
+      console.error('Failed to save message:', error);
+    }
+  };
+
+  const endConversationSession = async () => {
+    if (!conversationId) return;
+
+    try {
+      // Extract key insights from the conversation
+      const insights = keyPoints.slice(0, 5).map(kp => ({
+        content: kp.content,
+        category: kp.category,
+        confidence: kp.confidence
+      }));
+
+      await supabase
+        .from('advisor_conversations')
+        .update({
+          ended_at: new Date().toISOString(),
+          key_insights: insights
+        })
+        .eq('id', conversationId);
+    } catch (error) {
+      console.error('Failed to end conversation:', error);
+    }
+  };
+
   const connectAdvisor = async () => {
     try {
+      // Create conversation session
+      const sessionId = await createConversationSession();
+      setConversationId(sessionId);
+
       const assistant = new RealtimeAssistant(
         PROJECT_ID,
         (message) => {
           setMessages(prev => [...prev, message]);
+          // Save to history
+          saveMessageToHistory(message);
           // Extract key points from AI responses
           if (message.role === 'assistant' && message.content.length > 50) {
             extractKeyPoint(message.content);
@@ -409,7 +483,7 @@ export function ExecutiveMeetingAdvisor({
 
         <CardContent className="flex-1 p-6 overflow-hidden">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-4 mb-4">
+            <TabsList className="grid w-full grid-cols-5 mb-4">
               <TabsTrigger value="advisor" className="flex items-center gap-2">
                 <Brain className="h-4 w-4" />
                 AI Advisor
@@ -428,6 +502,10 @@ export function ExecutiveMeetingAdvisor({
               <TabsTrigger value="success" className="flex items-center gap-2">
                 <TrendingUp className="h-4 w-4" />
                 Success Metrics
+              </TabsTrigger>
+              <TabsTrigger value="history" className="flex items-center gap-2">
+                <History className="h-4 w-4" />
+                History
               </TabsTrigger>
             </TabsList>
 
@@ -743,6 +821,11 @@ export function ExecutiveMeetingAdvisor({
                   </motion.div>
                 ))}
               </div>
+            </TabsContent>
+
+            {/* History Tab */}
+            <TabsContent value="history" className="flex-1 overflow-hidden">
+              <AdvisorHistoryViewer meetingId={meetingId} currentConversationId={conversationId} />
             </TabsContent>
           </Tabs>
         </CardContent>
