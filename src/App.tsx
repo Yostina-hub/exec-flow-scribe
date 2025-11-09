@@ -77,6 +77,7 @@ const App = () => (
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/meetings" element={<Meetings />} />
               <Route path="/meetings/:id" element={<MeetingDetail />} />
+              <Route path="/meeting/:id" element={<MeetingDetail />} />
               <Route path="/meetings/:meetingId/minutes" element={<MinutesEditor />} />
               <Route path="/drive" element={<DriveIntegration />} />
               <Route path="/notebooks" element={<NotebooksLibrary />} />

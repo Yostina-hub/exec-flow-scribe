@@ -35,7 +35,7 @@ export default function ExecutiveAdvisor() {
   }, [user?.id]);
 
   const launchAdvisor = (meetingId: string) => {
-    navigate(`/meeting/${meetingId}`);
+    navigate(`/meetings/${meetingId}`);
     // Trigger advisor to open via custom event
     setTimeout(() => {
       const event = new CustomEvent('openExecutiveAdvisor');
