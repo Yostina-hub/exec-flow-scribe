@@ -160,7 +160,7 @@ export default function SignatureApproval() {
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'ar' ? 'Arabic' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -341,15 +341,15 @@ export default function SignatureApproval() {
                     )}
                   </Button>
                   <Button
-                    variant={currentLanguage === 'ar' ? 'default' : 'outline'}
+                    variant={currentLanguage === 'or' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handleLanguageToggle('ar')}
+                    onClick={() => handleLanguageToggle('or')}
                     disabled={isTranslating}
                   >
-                    {isTranslating && currentLanguage !== 'ar' ? (
+                    {isTranslating && currentLanguage !== 'or' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'العربية'
+                      'Afaan Oromo'
                     )}
                   </Button>
                 </div>

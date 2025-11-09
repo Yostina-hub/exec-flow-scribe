@@ -364,7 +364,7 @@ export class OpenAIRealtimeClient {
             const lang = detectLanguage(transcript);
             console.log('✅ Built-in transcription received:', transcript.substring(0, 100), 'lang:', lang);
             // Bias future recognition when confident
-            if ((lang === 'am' || lang === 'ar') && this.sessionLanguage !== lang) {
+            if ((lang === 'am' || lang === 'or') && this.sessionLanguage !== lang) {
               await this.updateSessionLanguageBias(lang);
             } else if (lang === 'en' && this.sessionLanguage) {
               await this.updateSessionLanguageBias(null);

@@ -83,7 +83,7 @@ export const GenerateMinutesDialog = ({
         
         // Detect language
         const detected = detectLanguage(latest.content);
-        if (detected === 'am' || detected === 'en' || detected === 'ar') {
+        if (detected === 'am' || detected === 'en' || detected === 'or') {
           setDetectedLanguage(detected);
           setCurrentLanguage(detected);
         }
@@ -150,7 +150,7 @@ export const GenerateMinutesDialog = ({
       
       // Detect language (default to Amharic)
       const detected = detectLanguage(data.minutes);
-      if (detected === 'am' || detected === 'en' || detected === 'ar') {
+      if (detected === 'am' || detected === 'en' || detected === 'or') {
         setDetectedLanguage(detected);
         setCurrentLanguage(detected);
       } else {
@@ -161,7 +161,7 @@ export const GenerateMinutesDialog = ({
       toast({
         title: 'Success!',
         description: 'Meeting minutes generated successfully in ' + 
-          (detected === 'am' ? 'Amharic' : detected === 'ar' ? 'Arabic' : 'English'),
+          (detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : 'English'),
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
@@ -226,7 +226,7 @@ export const GenerateMinutesDialog = ({
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'ar' ? 'Arabic' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -246,7 +246,7 @@ export const GenerateMinutesDialog = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    const langSuffix = currentLanguage === 'am' ? '-amharic' : currentLanguage === 'ar' ? '-arabic' : '-english';
+    const langSuffix = currentLanguage === 'am' ? '-amharic' : currentLanguage === 'or' ? '-oromo' : '-english';
     a.download = `meeting-minutes${langSuffix}-${new Date().toISOString().split('T')[0]}.md`;
     document.body.appendChild(a);
     a.click();

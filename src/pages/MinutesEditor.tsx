@@ -33,7 +33,7 @@ export default function MinutesEditor() {
   const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
   const [minutes, setMinutes] = useState('');
   const [originalMinutes, setOriginalMinutes] = useState('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [selectedSegment, setSelectedSegment] = useState<TranscriptSegment | null>(null);
@@ -239,7 +239,7 @@ export default function MinutesEditor() {
         
         // Detect language
         const detected = detectLanguage(minutesData.content);
-        if (detected === 'am' || detected === 'en' || detected === 'ar') {
+        if (detected === 'am' || detected === 'en' || detected === 'or') {
           setCurrentLanguage(detected);
         }
       } else {
@@ -314,7 +314,7 @@ export default function MinutesEditor() {
         
         // Detect language
         const detected = detectLanguage(data.minutes);
-        if (detected === 'am' || detected === 'en' || detected === 'ar') {
+        if (detected === 'am' || detected === 'en' || detected === 'or') {
           setCurrentLanguage(detected);
         } else {
           setCurrentLanguage('am');
@@ -356,7 +356,7 @@ export default function MinutesEditor() {
         setCurrentLanguage(targetLang);
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'ar' ? 'Arabic' : 'English'}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : 'English'}`,
         });
       }
     } catch (error: any) {
