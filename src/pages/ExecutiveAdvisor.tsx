@@ -7,6 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Brain, Sparkles, TrendingUp, Calendar, ChevronRight, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck } from 'lucide-react';
+import { TempoBalanceEngine } from '@/components/TempoBalanceEngine';
+import { EngagementHeatmap } from '@/components/EngagementHeatmap';
+import { DecisionDensityTracker } from '@/components/DecisionDensityTracker';
+import { CognitiveFatigueIndex } from '@/components/CognitiveFatigueIndex';
+import { MeetingFlowOrchestrator } from '@/components/MeetingFlowOrchestrator';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ExecutiveMeetingAdvisor } from '@/components/ExecutiveMeetingAdvisor';
@@ -763,8 +768,12 @@ export default function ExecutiveAdvisor() {
         </Card>
       )}
 
-      <Tabs defaultValue="intelligence" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="consultant" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="consultant" className="gap-2">
+            <Sparkles className="h-4 w-4" />
+            Real-Time Consultant
+          </TabsTrigger>
           <TabsTrigger value="intelligence" className="gap-2">
             <Brain className="h-4 w-4" />
             AI Intelligence
@@ -782,6 +791,59 @@ export default function ExecutiveAdvisor() {
             Documents
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="consultant" className="space-y-6">
+          {selectedMeeting && (
+            <div className="space-y-6">
+              {/* Hero Section for Real-Time Consultant */}
+              <Card className="border-0 bg-gradient-to-br from-primary/10 via-secondary/5 to-primary/5 shadow-xl">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-secondary shadow-lg">
+                      <Sparkles className="h-6 w-6 text-white animate-pulse" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl font-display">AI-Powered Real-Time Meeting Consultant</CardTitle>
+                      <CardDescription className="text-base mt-1">
+                        Revolutionary cognitive assistant monitoring and optimizing meeting flow in real-time
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+
+              {/* Main Consultant Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <TempoBalanceEngine 
+                  meetingId={selectedMeetingId}
+                  meetingDuration={60}
+                  agendaItems={5}
+                  currentProgress={45}
+                />
+                <DecisionDensityTracker 
+                  meetingId={selectedMeetingId}
+                  meetingDuration={60}
+                  startTime={selectedMeeting.start_time}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <EngagementHeatmap meetingId={selectedMeetingId} />
+                <CognitiveFatigueIndex 
+                  meetingId={selectedMeetingId}
+                  meetingDuration={60}
+                  startTime={selectedMeeting.start_time}
+                />
+              </div>
+
+              <MeetingFlowOrchestrator 
+                meetingId={selectedMeetingId}
+                meetingDuration={60}
+                startTime={selectedMeeting.start_time}
+              />
+            </div>
+          )}
+        </TabsContent>
 
         <TabsContent value="intelligence" className="space-y-6">
           <Suspense fallback={<Skeleton className="h-96 w-full" />}>
