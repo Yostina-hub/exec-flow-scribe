@@ -196,21 +196,11 @@ export const TranscriptionSettings = () => {
               className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="auto">Auto-detect (Recommended - includes speaker identification)</option>
-              <option value="am">Amharic (አማርኛ) - Best with OpenAI Realtime</option>
+              <option value="am">Amharic (አማርኛ)</option>
+              <option value="ti">Tigrinya (ትግርኛ)</option>
               <option value="en">English</option>
-              <option value="ar">Arabic (العربية)</option>
-              <option value="fr">French (Français)</option>
-              <option value="es">Spanish (Español)</option>
-              <option value="de">German (Deutsch)</option>
-              <option value="it">Italian (Italiano)</option>
-              <option value="pt">Portuguese (Português)</option>
-              <option value="ru">Russian (Русский)</option>
-              <option value="zh">Chinese (中文)</option>
-              <option value="ja">Japanese (日本語)</option>
-              <option value="ko">Korean (한국어)</option>
-              <option value="hi">Hindi (हिन्दी)</option>
-              <option value="sw">Swahili</option>
-              <option value="so">Somali</option>
+              <option value="or">Afaan Oromo</option>
+              <option value="so">Af-Soomaali (Somali)</option>
             </select>
             <p className="text-xs text-muted-foreground">
               Auto-detect automatically identifies the language and speakers. All transcriptions are stored with speaker identification and timestamps.
