@@ -218,6 +218,35 @@ export function matchDueDate(transcript: string): { dueDate: string } | null {
   return null;
 }
 
+export function matchReminder(transcript: string): { reminderText: string } | null {
+  const normalized = transcript.toLowerCase().trim();
+  
+  // Reminder patterns
+  const patterns = [
+    /(?:remind|reminder)\s+(?:me\s+)?(?:about\s+)?(?:this\s+)?(.+)/i,
+    /(?:set|create|add)\s+(?:a\s+)?reminder\s+(?:for|at)\s+(.+)/i,
+    /(?:alert|notify)\s+(?:me\s+)?(.+)/i,
+  ];
+  
+  for (const pattern of patterns) {
+    const match = transcript.match(pattern);
+    if (match && match[1]) {
+      let reminderText = match[1].trim();
+      // Remove trailing words that might be captured
+      reminderText = reminderText.replace(/\s+(please|thanks|thank you)$/i, '').trim();
+      
+      // Must have some time-related keywords
+      const hasTimeKeyword = /tomorrow|today|hour|hours|day|days|minute|minutes|am|pm|deadline|due|before|monday|tuesday|wednesday|thursday|friday|saturday|sunday|next|this/i.test(reminderText);
+      
+      if (hasTimeKeyword) {
+        return { reminderText };
+      }
+    }
+  }
+  
+  return null;
+}
+
 export function getCommandsByCategory(category: VoiceCommand['category']): VoiceCommand[] {
   return ALL_COMMANDS.filter(cmd => cmd.category === category);
 }

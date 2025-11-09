@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Mic, MicOff, Command, Volume2, VolumeX } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, matchPriorityChange, matchDueDate, type VoiceCommand } from '@/utils/voiceCommands';
+import { ALL_COMMANDS, matchCommand, matchDictation, matchAssignment, matchPriorityChange, matchDueDate, matchReminder, type VoiceCommand } from '@/utils/voiceCommands';
 import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceCommandControllerProps {
@@ -62,7 +62,14 @@ export const VoiceCommandController = ({
       const transcript = event.results[last][0].transcript.trim();
       
       if (event.results[last].isFinal) {
-        // Check for due date change first
+        // Check for reminder setting first
+        const reminderMatch = matchReminder(transcript);
+        if (reminderMatch) {
+          handleReminder(reminderMatch.reminderText);
+          return;
+        }
+
+        // Check for due date change
         const dueDateChange = matchDueDate(transcript);
         if (dueDateChange) {
           handleDueDateChange(dueDateChange.dueDate);
@@ -254,6 +261,73 @@ export const VoiceCommandController = ({
         variant: 'destructive',
       });
       speakFeedback('Failed to change due date');
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setLastCommand('');
+    }, 5000);
+  }, [lastCreatedActionId, voiceEnabled, toast]);
+
+  const handleReminder = useCallback(async (reminderText: string) => {
+    if (!lastCreatedActionId) {
+      toast({
+        title: 'No Recent Action',
+        description: 'Create an action first before setting reminder',
+        variant: 'destructive',
+      });
+      speakFeedback('No action to set reminder for');
+      return;
+    }
+
+    setLastCommand(`Setting reminder: ${reminderText.substring(0, 40)}...`);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    if (voiceEnabled) {
+      playCommandSound();
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      speakFeedback('Setting reminder');
+      
+      const { data, error } = await supabase.functions.invoke('set-task-reminder', {
+        body: { 
+          actionId: lastCreatedActionId,
+          reminderText 
+        }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        toast({
+          title: 'Reminder Set',
+          description: data.message,
+        });
+        speakFeedback('Reminder set successfully');
+      } else {
+        throw new Error(data.error || 'Failed to set reminder');
+      }
+    } catch (error: any) {
+      console.error('Reminder error:', error);
+      toast({
+        title: 'Reminder Failed',
+        description: error.message || 'Could not set reminder',
+        variant: 'destructive',
+      });
+      speakFeedback('Failed to set reminder');
     }
 
     timeoutRef.current = setTimeout(() => {

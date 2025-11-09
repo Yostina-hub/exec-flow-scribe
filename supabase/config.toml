@@ -266,3 +266,6 @@ verify_jwt = false
 
 [functions.update-task-due-date]
 verify_jwt = false
+
+[functions.set-task-reminder]
+verify_jwt = true

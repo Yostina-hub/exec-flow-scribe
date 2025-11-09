@@ -366,8 +366,147 @@ Create powerful workflows by chaining commands:
 "Make this due Friday"
 → Sets deadline to Friday
 
-Result: High priority task for John due Friday, all done hands-free!
+"Remind me about this 1 day before deadline"
+→ Sets reminder 24 hours before due date
+
+Result: High priority task for John due Friday with automatic reminder, all done hands-free!
 ```
+
+---
+
+## ⏰ Voice Reminder Control (NEW!)
+
+Set task reminders using natural language time expressions. Never miss an important deadline!
+
+### How It Works
+
+1. **Create an action first** (using voice dictation or UI)
+2. **Optionally set a due date** if using deadline-relative reminders
+3. **Say reminder command** with natural language time
+4. **System sets reminder** and notifies you at the specified time
+
+### Reminder Commands
+
+| What You Say | Reminder Set |
+|-------------|-------------|
+| "Remind me about this tomorrow at 2pm" | Tomorrow at 2:00 PM |
+| "Set reminder for 3 hours before deadline" | 3 hours before due date |
+| "Reminder in 2 days" | 2 days from now |
+| "Notify me at 9am tomorrow" | Tomorrow at 9:00 AM |
+| "Alert me 1 day before due date" | 24 hours before deadline |
+| "Remind me next Monday at 10am" | Next Monday at 10:00 AM |
+| "Set reminder for today at 3pm" | Today at 3:00 PM |
+| "Alert me in 4 hours" | 4 hours from now |
+
+### Supported Time Formats
+
+**Absolute Time (Specific Date/Time):**
+- "tomorrow at 2pm" - Specific day and time
+- "next Monday at 9am" - Future day of week with time
+- "today at 3pm" - Same day at specific time
+- "Friday at 10am" - This coming Friday
+
+**Relative to Now:**
+- "in 2 hours" - 2 hours from current time
+- "in 3 days" - 3 days from now
+- "in 30 minutes" - 30 minutes from now
+
+**Relative to Deadline:**
+- "3 hours before deadline" - Before due date
+- "1 day before due date" - 24 hours before deadline
+- "2 hours before due" - 2 hours before task due
+- **Note:** Task must have a due date set first
+
+### Smart Time Parsing
+
+The system intelligently understands:
+- **"tomorrow at 2pm"** = Next day at 14:00
+- **"next Monday"** = Monday of next week (defaults to 9am)
+- **"in 3 hours"** = Exactly 3 hours from now
+- **"before deadline"** = Relative to task's due date
+
+### Complete Workflow Example
+
+```
+You say: "Add action: Submit expense report"
+System: ✓ Creates action
+
+You say: "Make this due Friday"
+System: ✓ Sets due date to Friday
+
+You say: "Remind me 1 day before deadline"
+System: ✓ Calculates reminder time (Thursday)
+        ✓ Stores reminder in task metadata
+        ✓ Creates notification entry
+        ✓ Confirms "Reminder set for Thursday at [time]"
+```
+
+### Reminder Types
+
+**Absolute Reminders:**
+- Specific date and time
+- Independent of task due date
+- Example: "Remind me tomorrow at 2pm"
+
+**Relative Reminders:**
+- Based on task due date
+- Requires due date to be set first
+- Example: "3 hours before deadline"
+
+### Notifications
+
+- **In-App**: Notification appears in notification center
+- **Email**: Optional email reminder (if enabled)
+- **Browser**: Desktop notification at reminder time
+- **Multiple Reminders**: Can set multiple reminders per task
+
+### Permissions
+
+- **Task Creator** can always set reminders
+- **Task Assignee** can set reminders for their tasks
+- **Meeting Participants** can set reminders for meeting tasks
+
+### Troubleshooting
+
+**Problem**: "Cannot set reminder relative to deadline - no due date set"
+- ✓ Set a due date first
+- ✓ Use absolute time instead ("tomorrow at 2pm")
+- ✓ Deadline-relative reminders need an existing due date
+
+**Problem**: "Could not parse reminder time"
+- ✓ Use simpler phrases: "tomorrow at 2pm", "in 3 hours"
+- ✓ Include time-related keywords (tomorrow, hours, days, etc.)
+- ✓ Speak clearly for accurate recognition
+
+**Problem**: "No recent action"
+- ✓ Create an action first
+- ✓ Reminder command must follow within 30 seconds
+- ✓ Only works with tasks you just created
+
+### Advanced Workflow Examples
+
+**Morning Review:**
+```
+"Add action: Review daily standup notes"
+"Make this due today"
+"Remind me at 8am tomorrow"
+```
+
+**Project Deadline:**
+```
+"Add action: Submit project deliverables priority high"
+"Make this due next Friday"
+"Remind me 2 days before deadline"
+"Also remind me 6 hours before deadline"
+```
+
+**Quick Follow-up:**
+```
+"Add action: Call client about proposal"
+"Remind me in 2 hours"
+```
+
+---
 
 ### 📊 Meeting Functions
 
