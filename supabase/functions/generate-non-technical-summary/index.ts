@@ -33,9 +33,9 @@ serve(async (req) => {
 Write the summary in AMHARIC using Ge'ez script.
 Use Ethiopian punctuation: ። (full stop), ፣ (comma), ፦ (colon)
 Use simple, everyday Amharic words that anyone can understand.`,
-      'ar': `
-Write the summary in ARABIC.
-Use simple, everyday Arabic words that anyone can understand.`,
+      'or': `
+Write the summary in AFAAN OROMO using Latin script (Qubee).
+Use simple, everyday Oromo words that anyone can understand.`,
       'en': `
 Write the summary in ENGLISH.
 Use simple, everyday words that anyone can understand.`

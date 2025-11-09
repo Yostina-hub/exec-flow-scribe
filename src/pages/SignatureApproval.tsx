@@ -33,7 +33,7 @@ export default function SignatureApproval() {
   const { user, loading: authLoading } = useAuth();
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedMinutes, setTranslatedMinutes] = useState<string>('');
 
@@ -135,13 +135,13 @@ export default function SignatureApproval() {
   useEffect(() => {
     if (signatureRequest?.package_data?.minutes) {
       const detected = detectLanguage(signatureRequest.package_data.minutes);
-      if (detected === 'am' || detected === 'en' || detected === 'ar') {
+      if (detected === 'am' || detected === 'en' || detected === 'or') {
         setCurrentLanguage(detected);
       }
     }
   }, [signatureRequest]);
 
-  const handleLanguageToggle = useCallback(async (targetLang: 'am' | 'en' | 'ar') => {
+  const handleLanguageToggle = useCallback(async (targetLang: 'am' | 'en' | 'or') => {
     if (targetLang === currentLanguage || !signatureRequest?.package_data?.minutes) return;
     
     setIsTranslating(true);

@@ -29,7 +29,7 @@ serve(async (req) => {
     const languageNames: Record<string, string> = {
       'am': 'Amharic (using Ge\'ez script)',
       'en': 'English',
-      'ar': 'Arabic'
+      'or': 'Afaan Oromo (using Latin script - Qubee)'
     };
 
     const languageInstructions: Record<string, string> = {
@@ -50,12 +50,22 @@ MAINTAIN:
 • All markdown headers (##)
 • All lists and tables
 • Professional business Amharic vocabulary`,
-      'ar': `
-ARABIC REQUIREMENTS:
-• Write in Modern Standard Arabic
-• Right-to-left formatting
-• Professional business terminology
-• Maintain same structure as original`,
+      'or': `
+CRITICAL AFAAN OROMO WRITING REQUIREMENTS:
+• Write ENTIRELY in AFAAN OROMO using Latin script (Qubee alphabet)
+• Use standard Oromo orthography with proper diacritics
+• ALL headings, titles, content MUST be in Afaan Oromo
+
+OROMO SPECIAL CHARACTERS (MANDATORY):
+• Use correct Oromo letters: a, b, c, d, e, f, g, h, i, j, k, l, m, n, o, p, q, r, s, t, u, w, x, y, z
+• Proper diacritics: ' (apostrophe for glottal stop)
+• Double consonants where appropriate (bb, dd, ff, gg, etc.)
+
+MAINTAIN:
+• Same structure and formatting as original
+• All markdown headers (##)
+• All lists and tables
+• Professional business Oromo vocabulary`,
       'en': `
 ENGLISH REQUIREMENTS:
 • Clear, professional business English

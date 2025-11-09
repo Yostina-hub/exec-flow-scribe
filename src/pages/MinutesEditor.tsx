@@ -337,7 +337,7 @@ export default function MinutesEditor() {
     }
   };
 
-  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'ar') => {
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or') => {
     if (targetLang === currentLanguage || !originalMinutes) return;
     
     setIsTranslating(true);
@@ -702,15 +702,15 @@ export default function MinutesEditor() {
                     )}
                   </Button>
                   <Button
-                    variant={currentLanguage === 'ar' ? 'default' : 'outline'}
+                    variant={currentLanguage === 'or' ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => handleLanguageToggle('ar')}
+                    onClick={() => handleLanguageToggle('or')}
                     disabled={isTranslating || !originalMinutes}
                   >
-                    {isTranslating && currentLanguage !== 'ar' ? (
+                    {isTranslating && currentLanguage !== 'or' ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      'العربية'
+                      'Afaan Oromo'
                     )}
                   </Button>
                 </div>

@@ -34,8 +34,8 @@ export const GenerateMinutesDialog = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [minutes, setMinutes] = useState<string>('');
   const [originalMinutes, setOriginalMinutes] = useState<string>('');
-  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'ar'>('am');
-  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'ar'>('am');
+  const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or'>('am');
+  const [detectedLanguage, setDetectedLanguage] = useState<'am' | 'en' | 'or'>('am');
   const [isTranslating, setIsTranslating] = useState(false);
   const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
   const [showNonTechnical, setShowNonTechnical] = useState(false);
@@ -207,7 +207,7 @@ export const GenerateMinutesDialog = ({
     }
   };
 
-  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'ar') => {
+  const handleLanguageToggle = async (targetLang: 'am' | 'en' | 'or') => {
     if (targetLang === currentLanguage) return;
     
     setIsTranslating(true);
@@ -342,18 +342,18 @@ export const GenerateMinutesDialog = ({
                   English
                 </Button>
                 <Button
-                  variant={currentLanguage === 'ar' ? 'default' : 'outline'}
+                  variant={currentLanguage === 'or' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handleLanguageToggle('ar')}
+                  onClick={() => handleLanguageToggle('or')}
                   disabled={isTranslating}
                   className="gap-2"
                 >
-                  {isTranslating && currentLanguage !== 'ar' ? (
+                  {isTranslating && currentLanguage !== 'or' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Languages className="h-4 w-4" />
                   )}
-                  العربية
+                  Afaan Oromo
                 </Button>
               </div>
               
