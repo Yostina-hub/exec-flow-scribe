@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, Users, Calendar, PlayCircle, ChevronRight, X, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, CheckCircle2, AlertCircle, PenTool } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ExecutiveSignatureRequests } from '@/components/ExecutiveSignatureRequests';
 import { ExecutiveMeetingAdvisor } from '@/components/ExecutiveMeetingAdvisor';
-import { format } from 'date-fns';
+import { format, isFuture, isPast } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load AI feature components
@@ -31,6 +31,8 @@ interface Meeting {
   location: string;
   status: string;
   meeting_type: string;
+  signature_requests?: any[];
+  distribution_approvals?: any[];
 }
 
 export default function ExecutiveAdvisor() {
@@ -40,6 +42,7 @@ export default function ExecutiveAdvisor() {
   const [loading, setLoading] = useState(true);
   const [selectedMeeting, setSelectedMeeting] = useState<Meeting | null>(null);
   const [showAdvisorModal, setShowAdvisorModal] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'upcoming' | 'completed' | 'signoff-pending' | 'approved'>('all');
 
   const fetchMeetings = async () => {
     if (!user?.id) return;
@@ -47,12 +50,15 @@ export default function ExecutiveAdvisor() {
     setLoading(true);
     const { data } = await supabase
       .from('meetings')
-      .select('*')
+      .select(`
+        *,
+        signature_requests(id, status, completed_at)
+      `)
       .order('start_time', { ascending: false })
-      .limit(20);
+      .limit(50);
     
     if (data) {
-      setMeetings(data);
+      setMeetings(data as any);
     }
     setLoading(false);
   };
@@ -80,6 +86,50 @@ export default function ExecutiveAdvisor() {
     setSelectedMeetingId(null);
     setSelectedMeeting(null);
   };
+
+  // Categorize meetings
+  const categorizeMeeting = (meeting: Meeting) => {
+    const now = new Date();
+    const startTime = new Date(meeting.start_time);
+    
+    // Check signature status
+    const hasSignatureRequests = meeting.signature_requests && meeting.signature_requests.length > 0;
+    const allSignaturesCompleted = hasSignatureRequests && meeting.signature_requests?.every(sr => sr.status === 'completed');
+    const hasPendingSignatures = hasSignatureRequests && meeting.signature_requests?.some(sr => sr.status === 'pending' || sr.status === 'pending_signature');
+    
+    if (meeting.status === 'completed') {
+      if (hasPendingSignatures) {
+        return 'signoff-pending';
+      }
+      if (hasSignatureRequests && allSignaturesCompleted) {
+        return 'approved';
+      }
+      return 'completed';
+    }
+    
+    if (isFuture(startTime) || meeting.status === 'scheduled') {
+      return 'upcoming';
+    }
+    
+    return 'completed';
+  };
+
+  const filteredMeetings = meetings.filter(meeting => {
+    if (categoryFilter === 'all') return true;
+    return categorizeMeeting(meeting) === categoryFilter;
+  });
+
+  const getMeetingCounts = () => {
+    return {
+      all: meetings.length,
+      upcoming: meetings.filter(m => categorizeMeeting(m) === 'upcoming').length,
+      completed: meetings.filter(m => categorizeMeeting(m) === 'completed').length,
+      signoffPending: meetings.filter(m => categorizeMeeting(m) === 'signoff-pending').length,
+      approved: meetings.filter(m => categorizeMeeting(m) === 'approved').length,
+    };
+  };
+
+  const counts = getMeetingCounts();
 
   if (!user) {
     return (
@@ -183,74 +233,137 @@ export default function ExecutiveAdvisor() {
         {/* Signature Requests */}
         <ExecutiveSignatureRequests />
 
-        {/* Meetings List */}
-        <Card className="border-2 border-primary/20">
+        {/* Meetings List with Categories */}
+        <Card className="border-0 glass backdrop-blur-xl">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5" />
-                  Select Meeting for AI Analysis
+                <CardTitle className="flex items-center gap-2 text-2xl font-display">
+                  <Calendar className="h-6 w-6 text-primary" />
+                  Meeting Intelligence Center
                 </CardTitle>
-                <CardDescription>Choose a meeting to view AI-powered insights and analytics</CardDescription>
+                <CardDescription className="mt-2">
+                  AI-powered insights and analytics for your meetings
+                </CardDescription>
               </div>
             </div>
+
+            {/* Category Tabs */}
+            <Tabs value={categoryFilter} onValueChange={(v) => setCategoryFilter(v as any)} className="w-full mt-4">
+              <TabsList className="grid w-full grid-cols-5 bg-muted/50 backdrop-blur-sm">
+                <TabsTrigger value="all" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  All
+                  <Badge variant="secondary" className="ml-1">{counts.all}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="upcoming" className="gap-2">
+                  <Clock className="h-4 w-4" />
+                  Upcoming
+                  <Badge variant="secondary" className="ml-1">{counts.upcoming}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="completed" className="gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Completed
+                  <Badge variant="secondary" className="ml-1">{counts.completed}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="signoff-pending" className="gap-2">
+                  <PenTool className="h-4 w-4" />
+                  Sign-off
+                  <Badge variant="secondary" className="ml-1 bg-warning/10 text-warning">{counts.signoffPending}</Badge>
+                </TabsTrigger>
+                <TabsTrigger value="approved" className="gap-2">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Approved
+                  <Badge variant="secondary" className="ml-1 bg-success/10 text-success">{counts.approved}</Badge>
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardHeader>
+          
           <CardContent>
-            {loading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-20 w-full" />
-                ))}
-              </div>
-            ) : meetings.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calendar className="h-12 w-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">No meetings found</p>
-              </div>
-            ) : (
-              <ScrollArea className="h-[500px] pr-4">
-                <div className="space-y-2">
-                  {meetings.map((meeting) => (
-                    <Card 
-                      key={meeting.id} 
-                      className="hover:shadow-md transition-all cursor-pointer hover:border-primary/50"
-                      onClick={() => handleMeetingSelect(meeting.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <h4 className="font-semibold mb-2">{meeting.title}</h4>
-                            <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                {meeting.start_time ? format(new Date(meeting.start_time), 'PPP') : 'TBD'}
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
-                              </span>
-                              {meeting.location && (
-                                <span className="flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
-                                  {meeting.location}
-                                </span>
-                              )}
-                              <Badge variant="outline" className="ml-auto">
-                                {meeting.status}
-                              </Badge>
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm">
-                            <ChevronRight className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
+            <ScrollArea className="h-[600px] pr-4">
+              {loading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Skeleton key={i} className="h-28 w-full" />
                   ))}
                 </div>
-              </ScrollArea>
-            )}
+              ) : filteredMeetings.length === 0 ? (
+                <div className="text-center py-12">
+                  <Calendar className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+                  <p className="text-muted-foreground font-medium">No meetings found in this category</p>
+                  <p className="text-sm text-muted-foreground mt-2">Try selecting a different category</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredMeetings.map((meeting) => {
+                    const category = categorizeMeeting(meeting);
+                    const categoryConfig = {
+                      'upcoming': { color: 'bg-secondary/10 text-secondary border-secondary/20', icon: Clock, label: 'Upcoming' },
+                      'completed': { color: 'bg-success/10 text-success border-success/20', icon: CheckCircle2, label: 'Completed' },
+                      'signoff-pending': { color: 'bg-warning/10 text-warning border-warning/20', icon: PenTool, label: 'Sign-off Pending' },
+                      'approved': { color: 'bg-primary/10 text-primary border-primary/20', icon: CheckCircle2, label: 'Approved' },
+                    };
+                    const config = categoryConfig[category as keyof typeof categoryConfig];
+                    const CategoryIcon = config?.icon;
+                    
+                    return (
+                      <Card
+                        key={meeting.id}
+                        className="cursor-pointer hover:shadow-xl transition-all duration-300 border-0 glass backdrop-blur-sm group hover:-translate-y-1"
+                        onClick={() => handleMeetingSelect(meeting.id)}
+                      >
+                        <CardContent className="p-6">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-3">
+                                <h3 className="font-semibold text-lg group-hover:text-primary transition-colors font-display">
+                                  {meeting.title}
+                                </h3>
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Calendar className="h-4 w-4" />
+                                  {format(new Date(meeting.start_time), "EEEE, MMMM d, yyyy")}
+                                </div>
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Clock className="h-4 w-4" />
+                                  {format(new Date(meeting.start_time), "h:mm a")} - {format(new Date(meeting.end_time), "h:mm a")}
+                                </div>
+                                {meeting.location && (
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <MapPin className="h-4 w-4" />
+                                    {meeting.location}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex flex-col items-end gap-3">
+                              {config && CategoryIcon && (
+                                <Badge className={`gap-1.5 backdrop-blur-sm border ${config.color}`}>
+                                  <CategoryIcon className="h-3.5 w-3.5" />
+                                  {config.label}
+                                </Badge>
+                              )}
+                              <Badge
+                                className={`backdrop-blur-sm ${
+                                  meeting.status === 'completed' ? 'bg-success/10 text-success border-success/20' :
+                                  meeting.status === 'in_progress' ? 'bg-secondary/10 text-secondary border-secondary/20' :
+                                  'bg-muted/50 text-muted-foreground border-border'
+                                }`}
+                              >
+                                {meeting.status.replace('_', ' ')}
+                              </Badge>
+                               <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-2 transition-all" />
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
