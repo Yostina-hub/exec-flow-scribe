@@ -133,7 +133,7 @@ export function EmailDistributionDialog({
       const failedCount = distributionData.results?.filter((r: DistributionResult) => r.status === 'failed').length || 0;
 
       // Log distribution to history
-      await supabase.from('distribution_history').insert({
+      const { data: historyRecord } = await supabase.from('distribution_history').insert({
         meeting_id: meetingId,
         pdf_generation_id: pdfData.pdf_generation_id,
         status: failedCount === 0 ? 'success' : sentCount > 0 ? 'partial' : 'failed',
@@ -142,7 +142,21 @@ export function EmailDistributionDialog({
         failed_count: failedCount,
         recipient_details: distributionData.results,
         distribution_type: 'manual',
-      });
+      }).select().single();
+
+      // If there are failures, add to retry queue
+      if (failedCount > 0 && historyRecord) {
+        const failedRecipients = distributionData.results?.filter((r: DistributionResult) => r.status === 'failed') || [];
+        const nextRetry = new Date();
+        nextRetry.setMinutes(nextRetry.getMinutes() + 2); // First retry in 2 minutes
+
+        await supabase.from('distribution_retry_queue').insert({
+          distribution_history_id: historyRecord.id,
+          meeting_id: meetingId,
+          failed_recipients: failedRecipients,
+          next_retry_at: nextRetry.toISOString(),
+        });
+      }
 
       if (failedCount === 0) {
         toast({

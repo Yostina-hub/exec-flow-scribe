@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { RetryStatusBadge } from './RetryStatusBadge';
 
 interface DistributionHistoryViewerProps {
   open: boolean;
@@ -40,6 +41,27 @@ export function DistributionHistoryViewer({
   useEffect(() => {
     if (open) {
       fetchHistory();
+      
+      // Set up realtime subscription for retry updates
+      const channel = supabase
+        .channel('distribution-history-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'distribution_history',
+            filter: `meeting_id=eq.${meetingId}`,
+          },
+          () => {
+            fetchHistory();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [open, meetingId]);
 
@@ -149,7 +171,12 @@ export function DistributionHistoryViewer({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>{getDistributionTypeBadge(record.distribution_type)}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {getDistributionTypeBadge(record.distribution_type)}
+                          <RetryStatusBadge distributionHistoryId={record.id} />
+                        </div>
+                      </TableCell>
                       <TableCell>{getStatusBadge(record.status)}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

@@ -1201,6 +1201,69 @@ export type Database = {
           },
         ]
       }
+      distribution_retry_queue: {
+        Row: {
+          created_at: string | null
+          distribution_history_id: string
+          failed_recipients: Json
+          id: string
+          last_error: string | null
+          last_retry_at: string | null
+          max_retries: number
+          meeting_id: string
+          metadata: Json | null
+          next_retry_at: string
+          retry_count: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          distribution_history_id: string
+          failed_recipients?: Json
+          id?: string
+          last_error?: string | null
+          last_retry_at?: string | null
+          max_retries?: number
+          meeting_id: string
+          metadata?: Json | null
+          next_retry_at: string
+          retry_count?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          distribution_history_id?: string
+          failed_recipients?: Json
+          id?: string
+          last_error?: string | null
+          last_retry_at?: string | null
+          max_retries?: number
+          meeting_id?: string
+          metadata?: Json | null
+          next_retry_at?: string
+          retry_count?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distribution_retry_queue_distribution_history_id_fkey"
+            columns: ["distribution_history_id"]
+            isOneToOne: false
+            referencedRelation: "distribution_history"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distribution_retry_queue_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       distribution_schedules: {
         Row: {
           created_at: string | null

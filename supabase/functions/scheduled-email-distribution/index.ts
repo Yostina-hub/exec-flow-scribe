@@ -127,8 +127,8 @@ serve(async (req) => {
         const sentCount = results.filter((r: any) => r.status === 'sent').length;
         const failedCount = results.filter((r: any) => r.status === 'failed').length;
 
-        // Log successful distribution
-        await supabaseClient.from('distribution_history').insert({
+        // Log distribution
+        const { data: historyRecord } = await supabaseClient.from('distribution_history').insert({
           meeting_id: schedule.meeting_id,
           distribution_schedule_id: schedule.id,
           pdf_generation_id: pdfData.pdf_generation_id,
@@ -138,7 +138,21 @@ serve(async (req) => {
           failed_count: failedCount,
           recipient_details: results,
           distribution_type: 'scheduled',
-        });
+        }).select().single();
+
+        // If there are failures, add to retry queue
+        if (failedCount > 0 && historyRecord) {
+          const failedRecipients = results.filter((r: any) => r.status === 'failed');
+          const nextRetry = new Date();
+          nextRetry.setMinutes(nextRetry.getMinutes() + 2); // First retry in 2 minutes
+
+          await supabaseClient.from('distribution_retry_queue').insert({
+            distribution_history_id: historyRecord.id,
+            meeting_id: schedule.meeting_id,
+            failed_recipients: failedRecipients,
+            next_retry_at: nextRetry.toISOString(),
+          });
+        }
 
         console.log(`✓ Successfully distributed to ${sentCount}/${attendeeEmails.length} recipients for schedule ${schedule.id}`);
         // Update schedule
