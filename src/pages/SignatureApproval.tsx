@@ -26,6 +26,11 @@ const NonTechnicalSummaryDialog = lazy(() =>
     default: module.NonTechnicalSummaryDialog 
   }))
 );
+const EmailDistributionDialog = lazy(() =>
+  import('@/components/signoff/EmailDistributionDialog').then(module => ({
+    default: module.EmailDistributionDialog
+  }))
+);
 
 export default function SignatureApproval() {
   const { requestId } = useParams();
@@ -34,6 +39,7 @@ export default function SignatureApproval() {
   const { user, loading: authLoading } = useAuth();
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
+  const [showDistribution, setShowDistribution] = useState(false);
   const { preferredLanguage } = useLanguagePreference();
   const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -129,9 +135,12 @@ export default function SignatureApproval() {
     localStorageCache.remove(`signature_request_${requestId}`);
     refetch();
     toast({
-      title: 'Success',
-      description: 'Sign-off processed successfully',
+      title: '✓ Document Approved',
+      description: 'Opening email distribution...',
     });
+    setSignOffOpen(false);
+    // Show distribution dialog after approval
+    setTimeout(() => setShowDistribution(true), 500);
   }, [requestId, refetch, toast]);
 
   useEffect(() => {
@@ -457,6 +466,17 @@ export default function SignatureApproval() {
             meetingTitle="Meeting Minutes"
             open={showNonTechnical}
             onOpenChange={setShowNonTechnical}
+          />
+        </Suspense>
+      )}
+
+      {showDistribution && signatureRequest?.meeting_id && (
+        <Suspense fallback={null}>
+          <EmailDistributionDialog
+            open={showDistribution}
+            onOpenChange={setShowDistribution}
+            meetingId={signatureRequest.meeting_id}
+            signatureRequestId={requestId!}
           />
         </Suspense>
       )}
