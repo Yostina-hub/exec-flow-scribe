@@ -3453,6 +3453,8 @@ export type Database = {
       }
       meeting_questions: {
         Row: {
+          ai_suggestion: string | null
+          ai_suggestion_confidence: number | null
           answer: string | null
           answered_at: string | null
           answered_by: string | null
@@ -3463,6 +3465,8 @@ export type Database = {
           question: string
         }
         Insert: {
+          ai_suggestion?: string | null
+          ai_suggestion_confidence?: number | null
           answer?: string | null
           answered_at?: string | null
           answered_by?: string | null
@@ -3473,6 +3477,8 @@ export type Database = {
           question: string
         }
         Update: {
+          ai_suggestion?: string | null
+          ai_suggestion_confidence?: number | null
           answer?: string | null
           answered_at?: string | null
           answered_by?: string | null

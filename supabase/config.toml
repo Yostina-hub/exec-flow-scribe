@@ -279,6 +279,9 @@ verify_jwt = true
 [functions.generate-live-questions]
 verify_jwt = true
 
+[functions.generate-answer-suggestion]
+verify_jwt = true
+
 [functions.analyze-meeting-effectiveness]
 verify_jwt = true
 

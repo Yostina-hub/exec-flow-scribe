@@ -32,7 +32,8 @@ import {
   Search,
   Filter,
   Calendar,
-  MessageCircleQuestion
+  MessageCircleQuestion,
+  Loader2
 } from 'lucide-react';
 import { RealtimeAssistant, ConversationMessage } from '@/utils/RealtimeAssistant';
 import { supabase } from '@/integrations/supabase/client';
@@ -90,6 +91,8 @@ interface ParticipantQuestion {
   answeredBy?: string;
   answeredByName?: string;
   answeredAt?: string;
+  ai_suggestion?: string;
+  ai_suggestion_confidence?: number;
 }
 
 export function ExecutiveMeetingAdvisor({ 
@@ -144,6 +147,7 @@ export function ExecutiveMeetingAdvisor({
   // Participant questions state
   const [participantQuestions, setParticipantQuestions] = useState<ParticipantQuestion[]>([]);
   const [answerText, setAnswerText] = useState<{ [key: string]: string }>({});
+  const [generatingSuggestion, setGeneratingSuggestion] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     connectAdvisor();
@@ -362,7 +366,9 @@ export function ExecutiveMeetingAdvisor({
           answer: q.answer || undefined,
           answeredBy: q.answered_by || undefined,
           answeredByName: q.answered_by ? profileMap.get(q.answered_by) : undefined,
-          answeredAt: q.answered_at || undefined
+          answeredAt: q.answered_at || undefined,
+          ai_suggestion: q.ai_suggestion || undefined,
+          ai_suggestion_confidence: q.ai_suggestion_confidence || undefined
         }));
 
         setParticipantQuestions(questions);
@@ -416,9 +422,48 @@ export function ExecutiveMeetingAdvisor({
           title: "Question Detected",
           description: `Question from ${speakerName} added to Q&A`,
         });
+
+        // Generate AI suggestion automatically
+        generateAISuggestion(data.id);
       }
     } catch (error) {
       console.error('Error saving participant question:', error);
+    }
+  };
+
+  const generateAISuggestion = async (questionId: string) => {
+    setGeneratingSuggestion(prev => ({ ...prev, [questionId]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-answer-suggestion', {
+        body: { questionId, meetingId }
+      });
+
+      if (error) throw error;
+
+      if (data?.suggestion) {
+        // Update local state
+        setParticipantQuestions(prev =>
+          prev.map(q =>
+            q.id === questionId
+              ? {
+                  ...q,
+                  ai_suggestion: data.suggestion,
+                  ai_suggestion_confidence: data.confidence
+                }
+              : q
+          )
+        );
+      }
+    } catch (error: any) {
+      console.error('Error generating AI suggestion:', error);
+      toast({
+        title: "Suggestion Error",
+        description: error.message || "Failed to generate AI suggestion",
+        variant: "destructive"
+      });
+    } finally {
+      setGeneratingSuggestion(prev => ({ ...prev, [questionId]: false }));
     }
   };
 
@@ -1011,6 +1056,48 @@ export function ExecutiveMeetingAdvisor({
                                       </div>
                                     </div>
                                   </div>
+
+                                  {/* AI Suggestion */}
+                                  {generatingSuggestion[q.id] ? (
+                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                                      <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                        <span>AI is analyzing meeting context to suggest an answer...</span>
+                                      </div>
+                                    </div>
+                                  ) : q.ai_suggestion ? (
+                                    <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-md p-3 space-y-2">
+                                      <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                          <Sparkles className="h-4 w-4 text-blue-600" />
+                                          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">AI Suggested Answer</span>
+                                        </div>
+                                        <Badge variant="secondary" className="text-xs">
+                                          {Math.round((q.ai_suggestion_confidence || 0) * 100)}% confidence
+                                        </Badge>
+                                      </div>
+                                      <p className="text-sm text-blue-900 dark:text-blue-100">{q.ai_suggestion}</p>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setAnswerText({ ...answerText, [q.id]: q.ai_suggestion || '' })}
+                                        className="w-full text-xs"
+                                      >
+                                        Use This Answer
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => generateAISuggestion(q.id)}
+                                      className="w-full text-xs"
+                                    >
+                                      <Sparkles className="h-3 w-3 mr-2" />
+                                      Generate AI Suggestion
+                                    </Button>
+                                  )}
+
                                   <div className="flex gap-2">
                                     <Input
                                       placeholder="Type your answer..."
