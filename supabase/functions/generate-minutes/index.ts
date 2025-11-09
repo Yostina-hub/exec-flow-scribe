@@ -79,7 +79,7 @@ try {
       { data: actionItems }
     ] = await Promise.all([
       supabase.from("ai_provider_preferences").select("*").eq("user_id", user.id).maybeSingle(),
-      supabase.from("meetings").select("*, agenda_items(*)").eq("id", meetingId).single(),
+      supabase.from("meetings").select("*, agenda_items(*)").eq("id", meetingId).maybeSingle(),
       supabase.from("transcriptions").select("*").eq("meeting_id", meetingId).order("timestamp", { ascending: true }),
       supabase.from("decisions").select("*").eq("meeting_id", meetingId),
       supabase.from("meeting_polls").select("*, poll_responses(*)").eq("meeting_id", meetingId).order("created_at", { ascending: true }),
@@ -93,10 +93,10 @@ try {
     
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
-    if (meetingError) {
+    if (meetingError || !meeting) {
       console.error("Meeting fetch error:", meetingError);
       return new Response(
-        JSON.stringify({ error: "Meeting not found or access denied" }),
+        JSON.stringify({ error: meetingError ? "Error fetching meeting data" : "Meeting not found" }),
         { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
