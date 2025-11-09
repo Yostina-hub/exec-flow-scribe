@@ -16,6 +16,8 @@ export default {
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
         display: ['Space Grotesk', 'system-ui', 'sans-serif'],
+        ethiopic: ['Noto Sans Ethiopic', 'system-ui', 'sans-serif'],
+        'ethiopic-serif': ['Noto Serif Ethiopic', 'Noto Sans Ethiopic', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
