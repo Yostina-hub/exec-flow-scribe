@@ -95,6 +95,7 @@ export const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (isGuest) {
     const allowedGuestRoutes = [
       '/',
+      '/guest',
       '/quick-join',
       '/auth'
     ];
