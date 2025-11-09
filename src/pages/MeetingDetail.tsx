@@ -881,6 +881,8 @@ const MeetingDetail = () => {
                   ) : (
                     <LiveTranscriptPanel 
                       transcriptions={realtimeTranscriptions || []}
+                      liveInterimText={interim}
+                      liveLanguage={interimLanguage}
                       onAddAction={(content) => {
                         toast({ title: "Action added", description: content });
                       }}

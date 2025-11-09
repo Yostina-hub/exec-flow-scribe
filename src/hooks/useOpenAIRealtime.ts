@@ -54,7 +54,7 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean, speakerNa
           .eq('user_id', user.id)
           .maybeSingle();
 
-        const userLanguage = data?.language || 'auto';
+        const userLanguage = data?.language || 'am-ET'; // Default to Amharic
         setLanguage(userLanguage);
         console.log('🌐 Using transcription language:', userLanguage);
 
@@ -117,9 +117,13 @@ export const useOpenAIRealtime = (meetingId: string, enabled: boolean, speakerNa
         await client.connect(meetingId);
         setIsConnected(true);
         console.log('✅ [PRODUCTION] Client connected successfully');
+        const languageDisplay = userLanguage.startsWith('am') ? 'Amharic (አማርኛ)' 
+                              : userLanguage.startsWith('ar') ? 'Arabic'
+                              : userLanguage.startsWith('en') ? 'English'
+                              : 'Auto-detect';
         toast({
           title: 'Connected',
-          description: `Real-time transcription active (${userLanguage === 'am' ? 'Amharic' : userLanguage === 'ar' ? 'Arabic' : 'Auto-detect'})`,
+          description: `Real-time transcription active (${languageDisplay})`,
         });
       } catch (err: any) {
         console.error('❌ [PRODUCTION] Failed to connect:', err);

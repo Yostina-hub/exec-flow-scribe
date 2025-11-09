@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { useState, lazy, Suspense } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { LanguageSelector } from "@/components/LanguageSelector";
+import { TranscriptionProviderToggle } from "@/components/TranscriptionProviderToggle";
 
 const AudioToMinutesWorkflow = lazy(() => import("@/components/AudioToMinutesWorkflow").then(m => ({ default: m.AudioToMinutesWorkflow })));
 
@@ -145,21 +147,8 @@ export const MeetingRightDock = ({
                 <CardTitle className="text-sm">Capture Settings</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Language</label>
-                  <select className="w-full h-9 px-3 rounded-md border bg-background text-sm">
-                    <option>Amharic (አማርኛ)</option>
-                    <option>English (US)</option>
-                    <option>Auto-detect</option>
-                  </select>
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs text-muted-foreground">Provider</label>
-                  <select className="w-full h-9 px-3 rounded-md border bg-background text-sm">
-                    <option>OpenAI Realtime</option>
-                    <option>Browser Speech</option>
-                  </select>
-                </div>
+                <LanguageSelector />
+                <TranscriptionProviderToggle />
               </CardContent>
             </Card>
           </TabsContent>

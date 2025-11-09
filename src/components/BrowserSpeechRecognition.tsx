@@ -41,33 +41,57 @@ export const BrowserSpeechRecognition = ({
 
   const [selectedLanguage, setSelectedLanguage] = useState(externalLanguage);
   
+  // Load language from backend on mount (default to Amharic)
+  useEffect(() => {
+    const loadLanguage = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const { data } = await supabase
+          .from('transcription_preferences')
+          .select('language')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        const preferredLang = data?.language || 'am-ET'; // Default to Amharic
+        console.log('🌍 BrowserSpeech loaded language:', preferredLang);
+        setSelectedLanguage(preferredLang);
+        setLanguage(preferredLang);
+      } catch (err) {
+        console.error('Failed to load language:', err);
+      }
+    };
+    loadLanguage();
+  }, [setLanguage]);
+  
   // Sync with external language prop
   useEffect(() => {
-    setSelectedLanguage(externalLanguage);
-    setLanguage(externalLanguage);
-  }, [externalLanguage, setLanguage]);
+    if (externalLanguage !== selectedLanguage) {
+      setSelectedLanguage(externalLanguage);
+      setLanguage(externalLanguage);
+    }
+  }, [externalLanguage, selectedLanguage, setLanguage]);
   const [recordingDuration, setRecordingDuration] = useState(0);
   const recordingStartTimeRef = useRef<number | null>(null);
   const pausedDurationRef = useRef<number>(0);
   const pauseStartTimeRef = useRef<number | null>(null);
   const recordingTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Load persisted state on mount
-  useEffect(() => {
-    const savedState = localStorage.getItem(`transcription-${meetingId}`);
-    if (savedState) {
-      try {
-        const state = JSON.parse(savedState);
-        if (state.transcript) {
-          // Restore transcript would require speech recognition API support
-          // For now we just log it
-          console.log('Found saved transcript:', state.transcript.substring(0, 100));
-        }
-      } catch (e) {
-        console.error('Failed to load transcription state:', e);
-      }
-    }
-  }, [meetingId]);
+          // Load persisted state on mount
+          useEffect(() => {
+            const savedState = localStorage.getItem(`transcription-${meetingId}`);
+            if (savedState) {
+              try {
+                const state = JSON.parse(savedState);
+                if (state.transcript) {
+                  console.log('Found saved transcript:', state.transcript.substring(0, 100));
+                }
+              } catch (e) {
+                console.error('Failed to load transcription state:', e);
+              }
+            }
+          }, [meetingId]);
   
   // Persist transcript to localStorage
   useEffect(() => {
@@ -274,13 +298,16 @@ export const BrowserSpeechRecognition = ({
       const text = transcript.trim();
       if (text && text.length - lastSavedLenRef.current >= 10) {
         try {
+          const { data: { user } } = await supabase.auth.getUser();
+          const speakerName = user?.user_metadata?.full_name || userName;
+
           await supabase.functions.invoke('save-transcription', {
             body: {
               meetingId,
               content: text.slice(lastSavedLenRef.current),
               timestamp: new Date().toISOString(),
-              speaker: userName,
-              detectedLanguage: selectedLanguage,
+              speaker: speakerName,
+              detectedLanguage: selectedLanguage, // Use current language setting
             },
           });
           lastSavedLenRef.current = text.length;
@@ -327,13 +354,16 @@ export const BrowserSpeechRecognition = ({
 
       // Save transcription text (either browser-recognized or server-side)
       if (finalText) {
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const speakerName = currentUser?.user_metadata?.full_name || userName;
+
         const { error: saveErr } = await supabase.functions.invoke('save-transcription', {
           body: {
             meetingId,
             content: finalText,
             timestamp: new Date().toISOString(),
-            speaker: userName,
-            detectedLanguage: selectedLanguage,
+            speaker: speakerName,
+            detectedLanguage: selectedLanguage, // Use current language setting
           },
         });
         if (saveErr) throw saveErr;
