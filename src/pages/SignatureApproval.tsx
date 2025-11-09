@@ -329,6 +329,18 @@ export default function SignatureApproval() {
                     )}
                   </Button>
                   <Button
+                    variant={currentLanguage === 'ti' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleLanguageToggle('ti')}
+                    disabled={isTranslating}
+                  >
+                    {isTranslating && currentLanguage !== 'ti' ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      'ትግርኛ'
+                    )}
+                  </Button>
+                  <Button
                     variant={currentLanguage === 'en' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => handleLanguageToggle('en')}
@@ -362,18 +374,6 @@ export default function SignatureApproval() {
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       'Af-Soomaali'
-                    )}
-                  </Button>
-                  <Button
-                    variant={currentLanguage === 'ti' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => handleLanguageToggle('ti')}
-                    disabled={isTranslating}
-                  >
-                    {isTranslating && currentLanguage !== 'ti' ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      'ትግርኛ'
                     )}
                   </Button>
                 </div>

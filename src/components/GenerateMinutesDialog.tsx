@@ -328,6 +328,20 @@ export const GenerateMinutesDialog = ({
                   አማርኛ
                 </Button>
                 <Button
+                  variant={currentLanguage === 'ti' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleLanguageToggle('ti')}
+                  disabled={isTranslating}
+                  className="gap-2"
+                >
+                  {isTranslating && currentLanguage !== 'ti' ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Languages className="h-4 w-4" />
+                  )}
+                  ትግርኛ
+                </Button>
+                <Button
                   variant={currentLanguage === 'en' ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => handleLanguageToggle('en')}
@@ -368,20 +382,6 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   Af-Soomaali
-                </Button>
-                <Button
-                  variant={currentLanguage === 'ti' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleLanguageToggle('ti')}
-                  disabled={isTranslating}
-                  className="gap-2"
-                >
-                  {isTranslating && currentLanguage !== 'ti' ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Languages className="h-4 w-4" />
-                  )}
-                  ትግርኛ
                 </Button>
               </div>
               
