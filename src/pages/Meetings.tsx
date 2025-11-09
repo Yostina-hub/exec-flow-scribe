@@ -375,13 +375,6 @@ export default function Meetings() {
           
           <div className="relative z-10 flex flex-col lg:flex-row items-start justify-between gap-6">
             <div className="space-y-4 lg:space-y-5 flex-1">
-              <div className={`inline-flex items-center gap-2 px-4 lg:px-5 py-2 lg:py-2.5 rounded-full backdrop-blur-sm border-2 shadow-lg transition-all duration-300 hover:scale-105 ${isEthioTelecom ? 'bg-[#8DC63F]/20 border-[#8DC63F]/40' : 'bg-white/20 border-white/30'}`}>
-                <Calendar className={`h-4 w-4 lg:h-5 lg:w-5 ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-purple-400'}`} />
-                <span className={`text-sm lg:text-base font-semibold ${isEthioTelecom ? 'text-[#8DC63F]' : 'text-white'}`}>
-                  Meeting Management
-                </span>
-              </div>
-              
               <h1 className={`text-4xl lg:text-6xl font-black leading-tight animate-fade-in ${isEthioTelecom ? 'font-["Noto_Sans_Ethiopic"] text-gray-900' : 'font-["Space_Grotesk"] text-foreground'}`}>
                 Meetings
               </h1>
