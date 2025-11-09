@@ -76,20 +76,26 @@ export default function ExecutiveAdvisor() {
     const startTime = new Date(meeting.start_time);
     
     const hasSignatureRequests = meeting.signature_requests && meeting.signature_requests.length > 0;
-    const allSignaturesCompleted = hasSignatureRequests && 
-      meeting.signature_requests?.every(sr => sr.status === 'completed');
-    const hasCompletedSignatures = hasSignatureRequests && allSignaturesCompleted;
-    const hasPendingSignatures = hasSignatureRequests && 
-      meeting.signature_requests?.some(sr => sr.status === 'pending');
     
-    if (hasCompletedSignatures) {
-      return 'signoff_approved';
+    // Priority: Check signature status first if meeting has signature requests
+    if (hasSignatureRequests) {
+      const allSignaturesCompleted = meeting.signature_requests?.every(
+        sr => sr.status === 'completed' || sr.status === 'approved'
+      );
+      const hasPendingSignatures = meeting.signature_requests?.some(
+        sr => sr.status === 'pending' || sr.status === 'requested'
+      );
+      
+      if (allSignaturesCompleted) {
+        return 'signoff_approved';
+      }
+      
+      if (hasPendingSignatures) {
+        return 'signoff_pending';
+      }
     }
     
-    if (hasPendingSignatures) {
-      return 'signoff_pending';
-    }
-    
+    // For meetings without signature requests, categorize by status/time
     if (meeting.status === 'completed') {
       return 'completed';
     }
