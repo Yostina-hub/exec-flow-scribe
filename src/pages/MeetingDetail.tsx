@@ -52,6 +52,11 @@ import { useRealtimeTranscriptions } from "@/hooks/useRealtimeTranscriptions";
 import { useAuth } from "@/hooks/useAuth";
 import { useOptimizedQuery } from "@/hooks/useOptimizedQuery";
 import { localStorageCache } from "@/utils/localStorage";
+import { LiveMeetingStatusBar } from "@/components/LiveMeetingStatusBar";
+import { AISummaryStrip } from "@/components/AISummaryStrip";
+import { ChapterTimeline } from "@/components/ChapterTimeline";
+import { LiveTranscriptPanel } from "@/components/LiveTranscriptPanel";
+import { MeetingRightDock } from "@/components/MeetingRightDock";
 
 // Lazy load heavy components
 const LiveTranscription = lazy(() => import("@/components/LiveTranscription").then(m => ({ default: m.LiveTranscription })));
@@ -802,642 +807,158 @@ const MeetingDetail = () => {
 
   return (
     <TimeBasedAccessGuard meetingId={meetingId}>
-      <div className="space-y-6 animate-fade-in">
-        {/* Header */}
-        <div className="flex items-start gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link to="/meetings">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div className="flex-1">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h1 className="text-4xl font-bold tracking-tight">
-                  {meetingTitle}
-                </h1>
-                <div className="flex items-center gap-3 mt-3 flex-wrap">
-                  <Badge variant="warning">In Progress</Badge>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    <span>Today</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>2:00 PM - 3:30 PM (90 min)</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    <span>{meetingLocation}</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2">
-                {/* Participants - Direct Join Virtual Room Button */}
-                {meeting?.created_by !== userId && meeting?.status !== 'completed' && (
-                  <Button
-                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
-                    onClick={() => setShowVirtualRoom(true)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Join Virtual Room
-                  </Button>
-                )}
-                
-                {meeting?.status === 'completed' && (
-                  <Badge variant="secondary" className="text-muted-foreground">
-                    Meeting Completed
-                  </Badge>
-                )}
-                
-                {(meeting.meeting_type === 'video_conference' && meeting.video_conference_url) && (
-                  <Button
-                    className="gap-2 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600"
-                    onClick={() => window.open(meeting.video_conference_url, '_blank')}
-                  >
-                    <Video className="h-4 w-4" />
-                    Join Video Call
-                  </Button>
-                )}
-                {meeting.meeting_type === 'virtual_room' && (
-                  <Button
-                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    onClick={() => setShowVirtualRoom(true)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Join Virtual Room
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => setShowShareDialog(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Share Meeting
-                </Button>
-                <Button
-                  variant="outline"
-                  className="gap-2 hover-scale transition-all"
-                  onClick={() => window.location.href = `/notebook?meeting=${id}`}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Open in Notebook
-                </Button>
-                
-                {/* Host-only 3-dot menu */}
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    {meeting?.created_by === userId && meeting?.status !== 'completed' && (
-                      <DropdownMenuItem onClick={async () => {
-                        if (!id) return;
-                        try {
-                          await supabase
-                            .from('meetings')
-                            .update({ 
-                              status: 'completed',
-                              actual_end_time: new Date().toISOString()
-                            })
-                            .eq('id', id);
-                          
-                          toast({
-                            title: 'Meeting completed',
-                            description: 'Minutes will be auto-generated if transcription is available',
-                          });
-                          
-                          // Refresh meeting data
-                          refetch();
-                        } catch (error) {
-                          console.error('Error completing meeting:', error);
-                          toast({
-                            title: 'Error',
-                            description: 'Failed to complete meeting',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Complete Meeting
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => setShowMinutesDialog(true)}>
-                      <Sparkles className="h-4 w-4 mr-2" />
-                      Generate Minutes
-                    </DropdownMenuItem>
-                    {meeting?.created_by === userId && (
-                      <DropdownMenuItem onClick={() => setShowRescheduleDialog(true)}>
-                        <Calendar className="h-4 w-4 mr-2" />
-                        Reschedule Meeting
-                      </DropdownMenuItem>
-                    )}
-                    {meeting?.created_by === userId && (
-                      <DropdownMenuItem onClick={() => setShowManageAttendeesDialog(true)}>
-                        <Users className="h-4 w-4 mr-2" />
-                        Manage Attendees
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem onClick={() => setShowViewMinutesDialog(true)}>
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Previous Minutes
-                    </DropdownMenuItem>
-                    {meeting?.created_by === userId && (
-                      <>
-                        <DropdownMenuItem onClick={() => setShowVirtualRoom(true)}>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          🌐 Launch Virtual Room
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setShowHostPanel(true)}>
-                          <Settings className="h-4 w-4 mr-2" />
-                          🎛️ Host Management Panel
-                        </DropdownMenuItem>
-                      </>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </div>
-          </div>
-        </div>
+      <div className="flex flex-col min-h-screen">
+        {/* Live Meeting Status Bar */}
+        <LiveMeetingStatusBar
+          meetingTitle={meetingTitle}
+          isRecording={isRecording}
+          recordingSeconds={recordingSeconds}
+          onStartRecording={() => {
+            setRecordingSeconds(0);
+            recordingStartTimeRef.current = null;
+            pausedDurationRef.current = 0;
+            pauseStartTimeRef.current = null;
+            startRecording();
+          }}
+          onStopRecording={stopRecording}
+          onShare={() => setShowShareDialog(true)}
+          onGenerateMinutes={() => setShowMinutesDialog(true)}
+        />
 
-        {/* Enhanced Meeting Controls */}
-<Card className="border-0 bg-gradient-to-br from-background via-muted/20 to-background backdrop-blur-xl overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-blue-500/10 animate-pulse" />
-          <CardContent className="pt-6 relative z-10">
-            <div className="flex items-center justify-between gap-4 flex-wrap">
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg animate-pulse">
-                    <Mic className="h-5 w-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-lg font-['Space_Grotesk']">Meeting in progress</p>
-                    <p className="text-sm text-muted-foreground">
-                      {completedItems} of {agendaData.length} agenda items completed
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-3 flex-wrap">
-                {!isRecording ? (
-                  <Button 
-                    onClick={() => { 
-                      setRecordingSeconds(0);
-                      recordingStartTimeRef.current = null;
-                      pausedDurationRef.current = 0;
-                      pauseStartTimeRef.current = null;
-                      startRecording(); 
-                    }} 
-                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
-                  >
+        {/* AI Summary Strip */}
+        <AISummaryStrip meetingId={meetingId} isRecording={isRecording} />
+
+        {/* Main Content Area */}
+        <div className="flex flex-1 overflow-hidden">
+          {/* Left: Primary Content */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="max-w-5xl mx-auto p-6 space-y-6">
+              {/* Primary Tabs - Clean & Focused */}
+              <Tabs defaultValue="transcript" className="space-y-6">
+                <TabsList className="inline-flex w-auto h-auto p-1 gap-2 bg-muted/50">
+                  <TabsTrigger value="transcript" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <Mic className="h-4 w-4" />
-                    Start Recording
-                  </Button>
-                ) : (
-                  <>
-                    {isPaused ? (
-                      <Button onClick={resumeRecording} variant="outline" className="gap-2 hover:scale-105 transition-all duration-300">
-                        <Play className="h-4 w-4" />
-                        Resume
-                      </Button>
-                    ) : (
-                      <Button onClick={pauseRecording} variant="outline" className="gap-2 hover:scale-105 transition-all duration-300">
-                        <Pause className="h-4 w-4" />
-                        Pause
-                      </Button>
-                    )}
-                    <Button onClick={stopRecording} variant="destructive" className="gap-2 hover:scale-105 transition-all duration-300 shadow-lg">
-                      <Square className="h-4 w-4" />
-                      Stop Recording
-                    </Button>
-                    <div className="flex items-center gap-2 px-4 py-2 bg-background/50 rounded-lg border">
-                      <Clock className="h-4 w-4 text-primary" />
-                      <span className="font-mono font-semibold tabular-nums">
-                        {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}
-                      </span>
-                    </div>
-                  </>
-                )}
-                {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
-                  <Button 
-                    className="gap-2 hover:scale-105 transition-all duration-300 bg-gradient-to-r from-green-500 to-emerald-500"
-                    onClick={() => window.open(meeting.video_conference_url, '_blank')}
-                  >
-                    <Video className="h-4 w-4" />
-                    Join Video
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="mt-4 relative">
-              <Progress value={progress} className="h-2" />
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 via-pink-500/20 to-blue-500/20 rounded-full blur-sm animate-pulse pointer-events-none" />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Main Content */}
-        <div className="space-y-6">
-          <Tabs
-              defaultValue={(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') ? "video" : "transcription"} 
-              className="w-full"
-              onValueChange={(value) => setActiveTab(value)}
-            >
-              <div className="w-full overflow-x-auto pb-2">
-                <TabsList className={`inline-flex w-auto min-w-full h-auto p-1 gap-1 ${isEthioTelecom ? 'bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 backdrop-blur-sm' : ''}`}>
-                {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                  <TabsTrigger value="video" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                    <Video className="h-4 w-4" />
-                    {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
+                    Transcript
                   </TabsTrigger>
-                )}
-                <TabsTrigger value="participants" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <Users className="h-4 w-4" />
-                  Participants
-                </TabsTrigger>
-                <TabsTrigger value="transcription" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <Mic className="h-4 w-4" />
-                  Live Transcription
-                </TabsTrigger>
-                <TabsTrigger value="agenda" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <ListChecks className="h-4 w-4" />
-                  Agenda
-                </TabsTrigger>
-                <TabsTrigger value="decisions" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <CheckCircle2 className="h-4 w-4" />
-                  Decisions
-                </TabsTrigger>
-                <TabsTrigger value="collaboration" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <MessageSquare className="h-4 w-4" />
-                  Collaboration
-                </TabsTrigger>
-                <TabsTrigger value="documents" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <FileText className="h-4 w-4" />
-                  Documents
-                </TabsTrigger>
-                <TabsTrigger value="signatures" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <FileSignature className="h-4 w-4" />
-                  Audio to Minutes
-                </TabsTrigger>
-                <TabsTrigger value="ai-intelligence" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                  <Brain className="h-4 w-4" />
-                  AI Intelligence
-                </TabsTrigger>
-              </TabsList>
-              </div>
+                  <TabsTrigger value="agenda" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <ListChecks className="h-4 w-4" />
+                    Agenda
+                  </TabsTrigger>
+                  <TabsTrigger value="actions" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
+                    <CheckCircle2 className="h-4 w-4" />
+                    Actions
+                  </TabsTrigger>
+                </TabsList>
 
-              {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                <TabsContent value="video" className="space-y-4">
-                  {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
-                    <JitsiMeetEmbed
-                      roomName={meeting.video_conference_url.split('/').pop() || 'meeting-room'}
-                      displayName={userFullName}
-                      meetingId={id}
-                      autoStartRecording={isRecording}
-                      onRecordingStart={() => {
-                        console.log('Jitsi recording started');
-                        toast({
-                          title: 'Conference Recording Started',
-                          description: 'Full conference audio will be captured and transcribed',
-                        });
-                      }}
-                      onRecordingStop={() => {
-                        console.log('Jitsi recording stopped');
-                        toast({
-                          title: 'Conference Recording Stopped',
-                          description: 'Processing recording for transcription...',
-                        });
-                      }}
-                      onMeetingEnd={() => {
-                        console.log('Jitsi meeting ended');
-                        toast({
-                          title: 'Meeting Ended',
-                          description: 'Video conference has ended',
-                        });
-                      }}
-                    />
-                  )}
-                  {meeting.meeting_type === 'virtual_room' && (
-                    <VirtualMeetingRoom 
-                      meetingId={id!} 
-                      isHost={meeting.created_by === userId}
-                      currentUserId={userId || ''}
-                    />
-                  )}
+                {/* Transcript Tab */}
+                <TabsContent value="transcript" className="mt-0">
+                  <LiveTranscriptPanel 
+                    transcriptions={realtimeTranscriptions}
+                    onAddAction={(content) => {
+                      toast({ title: "Action added", description: content });
+                    }}
+                    onAddDecision={(content) => {
+                      toast({ title: "Decision recorded", description: content });
+                    }}
+                  />
                 </TabsContent>
-              )}
 
-              <TabsContent value="participants" className="space-y-4">
-                <div className="space-y-4">
-                  {userId && userFullName && (
-                    <RealTimePresence
-                      meetingId={meetingId}
-                      currentUserId={userId}
-                      currentUserName={userFullName}
-                    />
-                  )}
-                  {meeting?.created_by === userId && (
-                    <AutoAssignmentControls
-                      meetingId={meetingId}
-                      isHost={true}
-                    />
-                  )}
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <ParticipantDashboard
-                      meetingId={meetingId}
-                      isHost={meeting?.created_by === userId}
-                      currentUserId={userId || ''}
-                    />
-                    <SpeakerQueue
-                      meetingId={meetingId}
-                      isHost={meeting?.created_by === userId}
-                      currentUserId={userId || ''}
-                    />
-                  </div>
-                </div>
-              </TabsContent>
-
-              {/* Keep mounted but hidden to preserve state - with sidebar layout */}
-              <div className={activeTab === 'transcription' ? 'block' : 'hidden'}>
-                <ProtectedElement meetingId={meetingId} elementType="transcriptions">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Content Area */}
-                    <div className="lg:col-span-2 space-y-4">
-                      <BrowserSpeechRecognition
-                        meetingId={meetingId}
-                        externalIsRecording={isRecording}
-                        isPaused={isPaused}
-                        onRecordingStart={startRecording}
-                        onRecordingStop={() => stopRecording()}
-                        onDurationChange={(s) => setRecordingSeconds(s)}
-                        selectedLanguage={transcriptionLanguage}
-                      />
-                      <MeetingAudioPlayback meetingId={meetingId} />
-                      <LiveTranscription 
-                        meetingId={meetingId} 
-                        isRecording={isRecording}
-                        currentUserName={userFullName || 'Unknown User'}
-                      />
-                    </div>
-
-                    {/* Right Sidebar - Settings & Quick Actions */}
-                    <div className="lg:col-span-1 space-y-4">
-                      {/* Transcription Controls */}
-                      {meeting?.created_by === userId && (
-                        <>
-                          <Card className="border-primary/20">
-                            <CardHeader className="pb-3">
-                              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                                <Languages className="h-4 w-4 text-primary" />
-                                Language Selection
-                              </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                              <Select
-                                value={transcriptionLanguage}
-                                onValueChange={setTranscriptionLanguage}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="am-ET">Amharic (አማርኛ)</SelectItem>
-                                  <SelectItem value="en-US">English (US)</SelectItem>
-                                  <SelectItem value="en-GB">English (UK)</SelectItem>
-                                  <SelectItem value="ar-SA">Arabic (العربية)</SelectItem>
-                                  <SelectItem value="es-ES">Spanish (Español)</SelectItem>
-                                  <SelectItem value="fr-FR">French (Français)</SelectItem>
-                                  <SelectItem value="de-DE">German (Deutsch)</SelectItem>
-                                  <SelectItem value="zh-CN">Chinese (中文)</SelectItem>
-                                  <SelectItem value="ja-JP">Japanese (日本語)</SelectItem>
-                                  <SelectItem value="ko-KR">Korean (한국어)</SelectItem>
-                                  <SelectItem value="hi-IN">Hindi (हिन्दी)</SelectItem>
-                                  <SelectItem value="sw-KE">Swahili (Kiswahili)</SelectItem>
-                                  <SelectItem value="so-SO">Somali (Soomaali)</SelectItem>
-                                  <SelectItem value="om-ET">Oromo (Oromoo)</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </CardContent>
-                          </Card>
-                          
-                          <TranscriptionProviderToggle />
-                        </>
-                      )}
-                      
-                      {/* Quick Actions */}
-                      <Card>
-                        <CardHeader>
-                          <CardTitle>Quick Actions</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="space-y-3">
-                            {/* AI-Powered Summary & Search */}
-                            <div className="space-y-2">
-                              <MeetingKeyPointsSummary meetingId={meetingId} />
-                              <MeetingKeywordSearch meetingId={meetingId} />
-                            </div>
-                            
-                            <Separator />
-                            
-                            <div className="space-y-2">
-                              <Button 
-                                variant="default" 
-                                className="w-full justify-start gap-2"
-                                onClick={() => setShowMinutesDialog(true)}
-                              >
-                                <FileText className="h-4 w-4" />
-                                Generate AI Minutes
-                              </Button>
-                              <Button 
-                                variant="outline" 
-                                className="w-full justify-start gap-2"
-                                onClick={() => navigate(`/meetings/${id}/minutes`)}
-                              >
-                                <FileText className="h-4 w-4" />
-                                Open Minutes Editor
-                              </Button>
-                              <AgendaIntakeForm
-                                meetingId={meetingId}
-                                trigger={
-                                  <Button variant="outline" className="w-full justify-start gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    Add Agenda Items
-                                  </Button>
-                                }
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                </ProtectedElement>
-              </div>
-
-              <TabsContent value="agenda" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Meeting Agenda</CardTitle>
-                    <CardDescription>
-                      Topics and time allocation for this meeting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {agendaData.map((item, index) => (
-                      <div key={item.id}>
-                        <div className="flex items-start gap-3 py-3">
-                          {getStatusIcon(item.status)}
-                          <div className="flex-1">
-                            <div className="flex items-start justify-between gap-2">
-                              <div>
-                                <p className="font-medium">{item.title}</p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Presenter: {item.presenter} • {item.duration}
-                                </p>
+                {/* Agenda Tab */}
+                <TabsContent value="agenda" className="mt-0">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Meeting Agenda</CardTitle>
+                      <CardDescription>
+                        Topics and time allocation for this meeting
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {agendaData.map((item, index) => (
+                        <div key={item.id}>
+                          <div className="flex items-start gap-3 py-3">
+                            {getStatusIcon(item.status)}
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <div>
+                                  <p className="font-medium">{item.title}</p>
+                                  <p className="text-sm text-muted-foreground mt-1">
+                                    Presenter: {item.presenter} • {item.duration}
+                                  </p>
+                                </div>
+                                <Badge
+                                  variant={
+                                    item.status === "completed"
+                                      ? "success"
+                                      : item.status === "in-progress"
+                                      ? "warning"
+                                      : "outline"
+                                  }
+                                  className="shrink-0"
+                                >
+                                  {item.status.replace("-", " ")}
+                                </Badge>
                               </div>
-                              <Badge
-                                variant={
-                                  item.status === "completed"
-                                    ? "success"
-                                    : item.status === "in-progress"
-                                    ? "warning"
-                                    : "outline"
-                                }
-                                className="shrink-0"
-                              >
-                                {item.status.replace("-", " ")}
-                              </Badge>
                             </div>
                           </div>
+                          {index < agendaData.length - 1 && <Separator />}
                         </div>
-                        {index < agendaData.length - 1 && <Separator />}
-                      </div>
-                    ))}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
 
-              <TabsContent value="decisions" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Key Decisions</CardTitle>
-                    <CardDescription>
-                      Important decisions made during this meeting
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {decisions.map((decision, index) => (
-                      <div key={decision.id}>
-                        <div className="flex gap-3 py-3">
-                          <CheckCircle2 className="h-5 w-5 text-success shrink-0 mt-0.5" />
+                {/* Actions Tab (merged Decisions) */}
+                <TabsContent value="actions" className="mt-0">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Decisions & Action Items</CardTitle>
+                      <CardDescription>
+                        Key decisions and tasks captured during the meeting
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      {decisions.map((decision) => (
+                        <div key={decision.id} className="flex items-start gap-3 py-3 border-b last:border-0">
+                          <CheckCircle2 className="h-5 w-5 text-success mt-0.5" />
                           <div className="flex-1">
-                            <p className="font-medium">{decision.decision}</p>
+                            <p className="text-sm">{decision.decision}</p>
                             <p className="text-xs text-muted-foreground mt-1">
                               {decision.timestamp}
                             </p>
                           </div>
                         </div>
-                        {index < decisions.length - 1 && <Separator />}
-                      </div>
-                    ))}
-                    {decisions.length === 0 && (
-                      <p className="text-sm text-muted-foreground text-center py-8">
-                        No decisions recorded yet
-                      </p>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
+                      ))}
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </div>
 
-
-              <TabsContent value="collaboration" className="space-y-6">
-                <LazyTabContent>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <LivePolling 
-                      meetingId={meetingId} 
-                      isHost={meeting?.created_by === userId} 
-                    />
-                    <CollaborativeNotes meetingId={meetingId} />
-                  </div>
-                  <MeetingBookmarks meetingId={meetingId} />
-                </LazyTabContent>
-              </TabsContent>
-
-
-              <TabsContent value="advanced" className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <BreakoutRoomsManager 
-                    meetingId={meetingId} 
-                    isHost={meeting?.created_by === userId} 
-                  />
-                  <div className="space-y-6">
-                    <MeetingTemplateManager />
-                    <NotificationPreferences />
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="documents" className="space-y-6">
-                <LazyTabContent>
-                  <ProtectedElement meetingId={meetingId} elementType="documents">
-                    <EnhancedDocumentsTab 
-                      meetingId={meetingId}
-                      meetingTitle={meeting?.title || 'Meeting'}
-                    />
-                    <div className="mt-6">
-                      <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
-                        <CardHeader>
-                          <CardTitle className="flex items-center gap-2">
-                            <Settings className="h-5 w-5 text-primary" />
-                            Document Management & Distribution
-                          </CardTitle>
-                          <CardDescription>
-                            Manage document distribution and integrations
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <MultiChannelDistribution meetingId={meetingId} />
-                          <IntegrationManager meetingId={meetingId} />
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </ProtectedElement>
-                </LazyTabContent>
-              </TabsContent>
-
-              <TabsContent value="signatures" className="space-y-4">
-                <LazyTabContent>
-                  <AudioToMinutesWorkflow meetingId={meetingId} />
-                </LazyTabContent>
-              </TabsContent>
-
-              <TabsContent value="ai-intelligence" className="space-y-4">
-                <LazyTabContent>
-                  <UnifiedEmotionIntelligence 
-                    meetingId={meetingId}
-                    onSemanticResultClick={(timestamp) => {
-                      toast({
-                        title: "Jumping to moment",
-                        description: `Seeking to ${timestamp}`,
-                      });
-                    }}
-                    onWaveformSeek={(time) => {
-                      toast({
-                        title: "Seeking",
-                        description: `Jumping to ${Math.floor(time / 60)}:${Math.floor(time % 60).toString().padStart(2, '0')}`,
-                      });
-                    }}
-                  />
-                </LazyTabContent>
-              </TabsContent>
-            </Tabs>
-
+          {/* Right: Dock Panel */}
+          <MeetingRightDock 
+            meetingId={meetingId}
+            participants={attendeesData}
+            documents={[]}
+          />
         </div>
 
+        {/* Chapter Timeline */}
+        <ChapterTimeline
+          markers={[
+            { id: "1", timestamp: 0, type: "speaker", label: "Meeting Start", speaker: "CEO" },
+            { id: "2", timestamp: 180, type: "topic", label: "Q4 Review", speaker: "CFO" },
+            { id: "3", timestamp: 420, type: "decision", label: "Budget Approved" },
+            { id: "4", timestamp: 720, type: "action", label: "Hiring Plan" },
+          ]}
+          currentTime={recordingSeconds}
+          duration={7200}
+          onSeek={(time) => {
+            toast({ title: "Seeking to timestamp", description: `${Math.floor(time / 60)}:${(time % 60).toString().padStart(2, '0')}` });
+          }}
+        />
+
+        {/* Dialogs */}
         <GenerateMinutesDialog
           meetingId={meetingId}
           open={showMinutesDialog}
