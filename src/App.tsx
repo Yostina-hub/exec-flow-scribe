@@ -8,6 +8,8 @@ import { useCalendarActionSync } from "@/hooks/useCalendarActionSync";
 import { useNotificationDispatcher } from "@/hooks/useNotificationDispatcher";
 import { useGubaAutoGeneration } from "@/hooks/useGubaAutoGeneration";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { MinuteGenerationProvider } from "@/contexts/MinuteGenerationContext";
+import { BackgroundGenerationIndicator } from "@/components/BackgroundGenerationIndicator";
 import Index from "./pages/Index";
 import CalendarView from "./pages/CalendarView";
 import Meetings from "./pages/Meetings";
@@ -61,47 +63,50 @@ const ProtectedLayout = () => (
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider>
-      <BrowserRouter>
-        <IntegrationProvider>
-          <Routes>
-            {/* Public routes */}
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/document" element={<DocumentViewer />} />
-            <Route path="/quick-join" element={<QuickJoinMeeting />} />
-            <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
-            
-            {/* Protected routes with persistent Layout */}
-            <Route element={<ProtectedLayout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/advisor" element={<ExecutiveAdvisor />} />
-              <Route path="/calendar" element={<CalendarView />} />
-              <Route path="/meetings" element={<Meetings />} />
-              <Route path="/meetings/:id" element={<MeetingDetail />} />
-              <Route path="/meeting/:id" element={<MeetingDetail />} />
-              <Route path="/meetings/:meetingId/minutes" element={<MinutesEditor />} />
-              <Route path="/drive" element={<DriveIntegration />} />
-              <Route path="/notebooks" element={<NotebooksLibrary />} />
-              <Route path="/notebook" element={<Notebook />} />
-              <Route path="/signature/:requestId" element={<SignatureApproval />} />
-              <Route path="/signature-approval/:requestId" element={<SignatureApproval />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/settings" element={<Settings />} />
-              <Route path="/google-oauth-callback" element={<GoogleOAuthCallback />} />
+      <MinuteGenerationProvider>
+        <BrowserRouter>
+          <IntegrationProvider>
+            <Routes>
+              {/* Public routes */}
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/document" element={<DocumentViewer />} />
+              <Route path="/quick-join" element={<QuickJoinMeeting />} />
+              <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
               
-              {/* Permission-protected routes */}
-              <Route path="/actions" element={<RequirePermission resource="users" action="manage"><Actions /></RequirePermission>} />
-              <Route path="/notifications" element={<RequirePermission resource="users" action="manage"><Notifications /></RequirePermission>} />
-              <Route path="/admin" element={<RequirePermission resource="users" action="manage"><Administration /></RequirePermission>} />
-              <Route path="/integration-test" element={<RequirePermission resource="users" action="manage"><IntegrationTest /></RequirePermission>} />
-            </Route>
-            
-            {/* 404 catch-all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </IntegrationProvider>
-      </BrowserRouter>
-      <Toaster />
+              {/* Protected routes with persistent Layout */}
+              <Route element={<ProtectedLayout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/advisor" element={<ExecutiveAdvisor />} />
+                <Route path="/calendar" element={<CalendarView />} />
+                <Route path="/meetings" element={<Meetings />} />
+                <Route path="/meetings/:id" element={<MeetingDetail />} />
+                <Route path="/meeting/:id" element={<MeetingDetail />} />
+                <Route path="/meetings/:meetingId/minutes" element={<MinutesEditor />} />
+                <Route path="/drive" element={<DriveIntegration />} />
+                <Route path="/notebooks" element={<NotebooksLibrary />} />
+                <Route path="/notebook" element={<Notebook />} />
+                <Route path="/signature/:requestId" element={<SignatureApproval />} />
+                <Route path="/signature-approval/:requestId" element={<SignatureApproval />} />
+                <Route path="/analytics" element={<Analytics />} />
+                <Route path="/reports" element={<Reports />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/google-oauth-callback" element={<GoogleOAuthCallback />} />
+                
+                {/* Permission-protected routes */}
+                <Route path="/actions" element={<RequirePermission resource="users" action="manage"><Actions /></RequirePermission>} />
+                <Route path="/notifications" element={<RequirePermission resource="users" action="manage"><Notifications /></RequirePermission>} />
+                <Route path="/admin" element={<RequirePermission resource="users" action="manage"><Administration /></RequirePermission>} />
+                <Route path="/integration-test" element={<RequirePermission resource="users" action="manage"><IntegrationTest /></RequirePermission>} />
+              </Route>
+              
+              {/* 404 catch-all */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <BackgroundGenerationIndicator />
+          </IntegrationProvider>
+        </BrowserRouter>
+        <Toaster />
+      </MinuteGenerationProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

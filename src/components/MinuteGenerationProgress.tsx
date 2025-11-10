@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { playSuccessSound, playErrorSound } from '@/utils/soundEffects';
+import { useMinuteGeneration } from '@/contexts/MinuteGenerationContext';
 
 interface MinuteGenerationProgressProps {
   meetingId: string;
@@ -51,6 +52,7 @@ export const MinuteGenerationProgress = ({
     estimated_completion_seconds: null,
     error_message: null
   });
+  const { startGeneration } = useMinuteGeneration();
 
   useEffect(() => {
     if (!isOpen || !meetingId) return;

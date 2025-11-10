@@ -20,6 +20,7 @@ import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 import { NonTechnicalSummaryDialog } from './NonTechnicalSummaryDialog';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
+import { useMinuteGeneration } from '@/contexts/MinuteGenerationContext';
 
 interface GenerateMinutesDialogProps {
   meetingId: string;
@@ -43,6 +44,7 @@ export const GenerateMinutesDialog = ({
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
   const { toast } = useToast();
+  const { startGeneration } = useMinuteGeneration();
 
   useEffect(() => {
     if (open) {
@@ -124,6 +126,10 @@ export const GenerateMinutesDialog = ({
 
   const handleGenerate = async () => {
     setIsGenerating(true);
+    
+    // Register with context for background tracking
+    startGeneration(meetingId, meetingTitle || 'Meeting');
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {

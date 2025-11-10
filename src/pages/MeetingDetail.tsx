@@ -120,6 +120,7 @@ import { LazyTabContent } from "@/components/LazyTabContent";
 // Import hooks normally (cannot be lazy loaded)
 import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
 import { useRealtimeAgenda } from "@/hooks/useRealtimeAgenda";
+import { useMinuteGeneration } from "@/contexts/MinuteGenerationContext";
 
 interface AgendaItem {
   id: string;
@@ -211,6 +212,7 @@ const MeetingDetail = () => {
   
   // Fast initial meeting fetch (realtime) to avoid long loading state
   const { meeting: meetingRealtime, loading: meetingRealtimeLoading } = useRealtimeMeetingData(meetingId);
+  const { startGeneration } = useMinuteGeneration();
   
   // Listen for sidebar advisor trigger
   useEffect(() => {
@@ -618,6 +620,10 @@ const MeetingDetail = () => {
         setIsAutoGenerating(true);
         
         console.log('Starting auto-generation of minutes...');
+        
+        // Register generation with global context for background tracking
+        const meetingTitle = meetingRealtime?.title || meeting?.title || 'Meeting';
+        startGeneration(meetingId, meetingTitle);
         
         // Show progress dialog instead of toast
         setShowGenerationProgress(true);
