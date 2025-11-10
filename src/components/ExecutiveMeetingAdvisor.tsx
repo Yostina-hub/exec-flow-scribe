@@ -884,47 +884,52 @@ export function ExecutiveMeetingAdvisor({
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 p-6 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-            <TabsList className="grid w-full grid-cols-7 mb-4">
-              <TabsTrigger value="advisor" className="flex items-center gap-2">
+        <CardContent className="flex-1 p-4 overflow-hidden">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+            <TabsList className="grid grid-cols-7 w-full shrink-0 h-auto py-1.5">
+              <TabsTrigger value="advisor" className="flex items-center gap-1.5 text-xs py-2">
                 <Brain className="h-4 w-4" />
-                AI Coach
+                <span className="hidden sm:inline">AI Coach</span>
+                {isAISpeaking && (
+                  <Badge variant="default" className="ml-1 animate-pulse bg-green-500 text-xs px-1.5 py-0">
+                    Live
+                  </Badge>
+                )}
               </TabsTrigger>
-              <TabsTrigger value="questions" className="flex items-center gap-2">
+              <TabsTrigger value="questions" className="flex items-center gap-1.5 text-xs py-2">
                 <MessageCircleQuestion className="h-4 w-4" />
-                Q&A
+                <span className="hidden sm:inline">Q&A</span>
                 {participantQuestions.filter(q => !q.answer).length > 0 && (
-                  <Badge variant="destructive" className="ml-1">
+                  <Badge variant="destructive" className="ml-1 text-xs px-1.5 py-0">
                     {participantQuestions.filter(q => !q.answer).length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="transcriptions" className="flex items-center gap-2">
+              <TabsTrigger value="transcriptions" className="flex items-center gap-1.5 text-xs py-2">
                 <Users className="h-4 w-4" />
-                Live Talk
+                <span className="hidden sm:inline">Live Talk</span>
                 {liveTranscriptions.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">{liveTranscriptions.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{liveTranscriptions.length}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="tempo" className="flex items-center gap-2">
+              <TabsTrigger value="tempo" className="flex items-center gap-1.5 text-xs py-2">
                 <Gauge className="h-4 w-4" />
-                Tempo
+                <span className="hidden sm:inline">Tempo</span>
               </TabsTrigger>
-              <TabsTrigger value="keypoints" className="flex items-center gap-2">
+              <TabsTrigger value="keypoints" className="flex items-center gap-1.5 text-xs py-2">
                 <FileCheck className="h-4 w-4" />
-                Key Points
+                <span className="hidden sm:inline">Key Points</span>
                 {keyPoints.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">{keyPoints.length}</Badge>
+                  <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{keyPoints.length}</Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="success" className="flex items-center gap-2">
+              <TabsTrigger value="success" className="flex items-center gap-1.5 text-xs py-2">
                 <TrendingUp className="h-4 w-4" />
-                Metrics
+                <span className="hidden sm:inline">Metrics</span>
               </TabsTrigger>
-              <TabsTrigger value="history" className="flex items-center gap-2">
+              <TabsTrigger value="history" className="flex items-center gap-1.5 text-xs py-2">
                 <History className="h-4 w-4" />
-                History
+                <span className="hidden sm:inline">History</span>
               </TabsTrigger>
             </TabsList>
 
@@ -1046,24 +1051,24 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Participant Q&A Tab */}
-            <TabsContent value="questions" className="flex-1 flex flex-col overflow-hidden">
+            <TabsContent value="questions" className="flex-1 flex flex-col overflow-hidden mt-2 space-y-0">
               <Card className="flex-1 flex flex-col overflow-hidden border-2 border-blue-500/20">
-                <CardHeader className="pb-3 bg-muted/30">
+                <CardHeader className="py-3 px-4 bg-muted/30 shrink-0">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg flex items-center gap-2">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <MessageCircleQuestion className="h-5 w-5 text-blue-600" />
                       Participant Questions & Answers
                     </CardTitle>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs">
                       {participantQuestions.filter(q => !q.answer).length} Pending
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Questions automatically detected from participant conversations
                   </p>
                 </CardHeader>
-                <CardContent className="flex-1 p-4 overflow-hidden">
-                  <ScrollArea className="h-full pr-4">
+                <CardContent className="flex-1 p-3 overflow-hidden">
+                  <ScrollArea className="h-full pr-3">
                     {participantQuestions.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <MessageCircleQuestion className="h-16 w-16 mb-4 text-blue-500/30" />
@@ -1200,37 +1205,38 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Live Transcriptions Tab */}
-            <TabsContent value="transcriptions" className="flex-1 flex flex-col overflow-hidden">
+            <TabsContent value="transcriptions" className="flex-1 flex flex-col overflow-hidden mt-2 space-y-0">
               <Card className="flex-1 flex flex-col overflow-hidden border-2 border-green-500/20">
-                <CardHeader className="pb-3 bg-muted/30">
-                  <div className="flex items-center justify-between mb-2">
-                    <CardTitle className="text-lg flex items-center gap-2">
+                <CardHeader className="py-3 px-4 bg-muted/30 shrink-0">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <Users className="h-5 w-5 text-green-600" />
                       Live Participant Conversations
                     </CardTitle>
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="text-xs">
                       {filteredTranscriptions.length} / {liveTranscriptions.length}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Real-time transcription of what participants are saying
-                  </p>
-                  
+                   <p className="text-xs text-muted-foreground mt-1">
+                     Real-time transcription of what participants are saying
+                   </p>
+                </CardHeader>
+                <CardContent className="flex-1 p-3 overflow-hidden flex flex-col gap-2">
                   {/* Search and Filter Controls */}
-                  <div className="space-y-3">
+                  <div className="space-y-2 shrink-0">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="Search by keyword or speaker name..."
-                        className="pl-9"
+                        className="pl-8 h-9 text-sm"
                       />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2">
                       <Select value={selectedSpeaker} onValueChange={setSelectedSpeaker}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue placeholder="Filter by speaker" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1244,7 +1250,7 @@ export function ExecutiveMeetingAdvisor({
                       </Select>
                       
                       <Select value={timeRange} onValueChange={setTimeRange}>
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue placeholder="Time range" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1266,16 +1272,15 @@ export function ExecutiveMeetingAdvisor({
                           setSelectedSpeaker('all');
                           setTimeRange('all');
                         }}
-                        className="w-full"
+                        className="w-full h-8 text-xs"
                       >
-                        <X className="h-4 w-4 mr-2" />
+                        <X className="h-3 w-3 mr-2" />
                         Clear Filters
                       </Button>
                     )}
                   </div>
-                </CardHeader>
-                <CardContent className="flex-1 p-4 overflow-hidden">
-                  <ScrollArea className="h-full pr-4" ref={transcriptScrollRef}>
+                
+                  <ScrollArea className="flex-1 h-full pr-3" ref={transcriptScrollRef}>
                     {filteredTranscriptions.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <Users className="h-16 w-16 mb-4 text-green-500/30" />
@@ -1336,95 +1341,97 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Meeting Tempo Tab */}
-            <TabsContent value="tempo" className="flex-1 space-y-4 overflow-auto">
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="border-2 border-primary/20">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
+            <TabsContent value="tempo" className="flex-1 overflow-hidden mt-2 space-y-0">
+              <ScrollArea className="h-full">
+                <div className="grid grid-cols-2 gap-3 p-3">
+                  <Card className="border-2 border-primary/20">
+                    <CardHeader className="py-3 px-4">
+                      <CardTitle className="text-base flex items-center gap-2">
                       <Gauge className="h-5 w-5" />
                       Current Pace
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-center py-8">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-center py-6">
                       <div className={`text-center ${getPaceColor(tempoMetrics.currentPace)}`}>
                         {getPaceIcon(tempoMetrics.currentPace)}
-                        <p className="text-3xl font-bold mt-4 capitalize">{tempoMetrics.currentPace}</p>
-                        <p className="text-sm text-muted-foreground mt-2">Meeting velocity</p>
+                        <p className="text-2xl font-bold mt-3 capitalize">{tempoMetrics.currentPace}</p>
+                        <p className="text-xs text-muted-foreground mt-1.5">Meeting velocity</p>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-2 border-primary/20">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <Clock className="h-5 w-5" />
                       Time Management
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
                       <div>
-                        <div className="flex justify-between text-sm mb-2">
+                        <div className="flex justify-between text-xs mb-1.5">
                           <span>Time Remaining</span>
                           <span className="font-bold">{tempoMetrics.timeRemaining} min</span>
                         </div>
-                        <Progress value={(tempoMetrics.timeRemaining / 60) * 100} className="h-2" />
+                        <Progress value={(tempoMetrics.timeRemaining / 60) * 100} className="h-1.5" />
                       </div>
                       <div>
-                        <div className="flex justify-between text-sm mb-2">
+                        <div className="flex justify-between text-xs mb-1.5">
                           <span>Agenda Progress</span>
                           <span className="font-bold">{tempoMetrics.agendaProgress}%</span>
                         </div>
-                        <Progress value={tempoMetrics.agendaProgress} className="h-2" />
+                        <Progress value={tempoMetrics.agendaProgress} className="h-1.5" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-2 border-primary/20">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <Users className="h-5 w-5" />
                       Engagement Level
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-center py-8">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-center py-6">
                       <div className="text-center">
-                        <div className="text-5xl font-bold text-green-600">{Math.round(tempoMetrics.engagementLevel)}%</div>
-                        <p className="text-sm text-muted-foreground mt-2">Participant engagement</p>
-                        <Badge variant="secondary" className="mt-4">Excellent</Badge>
+                        <div className="text-4xl font-bold text-green-600">{Math.round(tempoMetrics.engagementLevel)}%</div>
+                        <p className="text-xs text-muted-foreground mt-1.5">Participant engagement</p>
+                        <Badge variant="secondary" className="mt-3 text-xs">Excellent</Badge>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
                 <Card className="border-2 border-primary/20">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg flex items-center gap-2">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base flex items-center gap-2">
                       <BarChart3 className="h-5 w-5" />
                       Decision Velocity
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-center py-8">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-center py-6">
                       <div className="text-center">
-                        <div className="text-5xl font-bold text-blue-600">{Math.round(tempoMetrics.decisionVelocity)}%</div>
-                        <p className="text-sm text-muted-foreground mt-2">Decision-making speed</p>
-                        <Badge variant="secondary" className="mt-4">On Track</Badge>
+                        <div className="text-4xl font-bold text-blue-600">{Math.round(tempoMetrics.decisionVelocity)}%</div>
+                        <p className="text-xs text-muted-foreground mt-1.5">Decision-making speed</p>
+                        <Badge variant="secondary" className="mt-3 text-xs">On Track</Badge>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
 
             {/* Key Points Tab */}
-            <TabsContent value="keypoints" className="flex-1 overflow-auto">
-              <ScrollArea className="h-full pr-4">
-                <div className="space-y-3">
+            <TabsContent value="keypoints" className="flex-1 overflow-hidden mt-2 space-y-0">
+              <ScrollArea className="h-full">
+                <div className="p-3 space-y-3">
                   {keyPoints.length === 0 ? (
                     <div className="text-center py-12">
                       <FileCheck className="h-16 w-16 mx-auto mb-4 text-muted-foreground/30" />
@@ -1477,28 +1484,30 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Success Metrics Tab */}
-            <TabsContent value="success" className="flex-1 space-y-4 overflow-auto">
-              <Card className="border-2 border-primary/20">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    Overall Meeting Success
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-center py-8">
-                    <div className="text-center">
-                      <div className="text-7xl font-bold text-green-600">
-                        {Math.round(successMetrics.reduce((acc, m) => acc + m.value, 0) / successMetrics.length)}
+            <TabsContent value="success" className="flex-1 overflow-hidden mt-2 space-y-0">
+              <ScrollArea className="h-full">
+                <div className="p-3 space-y-3">
+                  <Card className="border-2 border-primary/20">
+                    <CardHeader className="py-3 px-4">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <TrendingUp className="h-5 w-5" />
+                        Overall Meeting Success
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-center py-6">
+                        <div className="text-center">
+                          <div className="text-5xl font-bold text-green-600">
+                            {Math.round(successMetrics.reduce((acc, m) => acc + m.value, 0) / successMetrics.length)}
+                          </div>
+                          <p className="text-base text-muted-foreground mt-2">Success Score</p>
+                          <Badge variant="default" className="mt-3 text-sm px-4 py-1.5">Outstanding Performance</Badge>
+                        </div>
                       </div>
-                      <p className="text-lg text-muted-foreground mt-2">Success Score</p>
-                      <Badge variant="default" className="mt-4 text-lg px-6 py-2">Outstanding Performance</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
 
-              <div className="grid gap-4">
+                  <div className="space-y-2">
                 {successMetrics.map((metric, idx) => (
                   <motion.div
                     key={idx}
@@ -1506,35 +1515,39 @@ export function ExecutiveMeetingAdvisor({
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1 }}
                   >
-                    <Card className="border-l-4 border-l-primary">
-                      <CardContent className="p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <span className="font-semibold">{metric.name}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-2xl font-bold ${getStatusColor(metric.status)}`}>
-                              {metric.value}%
-                            </span>
-                            <TrendingUp className={`h-4 w-4 ${
-                              metric.trend === 'up' ? 'text-green-500' :
-                              metric.trend === 'down' ? 'text-red-500 rotate-180' :
-                              'text-muted-foreground'
-                            }`} />
+                      <Card className="border-l-4 border-l-primary">
+                        <CardContent className="p-3">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold">{metric.name}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xl font-bold ${getStatusColor(metric.status)}`}>
+                                {metric.value}%
+                              </span>
+                              <TrendingUp className={`h-3.5 w-3.5 ${
+                                metric.trend === 'up' ? 'text-green-500' :
+                                metric.trend === 'down' ? 'text-red-500 rotate-180' :
+                                'text-muted-foreground'
+                              }`} />
+                            </div>
                           </div>
-                        </div>
-                        <Progress value={metric.value} className="h-2" />
-                        <p className="text-xs text-muted-foreground mt-2 capitalize">
-                          Status: {metric.status.replace('-', ' ')}
-                        </p>
-                      </CardContent>
-                    </Card>
+                          <Progress value={metric.value} className="h-1.5" />
+                          <p className="text-xs text-muted-foreground mt-1.5 capitalize">
+                            Status: {metric.status.replace('-', ' ')}
+                          </p>
+                        </CardContent>
+                      </Card>
                   </motion.div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                </div>
+              </ScrollArea>
             </TabsContent>
 
             {/* History Tab */}
-            <TabsContent value="history" className="flex-1 overflow-hidden">
+            <TabsContent value="history" className="flex-1 overflow-hidden mt-2 space-y-0">
+              <div className="h-full">
               <AdvisorHistoryViewer meetingId={meetingId} currentConversationId={conversationId} />
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
