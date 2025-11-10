@@ -5569,6 +5569,10 @@ export type Database = {
         Returns: boolean
       }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
+      is_meeting_participant: {
+        Args: { _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_senior_role: { Args: { _user_id: string }; Returns: boolean }
       match_approval_rules: {
         Args: { p_meeting_id: string }
