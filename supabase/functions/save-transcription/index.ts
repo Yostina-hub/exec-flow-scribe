@@ -157,7 +157,22 @@ serve(async (req) => {
     }
 
     // Check if we should generate an incremental chunk
-    const CHUNK_DURATION = 600; // 10 minutes in seconds
+    // Get user's chunk duration preference (default to 5 minutes)
+    let CHUNK_DURATION = 300; // 5 minutes default
+    
+    if (userData?.user?.id) {
+      const { data: settings } = await supabase
+        .from('minute_generation_settings')
+        .select('chunk_duration_minutes')
+        .eq('user_id', userData.user.id)
+        .maybeSingle();
+      
+      if (settings?.chunk_duration_minutes) {
+        CHUNK_DURATION = settings.chunk_duration_minutes * 60; // Convert to seconds
+        console.log(`📊 Using user's chunk duration: ${settings.chunk_duration_minutes} minutes`);
+      }
+    }
+    
     const currentTimestamp = Math.floor(now.getTime() / 1000); // Convert to seconds
     
     const { data: chunks } = await supabase

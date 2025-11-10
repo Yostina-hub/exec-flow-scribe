@@ -11,6 +11,7 @@ import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send, Loader2, Setti
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
+import { MinuteGenerationSettings } from "@/components/MinuteGenerationSettings";
 import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
 // Temporarily disabled until database migration is approved:
 // import { AutomationSettings } from "@/components/settings/AutomationSettings";
@@ -947,6 +948,7 @@ const Settings = () => {
           {/* Transcription Tab */}
           <TabsContent value="transcription" className="space-y-6">
             <TranscriptionSettings />
+            <MinuteGenerationSettings />
           </TabsContent>
 
           {/* AI Provider Tab */}

@@ -4249,6 +4249,33 @@ export type Database = {
           },
         ]
       }
+      minute_generation_settings: {
+        Row: {
+          auto_generate_enabled: boolean
+          chunk_duration_minutes: number
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_generate_enabled?: boolean
+          chunk_duration_minutes?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_generate_enabled?: boolean
+          chunk_duration_minutes?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       minutes_versions: {
         Row: {
           changes_summary: string | null
