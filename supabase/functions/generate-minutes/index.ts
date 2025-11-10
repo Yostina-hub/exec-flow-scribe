@@ -396,13 +396,19 @@ ${pollsList || 'No polls conducted'}
 5. **Organize logically** - Group related points even if they're from different segments
 6. **Professional tone** - Write as a polished, professional document
 
+🚨 CRITICAL FORMATTING RULES - NO MASSIVE TABLES:
+• Use a COMPACT markdown table ONLY for Meeting Information (metadata: title, date, time, location, participants)
+• DO NOT put narrative content, discussions, or summaries inside tables
+• ALL content sections must be standard markdown with ## headers, paragraphs, and bullet lists
+• After the compact Meeting Information table, write all other sections with headers and paragraphs
+
 📊 REQUIRED SECTIONS:
-1. **Meeting Information Table** (markdown table format)
-2. **Executive Summary** (4-6 sentences synthesizing all segments)
-3. **Discussion Details** (organized by theme, drawing from all segments)
-4. **Decisions Made** (consolidated from all segments + recorded decisions)
-5. **Action Items** (consolidated from all segments + recorded items)
-6. **Next Steps** (if discussed)
+1. **Meeting Information Table** - COMPACT table with ONLY: title, date, time, location, participants (max 5-6 rows)
+2. **Executive Summary** - Write as paragraphs with ## header (4-6 sentences synthesizing all segments)
+3. **Discussion Details** - Write with ## header and bullet points (organized by theme, drawing from all segments)
+4. **Decisions Made** - Write with ## header and bullet points (consolidated from all segments + recorded decisions)
+5. **Action Items** - Write with ## header and bullet points (consolidated from all segments + recorded items)
+6. **Next Steps** - Write with ## header and paragraphs (if discussed)
 
 ${languageInstruction}
 
@@ -506,19 +512,18 @@ ${actionItemsList || 'No action items assigned'}
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
 ⚠️ CRITICAL FORMATTING RULES - TABLES:
-• Use PROPER MARKDOWN TABLE SYNTAX for all structured/tabular data
+• Use PROPER MARKDOWN TABLE SYNTAX ONLY for structured/tabular data
+• ONLY use tables for:
+  - Meeting Information section (metadata ONLY - keep compact)
+  - Attendees list with roles (if showing roles)
+  - Action items with assignments/due dates (if listing many)
+• DO NOT put long narrative content in tables
+• DO NOT create tables with massive content in cells
 • Format tables correctly with pipes and alignment:
-  | Column 1 | Column 2 | Column 3 |
-  |----------|----------|----------|
-  | Data 1   | Data 2   | Data 3   |
-• NEVER use plain text with dashes (---) and spaces for tables
-• Use tables for:
-  - Meeting Information section (first section)
-  - Attendees/Participants lists with roles
-  - Agenda items with status/duration/presenter
-  - Decision tracking with details
-  - Action items with assignments/due dates
-• Ensure proper alignment and spacing in tables
+  | Column 1 | Column 2 |
+  |----------|----------|
+  | Data 1   | Data 2   |
+• **MOST IMPORTANT: ALL narrative content (discussions, decisions, summaries) must be in standard markdown sections with headers, paragraphs, and lists - NOT in tables**
 
 📊 REQUIRED SECTIONS (be thorough and complete):
 
@@ -529,15 +534,24 @@ ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based 
 • SKIP the section entirely if there's nothing to document
 • DO NOT add standalone punctuation marks (፦ or :) without content following them
 
-0. **የስብሰባ መረጃ** (Meeting Information) - MUST be formatted as a markdown table at the very top:
-   Example:
-   | Field | Details |
-   |-------|---------|
-   | የስብሰባ ርዕስ (Title) | [Title] |
+🚨 ULTRA-CRITICAL FORMATTING RULE:
+• The Meeting Information table below is ONLY for meeting metadata (title, date, time, location, participants)
+• It should be COMPACT - just one row per metadata field
+• ALL other content (summary, discussions, decisions, etc.) MUST be written as standard markdown sections with ## headers and paragraphs
+• DO NOT put discussion content, decisions, or any narrative text inside tables
+• After the Meeting Information table, use ## headers for each section and write content as flowing paragraphs and bullet lists
+
+0. **የስብሰባ መረጃ** (Meeting Information) - MUST be formatted as a COMPACT markdown table with ONLY meeting metadata:
+   **CORRECT FORMAT:**
+   | መስክ (Field) | ዝርዝር (Details) |
+   |-------------|-----------------|
+   | የስብሰባ ርዕስ (Title) | [Title here] |
    | ቀን (Date) | [Date] |
    | ሰዓት (Time) | [Start] - [End] |
    | ቦታ (Location) | [Location] |
-   | ተሳታፊዎች (Participants) | [List] |
+   | ተሳታፊዎች (Participants) | [Names, comma-separated] |
+   
+   **STOP THE TABLE HERE** - Do NOT add more rows. All other content goes in sections below.
 1. **የስብሰባ መግቢያ** (Meeting Opening) - WHO opened the meeting, their introduction, welcome remarks, and stated purpose (MUST be comprehensive - this sets the stage)
 2. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (4-6 detailed sentences minimum)
 3. **የአጀንዳ ግምገማ** (Agenda Review) - Detailed summary of each agenda item:
