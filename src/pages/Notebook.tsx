@@ -1,4 +1,4 @@
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,7 @@ import {
   BookOpen,
   ChevronDown,
   ArrowLeft,
+  Brain,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
@@ -33,6 +34,7 @@ import { StudyGuideGenerator } from "@/components/StudyGuideGenerator";
 import { ChatWithCitations } from "@/components/ChatWithCitations";
 import { SourceSummaryPanel } from "@/components/SourceSummaryPanel";
 import { NotebookStudioGrid } from "@/components/NotebookStudioGrid";
+import { DocumentIntelligencePanel } from "@/components/DocumentIntelligencePanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -497,15 +499,66 @@ const Notebook = () => {
 
         {/* Center Panel - Summary & Chat */}
         <div className="col-span-5 flex flex-col bg-background overflow-hidden">
-          <div className="flex-1 overflow-hidden">
-            <SourceSummaryPanel sourceIds={selectedSources} targetLanguage={currentLanguage} />
-          </div>
-          <div className="h-[300px] shrink-0 border-t">
-            <ChatWithCitations 
-              sourceIds={selectedSources} 
-              onLanguageDetected={setCurrentLanguage}
-            />
-          </div>
+          <Tabs defaultValue="summary" className="flex-1 flex flex-col">
+            <div className="px-4 py-2 border-b bg-card/50 backdrop-blur-sm">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="summary">Summary</TabsTrigger>
+                <TabsTrigger value="intelligence">Executive Intelligence</TabsTrigger>
+                <TabsTrigger value="chat">Chat</TabsTrigger>
+              </TabsList>
+            </div>
+            
+            <TabsContent value="summary" className="flex-1 overflow-hidden m-0">
+              <ScrollArea className="h-full">
+                <div className="p-4">
+                  <SourceSummaryPanel sourceIds={selectedSources} targetLanguage={currentLanguage} />
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="intelligence" className="flex-1 overflow-hidden m-0">
+              <ScrollArea className="h-full">
+                <div className="p-4">
+                  {selectedSources.length === 1 && sources.length > 0 ? (
+                    (() => {
+                      const source = sources.find(s => s.id === selectedSources[0]);
+                      if (source) {
+                        return (
+                          <DocumentIntelligencePanel
+                            sourceId={source.id}
+                            content=""
+                            title={source.title}
+                            sourceType={source.source_type}
+                          />
+                        );
+                      }
+                      return <p className="text-muted-foreground">Source not found</p>;
+                    })()
+                  ) : (
+                    <Card className="border-dashed">
+                      <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+                        <Brain className="h-12 w-12 text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">
+                          {selectedSources.length === 0
+                            ? "Select a source to view executive intelligence"
+                            : "Select only one source at a time for intelligence analysis"}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </ScrollArea>
+            </TabsContent>
+
+            <TabsContent value="chat" className="flex-1 overflow-hidden m-0 flex flex-col">
+              <div className="flex-1 overflow-hidden">
+                <ChatWithCitations 
+                  sourceIds={selectedSources} 
+                  onLanguageDetected={setCurrentLanguage}
+                />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
 
         {/* Right Panel - Studio */}

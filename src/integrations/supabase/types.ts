@@ -4096,6 +4096,41 @@ export type Database = {
           },
         ]
       }
+      notebook_intelligence_insights: {
+        Row: {
+          created_at: string
+          full_analysis: string | null
+          id: string
+          insights: Json
+          source_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_analysis?: string | null
+          id?: string
+          insights?: Json
+          source_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_analysis?: string | null
+          id?: string
+          insights?: Json
+          source_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_intelligence_insights_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebook_sources: {
         Row: {
           content: string | null
