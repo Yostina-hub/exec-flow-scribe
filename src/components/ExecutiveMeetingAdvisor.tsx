@@ -241,13 +241,17 @@ export function ExecutiveMeetingAdvisor({
 
   const connectAdvisor = async () => {
     try {
+      console.log('Starting advisor connection...');
+      
       // Create conversation session
       const sessionId = await createConversationSession();
       setConversationId(sessionId);
+      console.log('Conversation session created:', sessionId);
 
       const assistant = new RealtimeAssistant(
         PROJECT_ID,
         (message) => {
+          console.log('Received message:', message);
           setMessages(prev => [...prev, message]);
           // Save to history
           saveMessageToHistory(message);
@@ -257,12 +261,18 @@ export function ExecutiveMeetingAdvisor({
           }
         },
         (newStatus) => {
+          console.log('Status changed to:', newStatus);
           setStatus(newStatus);
           if (newStatus === 'error') {
             toast({
               title: "Connection Error",
-              description: "Failed to connect to executive advisor",
+              description: "Failed to connect to executive advisor. Check console for details.",
               variant: "destructive"
+            });
+          } else if (newStatus === 'connected') {
+            toast({
+              title: "Executive Advisor Connected",
+              description: "Your AI advisor is now monitoring and ready to assist",
             });
           }
         },
@@ -288,20 +298,23 @@ export function ExecutiveMeetingAdvisor({
         }
       };
 
+      console.log('Connecting with context:', context);
       await assistant.connect(context);
       
-      toast({
-        title: "Executive Advisor Connected",
-        description: "Your AI advisor is now monitoring and ready to assist",
-      });
     } catch (error) {
       console.error('Failed to connect advisor:', error);
-      setStatus('disconnected');
+      setStatus('error');
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Failed to initialize advisor",
+        variant: "destructive"
+      });
     }
   };
 
   const loadRecentTranscriptions = async () => {
     try {
+      console.log('Loading transcriptions for meeting:', meetingId);
       const { data: transcripts, error: transcriptsError } = await supabase
         .from('transcriptions')
         .select('id, content, speaker_id, timestamp')
@@ -309,7 +322,12 @@ export function ExecutiveMeetingAdvisor({
         .order('timestamp', { ascending: true })
         .limit(50);
 
-      if (transcriptsError) throw transcriptsError;
+      if (transcriptsError) {
+        console.error('Error loading transcriptions:', transcriptsError);
+        throw transcriptsError;
+      }
+      
+      console.log('Found transcriptions:', transcripts?.length || 0);
       
       if (transcripts && transcripts.length > 0) {
         // Fetch profiles separately
@@ -319,6 +337,8 @@ export function ExecutiveMeetingAdvisor({
           .from('profiles')
           .select('id, full_name')
           .in('id', speakerIds);
+
+        console.log('Loaded speaker profiles:', profiles?.length || 0);
 
         const profileMap = new Map(profiles?.map(p => [p.id, p.full_name]) || []);
         
@@ -330,21 +350,33 @@ export function ExecutiveMeetingAdvisor({
         }));
         
         setLiveTranscriptions(enrichedTranscripts);
+        console.log('Set live transcriptions:', enrichedTranscripts.length);
       }
     } catch (error) {
       console.error('Error loading transcriptions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load transcriptions",
+        variant: "destructive"
+      });
     }
   };
 
   const loadParticipantQuestions = async () => {
     try {
+      console.log('Loading participant questions for meeting:', meetingId);
       const { data, error } = await supabase
         .from('meeting_questions')
         .select('*')
         .eq('meeting_id', meetingId)
         .order('generated_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading questions:', error);
+        throw error;
+      }
+
+      console.log('Found questions:', data?.length || 0);
 
       if (data) {
         // Fetch profile info for answerers
@@ -372,9 +404,15 @@ export function ExecutiveMeetingAdvisor({
         }));
 
         setParticipantQuestions(questions);
+        console.log('Set participant questions:', questions.length);
       }
     } catch (error) {
       console.error('Error loading participant questions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load Q&A",
+        variant: "destructive"
+      });
     }
   };
 
