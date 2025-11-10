@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { localStorageCache } from '@/utils/localStorage';
-import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen } from 'lucide-react';
+import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen, Mail, History } from 'lucide-react';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { MeetingKeyPointsSummary } from '@/components/MeetingKeyPointsSummary';
@@ -32,6 +32,11 @@ const EmailDistributionDialog = lazy(() =>
     default: module.EmailDistributionDialog
   }))
 );
+const DistributionHistoryViewer = lazy(() =>
+  import('@/components/signoff/DistributionHistoryViewer').then(module => ({
+    default: module.DistributionHistoryViewer
+  }))
+);
 
 export default function SignatureApproval() {
   const { requestId } = useParams();
@@ -41,6 +46,7 @@ export default function SignatureApproval() {
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [showDistribution, setShowDistribution] = useState(false);
+  const [showDistributionHistory, setShowDistributionHistory] = useState(false);
   const { preferredLanguage } = useLanguagePreference();
   const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -414,14 +420,34 @@ export default function SignatureApproval() {
               <MeetingKeyPointsSummary meetingId={signatureRequest.meeting_id} />
             )}
             {isApproved && (
-              <Button 
-                onClick={handleDownloadPDF} 
-                size="lg" 
-                className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651] text-white shadow-lg"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Download Official PDF
-              </Button>
+              <>
+                <Button 
+                  onClick={() => setShowDistributionHistory(true)} 
+                  size="lg" 
+                  variant="ghost"
+                  className="gap-2"
+                >
+                  <History className="w-5 h-5" />
+                  Distribution History
+                </Button>
+                <Button 
+                  onClick={() => setShowDistribution(true)} 
+                  size="lg" 
+                  variant="outline"
+                  className="gap-2"
+                >
+                  <Mail className="w-5 h-5" />
+                  Send Email Distribution
+                </Button>
+                <Button 
+                  onClick={handleDownloadPDF} 
+                  size="lg" 
+                  className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651] text-white shadow-lg"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Download Official PDF
+                </Button>
+              </>
             )}
             {canSign && (
               <Button onClick={() => setSignOffOpen(true)} size="lg">
@@ -481,6 +507,16 @@ export default function SignatureApproval() {
             onOpenChange={setShowDistribution}
             meetingId={signatureRequest.meeting_id}
             signatureRequestId={requestId!}
+          />
+        </Suspense>
+      )}
+
+      {showDistributionHistory && signatureRequest?.meeting_id && (
+        <Suspense fallback={null}>
+          <DistributionHistoryViewer
+            open={showDistributionHistory}
+            onOpenChange={setShowDistributionHistory}
+            meetingId={signatureRequest.meeting_id}
           />
         </Suspense>
       )}

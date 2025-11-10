@@ -25,6 +25,8 @@ import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
 import Notebook from "./pages/Notebook";
 import NotebooksLibrary from "./pages/NotebooksLibrary";
+import ExecutiveInbox from "./pages/ExecutiveInbox";
+import SecretaryWorkflow from "./pages/SecretaryWorkflow";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -73,6 +75,9 @@ const App = () => (
             {/* Protected routes with persistent Layout */}
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Index />} />
+              <Route path="/executive-advisor" element={<ExecutiveAdvisor />} />
+              <Route path="/executive-inbox" element={<ExecutiveInbox />} />
+              <Route path="/secretary-workflow" element={<SecretaryWorkflow />} />
               <Route path="/advisor" element={<ExecutiveAdvisor />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/meetings" element={<Meetings />} />
@@ -80,6 +85,7 @@ const App = () => (
               <Route path="/meeting/:id" element={<MeetingDetail />} />
               <Route path="/meetings/:meetingId/minutes" element={<MinutesEditor />} />
               <Route path="/drive" element={<DriveIntegration />} />
+              <Route path="/notebooks-library" element={<NotebooksLibrary />} />
               <Route path="/notebooks" element={<NotebooksLibrary />} />
               <Route path="/notebook" element={<Notebook />} />
               <Route path="/signature/:requestId" element={<SignatureApproval />} />

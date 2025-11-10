@@ -34,6 +34,31 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded, notebookId 
   const [pastedText, setPastedText] = useState("");
   const [pastedTitle, setPastedTitle] = useState("");
 
+  // Trigger auto-analysis in background
+  const triggerAutoAnalysis = async (sourceIds: string[]) => {
+    try {
+      // Call auto-analysis for each source in the background
+      for (const sourceId of sourceIds) {
+        // Fire and forget - don't wait for response
+        supabase.functions.invoke("auto-analyze-source", {
+          body: { sourceId }
+        }).catch(err => {
+          console.error("Auto-analysis failed for", sourceId, err);
+        });
+      }
+      
+      // Show a subtle notification that analysis is running
+      toast({
+        title: "AI Analysis Started",
+        description: "Executive intelligence analysis is processing in the background",
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error("Error triggering auto-analysis:", error);
+      // Don't show error to user - analysis is a background enhancement
+    }
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -83,6 +108,9 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded, notebookId 
         description: `${files.length} ${files.length === 1 ? "file" : "files"} uploaded successfully`,
       });
 
+      // Trigger auto-analysis in background
+      triggerAutoAnalysis(createdIds);
+
       onSourceAdded(createdIds);
       onOpenChange(false);
     } catch (error) {
@@ -130,6 +158,12 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded, notebookId 
       });
 
       setLinkUrl("");
+      
+      // Trigger auto-analysis in background
+      if (data?.id) {
+        triggerAutoAnalysis([data.id]);
+      }
+      
       onSourceAdded(data?.id ? [data.id] : []);
       onOpenChange(false);
     } catch (error) {
@@ -173,6 +207,12 @@ export const AddSourceDialog = ({ open, onOpenChange, onSourceAdded, notebookId 
 
       setPastedText("");
       setPastedTitle("");
+      
+      // Trigger auto-analysis in background
+      if (data?.id) {
+        triggerAutoAnalysis([data.id]);
+      }
+      
       onSourceAdded(data?.id ? [data.id] : []);
       onOpenChange(false);
     } catch (error) {
