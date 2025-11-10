@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, FileText, Star, Download, Upload } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Star, Download, Upload, Sparkles } from 'lucide-react';
+import { TemplateImprovementPanel } from './TemplateImprovementPanel';
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,7 @@ const DEFAULT_SECTIONS = [
 export const MeetingTemplateManager = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [showImprovements, setShowImprovements] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -300,82 +302,96 @@ export const MeetingTemplateManager = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {templates?.map((template) => (
-            <Card key={template.id} className="p-6 hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-primary/10 rounded-lg">
-                    <FileText className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-foreground">{template.name}</h3>
-                      {template.is_default && (
-                        <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      )}
+            <div key={template.id} className="space-y-4">
+              <Card className="p-6 hover:shadow-lg transition-shadow">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-primary/10 rounded-lg">
+                      <FileText className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {template.description}
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-foreground">{template.name}</h3>
+                        {template.is_default && (
+                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {template.description}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleExportTemplate(template)}
-                    title="Export template"
-                  >
-                    <Download className="w-4 h-4" />
-                  </Button>
-                  <Dialog
-                    open={editingTemplate?.id === template.id}
-                    onOpenChange={(open) => !open && setEditingTemplate(null)}
-                  >
-                    <DialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingTemplate(template)}
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                      <DialogHeader>
-                        <DialogTitle>Edit Template</DialogTitle>
-                      </DialogHeader>
-                      <TemplateForm
-                        template={template}
-                        onSubmit={(data) =>
-                          updateTemplateMutation.mutate({ id: template.id, ...data })
-                        }
-                        isLoading={updateTemplateMutation.isPending}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                  {!template.is_default && (
+                  <div className="flex gap-2">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        if (confirm('Are you sure you want to delete this template?')) {
-                          deleteTemplateMutation.mutate(template.id);
-                        }
-                      }}
+                      onClick={() => setShowImprovements(showImprovements === template.id ? null : template.id)}
+                      title="AI Improvements"
                     >
-                      <Trash2 className="w-4 h-4 text-destructive" />
+                      <Sparkles className="w-4 h-4" />
                     </Button>
-                  )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleExportTemplate(template)}
+                      title="Export template"
+                    >
+                      <Download className="w-4 h-4" />
+                    </Button>
+                    <Dialog
+                      open={editingTemplate?.id === template.id}
+                      onOpenChange={(open) => !open && setEditingTemplate(null)}
+                    >
+                      <DialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingTemplate(template)}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle>Edit Template</DialogTitle>
+                        </DialogHeader>
+                        <TemplateForm
+                          template={template}
+                          onSubmit={(data) =>
+                            updateTemplateMutation.mutate({ id: template.id, ...data })
+                          }
+                          isLoading={updateTemplateMutation.isPending}
+                        />
+                      </DialogContent>
+                    </Dialog>
+                    {!template.is_default && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          if (confirm('Are you sure you want to delete this template?')) {
+                            deleteTemplateMutation.mutate(template.id);
+                          }
+                        }}
+                      >
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Badge variant="secondary">{template.meeting_type}</Badge>
-                <div className="text-sm text-muted-foreground">
-                  {template.sections.length} sections
+                <div className="space-y-2">
+                  <Badge variant="secondary">{template.meeting_type}</Badge>
+                  <div className="text-sm text-muted-foreground">
+                    {template.sections.length} sections
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+              
+              {showImprovements === template.id && (
+                <TemplateImprovementPanel templateId={template.id} />
+              )}
+            </div>
           ))}
         </div>
       )}
