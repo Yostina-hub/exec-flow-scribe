@@ -557,7 +557,7 @@ export const CreateMeetingDialog = () => {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Creating..." : "Create Meeting"}
+              {loading ? "Scheduling..." : "Schedule Meeting"}
             </Button>
           </DialogFooter>
         </form>
