@@ -225,21 +225,40 @@ export const ViewMinutesDialog = ({
           </div>
         ) : (
           <>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+            <div className="flex flex-wrap gap-2 sm:gap-2 justify-end">
+              <Button 
+                variant="outline" 
+                size="default" 
+                onClick={handleCopy} 
+                className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial min-w-[100px]"
+              >
                 <Copy className="h-4 w-4" />
                 Copy
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+              <Button 
+                variant="outline" 
+                size="default" 
+                onClick={handleDownload} 
+                className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial min-w-[100px]"
+              >
                 <Download className="h-4 w-4" />
                 Download
               </Button>
               {tooLarge && !showFull && (
-                <Button variant="secondary" size="sm" onClick={() => setShowFull(true)} className="gap-2">
+                <Button 
+                  variant="secondary" 
+                  size="default" 
+                  onClick={() => setShowFull(true)} 
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
+                >
                   Render full document
                 </Button>
               )}
-              <Button size="sm" onClick={handleEditInEditor} className="gap-2">
+              <Button 
+                size="default" 
+                onClick={handleEditInEditor} 
+                className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial min-w-[140px]"
+              >
                 <ExternalLink className="h-4 w-4" />
                 Open in Editor
               </Button>

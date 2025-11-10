@@ -319,14 +319,14 @@ export const GenerateMinutesDialog = ({
 
         {minutes && !isGenerating && (
           <>
-            <div className="flex gap-2 justify-between items-center mb-4">
-              <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 justify-between items-stretch sm:items-center mb-4">
+              <div className="flex flex-wrap gap-2 sm:gap-2">
                 <Button
                   variant={currentLanguage === 'am' ? 'default' : 'outline'}
-                  size="sm"
+                  size="default"
                   onClick={() => handleLanguageToggle('am')}
                   disabled={isTranslating}
-                  className="gap-2"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0"
                 >
                   {isTranslating && currentLanguage !== 'am' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -337,10 +337,10 @@ export const GenerateMinutesDialog = ({
                 </Button>
                 <Button
                   variant={currentLanguage === 'ti' ? 'default' : 'outline'}
-                  size="sm"
+                  size="default"
                   onClick={() => handleLanguageToggle('ti')}
                   disabled={isTranslating}
-                  className="gap-2"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0"
                 >
                   {isTranslating && currentLanguage !== 'ti' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -351,10 +351,10 @@ export const GenerateMinutesDialog = ({
                 </Button>
                 <Button
                   variant={currentLanguage === 'en' ? 'default' : 'outline'}
-                  size="sm"
+                  size="default"
                   onClick={() => handleLanguageToggle('en')}
                   disabled={isTranslating}
-                  className="gap-2"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0"
                 >
                   {isTranslating && currentLanguage !== 'en' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -365,10 +365,10 @@ export const GenerateMinutesDialog = ({
                 </Button>
                 <Button
                   variant={currentLanguage === 'or' ? 'default' : 'outline'}
-                  size="sm"
+                  size="default"
                   onClick={() => handleLanguageToggle('or')}
                   disabled={isTranslating}
-                  className="gap-2"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0"
                 >
                   {isTranslating && currentLanguage !== 'or' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -379,10 +379,10 @@ export const GenerateMinutesDialog = ({
                 </Button>
                 <Button
                   variant={currentLanguage === 'so' ? 'default' : 'outline'}
-                  size="sm"
+                  size="default"
                   onClick={() => handleLanguageToggle('so')}
                   disabled={isTranslating}
-                  className="gap-2"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0"
                 >
                   {isTranslating && currentLanguage !== 'so' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -393,25 +393,39 @@ export const GenerateMinutesDialog = ({
                 </Button>
               </div>
               
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 sm:gap-2">
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="default"
                   onClick={() => setShowNonTechnical(true)}
-                  className="gap-2"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
                 >
                   <BookOpen className="h-4 w-4" />
                   Non-Technical
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+                <Button 
+                  variant="outline" 
+                  size="default" 
+                  onClick={handleCopy} 
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
+                >
                   <Copy className="h-4 w-4" />
                   Copy
                 </Button>
-                <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
+                <Button 
+                  variant="outline" 
+                  size="default" 
+                  onClick={handleDownload} 
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
+                >
                   <Download className="h-4 w-4" />
                   Download
                 </Button>
-                <Button size="sm" onClick={handleGenerate} className="gap-2">
+                <Button 
+                  size="default" 
+                  onClick={handleGenerate} 
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
+                >
                   <FileText className="h-4 w-4" />
                   Regenerate
                 </Button>
