@@ -48,7 +48,11 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
       if (error) throw error;
       setRoles(data || []);
     } catch (error: any) {
-      toast.error("Failed to fetch roles: " + error.message);
+      toast({
+        title: "Error",
+        description: "Failed to fetch roles: " + error.message,
+        variant: "destructive",
+      });
     }
   };
 
@@ -126,11 +130,18 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
         if (deleteError) throw deleteError;
       }
 
-      toast.success("User roles updated successfully");
+      toast({
+        title: "Success",
+        description: "User roles updated successfully",
+      });
       onSuccess();
       onOpenChange(false);
     } catch (error: any) {
-      toast.error("Failed to update user roles: " + error.message);
+      toast({
+        title: "Error",
+        description: "Failed to update user roles: " + error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

@@ -59,7 +59,11 @@ export function UserManagementTab() {
 
       setUsers(usersWithRoles);
     } catch (error: any) {
-      toast.error("Failed to fetch users: " + error.message);
+      toast({
+        title: "Error",
+        description: "Failed to fetch users: " + error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }

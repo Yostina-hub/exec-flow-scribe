@@ -27,12 +27,20 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
 
   const handleCreate = async () => {
     if (!email.trim() || !password.trim()) {
-      toast.error("Email and password are required");
+      toast({
+        title: "Error",
+        description: "Email and password are required",
+        variant: "destructive",
+      });
       return;
     }
 
     if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -54,7 +62,10 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
       if (error) throw error;
 
       if (data.user) {
-        toast.success("User created successfully");
+        toast({
+          title: "Success",
+          description: "User created successfully",
+        });
         onSuccess();
         onOpenChange(false);
         setEmail("");
@@ -62,7 +73,11 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
         setFullName("");
       }
     } catch (error: any) {
-      toast.error("Failed to create user: " + error.message);
+      toast({
+        title: "Error",
+        description: "Failed to create user: " + error.message,
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
