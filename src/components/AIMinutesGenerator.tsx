@@ -3,11 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap } from "lucide-react";
+import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap, Layout, Wand2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface AIMinutesGeneratorProps {
   meetingId: string;
@@ -17,6 +20,8 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
   const [generating, setGenerating] = useState(false);
   const [generatingType, setGeneratingType] = useState<string>("");
   const [progressText, setProgressText] = useState("");
+  const [generationMethod, setGenerationMethod] = useState<'standard' | 'template'>('standard');
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const { toast } = useToast();
 
   const progressSteps = [
@@ -49,6 +54,19 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
         .select('*')
         .eq('meeting_id', meetingId)
         .order('generated_at', { ascending: false });
+      
+      if (error) throw error;
+      return data;
+    }
+  });
+
+  const { data: templates } = useQuery({
+    queryKey: ['meeting-templates'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('meeting_templates')
+        .select('*')
+        .order('name');
       
       if (error) throw error;
       return data;
@@ -138,6 +156,65 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Generation Method Selection */}
+        <div className="space-y-4 p-4 rounded-lg border bg-muted/50">
+          <Label className="text-base font-semibold">Generation Method</Label>
+          <RadioGroup value={generationMethod} onValueChange={(v) => setGenerationMethod(v as 'standard' | 'template')}>
+            <div className="flex items-start space-x-3 p-3 rounded-lg border bg-background hover:bg-accent/50 transition-colors">
+              <RadioGroupItem value="standard" id="standard" className="mt-1" />
+              <div className="flex-1">
+                <Label htmlFor="standard" className="flex items-center gap-2 cursor-pointer font-medium">
+                  <Wand2 className="h-4 w-4 text-primary" />
+                  Standard Generation
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  AI analyzes meeting content and generates summaries from scratch
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start space-x-3 p-3 rounded-lg border bg-background hover:bg-accent/50 transition-colors">
+              <RadioGroupItem value="template" id="template" className="mt-1" />
+              <div className="flex-1">
+                <Label htmlFor="template" className="flex items-center gap-2 cursor-pointer font-medium">
+                  <Layout className="h-4 w-4 text-primary" />
+                  Use Template Structure
+                </Label>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Apply a pre-defined template to guide the AI generation
+                </p>
+              </div>
+            </div>
+          </RadioGroup>
+
+          {generationMethod === 'template' && (
+            <div className="space-y-2 pt-2">
+              <Label htmlFor="template-select">Select Template</Label>
+              <Select value={selectedTemplateId} onValueChange={setSelectedTemplateId}>
+                <SelectTrigger id="template-select">
+                  <SelectValue placeholder="Choose a template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates?.map((template) => (
+                    <SelectItem key={template.id} value={template.id}>
+                      {template.name}
+                      {template.category && (
+                        <span className="text-xs text-muted-foreground ml-2">
+                          ({template.category})
+                        </span>
+                      )}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {!selectedTemplateId && (
+                <p className="text-xs text-muted-foreground">
+                  Please select a template to proceed with template-based generation
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {summaryTypes.map(({ type, label, icon: Icon, color }) => (
             <Button
@@ -145,7 +222,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
               variant="outline"
               className="h-auto flex-col gap-2 p-4"
               onClick={() => generateSummary(type)}
-              disabled={generating}
+              disabled={generating || (generationMethod === 'template' && !selectedTemplateId)}
             >
               <div className={`p-2 rounded-lg ${color} bg-opacity-10`}>
                 <Icon className={`h-5 w-5 ${color.replace('bg-', 'text-')}`} />
