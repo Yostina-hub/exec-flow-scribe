@@ -31,6 +31,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { generateGoogleMeetLink, generateTMeetLink } from "@/utils/videoConference";
 import { MeetingTypeSelector } from "./MeetingTypeSelector";
+import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
 
 interface Category {
   id: string;
@@ -38,11 +39,21 @@ interface Category {
   color_hex: string;
 }
 
+interface TemplateSection {
+  id: string;
+  title: string;
+  description?: string;
+  required: boolean;
+  order_index: number;
+}
+
 interface Template {
   id: string;
   name: string;
-  template_type: string;
-  description: string;
+  meeting_type?: string;
+  description?: string;
+  sections: TemplateSection[];
+  is_default: boolean;
 }
 
 export const CreateMeetingDialog = () => {
@@ -53,6 +64,8 @@ export const CreateMeetingDialog = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [templates, setTemplates] = useState<Template[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<string>("");
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [selectedTemplateForPreview, setSelectedTemplateForPreview] = useState<Template | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [meetingType, setMeetingType] = useState<'video_conference' | 'standard'>('standard');
 
@@ -81,19 +94,13 @@ export const CreateMeetingDialog = () => {
     try {
       const result: any = await (supabase as any)
         .from("meeting_templates")
-        .select("id, name, template_type, description")
-        .eq("is_active", true)
+        .select("id, name, meeting_type, description, sections, is_default")
         .order("name");
       
       if (result.error) {
         console.error("Failed to fetch templates:", result.error);
       } else if (result.data) {
-        const templates: Template[] = result.data.map((t: any) => ({
-          id: t.id,
-          name: t.name,
-          template_type: t.template_type,
-          description: t.description
-        }));
+        const templates: Template[] = result.data as Template[];
         setTemplates(templates);
       }
     } catch (err) {
@@ -281,28 +288,35 @@ export const CreateMeetingDialog = () => {
           <div className="grid gap-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="template">Meeting Template (Optional)</Label>
-              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                <SelectTrigger id="template">
-                  <SelectValue placeholder="Select a template" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">No template</SelectItem>
-                  {templates.map(template => (
-                    <SelectItem key={template.id} value={template.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{template.name}</span>
-                        <span className="text-xs text-muted-foreground">{template.description}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedTemplate && (
-                <div className="text-xs text-muted-foreground mt-2">
-                  Template: {templates.find(t => t.id === selectedTemplate)?.name} 
-                  ({templates.find(t => t.id === selectedTemplate)?.template_type})
-                </div>
-              )}
+              <div className="flex gap-2">
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger id="template">
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No template</SelectItem>
+                    {templates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                        {template.is_default && " (Default)"}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      const template = templates?.find(t => t.id === selectedTemplate);
+                      setSelectedTemplateForPreview(template || null);
+                      setPreviewOpen(true);
+                    }}
+                  >
+                    Preview
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -549,6 +563,15 @@ export const CreateMeetingDialog = () => {
         </form>
       </DialogContent>
     </Dialog>
+
+    <TemplatePreviewDialog
+      open={previewOpen}
+      template={selectedTemplateForPreview}
+      onOpenChange={setPreviewOpen}
+      onApply={() => {
+        setPreviewOpen(false);
+      }}
+    />
     </>
   );
 };
