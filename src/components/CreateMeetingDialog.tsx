@@ -203,7 +203,6 @@ export const CreateMeetingDialog = () => {
           video_provider: (meetingType === 'video_conference' ? videoProvider : null) as any,
           requires_offline_support: meetingType === 'standard',
           sensitivity_level: sensitivityLevel,
-          template_id: templateId,
         } as any)
         .select()
         .single();
