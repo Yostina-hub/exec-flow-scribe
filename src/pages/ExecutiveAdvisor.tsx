@@ -134,16 +134,24 @@ export default function ExecutiveAdvisor() {
       }
     }
     
-    // For meetings without signature requests, categorize by status/time
+    // For meetings without signature requests, categorize by actual status
+    // Only show as completed if status is explicitly 'completed'
     if (meeting.status === 'completed') {
       return 'completed';
     }
     
-    if (startTime > now) {
+    // Upcoming meetings (scheduled, in future)
+    if (startTime > now || meeting.status === 'scheduled') {
       return 'upcoming';
     }
     
-    return 'completed';
+    // In progress, paused, or other active states should be in upcoming
+    if (meeting.status === 'in_progress' || meeting.status === 'paused') {
+      return 'upcoming';
+    }
+    
+    // Default to upcoming for safety (don't auto-mark as completed)
+    return 'upcoming';
   };
 
   const categorizedMeetings = {
