@@ -111,7 +111,7 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
       }
 
       // Add roles first to avoid losing permissions mid-operation (e.g., removing your own Admin)
-      const remainingToAdd = rolesToAdd.filter((id) => !(adminRole && id === adminRole.id));
+      const remainingToAdd = rolesToAdd.filter((id) => !(isBootstrap && adminRole && id === adminRole.id));
       if (remainingToAdd.length > 0) {
         const { error: insertError } = await supabase
           .from("user_roles")
