@@ -294,6 +294,9 @@ verify_jwt = false
 [functions.retry-failed-distributions]
 verify_jwt = false
 
+[functions.auto-analyze-source]
+verify_jwt = false
+
 [functions.generate-advisor-report]
 verify_jwt = true
 

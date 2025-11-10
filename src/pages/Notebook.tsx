@@ -35,6 +35,7 @@ import { ChatWithCitations } from "@/components/ChatWithCitations";
 import { SourceSummaryPanel } from "@/components/SourceSummaryPanel";
 import { NotebookStudioGrid } from "@/components/NotebookStudioGrid";
 import { DocumentIntelligencePanel } from "@/components/DocumentIntelligencePanel";
+import { AutoAnalysisIndicator } from "@/components/AutoAnalysisIndicator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -472,6 +473,7 @@ const Notebook = () => {
                             <p className="text-xs text-muted-foreground capitalize font-medium">
                               {source.source_type.replace("_", " ")}
                             </p>
+                            <AutoAnalysisIndicator sourceId={source.id} />
                           </div>
                           <p className="text-sm font-medium line-clamp-2 leading-snug">
                             {source.title}

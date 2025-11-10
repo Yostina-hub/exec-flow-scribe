@@ -45,6 +45,30 @@ export const DocumentIntelligencePanel = ({
     }
   }, [sourceId, propContent]);
 
+  useEffect(() => {
+    // Set up realtime subscription for analysis updates
+    const channel = supabase
+      .channel(`source-analysis-${sourceId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notebook_intelligence_insights',
+          filter: `source_id=eq.${sourceId}`
+        },
+        (payload) => {
+          console.log("New analysis received:", payload);
+          loadExistingAnalysis();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [sourceId]);
+
   const loadSourceContent = async () => {
     try {
       const { data: sourceData, error } = await supabase
@@ -148,25 +172,31 @@ export const DocumentIntelligencePanel = ({
           </div>
           <h3 className="text-lg font-semibold mb-2">Executive Intelligence Analysis</h3>
           <p className="text-sm text-muted-foreground mb-4 max-w-md">
-            Get AI-powered strategic insights, key points, risk assessment, and decision guidance
+            {isAnalyzing 
+              ? "AI is analyzing your document with executive intelligence..."
+              : "Get AI-powered strategic insights, key points, risk assessment, and decision guidance"
+            }
           </p>
-          <Button 
-            onClick={analyzeDocument}
-            disabled={isAnalyzing}
-            className="gap-2"
-          >
-            {isAnalyzing ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Analyze with AI
-              </>
-            )}
-          </Button>
+          {isAnalyzing ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              <span className="text-sm font-medium">Analysis in progress...</span>
+            </div>
+          ) : (
+            <Button 
+              onClick={analyzeDocument}
+              disabled={isAnalyzing || !sourceContent}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Analyze with AI
+            </Button>
+          )}
+          {!sourceContent && !isAnalyzing && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Loading source content...
+            </p>
+          )}
         </CardContent>
       </Card>
     );
