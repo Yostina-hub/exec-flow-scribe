@@ -4149,6 +4149,56 @@ export type Database = {
           },
         ]
       }
+      minute_generation_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: string | null
+          error_message: string | null
+          estimated_completion_seconds: number | null
+          id: string
+          meeting_id: string
+          progress_percentage: number
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string
+          meeting_id: string
+          progress_percentage?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string
+          meeting_id?: string
+          progress_percentage?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minute_generation_progress_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       minutes_versions: {
         Row: {
           changes_summary: string | null

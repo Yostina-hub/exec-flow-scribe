@@ -110,8 +110,9 @@ const LiveQAGenerator = lazy(() => import("@/components/LiveQAGenerator").then(m
 const MeetingClosingSummary = lazy(() => import("@/components/MeetingClosingSummary").then(m => ({ default: m.MeetingClosingSummary })));
 const MeetingEffectivenessScoring = lazy(() => import("@/components/MeetingEffectivenessScoring").then(m => ({ default: m.MeetingEffectivenessScoring })));
 
-// Import CompleteMeetingDialog normally (not lazy loaded for immediate interactivity)
+// Import non-lazy components
 import { CompleteMeetingDialog } from "@/components/CompleteMeetingDialog";
+import { MinuteGenerationProgress } from "@/components/MinuteGenerationProgress";
 
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
@@ -189,6 +190,7 @@ const MeetingDetail = () => {
   const [showExecutiveAdvisor, setShowExecutiveAdvisor] = useState(false);
   const [showCompleteMeetingDialog, setShowCompleteMeetingDialog] = useState(false);
   const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
+  const [showGenerationProgress, setShowGenerationProgress] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const wasRecordingRef = useRef(false);
@@ -617,10 +619,8 @@ const MeetingDetail = () => {
         
         console.log('Starting auto-generation of minutes...');
         
-        toast({
-          title: '🚀 Generating Minutes',
-          description: 'Using fast AI model for quick results...',
-        });
+        // Show progress dialog instead of toast
+        setShowGenerationProgress(true);
 
         try {
           // Get auth session
@@ -669,14 +669,7 @@ const MeetingDetail = () => {
           }
 
           console.log('Minutes generated successfully!');
-
-          toast({
-            title: '✨ Minutes Ready',
-            description: 'Your meeting minutes have been generated',
-          });
-
-          // Auto-open the minutes viewer so users see the result immediately
-          setShowViewMinutesDialog(true);
+          // Progress dialog will handle completion notification
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
           
@@ -717,6 +710,7 @@ const MeetingDetail = () => {
           }
         } finally {
           setIsAutoGenerating(false);
+          setShowGenerationProgress(false);
         }
       }
       
@@ -1553,6 +1547,19 @@ const MeetingDetail = () => {
             videoConferenceUrl={meeting.video_conference_url}
           />
         )}
+
+        <MinuteGenerationProgress
+          meetingId={meetingId}
+          isOpen={showGenerationProgress}
+          onComplete={() => {
+            setShowGenerationProgress(false);
+            setShowViewMinutesDialog(true);
+            toast({
+              title: '✨ Minutes Ready',
+              description: 'Your meeting minutes have been generated',
+            });
+          }}
+        />
 
         {/* Executive Meeting Advisor */}
         {showExecutiveAdvisor && meeting && (

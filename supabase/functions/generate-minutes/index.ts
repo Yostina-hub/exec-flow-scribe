@@ -66,8 +66,34 @@ try {
     
     console.log("✅ User authenticated:", user.id);
 
+    // Helper function to update progress
+    const updateProgress = async (
+      status: string,
+      percentage: number,
+      step?: string,
+      estimatedSeconds?: number
+    ) => {
+      await supabase
+        .from('minute_generation_progress')
+        .upsert({
+          meeting_id: meetingId,
+          status,
+          progress_percentage: percentage,
+          current_step: step || null,
+          estimated_completion_seconds: estimatedSeconds || null,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'meeting_id'
+        });
+      console.log(`Progress: ${percentage}% - ${status} - ${step || ''}`);
+    };
+
+    // Initialize progress tracking
+    await updateProgress('initializing', 0, 'Starting minute generation...', 60);
+
     // Get user's AI provider preference & fetch meeting data in parallel
     console.log("📋 Fetching data in parallel...");
+    await updateProgress('fetching_data', 10, 'Fetching meeting data and transcriptions...', 50);
     const [
       { data: preference },
       { data: meeting, error: meetingError },
@@ -124,6 +150,8 @@ try {
     }
 
     const noTranscript = transcriptions.length === 0;
+
+    await updateProgress('analyzing', 30, 'Analyzing transcription and meeting data...', 40);
 
     // Combine and analyze transcript to detect dominant language (favor Amharic when mixed)
     const fullTranscript = transcriptions
@@ -500,6 +528,8 @@ Format as a professional markdown document with:
     let providerError = "";
     let providerStatus: number | null = null;
 
+    await updateProgress('generating', 50, 'Generating minutes with AI...', 30);
+
     // Try Gemini API first (primary as requested)
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
     if (geminiKey && !minutes) {
@@ -541,6 +571,7 @@ ${prompt}`
           const geminiData = await geminiResponse.json();
           minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
           console.log("✅ Minutes generated with Gemini API (Primary)");
+          await updateProgress('generating', 80, 'AI generation complete, preparing document...', 10);
         } else {
           const statusCode = geminiResponse.status;
           const errorText = await geminiResponse.text();
@@ -621,6 +652,7 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
           const lovableData = await lovableResponse.json();
           minutes = lovableData.choices?.[0]?.message?.content || "";
           console.log("✅ Minutes generated with Lovable AI (Fallback)");
+          await updateProgress('generating', 80, 'AI generation complete, preparing document...', 10);
         } else {
           const statusCode = lovableResponse.status;
           const errorText = await lovableResponse.text();
@@ -704,6 +736,7 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
           const openaiData = await openaiResponse.json();
           minutes = openaiData.choices?.[0]?.message?.content || "";
           console.log("✅ Minutes generated with OpenAI GPT-5");
+          await updateProgress('generating', 80, 'AI generation complete, preparing document...', 10);
         } else {
           const statusCode = openaiResponse.status;
           const errorText = await openaiResponse.text();
@@ -774,6 +807,7 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
     let nextVersion = (lastVersionRow?.version_number || 0) + 1;
 
     // Insert minutes record with simple retry to avoid race on unique (meeting_id, version_number)
+    await updateProgress('finalizing', 90, 'Saving meeting minutes...', 5);
     let inserted = false;
     let attempts = 0;
     // Try with current user first; on RLS failure, fall back to meeting owner
@@ -879,6 +913,9 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
       // Do not throw; minutes saved successfully
     }
 
+    // Mark as completed
+    await updateProgress('completed', 100, 'Minutes generated successfully!', 0);
+
     return new Response(
       JSON.stringify({
         success: true,
@@ -891,6 +928,33 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
 
   } catch (error) {
     console.error("Error in generate-minutes:", error);
+    
+    // Update progress with error
+    try {
+      const body = await req.json();
+      const meetingId = body.meetingId || body.meeting_id;
+      if (meetingId) {
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+        if (supabaseUrl && supabaseKey) {
+          const supabase = createClient(supabaseUrl, supabaseKey);
+          await supabase
+            .from('minute_generation_progress')
+            .upsert({
+              meeting_id: meetingId,
+              status: 'failed',
+              progress_percentage: 0,
+              error_message: error instanceof Error ? error.message : "Unknown error",
+              completed_at: new Date().toISOString()
+            }, {
+              onConflict: 'meeting_id'
+            });
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update error progress:", e);
+    }
+    
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
