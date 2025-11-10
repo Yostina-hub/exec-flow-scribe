@@ -45,30 +45,69 @@ serve(async (req) => {
     const translationPromises = targetLanguages.map(async (targetLang) => {
       try {
         const languageNames: { [key: string]: string } = {
-          'am': 'Amharic (አማርኛ) using Ge\'ez script',
-          'en': 'English',
-          'or': 'Afaan Oromo',
-          'so': 'Somali (Af-Soomaali)',
-          'ti': 'Tigrinya (ትግርኛ)'
+          'am': 'Amharic (አማርኛ) using Ge\'ez script with Ethiopian punctuation',
+          'en': 'English with standard punctuation',
+          'or': 'Afaan Oromo with appropriate punctuation',
+          'so': 'Somali (Af-Soomaali) with standard punctuation',
+          'ti': 'Tigrinya (ትግርኛ) using Ge\'ez script with Ethiopian punctuation'
         };
 
-        const prompt = `Translate the following meeting minutes from ${languageNames[sourceLanguage]} to ${languageNames[targetLang]}.
+        const prompt = `You are a highly skilled professional translator specializing in Ethiopian languages and executive business documentation. Translate the following meeting minutes with absolute precision and professionalism.
 
 CRITICAL TRANSLATION REQUIREMENTS:
-• Maintain the EXACT structure, formatting, headers, and markdown syntax
-• Preserve all punctuation marks appropriate to the target language
-• Keep all tables in proper markdown format
-• For Amharic/Tigrinya: Use Ethiopian punctuation (። ፣ ፤ ፦ ፥) consistently
-• Translate professionally maintaining business terminology accuracy
-• Keep the same level of formality and executive tone
-• DO NOT add or remove any content - only translate
-• Preserve all names, dates, and numerical data exactly as they appear
 
-Source content to translate:
+📋 STRUCTURAL FIDELITY:
+• Maintain EXACT structure, formatting, all headers, and complete markdown syntax
+• Preserve all tables in proper markdown format with aligned columns
+• Keep ALL bullet points, numbering, and list structures identical
+• Maintain paragraph breaks and visual hierarchy exactly as in source
+• DO NOT add or remove any sections, headers, or structural elements
+
+🎯 TRANSLATION EXCELLENCE:
+• Translate from ${languageNames[sourceLanguage]} to ${languageNames[targetLang]}
+• Use PROFESSIONAL, EXECUTIVE-LEVEL language appropriate for official business documentation
+• Maintain the same level of formality, gravitas, and sophistication
+• Employ formal business terminology with precision and accuracy
+• Keep technical terms accurate - translate or transliterate appropriately based on target language norms
+
+📍 LANGUAGE-SPECIFIC REQUIREMENTS:
+
+${targetLang === 'am' || targetLang === 'ti' ? `For ${languageNames[targetLang]}:
+• Use Ethiopian punctuation CONSISTENTLY and CORRECTLY:
+  ። = Full stop (end EVERY sentence)
+  ፣ = Comma (separate items and clauses)
+  ፤ = Semicolon (connect related clauses)
+  ፦ = Colon (introduce lists and elaborations)
+  ፥ = Section marker (major breaks)
+• Write in natural, flowing formal business language using proper SOV structure
+• Use executive-level vocabulary: ስብሰባ (meeting), ውይይት (discussion), ውሳኔ (decision), ተግባር (action)
+• Apply proper honorifics: አቶ, ወ/ሮ, ዶ/ር, ኢንጅነር, etc.
+• Ensure flawless Ge\'ez script spelling and grammar
+• Make it read like documentation from Ethiopia's most skilled executive secretary` : 
+`For ${languageNames[targetLang]}:
+• Use proper punctuation for this language consistently
+• Apply formal business vocabulary and executive-level tone
+• Ensure grammatical perfection and natural flow
+• Maintain professional standards appropriate for official organizational records`}
+
+🔒 CONTENT PRESERVATION:
+• Preserve ALL names, dates, times, locations, and numerical data EXACTLY as they appear
+• Keep all proper nouns in their original form unless translation is standard practice
+• Maintain all emphasis, formatting (bold, italic), and special markers
+• DO NOT add explanations, interpretations, or additional context
+• DO NOT remove or summarize any content - translate everything
+
+🏆 QUALITY STANDARDS:
+• Professional enough for executive board presentations
+• Accurate enough for legal and official organizational records  
+• Polished enough to represent highest institutional standards
+• Natural enough to read as if originally written in target language
+
+SOURCE CONTENT TO TRANSLATE:
 
 ${content}
 
-Provide ONLY the translated content, maintaining exact formatting.`;
+Provide ONLY the professionally translated content, maintaining exact formatting and structure.`;
 
         const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
           method: "POST",

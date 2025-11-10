@@ -616,8 +616,9 @@ const MeetingDetail = () => {
         return;
       }
       
-      // Check if recording just stopped (was recording, now not recording)
-      if (wasRecording && !isRecording && !isAutoGenerating) {
+      // Only proceed if recording just stopped (was recording, now not) AND not already generating
+      // Also check if we've already processed this recording session
+      if (wasRecording && !isRecording && !isAutoGenerating && recordingSeconds > 0) {
         setIsAutoGenerating(true);
         
         console.log('Starting auto-generation of minutes...');
@@ -676,7 +677,14 @@ const MeetingDetail = () => {
           }
 
           console.log('Minutes generated successfully!');
-          // Progress dialog will handle completion notification
+          
+          // Close progress dialog after a brief moment to show completion
+          setTimeout(() => {
+            setShowGenerationProgress(false);
+          }, 2000);
+          
+          // Refetch meeting data to show updated minutes
+          refetch();
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
           
