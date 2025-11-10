@@ -84,6 +84,7 @@ export const CreateMeetingDialog = () => {
       const meetingType = formData.get("meeting_type") as string;
       const videoProvider = formData.get("video_provider") as string;
       let videoUrl = formData.get("video_url") as string;
+      const sensitivityLevel = formData.get("sensitivity_level") as string || 'standard';
 
       if (!date) {
         toast.error("Please select a date");
@@ -158,11 +159,27 @@ export const CreateMeetingDialog = () => {
           video_conference_url: (meetingType === 'video_conference' ? videoUrl : null) || null,
           video_provider: (meetingType === 'video_conference' ? videoProvider : null) as any,
           requires_offline_support: meetingType === 'standard',
+          sensitivity_level: sensitivityLevel,
         } as any)
         .select()
         .single();
 
       if (meetingError) throw meetingError;
+
+      // Check if auto-encryption is enabled for this sensitivity level
+      const { data: autoEncryptRule } = await supabase
+        .from('auto_encryption_rules')
+        .select('auto_encrypt')
+        .eq('sensitivity_level', sensitivityLevel)
+        .maybeSingle();
+
+      if (autoEncryptRule?.auto_encrypt) {
+        // Update meeting to mark as encrypted
+        await supabase
+          .from('meetings')
+          .update({ is_encrypted: true })
+          .eq('id', meeting.id);
+      }
 
       // If recurring, create recurrence rule
       if (isRecurring && recurrenceFreq && recurrenceFreq !== "none") {
@@ -381,6 +398,24 @@ export const CreateMeetingDialog = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sensitivity_level">Security Level</Label>
+              <Select defaultValue="standard" name="sensitivity_level">
+                <SelectTrigger id="sensitivity_level">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">Standard</SelectItem>
+                  <SelectItem value="confidential">Confidential</SelectItem>
+                  <SelectItem value="highly_confidential">Highly Confidential</SelectItem>
+                  <SelectItem value="top_secret">Top Secret</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                High-security meetings may be automatically encrypted based on your settings
+              </p>
             </div>
 
             <div className="space-y-3 border rounded-lg p-4">

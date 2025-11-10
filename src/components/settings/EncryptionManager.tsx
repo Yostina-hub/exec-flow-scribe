@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Shield, Lock, Key, AlertTriangle, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Switch } from '@/components/ui/switch';
 import {
   Dialog,
   DialogContent,
@@ -28,6 +29,7 @@ export function EncryptionManager() {
   const [hint, setHint] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [keyInfo, setKeyInfo] = useState<any>(null);
+  const [autoEncryptRules, setAutoEncryptRules] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     checkEncryptionStatus();
@@ -50,6 +52,22 @@ export function EncryptionManager() {
 
       setIsSetup(!!data);
       setKeyInfo(data);
+
+      // Fetch auto-encryption rules
+      if (data) {
+        const { data: rules, error: rulesError } = await supabase
+          .from('auto_encryption_rules')
+          .select('*')
+          .eq('user_id', user.id);
+
+        if (!rulesError && rules) {
+          const rulesMap: Record<string, boolean> = {};
+          rules.forEach((rule: any) => {
+            rulesMap[rule.sensitivity_level] = rule.auto_encrypt;
+          });
+          setAutoEncryptRules(rulesMap);
+        }
+      }
     } catch (error: any) {
       console.error('Error checking encryption status:', error);
     } finally {
@@ -103,6 +121,38 @@ export function EncryptionManager() {
       });
     } finally {
       setIsSettingUp(false);
+    }
+  };
+
+  const handleAutoEncryptToggle = async (level: string, enabled: boolean) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('auto_encryption_rules')
+        .upsert({
+          user_id: user.id,
+          sensitivity_level: level,
+          auto_encrypt: enabled,
+        }, {
+          onConflict: 'user_id,sensitivity_level'
+        });
+
+      if (error) throw error;
+
+      setAutoEncryptRules(prev => ({ ...prev, [level]: enabled }));
+
+      toast({
+        title: 'Auto-Encryption Updated',
+        description: `${level} meetings will ${enabled ? 'now' : 'no longer'} be automatically encrypted`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Update Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -236,6 +286,41 @@ export function EncryptionManager() {
                   Keep your password secure. Data encrypted with this key cannot be recovered if the password is lost.
                 </AlertDescription>
               </Alert>
+
+              <div className="space-y-4 pt-4 border-t">
+                <h4 className="font-semibold flex items-center gap-2">
+                  <Lock className="w-4 h-4" />
+                  Auto-Encryption Rules
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  Automatically encrypt meetings based on sensitivity level
+                </p>
+                
+                <div className="space-y-3">
+                  {[
+                    { level: 'standard', label: 'Standard', description: 'Regular meetings' },
+                    { level: 'confidential', label: 'Confidential', description: 'Sensitive business information' },
+                    { level: 'highly_confidential', label: 'Highly Confidential', description: 'Restricted access required' },
+                    { level: 'top_secret', label: 'Top Secret', description: 'Maximum security' }
+                  ].map(({ level, label, description }) => (
+                    <div key={level} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch
+                          checked={autoEncryptRules[level] || false}
+                          onCheckedChange={(checked) => handleAutoEncryptToggle(level, checked)}
+                        />
+                        <span className="text-xs text-muted-foreground min-w-[45px]">
+                          {autoEncryptRules[level] ? 'Auto' : 'Manual'}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </>
           )}
         </CardContent>

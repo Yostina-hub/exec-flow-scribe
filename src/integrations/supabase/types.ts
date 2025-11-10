@@ -406,6 +406,33 @@ export type Database = {
           },
         ]
       }
+      auto_encryption_rules: {
+        Row: {
+          auto_encrypt: boolean
+          created_at: string
+          id: string
+          sensitivity_level: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_encrypt?: boolean
+          created_at?: string
+          id?: string
+          sensitivity_level: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_encrypt?: boolean
+          created_at?: string
+          id?: string
+          sensitivity_level?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       automated_workflows: {
         Row: {
           actions: Json
