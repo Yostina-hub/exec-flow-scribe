@@ -413,17 +413,17 @@ export default function ExecutiveAdvisor() {
   if (!selectedMeetingId) {
     return (
       <div className="space-y-6 animate-fade-in">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-secondary to-primary p-8 lg:p-12 text-white shadow-2xl">
+        {/* Hero Section - Ethio Telecom Branded */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[hsl(86,53%,51%)] via-[hsl(198,100%,37%)] to-[hsl(86,53%,35%)] p-8 lg:p-12 text-white shadow-2xl">
           <div className="absolute inset-0 bg-grid-white/10"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-secondary/20 animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(86,53%,51%)]/20 to-[hsl(198,100%,37%)]/20 animate-pulse"></div>
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl glass backdrop-blur-xl border-white/30">
+                <div className="p-3 rounded-xl glass backdrop-blur-xl border-white/30 bg-white/10">
                   <Brain className="h-8 w-8 animate-pulse drop-shadow-lg" />
                 </div>
-                <Badge variant="secondary" className="text-sm px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30 text-white">
+                <Badge variant="secondary" className="text-sm px-3 py-1 bg-white/20 backdrop-blur-sm border-white/30 text-white hover:bg-white/30">
                   AI-Powered Intelligence
                 </Badge>
               </div>
@@ -431,7 +431,7 @@ export default function ExecutiveAdvisor() {
                 variant="outline" 
                 size="sm"
                 onClick={() => setShowHelpGuide(true)}
-                className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 gap-2"
+                className="bg-white/10 backdrop-blur-sm border-white/30 text-white hover:bg-white/20 hover:text-white gap-2"
               >
                 <HelpCircle className="h-4 w-4" />
                 User Guide
@@ -664,9 +664,9 @@ export default function ExecutiveAdvisor() {
                 </CardContent>
               </Card>
 
-              <Card className="border-0 bg-gradient-to-br from-background to-pink-500/5 backdrop-blur-xl shadow-lg">
+              <Card className="border-0 bg-gradient-to-br from-background to-[hsl(86,53%,51%)]/5 backdrop-blur-xl shadow-lg">
                 <CardHeader className="pb-3">
-                  <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 shadow-lg mb-2">
+                  <div className="p-2.5 w-fit rounded-xl bg-gradient-to-br from-[hsl(86,53%,51%)] to-[hsl(198,100%,37%)] shadow-lg mb-2">
                     <Sparkles className="h-5 w-5 text-white" />
                   </div>
                   <CardTitle className="text-lg font-display">Key Points & Q&A</CardTitle>
@@ -725,7 +725,7 @@ export default function ExecutiveAdvisor() {
         </Button>
         <Button 
           onClick={() => setShowAdvisorModal(true)}
-          className="gap-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          className="gap-2 bg-gradient-to-r from-[hsl(86,53%,51%)] to-[hsl(198,100%,37%)] hover:from-[hsl(86,53%,45%)] hover:to-[hsl(198,100%,32%)] text-white"
         >
           <Headphones className="h-4 w-4" />
           Open AI Coach
