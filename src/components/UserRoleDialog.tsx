@@ -130,6 +130,20 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
         if (deleteError) throw deleteError;
       }
 
+      // Verify assignments when readable
+      const { data: after, error: verifyError } = await supabase
+        .from('user_roles')
+        .select('role_id')
+        .eq('user_id', user.id);
+
+      if (!verifyError && after) {
+        const assigned = new Set(after.map((r: any) => r.role_id));
+        const missing = Array.from(selectedRoleIds).filter((id) => !assigned.has(id));
+        if (missing.length > 0) {
+          throw new Error('Some roles were not assigned due to access rules.');
+        }
+      }
+
       toast({
         title: "Success",
         description: "User roles updated successfully",

@@ -134,6 +134,19 @@ export function RoleAssignmentManager() {
         return;
       }
 
+      // Verify persisted (when readable)
+      const currentUserId = currentUser?.user?.id;
+      const { data: verify, error: verifyError } = await supabase
+        .from('user_roles')
+        .select('id')
+        .eq('user_id', selectedUser)
+        .eq('role_id', selectedRole)
+        .maybeSingle();
+
+      if (!verify && !(verifyError && selectedUser !== currentUserId)) {
+        throw new Error('Role assignment did not persist.');
+      }
+
       toast({
         title: 'Success',
         description: 'Role assigned successfully',

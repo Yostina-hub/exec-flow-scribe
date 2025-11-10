@@ -5508,6 +5508,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_any_admin: { Args: never; Returns: boolean }
       has_any_role: { Args: { _user_id: string }; Returns: boolean }
       has_permission: {
         Args: {
