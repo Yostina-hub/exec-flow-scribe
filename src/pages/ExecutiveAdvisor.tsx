@@ -30,6 +30,7 @@ export default function ExecutiveAdvisor() {
   const navigate = useNavigate();
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<MeetingCategory | null>(null);
   const [lastViewedTimestamps, setLastViewedTimestamps] = useState<Record<MeetingCategory, Date>>(() => {
     const stored = localStorage.getItem('executive_advisor_last_viewed');
     if (stored) {
@@ -199,19 +200,15 @@ export default function ExecutiveAdvisor() {
       signoff_approved: updated.signoff_approved.toISOString(),
     }));
     
-    // Navigate based on category
-    if (category === 'signoff_pending' || category === 'signoff_approved') {
-      const meetings = categorizedMeetings[category];
-      if (meetings.length > 0) {
-        const meeting = meetings[0];
-        if (category === 'signoff_pending' && meeting.signature_requests?.[0]?.id) {
-          navigate(`/signature/${meeting.signature_requests[0].id}`);
-        } else {
-          navigate(`/meetings/${meeting.id}`);
-        }
-      }
+    // Show meetings in this category on the same page
+    setSelectedCategory(category);
+  };
+
+  const handleMeetingClick = (meeting: Meeting, category: MeetingCategory) => {
+    if (category === 'signoff_pending' && meeting.signature_requests?.[0]?.id) {
+      navigate(`/signature/${meeting.signature_requests[0].id}`);
     } else {
-      navigate(`/meetings`);
+      navigate(`/meetings/${meeting.id}`);
     }
   };
 
@@ -511,6 +508,89 @@ export default function ExecutiveAdvisor() {
           </div>
         )}
       </div>
+
+      {/* Display selected category meetings */}
+      {selectedCategory && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-dark">
+                {selectedCategory === 'upcoming' && <Clock className="h-5 w-5 text-white" />}
+                {selectedCategory === 'completed' && <CheckCircle2 className="h-5 w-5 text-white" />}
+                {selectedCategory === 'signoff_pending' && <AlertCircle className="h-5 w-5 text-white" />}
+                {selectedCategory === 'signoff_approved' && <CheckCircle2 className="h-5 w-5 text-white" />}
+              </div>
+              <div>
+                <h2 className="text-2xl font-display font-bold">
+                  {selectedCategory === 'upcoming' && 'Upcoming Meetings'}
+                  {selectedCategory === 'completed' && 'Completed Meetings'}
+                  {selectedCategory === 'signoff_pending' && 'Sign-off Pending'}
+                  {selectedCategory === 'signoff_approved' && 'Sign-off Approved'}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {categorizedMeetings[selectedCategory].length} meeting{categorizedMeetings[selectedCategory].length !== 1 ? 's' : ''}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Back to dashboard
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4">
+            {categorizedMeetings[selectedCategory].map((meeting) => (
+              <Card
+                key={meeting.id}
+                className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:scale-[1.01]"
+                onClick={() => handleMeetingClick(meeting, selectedCategory)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">
+                        {meeting.title}
+                      </h3>
+                      {meeting.description && (
+                        <p className="text-sm text-muted-foreground mb-3">
+                          {meeting.description}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {new Date(meeting.start_time).toLocaleString()}
+                        </Badge>
+                        {meeting.location && (
+                          <Badge variant="outline" className="text-xs">
+                            {meeting.location}
+                          </Badge>
+                        )}
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {meeting.meeting_type?.replace('_', ' ')}
+                        </Badge>
+                        {selectedCategory === 'signoff_pending' && (
+                          <Badge className="text-xs bg-yellow-500/20 text-yellow-700 dark:text-yellow-400">
+                            Awaiting Sign-off
+                          </Badge>
+                        )}
+                        {selectedCategory === 'signoff_approved' && (
+                          <Badge className="text-xs bg-green-500/20 text-green-700 dark:text-green-400">
+                            Approved
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors flex-shrink-0" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
