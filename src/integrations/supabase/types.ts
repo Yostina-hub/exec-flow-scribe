@@ -3922,46 +3922,58 @@ export type Database = {
       }
       meeting_templates: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string
           default_agenda: Json | null
           default_attendee_roles: Json | null
           description: string | null
+          download_count: number | null
           duration_minutes: number | null
           id: string
           is_public: boolean | null
           meeting_settings: Json | null
           name: string
+          shared_at: string | null
+          shared_by: string | null
           template_type: string | null
           updated_at: string
           use_count: number | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by: string
           default_agenda?: Json | null
           default_attendee_roles?: Json | null
           description?: string | null
+          download_count?: number | null
           duration_minutes?: number | null
           id?: string
           is_public?: boolean | null
           meeting_settings?: Json | null
           name: string
+          shared_at?: string | null
+          shared_by?: string | null
           template_type?: string | null
           updated_at?: string
           use_count?: number | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string
           default_agenda?: Json | null
           default_attendee_roles?: Json | null
           description?: string | null
+          download_count?: number | null
           duration_minutes?: number | null
           id?: string
           is_public?: boolean | null
           meeting_settings?: Json | null
           name?: string
+          shared_at?: string | null
+          shared_by?: string | null
           template_type?: string | null
           updated_at?: string
           use_count?: number | null
