@@ -1013,6 +1013,33 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
     // Mark as completed
     await updateProgress('completed', 100, 'Minutes generated successfully!', 0);
 
+    // Trigger automatic translation to all Ethiopian languages in the background
+    // This runs asynchronously and doesn't block the response
+    const triggerTranslations = async () => {
+      try {
+        console.log(`🌍 Starting automatic translation for meeting ${meetingId} from ${detectedLang}`);
+        
+        const { error: translationError } = await supabase.functions.invoke('translate-minutes-batch', {
+          body: {
+            meetingId,
+            content: minutes,
+            sourceLanguage: detectedLang
+          }
+        });
+
+        if (translationError) {
+          console.error('❌ Batch translation failed:', translationError);
+        } else {
+          console.log('✅ Automatic translations completed successfully');
+        }
+      } catch (error) {
+        console.error('❌ Translation trigger error:', error);
+      }
+    };
+
+    // Start translations in background without blocking response
+    triggerTranslations();
+
     return new Response(
       JSON.stringify({
         success: true,

@@ -12,6 +12,9 @@ verify_jwt = true
 [functions.translate-minutes]
 verify_jwt = true
 
+[functions.translate-minutes-batch]
+verify_jwt = false
+
 [functions.generate-non-technical-summary]
 verify_jwt = true
 

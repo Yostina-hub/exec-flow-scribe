@@ -43,6 +43,7 @@ export const GenerateMinutesDialog = ({
   const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
+  const [availableTranslations, setAvailableTranslations] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { startGeneration } = useMinuteGeneration();
 
@@ -51,8 +52,64 @@ export const GenerateMinutesDialog = ({
       fetchAIProvider();
       fetchExistingMinutes();
       fetchMeetingTitle();
+      fetchAvailableTranslations();
+      subscribeToTranslations();
     }
   }, [open]);
+
+  const fetchAvailableTranslations = async () => {
+    try {
+      const { data } = await supabase
+        .from('minute_translations')
+        .select('language')
+        .eq('meeting_id', meetingId);
+      
+      if (data) {
+        setAvailableTranslations(new Set(data.map(t => t.language)));
+      }
+    } catch (error) {
+      console.error('Error fetching translations:', error);
+    }
+  };
+
+  const subscribeToTranslations = () => {
+    const channel = supabase
+      .channel('minute-translations')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'minute_translations',
+          filter: `meeting_id=eq.${meetingId}`
+        },
+        (payload) => {
+          console.log('New translation available:', payload.new);
+          setAvailableTranslations(prev => new Set([...prev, payload.new.language]));
+          
+          toast({
+            title: 'Translation Ready',
+            description: `${getLanguageName(payload.new.language)} translation is now available`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  };
+
+  const getLanguageName = (lang: string) => {
+    const names: { [key: string]: string } = {
+      'am': 'Amharic',
+      'en': 'English',
+      'or': 'Afaan Oromo',
+      'so': 'Somali',
+      'ti': 'Tigrinya'
+    };
+    return names[lang] || lang;
+  };
 
   const fetchMeetingTitle = async () => {
     try {
@@ -169,8 +226,13 @@ export const GenerateMinutesDialog = ({
       
       toast({
         title: 'Success!',
-        description: 'Meeting minutes generated successfully in ' + 
-          (detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : detected === 'so' ? 'Somali' : detected === 'ti' ? 'Tigrinya' : 'English'),
+        description: (
+          <div>
+            <p>Meeting minutes generated successfully in {detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : detected === 'so' ? 'Somali' : detected === 'ti' ? 'Tigrinya' : 'English'}</p>
+            <p className="text-xs mt-1 text-muted-foreground">🌍 Automatic translations to other Ethiopian languages are being prepared in the background...</p>
+          </div>
+        ),
+        duration: 6000,
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
@@ -221,6 +283,28 @@ export const GenerateMinutesDialog = ({
     
     setIsTranslating(true);
     try {
+      // First, try to fetch from stored translations
+      const { data: storedTranslation } = await supabase
+        .from('minute_translations')
+        .select('content')
+        .eq('meeting_id', meetingId)
+        .eq('language', targetLang)
+        .maybeSingle();
+
+      if (storedTranslation?.content) {
+        console.log(`Using stored translation for ${targetLang}`);
+        setMinutes(storedTranslation.content);
+        setCurrentLanguage(targetLang);
+        setIsTranslating(false);
+        toast({
+          title: 'Translation Loaded',
+          description: `Switched to ${getLanguageName(targetLang)}`,
+        });
+        return;
+      }
+
+      // If not available, translate on-demand and store
+      console.log(`Translating on-demand to ${targetLang}`);
       const { data, error } = await supabase.functions.invoke('translate-minutes', {
         body: {
           content: originalMinutes,
@@ -233,9 +317,24 @@ export const GenerateMinutesDialog = ({
       if (data?.translatedContent) {
         setMinutes(data.translatedContent);
         setCurrentLanguage(targetLang);
+        
+        // Store the translation for future use
+        await supabase
+          .from('minute_translations')
+          .upsert({
+            meeting_id: meetingId,
+            language: targetLang,
+            content: data.translatedContent,
+            source_language: detectedLanguage,
+          }, {
+            onConflict: 'meeting_id,language'
+          });
+        
+        setAvailableTranslations(prev => new Set([...prev, targetLang]));
+        
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : targetLang === 'ti' ? 'Tigrinya' : 'English'}`,
+          description: `Minutes translated to ${getLanguageName(targetLang)}`,
         });
       }
     } catch (error: any) {
@@ -327,7 +426,7 @@ export const GenerateMinutesDialog = ({
                   size="default"
                   onClick={() => handleLanguageToggle('am')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0 relative"
                 >
                   {isTranslating && currentLanguage !== 'am' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -335,13 +434,16 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   አማርኛ
+                  {availableTranslations.has('am') && currentLanguage !== 'am' && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
+                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'ti' ? 'default' : 'outline'}
                   size="default"
                   onClick={() => handleLanguageToggle('ti')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0 relative"
                 >
                   {isTranslating && currentLanguage !== 'ti' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -349,13 +451,16 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   ትግርኛ
+                  {availableTranslations.has('ti') && currentLanguage !== 'ti' && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
+                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'en' ? 'default' : 'outline'}
                   size="default"
                   onClick={() => handleLanguageToggle('en')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0 relative"
                 >
                   {isTranslating && currentLanguage !== 'en' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -363,13 +468,16 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   English
+                  {availableTranslations.has('en') && currentLanguage !== 'en' && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
+                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'or' ? 'default' : 'outline'}
                   size="default"
                   onClick={() => handleLanguageToggle('or')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0 relative"
                 >
                   {isTranslating && currentLanguage !== 'or' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -377,13 +485,16 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   Afaan Oromo
+                  {availableTranslations.has('or') && currentLanguage !== 'or' && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
+                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'so' ? 'default' : 'outline'}
                   size="default"
                   onClick={() => handleLanguageToggle('so')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0"
+                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0 relative"
                 >
                   {isTranslating && currentLanguage !== 'so' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -391,6 +502,9 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   Af-Soomaali
+                  {availableTranslations.has('so') && currentLanguage !== 'so' && (
+                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
+                  )}
                 </Button>
               </div>
               

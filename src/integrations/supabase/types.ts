@@ -4276,6 +4276,44 @@ export type Database = {
         }
         Relationships: []
       }
+      minute_translations: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          language: string
+          meeting_id: string
+          source_language: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          language: string
+          meeting_id: string
+          source_language: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          language?: string
+          meeting_id?: string
+          source_language?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minute_translations_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       minutes_versions: {
         Row: {
           changes_summary: string | null
