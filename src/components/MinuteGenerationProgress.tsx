@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { playSuccessSound, playErrorSound } from '@/utils/soundEffects';
 
 interface MinuteGenerationProgressProps {
   meetingId: string;
@@ -70,11 +71,14 @@ export const MinuteGenerationProgress = ({
           const newData = payload.new as ProgressData;
           setProgress(newData);
 
-          // Auto-close on completion or failure
+          // Auto-close on completion or failure with audio feedback
           if (newData.status === 'completed') {
+            playSuccessSound();
             setTimeout(() => {
               onComplete();
             }, 2000);
+          } else if (newData.status === 'failed') {
+            playErrorSound();
           }
         }
       )
@@ -93,9 +97,12 @@ export const MinuteGenerationProgress = ({
       if (data) {
         setProgress(data);
         if (data.status === 'completed') {
+          playSuccessSound();
           setTimeout(() => {
             onComplete();
           }, 2000);
+        } else if (data.status === 'failed') {
+          playErrorSound();
         }
       }
     };

@@ -82,6 +82,12 @@ class SoundEffectPlayer {
     setTimeout(() => this.createBeep(440, 0.2, 0.2), 200);
   }
 
+  // Play error sound (descending tones)
+  playError() {
+    this.createBeep(392, 0.15, 0.3); // G4
+    setTimeout(() => this.createBeep(293.66, 0.2, 0.35), 150); // D4
+  }
+
   // Clean up
   dispose() {
     try {
@@ -96,3 +102,8 @@ class SoundEffectPlayer {
 }
 
 export const soundFX = new SoundEffectPlayer();
+
+// Export convenience functions for common sound effects
+export const playSuccessSound = () => soundFX.playSuccess();
+export const playErrorSound = () => soundFX.playError();
+export const playNotificationSound = () => soundFX.playNotification();
