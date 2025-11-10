@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { UserRoleDialog } from "@/components/UserRoleDialog";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
 import { EditUserDialog } from "@/components/EditUserDialog";
+import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 import { toast } from "@/hooks/use-toast";
-import { Shield, UserPlus, Pencil } from "lucide-react";
+import { Shield, UserPlus, Pencil, KeyRound } from "lucide-react";
 
 interface UserWithRoles {
   id: string;
@@ -24,6 +25,7 @@ export function UserManagementTab() {
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -81,6 +83,11 @@ export function UserManagementTab() {
   const handleEditUser = (user: UserWithRoles) => {
     setSelectedUser(user);
     setEditDialogOpen(true);
+  };
+
+  const handleResetPassword = (user: UserWithRoles) => {
+    setSelectedUser(user);
+    setResetPasswordDialogOpen(true);
   };
 
   return (
@@ -144,6 +151,14 @@ export function UserManagementTab() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={() => handleResetPassword(user)}
+                        >
+                          <KeyRound className="h-4 w-4 mr-2" />
+                          Reset
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={() => handleManageRoles(user)}
                         >
                           <Shield className="h-4 w-4 mr-2" />
@@ -178,6 +193,12 @@ export function UserManagementTab() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onSuccess={fetchUsers}
+        user={selectedUser}
+      />
+
+      <ResetPasswordDialog
+        open={resetPasswordDialogOpen}
+        onOpenChange={setResetPasswordDialogOpen}
         user={selectedUser}
       />
     </>
