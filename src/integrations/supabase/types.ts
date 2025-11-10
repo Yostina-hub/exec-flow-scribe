@@ -1969,6 +1969,36 @@ export type Database = {
           },
         ]
       }
+      encryption_audit_log: {
+        Row: {
+          action: string
+          id: string
+          metadata: Json | null
+          resource_id: string | null
+          resource_type: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          id?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          id?: string
+          metadata?: Json | null
+          resource_id?: string | null
+          resource_type?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       escalation_config: {
         Row: {
           created_at: string | null
@@ -3918,8 +3948,10 @@ export type Database = {
           created_at: string
           created_by: string
           description: string | null
+          encryption_metadata: Json | null
           end_time: string
           id: string
+          is_encrypted: boolean | null
           is_recurring: boolean | null
           location: string | null
           meeting_type: Database["public"]["Enums"]["meeting_type"] | null
@@ -3944,8 +3976,10 @@ export type Database = {
           created_at?: string
           created_by: string
           description?: string | null
+          encryption_metadata?: Json | null
           end_time: string
           id?: string
+          is_encrypted?: boolean | null
           is_recurring?: boolean | null
           location?: string | null
           meeting_type?: Database["public"]["Enums"]["meeting_type"] | null
@@ -3970,8 +4004,10 @@ export type Database = {
           created_at?: string
           created_by?: string
           description?: string | null
+          encryption_metadata?: Json | null
           end_time?: string
           id?: string
+          is_encrypted?: boolean | null
           is_recurring?: boolean | null
           location?: string | null
           meeting_type?: Database["public"]["Enums"]["meeting_type"] | null
@@ -5555,7 +5591,9 @@ export type Database = {
           content: string
           created_at: string
           detected_language: string | null
+          encryption_iv: string | null
           id: string
+          is_encrypted: boolean | null
           meeting_id: string
           speaker_id: string | null
           speaker_name: string | null
@@ -5566,7 +5604,9 @@ export type Database = {
           content: string
           created_at?: string
           detected_language?: string | null
+          encryption_iv?: string | null
           id?: string
+          is_encrypted?: boolean | null
           meeting_id: string
           speaker_id?: string | null
           speaker_name?: string | null
@@ -5577,7 +5617,9 @@ export type Database = {
           content?: string
           created_at?: string
           detected_language?: string | null
+          encryption_iv?: string | null
           id?: string
+          is_encrypted?: boolean | null
           meeting_id?: string
           speaker_id?: string | null
           speaker_name?: string | null
@@ -5684,6 +5726,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_encryption_keys: {
+        Row: {
+          created_at: string | null
+          encrypted_key: string
+          id: string
+          is_active: boolean | null
+          key_hint: string | null
+          key_salt: string
+          last_used_at: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          encrypted_key: string
+          id?: string
+          is_active?: boolean | null
+          key_hint?: string | null
+          key_salt: string
+          last_used_at?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          encrypted_key?: string
+          id?: string
+          is_active?: boolean | null
+          key_hint?: string | null
+          key_salt?: string
+          last_used_at?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

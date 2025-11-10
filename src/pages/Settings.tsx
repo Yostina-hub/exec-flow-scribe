@@ -29,6 +29,7 @@ import { GubaTaskSettings } from "@/components/settings/GubaTaskSettings";
 import { DepartmentManager } from "@/components/guba/DepartmentManager";
 import { TaskNotificationPreferences } from "@/components/guba/TaskNotificationPreferences";
 import { LanguagePreference } from "@/components/settings/LanguagePreference";
+import { EncryptionManager } from "@/components/settings/EncryptionManager";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -961,6 +962,8 @@ const Settings = () => {
 
           {/* Security Tab */}
           <TabsContent value="security" className="space-y-6">
+            <EncryptionManager />
+            
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
