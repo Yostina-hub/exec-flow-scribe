@@ -6,8 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { UserRoleDialog } from "@/components/UserRoleDialog";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
+import { EditUserDialog } from "@/components/EditUserDialog";
 import { toast } from "@/hooks/use-toast";
-import { Shield, UserPlus } from "lucide-react";
+import { Shield, UserPlus, Pencil } from "lucide-react";
 
 interface UserWithRoles {
   id: string;
@@ -22,6 +23,7 @@ export function UserManagementTab() {
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -70,6 +72,11 @@ export function UserManagementTab() {
   const handleManageRoles = (user: UserWithRoles) => {
     setSelectedUser(user);
     setRoleDialogOpen(true);
+  };
+
+  const handleEditUser = (user: UserWithRoles) => {
+    setSelectedUser(user);
+    setEditDialogOpen(true);
   };
 
   return (
@@ -121,14 +128,24 @@ export function UserManagementTab() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleManageRoles(user)}
-                      >
-                        <Shield className="h-4 w-4 mr-2" />
-                        Manage Roles
-                      </Button>
+                      <div className="flex gap-2 justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditUser(user)}
+                        >
+                          <Pencil className="h-4 w-4 mr-2" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleManageRoles(user)}
+                        >
+                          <Shield className="h-4 w-4 mr-2" />
+                          Roles
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -151,6 +168,13 @@ export function UserManagementTab() {
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         onSuccess={fetchUsers}
+      />
+
+      <EditUserDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSuccess={fetchUsers}
+        user={selectedUser}
       />
     </>
   );
