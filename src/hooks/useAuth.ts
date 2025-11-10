@@ -21,36 +21,28 @@ export function useAuth() {
     }
 
     try {
-      // Add timeout to prevent infinite loading
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Auth check timeout')), 10000)
-      );
-      
-      const authPromise = supabase.auth.getUser();
-      
-      const { data: { user: fetchedUser }, error } = await Promise.race([
-        authPromise,
-        timeoutPromise
-      ]) as any;
+      const { data: { user: fetchedUser }, error } = await supabase.auth.getUser();
       
       if (error) {
         console.error('Auth error:', error);
-        throw error;
+        cachedUser = null;
+        setUser(null);
+        setLoading(false);
+        return null;
       }
       
       cachedUser = fetchedUser;
       cacheTime = now;
       setUser(fetchedUser);
+      setLoading(false);
       
       return fetchedUser;
     } catch (error) {
       console.error('Auth fetch error:', error);
-      // Don't cache null on timeout/error to allow retry
       cachedUser = null;
       setUser(null);
-      return null;
-    } finally {
       setLoading(false);
+      return null;
     }
   }, []);
 
