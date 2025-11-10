@@ -5533,6 +5533,10 @@ export type Database = {
         Returns: boolean
       }
       can_start_task: { Args: { p_task_id: string }; Returns: boolean }
+      can_view_meeting_sr: {
+        Args: { _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_users_with_role_name: {
         Args: { _role_name: string }
         Returns: {

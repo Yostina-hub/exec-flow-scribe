@@ -82,8 +82,7 @@ export default function ExecutiveAdvisor() {
     
     setLoading(true);
     try {
-      // Base query: recent meetings with related signature requests
-      const { data: baseMeetings, error: baseError } = await supabase
+      const { data, error } = await supabase
         .from('meetings')
         .select(`
           *,
@@ -94,40 +93,14 @@ export default function ExecutiveAdvisor() {
         `)
         .order('start_time', { ascending: false })
         .limit(50);
-
-      if (baseError) throw baseError;
-
-      // Ensure we also include meetings that the user is involved in via signature requests
-      const { data: mySRs } = await supabase
-        .from('signature_requests')
-        .select('meeting_id, status')
-        .in('status', ['pending', 'requested', 'delegated'])
-        .or(`assigned_to.eq.${user.id},requested_by.eq.${user.id}`);
-
-      const base = baseMeetings || [];
-      const srMeetingIds = Array.from(new Set((mySRs || []).map((s: any) => s.meeting_id)));
-      const missingIds = srMeetingIds.filter((id) => !base.some((m: any) => m.id === id));
-
-      let extra: any[] = [];
-      if (missingIds.length > 0) {
-        const { data: extraMeetings } = await supabase
-          .from('meetings')
-          .select(`
-            *,
-            signature_requests (
-              id,
-              status
-            )
-          `)
-          .in('id', missingIds);
-        extra = extraMeetings || [];
+      
+      if (error) {
+        console.error('Error fetching meetings:', error);
+        toast.error('Failed to load meetings: ' + error.message);
+        setMeetings([]);
+      } else {
+        setMeetings(data || []);
       }
-
-      // Deduplicate by id
-      const mergedMap = new Map<string, any>();
-      [...base, ...extra].forEach((m: any) => mergedMap.set(m.id, m));
-
-      setMeetings(Array.from(mergedMap.values()));
     } catch (err: any) {
       console.error('Unexpected error fetching meetings:', err);
       toast.error('Failed to load meetings');
