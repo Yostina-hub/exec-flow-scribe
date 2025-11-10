@@ -156,12 +156,13 @@ export const GenerateMinutesDialog = ({
       setMinutes(data.minutes);
       setOriginalMinutes(data.minutes);
       
-      // Detect language (default to Amharic)
+      // Detect language (default to Amharic for Ethiopian context)
       const detected = detectLanguage(data.minutes);
       if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so' || detected === 'ti') {
         setDetectedLanguage(detected);
         setCurrentLanguage(detected);
       } else {
+        // Default to Amharic for Ethiopian organizational context
         setDetectedLanguage('am');
         setCurrentLanguage('am');
       }
