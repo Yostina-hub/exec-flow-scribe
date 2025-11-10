@@ -297,3 +297,6 @@ verify_jwt = true
 [functions.generate-summary-with-template]
 verify_jwt = true
 
+[functions.generate-minute-chunk]
+verify_jwt = false
+

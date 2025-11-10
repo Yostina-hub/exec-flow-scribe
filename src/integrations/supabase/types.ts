@@ -4149,6 +4149,56 @@ export type Database = {
           },
         ]
       }
+      minute_chunks: {
+        Row: {
+          action_items: string[] | null
+          chunk_number: number
+          decisions: string[] | null
+          end_time: number
+          generated_at: string | null
+          id: string
+          key_points: string[] | null
+          meeting_id: string
+          start_time: number
+          summary: string | null
+          transcription_text: string | null
+        }
+        Insert: {
+          action_items?: string[] | null
+          chunk_number: number
+          decisions?: string[] | null
+          end_time: number
+          generated_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          meeting_id: string
+          start_time: number
+          summary?: string | null
+          transcription_text?: string | null
+        }
+        Update: {
+          action_items?: string[] | null
+          chunk_number?: number
+          decisions?: string[] | null
+          end_time?: number
+          generated_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          meeting_id?: string
+          start_time?: number
+          summary?: string | null
+          transcription_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minute_chunks_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       minute_generation_progress: {
         Row: {
           completed_at: string | null

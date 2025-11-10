@@ -151,7 +151,22 @@ try {
 
     const noTranscript = transcriptions.length === 0;
 
-    await updateProgress('analyzing', 30, 'Analyzing transcription and meeting data...', 40);
+    // Check if we have pre-generated chunks to speed up the process
+    const { data: existingChunks } = await supabase
+      .from('minute_chunks')
+      .select('*')
+      .eq('meeting_id', meetingId)
+      .order('chunk_number', { ascending: true });
+
+    let useChunks = false;
+    if (existingChunks && existingChunks.length > 0) {
+      console.log(`✨ Found ${existingChunks.length} pre-generated chunks, will use them for faster generation`);
+      useChunks = true;
+      await updateProgress('analyzing', 30, `Using ${existingChunks.length} pre-analyzed segments...`, 20);
+    } else {
+      console.log('📝 No pre-generated chunks found, will process full transcription');
+      await updateProgress('analyzing', 30, 'Analyzing full transcription...', 40);
+    }
 
     // Combine and analyze transcript to detect dominant language (favor Amharic when mixed)
     const fullTranscript = transcriptions
@@ -318,7 +333,83 @@ If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
 Never romanize or transliterate non-Latin scripts.`;
 
 // Generate minutes using selected AI provider with enhanced natural language instructions
-    const prompt = `🎯 YOUR MISSION: Create comprehensive, natural-sounding meeting minutes that capture EVERY detail and nuance from the discussion.
+    let prompt: string;
+    
+    if (useChunks && existingChunks && existingChunks.length > 0) {
+      // Build prompt from pre-analyzed chunks (faster)
+      const chunkSummaries = existingChunks.map(chunk => {
+        const startMin = Math.floor(chunk.start_time / 60);
+        const endMin = Math.floor(chunk.end_time / 60);
+        return `
+## Segment ${chunk.chunk_number + 1} (Minutes ${startMin}-${endMin})
+${chunk.summary}
+
+**Key Points:**
+${chunk.key_points?.map((p: string) => `• ${p}`).join('\n') || 'None'}
+
+**Decisions:**
+${chunk.decisions?.map((d: string) => `• ${d}`).join('\n') || 'None'}
+
+**Action Items:**
+${chunk.action_items?.map((a: string) => `• ${a}`).join('\n') || 'None'}`;
+      }).join('\n\n');
+
+      prompt = `🎯 YOUR MISSION: Synthesize pre-analyzed meeting segments into comprehensive, cohesive meeting minutes.
+
+You are provided with ${existingChunks.length} pre-analyzed segments from a meeting. Each segment has already been summarized with key points, decisions, and action items extracted. Your job is to combine these into a single, flowing, professional meeting minutes document.
+
+📋 MEETING CONTEXT:
+Meeting Title: ${meeting.title}
+Date: ${new Date(meeting.start_time).toLocaleDateString()}
+Time: ${new Date(meeting.start_time).toLocaleTimeString()} - ${new Date(meeting.end_time).toLocaleTimeString()}
+Duration: ${Math.round((new Date(meeting.end_time).getTime() - new Date(meeting.start_time).getTime()) / 60000)} minutes
+${recordingSeconds !== null ? `Actual Recording: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
+
+📝 PLANNED AGENDA:
+${agendaList || 'No agenda items'}
+
+👥 PARTICIPANTS:
+${attendeesList || 'No participants recorded'}
+
+📊 PRE-ANALYZED SEGMENTS:
+${chunkSummaries}
+
+✅ RECORDED DECISIONS:
+${decisionsList || 'No additional decisions recorded'}
+
+✅ ACTION ITEMS:
+${actionItemsList || 'No additional action items'}
+
+📝 COLLABORATIVE NOTES:
+${collaborativeNotesList || 'No collaborative notes'}
+
+🗳️ POLLS:
+${pollsList || 'No polls conducted'}
+
+⚠️ YOUR TASK - SYNTHESIS INSTRUCTIONS:
+1. **Create a unified narrative** - Combine the segment summaries into a flowing, chronological story
+2. **Remove redundancy** - If points appear in multiple segments, consolidate them
+3. **Maintain completeness** - Don't lose any important information from the segments
+4. **Add context** - Show how segments connect and flow into each other
+5. **Organize logically** - Group related points even if they're from different segments
+6. **Professional tone** - Write as a polished, professional document
+
+📊 REQUIRED SECTIONS:
+1. **Meeting Information Table** (markdown table format)
+2. **Executive Summary** (4-6 sentences synthesizing all segments)
+3. **Discussion Details** (organized by theme, drawing from all segments)
+4. **Decisions Made** (consolidated from all segments + recorded decisions)
+5. **Action Items** (consolidated from all segments + recorded items)
+6. **Next Steps** (if discussed)
+
+${languageInstruction}
+
+Format as professional markdown with clear headers, proper punctuation, and natural prose.`;
+
+      await updateProgress('generating', 60, 'Synthesizing pre-analyzed segments...', 15);
+    } else {
+      // Original full prompt for complete transcription processing
+      prompt = `🎯 YOUR MISSION: Create comprehensive, natural-sounding meeting minutes that capture EVERY detail and nuance from the discussion.
 
 ⚠️ CRITICAL PRIORITY ORDER - CAPTURE IN THIS SEQUENCE:
 1. **MEETING OPENER'S INTRODUCTION** - The very first statements by who opened/introduced the meeting, their welcome remarks, and the purpose they stated
@@ -523,6 +614,7 @@ Format as a professional markdown document with:
 - Proper punctuation throughout
 - Natural prose that flows smoothly
 - Descriptive language that provides rich detail${languageInstruction}`;
+    }
 
     let minutes = "";
     let providerError = "";

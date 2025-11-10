@@ -155,6 +155,59 @@ serve(async (req) => {
       }
       console.log("✅ New transcription segment created");
     }
+
+    // Check if we should generate an incremental chunk
+    const CHUNK_DURATION = 600; // 10 minutes in seconds
+    const currentTimestamp = Math.floor(now.getTime() / 1000); // Convert to seconds
+    
+    const { data: chunks } = await supabase
+      .from('minute_chunks')
+      .select('chunk_number')
+      .eq('meeting_id', normalizedMeetingId)
+      .order('chunk_number', { ascending: false })
+      .limit(1);
+
+    const lastChunkNumber = chunks && chunks.length > 0 ? chunks[0].chunk_number : -1;
+    const currentChunkNumber = Math.floor(currentTimestamp / CHUNK_DURATION);
+
+    // If we've entered a new 10-minute chunk, generate it in background
+    if (currentChunkNumber > lastChunkNumber) {
+      const startTime = currentChunkNumber * CHUNK_DURATION;
+      const endTime = startTime + CHUNK_DURATION;
+
+      // Get all transcriptions for this chunk
+      const { data: chunkTranscriptions } = await supabase
+        .from('transcriptions')
+        .select('content, speaker_name, timestamp')
+        .eq('meeting_id', normalizedMeetingId)
+        .gte('timestamp', new Date(startTime * 1000).toISOString())
+        .lt('timestamp', new Date(endTime * 1000).toISOString())
+        .order('timestamp', { ascending: true });
+
+      if (chunkTranscriptions && chunkTranscriptions.length > 0) {
+        const transcriptionText = chunkTranscriptions
+          .map(t => `${t.speaker_name || 'Speaker'}: ${t.content}`)
+          .join('\n');
+
+        console.log(`🔄 Triggering chunk generation for chunk ${currentChunkNumber} (${startTime}s-${endTime}s)`);
+        
+        // Trigger chunk generation in background (fire and forget)
+        fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/generate-minute-chunk`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            meetingId: normalizedMeetingId,
+            chunkNumber: currentChunkNumber,
+            startTime,
+            endTime,
+            transcriptionText,
+          }),
+        }).catch(err => console.error('Error triggering chunk generation:', err));
+      }
+    }
     
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
