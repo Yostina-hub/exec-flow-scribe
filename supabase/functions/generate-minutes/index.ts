@@ -398,6 +398,14 @@ ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based 
 • Ensure proper alignment and spacing in tables
 
 📊 REQUIRED SECTIONS (be thorough and complete):
+
+🚨 CRITICAL RULE FOR EMPTY SECTIONS:
+• If a section has NO content from the transcript (e.g., no decisions made, no polls conducted, no action items), DO NOT include that section at all
+• NEVER write placeholder text like "በዚህ ስብስብ ላይ ምንም ዓይነት..." or "No decisions were made"
+• NEVER include empty section headers followed by placeholder text
+• SKIP the section entirely if there's nothing to document
+• DO NOT add standalone punctuation marks (፦ or :) without content following them
+
 0. **የስብሰባ መረጃ** (Meeting Information) - MUST be formatted as a markdown table at the very top:
    Example:
    | Field | Details |
@@ -423,29 +431,33 @@ ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based 
    • Specific examples or data mentioned
    • Reference collaborative notes where relevant
    (This should be the LONGEST, MOST DETAILED section)
-5. **የተወሰኑ ውሳኔዎች** (Decisions Made) - ALL decisions with:
+5. **የተወሰኑ ውሳኔዎች** (Decisions Made) - ONLY include if decisions were actually made:
    • Full context about how they were reached
    • Who made the decision
    • When it was made
    • Impact level and implications
-6. 🗳️ **የምርጫ ውጤቶች** (Poll Results) - Complete poll information with:
+   ⚠️ If no decisions: SKIP this section entirely
+6. 🗳️ **የምርጫ ውጤቶች** (Poll Results) - ONLY include if polls were conducted:
    • Question asked and context
    • All options and vote counts
    • Analysis of results
    • How results influenced decisions
-7. 📝 **የጋራ ማስታወሻዎች** (Collaborative Notes & Insights) - Include key points from:
+   ⚠️ If no polls: SKIP this section entirely
+7. 📝 **የጋራ ማስታወሻዎች** (Collaborative Notes & Insights) - ONLY include if notes exist:
    • Important observations shared during the meeting
    • Questions raised
    • Ideas contributed
    • Concerns noted
    Group by type (general, question, idea, concern)
-8. **የተግባር እቅዶች** (Action Items) - ALL actions with:
+   ⚠️ If no collaborative notes: SKIP this section entirely
+8. **የተግባር እቅዶች** (Action Items) - ONLY include if action items were assigned:
    • Complete task description
    • Assignee and creator
    • Due date and priority
    • Current status
    • Context of why the task is needed
-9. ቀጣይ እርምጃዎች (Next Steps) - Future plans and follow-ups discussed
+   ⚠️ If no action items: SKIP this section entirely
+9. ቀጣይ እርምጃዎች (Next Steps) - ONLY include if future plans were discussed
 10. የማጠቃለያ ተጨማሪ ሐሳቦች (Closing & Additional Notes) - Other relevant points, context, or observations
 
 ${detectedLang === 'am' ? `✍️ CRITICAL AMHARIC REQUIREMENTS:
