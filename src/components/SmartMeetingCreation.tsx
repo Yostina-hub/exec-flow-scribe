@@ -33,6 +33,13 @@ interface AISmartSuggestion {
   attendeeAvailability?: number;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  template_type: string;
+  description: string;
+}
+
 export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
@@ -41,12 +48,39 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
   const [showVideoFields, setShowVideoFields] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<AISmartSuggestion | null>(null);
   const [autoOptimize, setAutoOptimize] = useState(true);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   
   useEffect(() => {
     if (open) {
       generateAISuggestions();
+      fetchTemplates();
     }
   }, [open]);
+
+  const fetchTemplates = async () => {
+    try {
+      const result: any = await (supabase as any)
+        .from("meeting_templates")
+        .select("id, name, template_type, description")
+        .eq("is_active", true)
+        .order("name");
+      
+      if (result.error) {
+        console.error("Failed to fetch templates:", result.error);
+      } else if (result.data) {
+        const templates: Template[] = result.data.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          template_type: t.template_type,
+          description: t.description
+        }));
+        setTemplates(templates);
+      }
+    } catch (err) {
+      console.error("Error fetching templates:", err);
+    }
+  };
 
   const generateAISuggestions = async () => {
     setLoadingAI(true);
@@ -162,6 +196,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
           video_conference_url: videoUrl,
           video_provider: videoProvider as any,
           timezone: "Africa/Addis_Ababa",
+          template_id: selectedTemplate || null,
         }])
         .select()
         .single();
@@ -291,6 +326,32 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
 
           <TabsContent value="manual">
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="template">Meeting Template (Optional)</Label>
+                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                  <SelectTrigger id="template">
+                    <SelectValue placeholder="Select a template" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No template</SelectItem>
+                    {templates.map(template => (
+                      <SelectItem key={template.id} value={template.id}>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{template.name}</span>
+                          <span className="text-xs text-muted-foreground">{template.description}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {selectedTemplate && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  Template: {templates.find(t => t.id === selectedTemplate)?.name} 
+                  ({templates.find(t => t.id === selectedTemplate)?.template_type})
+                </div>
+              )}
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="title">Meeting Title</Label>
                 <Input

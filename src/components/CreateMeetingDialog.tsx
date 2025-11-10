@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Repeat, Globe } from "lucide-react";
@@ -37,18 +38,28 @@ interface Category {
   color_hex: string;
 }
 
+interface Template {
+  id: string;
+  name: string;
+  template_type: string;
+  description: string;
+}
+
 export const CreateMeetingDialog = () => {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [meetingType, setMeetingType] = useState<'video_conference' | 'standard'>('standard');
 
   useEffect(() => {
     if (open) {
       fetchCategories();
+      fetchTemplates();
     }
   }, [open]);
 
@@ -63,6 +74,30 @@ export const CreateMeetingDialog = () => {
       console.error("Failed to fetch categories:", error);
     } else {
       setCategories(data || []);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const result: any = await (supabase as any)
+        .from("meeting_templates")
+        .select("id, name, template_type, description")
+        .eq("is_active", true)
+        .order("name");
+      
+      if (result.error) {
+        console.error("Failed to fetch templates:", result.error);
+      } else if (result.data) {
+        const templates: Template[] = result.data.map((t: any) => ({
+          id: t.id,
+          name: t.name,
+          template_type: t.template_type,
+          description: t.description
+        }));
+        setTemplates(templates);
+      }
+    } catch (err) {
+      console.error("Error fetching templates:", err);
     }
   };
 
@@ -85,6 +120,7 @@ export const CreateMeetingDialog = () => {
       const videoProvider = formData.get("video_provider") as string;
       let videoUrl = formData.get("video_url") as string;
       const sensitivityLevel = formData.get("sensitivity_level") as string || 'standard';
+      const templateId = selectedTemplate || null;
 
       if (!date) {
         toast.error("Please select a date");
@@ -160,6 +196,7 @@ export const CreateMeetingDialog = () => {
           video_provider: (meetingType === 'video_conference' ? videoProvider : null) as any,
           requires_offline_support: meetingType === 'standard',
           sensitivity_level: sensitivityLevel,
+          template_id: templateId,
         } as any)
         .select()
         .single();
@@ -242,6 +279,32 @@ export const CreateMeetingDialog = () => {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="template">Meeting Template (Optional)</Label>
+              <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                <SelectTrigger id="template">
+                  <SelectValue placeholder="Select a template" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">No template</SelectItem>
+                  {templates.map(template => (
+                    <SelectItem key={template.id} value={template.id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{template.name}</span>
+                        <span className="text-xs text-muted-foreground">{template.description}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedTemplate && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  Template: {templates.find(t => t.id === selectedTemplate)?.name} 
+                  ({templates.find(t => t.id === selectedTemplate)?.template_type})
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="title">Meeting Title</Label>
               <Input
