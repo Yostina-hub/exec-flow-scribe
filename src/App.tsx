@@ -83,6 +83,7 @@ const App = () => (
               <Route path="/meeting/:id" element={<MeetingDetail />} />
               <Route path="/meetings/:meetingId/minutes" element={<MinutesEditor />} />
               <Route path="/drive" element={<DriveIntegration />} />
+              <Route path="/notebooks-library" element={<NotebooksLibrary />} />
               <Route path="/notebooks" element={<NotebooksLibrary />} />
               <Route path="/notebook" element={<Notebook />} />
               <Route path="/signature/:requestId" element={<SignatureApproval />} />

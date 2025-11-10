@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { DocumentRelationshipMap } from "@/components/DocumentRelationshipMap";
+import { DocumentClusters } from "@/components/DocumentClusters";
 
 export default function ExecutiveInbox() {
   const navigate = useNavigate();
@@ -183,6 +184,9 @@ export default function ExecutiveInbox() {
 
         {/* Document Relationship Map */}
         <DocumentRelationshipMap />
+
+        {/* Document Clusters */}
+        <DocumentClusters />
 
         {/* Filters */}
         <Tabs defaultValue="all" onValueChange={(v) => setFilter(v as any)}>
