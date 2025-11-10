@@ -4685,6 +4685,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_queue: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          priority: string | null
+          recipient_id: string
+          sent_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          priority?: string | null
+          recipient_id: string
+          sent_at?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          priority?: string | null
+          recipient_id?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
       outcome_simulations: {
         Row: {
           assumptions: Json
