@@ -725,7 +725,7 @@ const MeetingDetail = () => {
     };
 
     autoGenerateMinutes();
-  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting]);
+  }, [isRecording, meetingId, id, toast, recordingSeconds, isVirtualRoomMeeting]);
 
   const handleCompleteMeeting = async () => {
     if (!id) return;
