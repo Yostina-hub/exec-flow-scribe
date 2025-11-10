@@ -83,20 +83,20 @@ export const NotebookStudioGrid = ({ sourceIds, notebookId, onFeatureSelect }: N
   ];
 
   return (
-    <div className="p-4 space-y-6">
+    <div className="p-5 space-y-6">
       <div>
-        <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+        <h3 className="text-sm font-bold mb-4 flex items-center gap-2 text-muted-foreground uppercase tracking-wide">
           <Wand2 className="h-4 w-4 text-primary" />
-          AI Studio Features
+          AI Features
         </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {features.map((feature, index) => (
             <Card
               key={feature.id}
-              className={`group relative p-4 space-y-3 transition-all duration-300 animate-fade-in ${
+              className={`group relative p-5 space-y-3 transition-all duration-300 animate-fade-in rounded-xl ${
                 feature.disabled 
-                  ? 'opacity-60 cursor-not-allowed' 
-                  : 'cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-primary/50'
+                  ? 'opacity-60 cursor-not-allowed bg-muted/30' 
+                  : 'cursor-pointer hover:shadow-2xl hover:-translate-y-2 hover:border-primary/60 bg-gradient-to-br from-card to-muted/20'
               }`}
               style={{ animationDelay: `${index * 0.05}s` }}
               onClick={() => !feature.disabled && onFeatureSelect(feature.id)}
@@ -104,16 +104,16 @@ export const NotebookStudioGrid = ({ sourceIds, notebookId, onFeatureSelect }: N
               {feature.badge && (
                 <Badge 
                   variant={feature.disabled ? "secondary" : "default"}
-                  className="absolute -top-2 -right-2 text-xs shadow-md"
+                  className="absolute -top-2 -right-2 text-xs shadow-lg"
                 >
                   {feature.badge}
                 </Badge>
               )}
-              <div className={`h-12 w-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}>
-                <feature.icon className="h-6 w-6 text-white" />
+              <div className={`h-14 w-14 rounded-2xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center shadow-xl group-hover:scale-110 group-hover:rotate-3 transition-all`}>
+                <feature.icon className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h3 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors">
+                <h3 className="font-bold text-sm mb-1.5 group-hover:text-primary transition-colors">
                   {feature.title}
                 </h3>
                 <p className="text-xs text-muted-foreground leading-relaxed">
@@ -125,19 +125,19 @@ export const NotebookStudioGrid = ({ sourceIds, notebookId, onFeatureSelect }: N
         </div>
       </div>
 
-      <Card className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border-primary/20 shadow-sm">
-        <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-md">
-            <Wand2 className="h-5 w-5 text-primary-foreground" />
+      <Card className="p-5 bg-gradient-to-br from-primary/15 via-primary/5 to-transparent border-primary/30 shadow-lg rounded-xl">
+        <div className="flex items-start gap-4">
+          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shrink-0 shadow-lg">
+            <Wand2 className="h-6 w-6 text-primary-foreground" />
           </div>
-          <div className="space-y-2 flex-1">
-            <p className="text-sm font-semibold text-primary">
+          <div className="space-y-3 flex-1">
+            <p className="text-sm font-bold text-primary">
               Studio Output Area
             </p>
             <p className="text-xs text-muted-foreground leading-relaxed">
               Generated content from AI features will appear here. Select sources and choose a feature to get started!
             </p>
-            <div className="flex gap-2 pt-2">
+            <div className="flex flex-wrap gap-2 pt-1">
               <Badge variant="secondary" className="text-xs">
                 <ListChecks className="h-3 w-3 mr-1" />
                 Auto-saved
@@ -153,11 +153,11 @@ export const NotebookStudioGrid = ({ sourceIds, notebookId, onFeatureSelect }: N
 
       <Button 
         variant="outline" 
-        className="w-full gap-2 hover:bg-accent hover:border-primary/50 transition-all"
+        className="w-full gap-2 hover:bg-accent hover:border-primary/50 transition-all hover-scale rounded-xl py-5 font-semibold"
         onClick={() => onFeatureSelect('note')}
       >
         <Edit className="h-4 w-4" />
-        Add custom note
+        Add Custom Note
       </Button>
     </div>
   );

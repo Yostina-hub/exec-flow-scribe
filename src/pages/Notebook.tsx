@@ -314,16 +314,16 @@ const Notebook = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background">
+    <div className="h-screen flex flex-col bg-gradient-to-br from-background via-muted/20 to-background">
       {/* Header */}
-      <div className="border-b bg-gradient-to-r from-background/95 via-card/50 to-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 shadow-sm">
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
+      <div className="border-b bg-card/80 backdrop-blur-xl sticky top-0 z-50 shadow-lg">
+        <div className="flex items-center justify-between px-8 py-5">
+          <div className="flex items-center gap-5">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => navigate("/")}
-              className="shrink-0 hover:bg-accent hover-scale transition-all"
+              className="shrink-0 hover:bg-primary/10 hover-scale transition-all rounded-full"
               title="Back to dashboard"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -331,24 +331,25 @@ const Notebook = () => {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-3 h-auto py-2 px-3 hover:bg-accent hover-scale transition-all rounded-xl">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shrink-0 shadow-md">
-                    <BookOpen className="h-6 w-6 text-white" />
+                <Button variant="ghost" className="gap-4 h-auto py-3 px-4 hover:bg-accent/50 hover-scale transition-all rounded-2xl border border-border/50">
+                  <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-purple-500 via-purple-600 to-pink-500 flex items-center justify-center shrink-0 shadow-lg">
+                    <BookOpen className="h-7 w-7 text-white" />
                   </div>
                   <div className="text-left">
-                    <h1 className="text-xl font-bold leading-none mb-1.5">
+                    <h1 className="text-2xl font-bold leading-none mb-2 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
                       {notebooks.find(n => n.id === currentNotebook)?.title || "Meeting Notebook"}
                     </h1>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5" />
                       Analyze and explore with AI
                     </p>
                   </div>
                   <ChevronDown className="h-4 w-4 text-muted-foreground ml-2" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-72">
-                <div className="px-2 py-1.5">
-                  <p className="text-xs font-medium text-muted-foreground">Your Notebooks</p>
+              <DropdownMenuContent align="start" className="w-80">
+                <div className="px-3 py-2">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Your Notebooks</p>
                 </div>
                 {notebooks.map((notebook) => (
                   <DropdownMenuItem
@@ -369,7 +370,7 @@ const Notebook = () => {
                   </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)} className="text-primary">
+                <DropdownMenuItem onClick={() => setShowCreateNotebookDialog(true)} className="text-primary font-medium">
                   <Plus className="h-4 w-4 mr-2" />
                   Create New Notebook
                 </DropdownMenuItem>
@@ -377,9 +378,9 @@ const Notebook = () => {
             </DropdownMenu>
           </div>
           
-          <Badge variant="secondary" className="gap-2 px-3 py-1.5">
-            <FileText className="h-3.5 w-3.5" />
-            <span className="font-medium">
+          <Badge variant="secondary" className="gap-2 px-4 py-2 text-sm shadow-sm">
+            <FileText className="h-4 w-4" />
+            <span className="font-semibold">
               {selectedSources.length} {selectedSources.length === 1 ? "source" : "sources"}
             </span>
           </Badge>
@@ -387,26 +388,31 @@ const Notebook = () => {
       </div>
 
       {/* Three-panel layout */}
-      <div className="flex-1 grid grid-cols-12 overflow-hidden">
+      <div className="flex-1 grid grid-cols-12 gap-4 overflow-hidden p-4">
         {/* Sources Panel */}
-        <div className="col-span-3 border-r flex flex-col bg-gradient-to-b from-muted/40 to-muted/20">
-          <div className="px-4 py-5 border-b bg-card/80 backdrop-blur-sm space-y-4">
-            <h2 className="font-semibold text-base">Sources</h2>
+        <div className="col-span-3 border border-border/50 rounded-2xl flex flex-col bg-card/60 backdrop-blur-sm shadow-xl overflow-hidden">
+          <div className="px-5 py-6 border-b bg-gradient-to-br from-card to-card/50 space-y-4">
+            <h2 className="font-bold text-lg flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-white" />
+              </div>
+              Sources
+            </h2>
             
             <div className="flex gap-2">
               <Button
-                variant="outline"
+                variant="default"
                 size="sm"
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 shadow-md hover-scale"
                 onClick={() => setShowAddSourceDialog(true)}
               >
                 <Plus className="h-4 w-4" />
-                Add
+                Add Source
               </Button>
               <Button
                 variant="outline"
                 size="sm"
-                className="flex-1 gap-2"
+                className="flex-1 gap-2 hover-scale"
                 onClick={() => {
                   toast({
                     title: "Coming soon",
@@ -438,53 +444,68 @@ const Notebook = () => {
           </div>
 
           <ScrollArea className="flex-1">
-            <div className="p-3">
+            <div className="p-4">
               {sources.length === 0 ? (
-                <div className="text-center py-20 px-4 animate-scale-in">
-                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center mx-auto mb-6">
-                    <FileText className="h-10 w-10 text-muted-foreground/50" />
+                <div className="text-center py-24 px-4 animate-scale-in">
+                  <div className="h-24 w-24 rounded-3xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                    <FileText className="h-12 w-12 text-purple-500/70" />
                   </div>
-                  <p className="text-base font-semibold mb-3">
+                  <p className="text-lg font-bold mb-2">
                     No sources yet
                   </p>
-                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                  <p className="text-sm text-muted-foreground leading-relaxed max-w-xs mx-auto mb-4">
                     Add documents, websites, or meetings to get started with AI analysis
                   </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-2"
+                    onClick={() => setShowAddSourceDialog(true)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Your First Source
+                  </Button>
                 </div>
               ) : (
-                <div className="space-y-2">
-                  {sources.map((source) => (
+                <div className="space-y-3">
+                  {sources.map((source, index) => (
                     <Card
                       key={source.id}
-                      className={`p-3 cursor-pointer transition-all hover:shadow-md hover-scale border-2 animate-fade-in ${
+                      className={`p-4 cursor-pointer transition-all hover:shadow-xl hover-scale border-2 animate-fade-in rounded-xl ${
                         selectedSources.includes(source.id)
-                          ? "border-primary bg-gradient-to-br from-primary/10 to-primary/5 shadow-md"
-                          : "hover:border-primary/30 hover:bg-accent/30"
+                          ? "border-primary bg-gradient-to-br from-primary/15 to-primary/5 shadow-lg ring-2 ring-primary/20"
+                          : "hover:border-primary/40 hover:bg-accent/40"
                       }`}
+                      style={{ animationDelay: `${index * 0.05}s` }}
                       onClick={() => toggleSourceSelection(source.id)}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1.5">
-                            {getSourceIcon(source.source_type)}
-                            <p className="text-xs text-muted-foreground capitalize font-medium">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                              {getSourceIcon(source.source_type)}
+                            </div>
+                            <Badge variant="secondary" className="text-xs capitalize">
                               {source.source_type.replace("_", " ")}
-                            </p>
+                            </Badge>
                           </div>
-                          <p className="text-sm font-medium line-clamp-2 leading-snug">
+                          <p className="text-sm font-semibold line-clamp-2 leading-snug mb-1">
                             {source.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(source.created_at).toLocaleDateString()}
                           </p>
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 shrink-0 hover:bg-destructive/10 hover:text-destructive"
+                          className="h-8 w-8 shrink-0 hover:bg-destructive/20 hover:text-destructive rounded-lg"
                           onClick={(e) => {
                             e.stopPropagation();
                             removeSource(source.id);
                           }}
                         >
-                          <X className="h-3.5 w-3.5" />
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
                     </Card>
@@ -496,11 +517,11 @@ const Notebook = () => {
         </div>
 
         {/* Center Panel - Summary & Chat */}
-        <div className="col-span-5 flex flex-col bg-background overflow-hidden">
+        <div className="col-span-5 flex flex-col border border-border/50 rounded-2xl bg-card/60 backdrop-blur-sm shadow-xl overflow-hidden">
           <div className="flex-1 overflow-hidden">
             <SourceSummaryPanel sourceIds={selectedSources} targetLanguage={currentLanguage} />
           </div>
-          <div className="h-[300px] shrink-0 border-t">
+          <div className="h-[320px] shrink-0 border-t">
             <ChatWithCitations 
               sourceIds={selectedSources} 
               onLanguageDetected={setCurrentLanguage}
@@ -509,12 +530,17 @@ const Notebook = () => {
         </div>
 
         {/* Right Panel - Studio */}
-        <div className="col-span-4 flex flex-col bg-background border-l">
-          <div className="px-4 py-3 border-b">
-            <h3 className="font-semibold text-base">Studio</h3>
+        <div className="col-span-4 flex flex-col border border-border/50 rounded-2xl bg-card/60 backdrop-blur-sm shadow-xl overflow-hidden">
+          <div className="px-5 py-5 border-b bg-gradient-to-br from-card to-card/50">
+            <h3 className="font-bold text-lg flex items-center gap-2">
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              AI Studio
+            </h3>
           </div>
           <ScrollArea className="flex-1">
-            <NotebookStudioGrid 
+            <NotebookStudioGrid
               sourceIds={selectedSources}
               notebookId={currentNotebook || ''}
               onFeatureSelect={(feature) => {
