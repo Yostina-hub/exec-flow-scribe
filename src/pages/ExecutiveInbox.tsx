@@ -36,7 +36,13 @@ export default function ExecutiveInbox() {
             title,
             source_type,
             notebook_id,
-            created_at
+            created_at,
+            secretary_notes,
+            priority_level,
+            submitted_by,
+            profiles:submitted_by (
+              full_name
+            )
           )
         `)
         .eq("requires_action", true)
@@ -218,10 +224,17 @@ export default function ExecutiveInbox() {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                   <Badge variant={getUrgencyColor(doc.urgency_level)}>
                     {doc.urgency_level?.toUpperCase()}
                   </Badge>
+                  {/* Show secretary priority if available */}
+                  {(doc.notebook_sources as any)?.priority_level && (
+                    <Badge variant="outline" className="gap-1">
+                      <FileText className="h-3 w-3" />
+                      Secretary: {(doc.notebook_sources as any).priority_level.toUpperCase()}
+                    </Badge>
+                  )}
                   <span className={`flex items-center gap-1 text-sm font-semibold ${getPriorityColor(doc.priority_score)}`}>
                     <TrendingUp className="h-4 w-4" />
                     Priority {doc.priority_score}/10
@@ -255,6 +268,26 @@ export default function ExecutiveInbox() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
+              {/* Secretary Notes - Show prominently if present */}
+              {(doc.notebook_sources as any)?.secretary_notes && (
+                <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div className="flex-1">
+                      <h4 className="text-sm font-semibold text-primary mb-1">Secretary's Note</h4>
+                      <p className="text-sm text-foreground">
+                        {(doc.notebook_sources as any).secretary_notes}
+                      </p>
+                      {(doc.notebook_sources as any)?.profiles?.full_name && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          — {(doc.notebook_sources as any).profiles.full_name}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <h4 className="text-sm font-semibold mb-1">Executive Summary</h4>
                 <p className="text-sm text-muted-foreground line-clamp-2">

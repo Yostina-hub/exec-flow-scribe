@@ -25,12 +25,13 @@ import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
 import Notebook from "./pages/Notebook";
 import NotebooksLibrary from "./pages/NotebooksLibrary";
+import ExecutiveInbox from "./pages/ExecutiveInbox";
+import SecretaryWorkflow from "./pages/SecretaryWorkflow";
 import Notifications from "./pages/Notifications";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import ExecutiveAdvisor from "./pages/ExecutiveAdvisor";
-import ExecutiveInbox from "./pages/ExecutiveInbox";
 import DocumentViewer from "./components/DocumentViewer";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -76,6 +77,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/executive-advisor" element={<ExecutiveAdvisor />} />
               <Route path="/executive-inbox" element={<ExecutiveInbox />} />
+              <Route path="/secretary-workflow" element={<SecretaryWorkflow />} />
               <Route path="/advisor" element={<ExecutiveAdvisor />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/meetings" element={<Meetings />} />
