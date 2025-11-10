@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { meetingId, content, sourceLanguage } = await req.json();
+    const { meetingId, content, sourceLanguage, targetLanguage } = await req.json();
 
     if (!meetingId || !content || !sourceLanguage) {
       return new Response(
@@ -32,11 +32,14 @@ serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Define target languages (exclude source language)
+    // If targetLanguage is specified, only translate to that language
+    // Otherwise, translate to all languages except source
     const allLanguages = ['am', 'en', 'or', 'so', 'ti'];
-    const targetLanguages = allLanguages.filter(lang => lang !== sourceLanguage);
+    const targetLanguages = targetLanguage 
+      ? [targetLanguage]
+      : allLanguages.filter(lang => lang !== sourceLanguage);
 
-    console.log(`Starting batch translation for meeting ${meetingId} from ${sourceLanguage} to:`, targetLanguages);
+    console.log(`Starting translation for meeting ${meetingId} from ${sourceLanguage} to:`, targetLanguages);
 
     // Translate to all target languages in parallel
     const translationPromises = targetLanguages.map(async (targetLang) => {
