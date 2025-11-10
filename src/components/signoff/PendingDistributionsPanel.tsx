@@ -3,11 +3,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, Send, Trash2, Loader2, Mail, Calendar } from 'lucide-react';
+import { Clock, Send, Trash2, Loader2, Mail, Calendar, CheckSquare, Square } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
 import { EmailDistributionDialog } from './EmailDistributionDialog';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface PendingDistributionsPanelProps {
   open: boolean;
@@ -33,6 +34,8 @@ export function PendingDistributionsPanel({
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDistribution, setSelectedDistribution] = useState<PendingDistribution | null>(null);
   const [showDistributeDialog, setShowDistributeDialog] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBatchSending, setIsBatchSending] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -129,6 +132,65 @@ export function PendingDistributionsPanel({
     }
   };
 
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === pendingDistributions.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pendingDistributions.map(d => d.id)));
+    }
+  };
+
+  const handleBatchDistribute = async () => {
+    if (selectedIds.size === 0) {
+      toast({
+        title: 'No Selections',
+        description: 'Please select distributions to send',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsBatchSending(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('batch-distribute-pending', {
+        body: {
+          pending_distribution_ids: Array.from(selectedIds),
+        },
+      });
+
+      if (error) throw error;
+
+      const { summary } = data;
+      
+      toast({
+        title: 'Batch Distribution Complete',
+        description: `${summary.success} successful, ${summary.partial} partial, ${summary.failed} failed`,
+      });
+
+      setSelectedIds(new Set());
+      fetchPendingDistributions();
+    } catch (error: any) {
+      console.error('Error in batch distribution:', error);
+      toast({
+        title: 'Batch Distribution Failed',
+        description: error.message || 'Failed to distribute selected items',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsBatchSending(false);
+    }
+  };
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -148,6 +210,39 @@ export function PendingDistributionsPanel({
           </DialogHeader>
 
           <div className="space-y-4">
+            {pendingDistributions.length > 0 && (
+              <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Checkbox
+                    checked={selectedIds.size === pendingDistributions.length && pendingDistributions.length > 0}
+                    onCheckedChange={toggleSelectAll}
+                  />
+                  <span className="text-sm font-medium">
+                    {selectedIds.size > 0 ? `${selectedIds.size} selected` : 'Select all'}
+                  </span>
+                </div>
+                {selectedIds.size > 0 && (
+                  <Button
+                    onClick={handleBatchDistribute}
+                    disabled={isBatchSending}
+                    className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
+                  >
+                    {isBatchSending ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Sending {selectedIds.size}...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Send Selected ({selectedIds.size})
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -169,7 +264,13 @@ export function PendingDistributionsPanel({
                       key={distribution.id}
                       className="p-4 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
                     >
-                      <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="pt-1">
+                          <Checkbox
+                            checked={selectedIds.has(distribution.id)}
+                            onCheckedChange={() => toggleSelection(distribution.id)}
+                          />
+                        </div>
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-3">
                             <h4 className="font-semibold">{distribution.meeting_title}</h4>
@@ -186,14 +287,14 @@ export function PendingDistributionsPanel({
                             <p className="text-sm text-muted-foreground">{distribution.notes}</p>
                           )}
                         </div>
-                        <div className="flex gap-2 ml-4">
+                        <div className="flex gap-2">
                           <Button
                             size="sm"
                             onClick={() => handleDistribute(distribution)}
                             className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
                           >
                             <Send className="w-4 h-4 mr-1" />
-                            Distribute
+                            Send
                           </Button>
                           <Button
                             size="sm"
