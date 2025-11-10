@@ -4,7 +4,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { 
   AlertCircle, 
@@ -19,6 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import { DocumentRelationshipMap } from "@/components/DocumentRelationshipMap";
 import { DocumentClusters } from "@/components/DocumentClusters";
 import { DocumentNetworkGraph3D } from "@/components/DocumentNetworkGraph3D";
+import { InsightComments } from "@/components/InsightComments";
 
 export default function ExecutiveInbox() {
   const navigate = useNavigate();
@@ -192,115 +192,105 @@ export default function ExecutiveInbox() {
         {/* 3D Network Graph */}
         <DocumentNetworkGraph3D />
 
-        {/* Filters */}
-        <Tabs defaultValue="all" onValueChange={(v) => setFilter(v as any)}>
-          <TabsList>
-            <TabsTrigger value="all">All ({stats.total})</TabsTrigger>
-            <TabsTrigger value="critical">Critical ({stats.critical})</TabsTrigger>
-            <TabsTrigger value="high">High ({stats.high})</TabsTrigger>
-            <TabsTrigger value="medium">Medium</TabsTrigger>
-            <TabsTrigger value="low">Low</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={filter} className="space-y-4 mt-6">
-            {filteredDocuments?.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6 text-center">
-                  <p className="text-muted-foreground">No documents in this category</p>
-                </CardContent>
-              </Card>
-            ) : (
-              filteredDocuments?.map((doc) => {
-                const deadline = getDeadlineStatus(doc.response_deadline);
-                return (
-                  <Card 
-                    key={doc.id}
-                    className="hover:shadow-lg transition-all cursor-pointer border-l-4"
-                    style={{
-                      borderLeftColor: doc.urgency_level === "critical" ? "rgb(239 68 68)" :
-                                      doc.urgency_level === "high" ? "rgb(249 115 22)" :
-                                      doc.urgency_level === "medium" ? "rgb(234 179 8)" :
-                                      "rgb(156 163 175)"
-                    }}
-                    onClick={() => navigate(`/notebooks?source=${doc.source_id}`)}
-                  >
-                    <CardHeader>
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant={getUrgencyColor(doc.urgency_level)}>
-                              {doc.urgency_level?.toUpperCase()}
-                            </Badge>
-                            <span className={`flex items-center gap-1 text-sm font-semibold ${getPriorityColor(doc.priority_score)}`}>
-                              <TrendingUp className="h-4 w-4" />
-                              Priority {doc.priority_score}/10
-                            </span>
-                            {deadline && (
-                              <span className={`flex items-center gap-1 text-sm ${deadline.color}`}>
-                                <Clock className="h-4 w-4" />
-                                {deadline.text}
-                              </span>
-                            )}
-                          </div>
-                          <CardTitle className="text-lg">
-                            {doc.notebook_sources?.title || "Untitled Document"}
-                          </CardTitle>
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {doc.notebook_sources?.source_type} • Added {formatDistanceToNow(new Date(doc.notebook_sources?.created_at), { addSuffix: true })}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            markAsHandled(doc.id);
-                          }}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-1" />
-                          Mark Handled
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="text-sm font-semibold mb-1">Executive Summary</h4>
-                          <p className="text-sm text-muted-foreground line-clamp-2">
-                            {(doc.insights as any)?.summary || "No summary available"}
-                          </p>
-                        </div>
-                        
-                        {(doc.insights as any)?.recommendedActions && (doc.insights as any).recommendedActions.length > 0 && (
-                          <div>
-                            <h4 className="text-sm font-semibold mb-1">Recommended Actions</h4>
-                            <ul className="text-sm text-muted-foreground space-y-1">
-                              {(doc.insights as any).recommendedActions.slice(0, 2).map((action: string, idx: number) => (
-                                <li key={idx} className="flex items-start gap-2">
-                                  <span className="text-primary mt-1">•</span>
-                                  <span className="line-clamp-1">{action}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {(doc.insights as any)?.riskAssessment && (
-                          <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
-                            <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
-                            <p className="text-sm text-muted-foreground line-clamp-2">
-                              {(doc.insights as any).riskAssessment}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })
-            )}
-          </TabsContent>
-        </Tabs>
+{/* Items List - tabs removed */}
+<div className="space-y-4 mt-6">
+  {(documents?.length ?? 0) === 0 ? (
+    <Card>
+      <CardContent className="pt-6 text-center">
+        <p className="text-muted-foreground">No documents in the inbox</p>
+      </CardContent>
+    </Card>
+  ) : (
+    documents?.map((doc) => {
+      const deadline = getDeadlineStatus(doc.response_deadline);
+      return (
+        <Card 
+          key={doc.id}
+          className="hover:shadow-lg transition-all cursor-pointer border-l-4"
+          style={{
+            borderLeftColor: doc.urgency_level === "critical" ? "rgb(239 68 68)" :
+                            doc.urgency_level === "high" ? "rgb(249 115 22)" :
+                            doc.urgency_level === "medium" ? "rgb(234 179 8)" :
+                            "rgb(156 163 175)"
+          }}
+          onClick={() => navigate(`/notebooks?source=${doc.source_id}`)}
+        >
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant={getUrgencyColor(doc.urgency_level)}>
+                    {doc.urgency_level?.toUpperCase()}
+                  </Badge>
+                  <span className={`flex items-center gap-1 text-sm font-semibold ${getPriorityColor(doc.priority_score)}`}>
+                    <TrendingUp className="h-4 w-4" />
+                    Priority {doc.priority_score}/10
+                  </span>
+                  {deadline && (
+                    <span className={`flex items-center gap-1 text-sm ${deadline.color}`}>
+                      <Clock className="h-4 w-4" />
+                      {deadline.text}
+                    </span>
+                  )}
+                </div>
+                <CardTitle className="text-lg">
+                  {doc.notebook_sources?.title || "Untitled Document"}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {doc.notebook_sources?.source_type} • Added {formatDistanceToNow(new Date(doc.notebook_sources?.created_at), { addSuffix: true })}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  markAsHandled(doc.id);
+                }}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                Mark Handled
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div>
+                <h4 className="text-sm font-semibold mb-1">Executive Summary</h4>
+                <p className="text-sm text-muted-foreground line-clamp-2">
+                  {(doc.insights as any)?.summary || "No summary available"}
+                </p>
+              </div>
+              {(doc.insights as any)?.recommendedActions && (doc.insights as any).recommendedActions.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold mb-1">Recommended Actions</h4>
+                  <ul className="text-sm text-muted-foreground space-y-1">
+                    {(doc.insights as any).recommendedActions.slice(0, 2).map((action: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span className="line-clamp-1">{action}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {(doc.insights as any)?.riskAssessment && (
+                <div className="flex items-start gap-2 p-3 bg-muted/50 rounded-lg">
+                  <AlertCircle className="h-4 w-4 text-orange-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {(doc.insights as any).riskAssessment}
+                  </p>
+                </div>
+              )}
+              {/* Comments */}
+              <InsightComments insightId={doc.id} />
+            </div>
+          </CardContent>
+        </Card>
+      );
+    })
+  )}
+</div>
       </div>
     </div>
   );

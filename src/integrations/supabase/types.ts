@@ -4096,6 +4096,41 @@ export type Database = {
           },
         ]
       }
+      notebook_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          insight_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          insight_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          insight_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_comments_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_intelligence_insights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebook_document_relationships: {
         Row: {
           created_at: string | null
