@@ -121,9 +121,9 @@ export default function ExecutiveAdvisor() {
       const allSignaturesCompleted = meeting.signature_requests?.every(
         sr => sr.status === 'completed' || sr.status === 'approved'
       );
-      const hasPendingSignatures = meeting.signature_requests?.some(
-        sr => sr.status === 'pending' || sr.status === 'requested'
-      );
+        const hasPendingSignatures = meeting.signature_requests?.some(
+          sr => ['pending', 'requested', 'delegated'].includes(sr.status)
+        );
       
       if (allSignaturesCompleted) {
         return 'signoff_approved';
