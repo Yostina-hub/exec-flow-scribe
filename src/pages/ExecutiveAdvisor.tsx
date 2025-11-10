@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { ExecutiveMeetingAdvisor } from '@/components/ExecutiveMeetingAdvisor';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { toast } from 'sonner';
 
 // Lazy load AI feature components
 const MeetingKeyPointsSummary = lazy(() => import('@/components/MeetingKeyPointsSummary').then(m => ({ default: m.MeetingKeyPointsSummary })));
@@ -80,22 +81,33 @@ export default function ExecutiveAdvisor() {
     if (!user?.id) return;
     
     setLoading(true);
-    const { data } = await supabase
-      .from('meetings')
-      .select(`
-        *,
-        signature_requests (
-          id,
-          status
-        )
-      `)
-      .order('start_time', { ascending: false })
-      .limit(50);
-    
-    if (data) {
-      setMeetings(data);
+    try {
+      const { data, error } = await supabase
+        .from('meetings')
+        .select(`
+          *,
+          signature_requests (
+            id,
+            status
+          )
+        `)
+        .order('start_time', { ascending: false })
+        .limit(50);
+      
+      if (error) {
+        console.error('Error fetching meetings:', error);
+        toast.error('Failed to load meetings: ' + error.message);
+        setMeetings([]);
+      } else {
+        setMeetings(data || []);
+      }
+    } catch (err: any) {
+      console.error('Unexpected error fetching meetings:', err);
+      toast.error('Failed to load meetings');
+      setMeetings([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const categorizeMeeting = (meeting: Meeting): MeetingCategory => {
