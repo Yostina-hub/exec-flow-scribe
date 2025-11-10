@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap, Layout, Wand2 } from "lucide-react";
+import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap, Layout, Wand2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +11,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface AIMinutesGeneratorProps {
   meetingId: string;
@@ -22,6 +30,9 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
   const [progressText, setProgressText] = useState("");
   const [generationMethod, setGenerationMethod] = useState<'standard' | 'template'>('standard');
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [regenerateDialog, setRegenerateDialog] = useState(false);
+  const [regenerateSummaryType, setRegenerateSummaryType] = useState<string>('');
+  const [regenerateTemplateId, setRegenerateTemplateId] = useState<string>('');
   const { toast } = useToast();
 
   const progressSteps = [
@@ -73,9 +84,15 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
     }
   });
 
-  const generateSummary = async (type: 'brief' | 'detailed' | 'executive' | 'action_items') => {
+  const generateSummary = async (
+    type: 'brief' | 'detailed' | 'executive' | 'action_items',
+    overrideTemplateId?: string
+  ) => {
+    const effectiveMethod = overrideTemplateId ? 'template' : generationMethod;
+    const effectiveTemplateId = overrideTemplateId || selectedTemplateId;
+
     // Validate template selection if using template method
-    if (generationMethod === 'template' && !selectedTemplateId) {
+    if (effectiveMethod === 'template' && !effectiveTemplateId) {
       toast({
         title: "Template required",
         description: "Please select a template for template-based generation",
@@ -88,14 +105,14 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
     setGeneratingType(type);
     
     try {
-      console.log('Starting summary generation:', { type, generationMethod, selectedTemplateId });
+      console.log('Starting summary generation:', { type, effectiveMethod, effectiveTemplateId });
 
       const { data, error } = await supabase.functions.invoke('generate-summary-with-template', {
         body: { 
           meetingId,
           summaryType: type,
-          templateId: generationMethod === 'template' ? selectedTemplateId : null,
-          generationMethod
+          templateId: effectiveMethod === 'template' ? effectiveTemplateId : null,
+          generationMethod: effectiveMethod
         }
       });
 
@@ -110,7 +127,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
 
       toast({
         title: "Summary generated",
-        description: `${type.replace('_', ' ')} summary created successfully ${generationMethod === 'template' ? 'using template structure' : ''}`,
+        description: `${type.replace('_', ' ')} summary created successfully ${effectiveMethod === 'template' ? 'using template structure' : ''}`,
       });
 
       refetch();
@@ -142,6 +159,19 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
     { type: 'executive' as const, label: 'Executive', icon: Briefcase, color: 'bg-amber-500' },
     { type: 'action_items' as const, label: 'Action Items', icon: ClipboardCheck, color: 'bg-green-500' }
   ];
+
+  const handleRegenerateClick = (summaryType: string) => {
+    setRegenerateSummaryType(summaryType);
+    setRegenerateDialog(true);
+  };
+
+  const handleRegenerateConfirm = async () => {
+    setRegenerateDialog(false);
+    await generateSummary(
+      regenerateSummaryType as 'brief' | 'detailed' | 'executive' | 'action_items',
+      regenerateTemplateId || undefined
+    );
+  };
 
   return (
     <Card>
@@ -363,17 +393,39 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
             </TabsList>
             {summaryTypes.map(({ type }) => {
               const summary = summaries.find(s => s.summary_type === type);
+              const metadata = (summary as any)?.metadata;
+              const isTemplateGenerated = metadata?.generation_method === 'template';
+              
               return (
                 <TabsContent key={type} value={type} className="space-y-4">
                   {summary ? (
                     <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <Badge variant="secondary">
-                          {summary.model_used || 'AI Generated'}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(summary.generated_at).toLocaleString()}
-                        </span>
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge variant="secondary">
+                            {summary.model_used || 'AI Generated'}
+                          </Badge>
+                          {isTemplateGenerated && (
+                            <Badge variant="outline" className="flex items-center gap-1">
+                              <Layout className="h-3 w-3" />
+                              Template-based
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground">
+                            {new Date(summary.generated_at).toLocaleString()}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRegenerateClick(type)}
+                            className="h-8 text-xs"
+                          >
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Regenerate
+                          </Button>
+                        </div>
                       </div>
                       <div className="prose prose-sm max-w-none">
                         <p className="whitespace-pre-wrap">{summary.content}</p>
@@ -401,6 +453,57 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
             })}
           </Tabs>
         )}
+
+        {/* Regenerate Dialog */}
+        <Dialog open={regenerateDialog} onOpenChange={setRegenerateDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Regenerate Summary</DialogTitle>
+              <DialogDescription>
+                Choose a template to regenerate this {regenerateSummaryType.replace('_', ' ')} summary, or generate without a template.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="regenerate-template">Template (Optional)</Label>
+                <Select value={regenerateTemplateId} onValueChange={setRegenerateTemplateId}>
+                  <SelectTrigger id="regenerate-template">
+                    <SelectValue placeholder="Choose a template or leave blank for standard generation" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">No template (Standard)</SelectItem>
+                    {templates?.map((template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.name}
+                        {template.category && (
+                          <span className="text-xs text-muted-foreground ml-2">
+                            ({template.category})
+                          </span>
+                        )}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {regenerateTemplateId 
+                    ? "The AI will use the selected template structure to guide the summary" 
+                    : "The AI will generate a standard summary without template constraints"}
+                </p>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRegenerateDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleRegenerateConfirm}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Regenerate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

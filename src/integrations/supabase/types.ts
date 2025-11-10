@@ -3885,6 +3885,7 @@ export type Database = {
           generated_by: string
           id: string
           meeting_id: string
+          metadata: Json | null
           model_used: string | null
           summary_type: string
         }
@@ -3896,6 +3897,7 @@ export type Database = {
           generated_by?: string
           id?: string
           meeting_id: string
+          metadata?: Json | null
           model_used?: string | null
           summary_type: string
         }
@@ -3907,6 +3909,7 @@ export type Database = {
           generated_by?: string
           id?: string
           meeting_id?: string
+          metadata?: Json | null
           model_used?: string | null
           summary_type?: string
         }
