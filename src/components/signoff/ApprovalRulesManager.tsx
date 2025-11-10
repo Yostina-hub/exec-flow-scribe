@@ -122,8 +122,8 @@ export function ApprovalRulesManager({ open, onOpenChange }: ApprovalRulesManage
 
     try {
       const conditions: any = {};
-      if (formData.meeting_type) conditions.meeting_type = formData.meeting_type;
-      if (formData.sensitivity_level) conditions.sensitivity_level = formData.sensitivity_level;
+      if (formData.meeting_type && formData.meeting_type !== 'any-type') conditions.meeting_type = formData.meeting_type;
+      if (formData.sensitivity_level && formData.sensitivity_level !== 'any-sensitivity') conditions.sensitivity_level = formData.sensitivity_level;
       if (formData.department_id) conditions.department_id = formData.department_id;
 
       const ruleData = {
@@ -384,7 +384,7 @@ export function ApprovalRulesManager({ open, onOpenChange }: ApprovalRulesManage
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any</SelectItem>
+                        <SelectItem value="any-type">Any</SelectItem>
                         <SelectItem value="regular">Regular</SelectItem>
                         <SelectItem value="board">Board</SelectItem>
                         <SelectItem value="executive">Executive</SelectItem>
@@ -402,7 +402,7 @@ export function ApprovalRulesManager({ open, onOpenChange }: ApprovalRulesManage
                         <SelectValue placeholder="Any" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Any</SelectItem>
+                        <SelectItem value="any-sensitivity">Any</SelectItem>
                         <SelectItem value="public">Public</SelectItem>
                         <SelectItem value="internal">Internal</SelectItem>
                         <SelectItem value="confidential">Confidential</SelectItem>

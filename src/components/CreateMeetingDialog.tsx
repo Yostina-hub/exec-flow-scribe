@@ -127,7 +127,7 @@ export const CreateMeetingDialog = () => {
       const videoProvider = formData.get("video_provider") as string;
       let videoUrl = formData.get("video_url") as string;
       const sensitivityLevel = formData.get("sensitivity_level") as string || 'standard';
-      const templateId = selectedTemplate || null;
+      const templateId = (selectedTemplate && selectedTemplate !== 'no-template') ? selectedTemplate : null;
 
       if (!date) {
         toast.error("Please select a date");
@@ -294,7 +294,7 @@ export const CreateMeetingDialog = () => {
                     <SelectValue placeholder="Select a template" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No template</SelectItem>
+                    <SelectItem value="no-template">No template</SelectItem>
                     {templates.map(template => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
@@ -303,7 +303,7 @@ export const CreateMeetingDialog = () => {
                     ))}
                   </SelectContent>
                 </Select>
-                {selectedTemplate && (
+                {selectedTemplate && selectedTemplate !== 'no-template' && (
                   <Button
                     type="button"
                     variant="outline"

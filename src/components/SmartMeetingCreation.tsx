@@ -203,7 +203,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
           video_conference_url: videoUrl,
           video_provider: videoProvider as any,
           timezone: "Africa/Addis_Ababa",
-          template_id: selectedTemplate || null,
+          template_id: (selectedTemplate && selectedTemplate !== 'no-template') ? selectedTemplate : null,
         }])
         .select()
         .single();
@@ -342,7 +342,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
                       <SelectValue placeholder="Select a template" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">No template</SelectItem>
+                      <SelectItem value="no-template">No template</SelectItem>
                       {templates.map(template => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
@@ -351,7 +351,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
                       ))}
                     </SelectContent>
                   </Select>
-                  {selectedTemplate && (
+                  {selectedTemplate && selectedTemplate !== 'no-template' && (
                     <Button
                       type="button"
                       variant="outline"

@@ -174,7 +174,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
         .from('summary_quality_metrics')
         .update({ 
           was_regenerated: true,
-          regeneration_reason: regenerateTemplateId ? 'Changed to template' : 'Changed to standard'
+          regeneration_reason: (regenerateTemplateId && regenerateTemplateId !== 'no-template') ? 'Changed to template' : 'Changed to standard'
         })
         .eq('summary_id', summary.id);
     }
@@ -182,7 +182,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
     setRegenerateDialog(false);
     await generateSummary(
       regenerateSummaryType as 'brief' | 'detailed' | 'executive' | 'action_items',
-      regenerateTemplateId || undefined
+      (regenerateTemplateId && regenerateTemplateId !== 'no-template') ? regenerateTemplateId : undefined
     );
   };
 
@@ -534,7 +534,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
                     <SelectValue placeholder="Choose a template or leave blank for standard generation" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No template (Standard)</SelectItem>
+                    <SelectItem value="no-template">No template (Standard)</SelectItem>
                     {templates?.map((template) => (
                       <SelectItem key={template.id} value={template.id}>
                         {template.name}
@@ -548,7 +548,7 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground">
-                  {regenerateTemplateId 
+                  {regenerateTemplateId && regenerateTemplateId !== 'no-template'
                     ? "The AI will use the selected template structure to guide the summary" 
                     : "The AI will generate a standard summary without template constraints"}
                 </p>
