@@ -6,15 +6,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Save, CheckCircle, AlertTriangle, FileText, Film, ArrowLeft, Sparkles, Clock, Loader2, Copy, Brain, Languages, BookOpen } from 'lucide-react';
+import { Save, CheckCircle, ArrowLeft, Sparkles, Clock, Loader2, Brain, Languages, BookOpen, FileText, Film, Send, AlertTriangle, Copy } from 'lucide-react';
 import { FactCheckPanel } from '@/components/minutes/FactCheckPanel';
 import { MediaVault } from '@/components/minutes/MediaVault';
 import { SensitiveSectionManager } from '@/components/signoff/SensitiveSectionManager';
 import { AIMinutesEnhancer } from '@/components/AIMinutesEnhancer';
 import { NonTechnicalSummaryDialog } from '@/components/NonTechnicalSummaryDialog';
+import { TranscriptMediaModal } from '@/components/TranscriptMediaModal';
 import { Badge } from '@/components/ui/badge';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
+import { Separator } from '@/components/ui/separator';
 
 interface TranscriptSegment {
   id: string;
@@ -50,6 +52,7 @@ export default function MinutesEditor() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [hasDraft, setHasDraft] = useState(false);
+  const [showTranscriptModal, setShowTranscriptModal] = useState(false);
 
   // Network status monitoring
   useEffect(() => {
