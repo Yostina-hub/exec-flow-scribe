@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap, Layout, Wand2, RefreshCw } from "lucide-react";
+import { Loader2, Sparkles, FileText, ClipboardCheck, Briefcase, Brain, Zap, Layout, Wand2, RefreshCw, Copy } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { SummaryRatingWidget } from "./SummaryRatingWidget";
 
 interface AIMinutesGeneratorProps {
   meetingId: string;
@@ -166,11 +167,46 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
   };
 
   const handleRegenerateConfirm = async () => {
+    // Track regeneration in metrics
+    const summary = summaries?.find(s => s.summary_type === regenerateSummaryType);
+    if (summary) {
+      await supabase
+        .from('summary_quality_metrics')
+        .update({ 
+          was_regenerated: true,
+          regeneration_reason: regenerateTemplateId ? 'Changed to template' : 'Changed to standard'
+        })
+        .eq('summary_id', summary.id);
+    }
+
     setRegenerateDialog(false);
     await generateSummary(
       regenerateSummaryType as 'brief' | 'detailed' | 'executive' | 'action_items',
       regenerateTemplateId || undefined
     );
+  };
+
+  const handleCopySummary = async (summaryId: string, content: string) => {
+    await navigator.clipboard.writeText(content);
+    
+    // Track copy action - get current count and increment
+    const { data: metrics } = await supabase
+      .from('summary_quality_metrics')
+      .select('copy_count')
+      .eq('summary_id', summaryId)
+      .single();
+    
+    if (metrics) {
+      await supabase
+        .from('summary_quality_metrics')
+        .update({ copy_count: (metrics.copy_count || 0) + 1 })
+        .eq('summary_id', summaryId);
+    }
+
+    toast({
+      title: "Copied",
+      description: "Summary copied to clipboard"
+    });
   };
 
   return (
@@ -395,6 +431,19 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
               const summary = summaries.find(s => s.summary_type === type);
               const metadata = (summary as any)?.metadata;
               const isTemplateGenerated = metadata?.generation_method === 'template';
+              const metricsQuery = useQuery({
+                queryKey: ['summary-metrics', summary?.id],
+                queryFn: async () => {
+                  if (!summary?.id) return null;
+                  const { data } = await supabase
+                    .from('summary_quality_metrics')
+                    .select('*')
+                    .eq('summary_id', summary.id)
+                    .single();
+                  return data;
+                },
+                enabled: !!summary?.id
+              });
               
               return (
                 <TabsContent key={type} value={type} className="space-y-4">
@@ -412,10 +461,23 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-muted-foreground">
                             {new Date(summary.generated_at).toLocaleString()}
                           </span>
+                          <SummaryRatingWidget 
+                            summaryId={summary.id}
+                            currentRating={metricsQuery.data?.user_rating}
+                          />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleCopySummary(summary.id, summary.content)}
+                            className="h-8 text-xs"
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copy
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

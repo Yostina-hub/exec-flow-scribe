@@ -5475,6 +5475,103 @@ export type Database = {
           },
         ]
       }
+      summary_quality_metrics: {
+        Row: {
+          character_changes: number | null
+          copy_count: number | null
+          created_at: string | null
+          edit_count: number | null
+          feedback_text: string | null
+          first_edited_at: string | null
+          generation_method: string
+          id: string
+          last_edited_at: string | null
+          meeting_id: string
+          metadata: Json | null
+          rated_at: string | null
+          regeneration_reason: string | null
+          share_count: number | null
+          summary_id: string
+          summary_type: string
+          template_id: string | null
+          time_to_first_edit_seconds: number | null
+          total_edit_duration_seconds: number | null
+          user_rating: number | null
+          view_count: number | null
+          was_regenerated: boolean | null
+        }
+        Insert: {
+          character_changes?: number | null
+          copy_count?: number | null
+          created_at?: string | null
+          edit_count?: number | null
+          feedback_text?: string | null
+          first_edited_at?: string | null
+          generation_method: string
+          id?: string
+          last_edited_at?: string | null
+          meeting_id: string
+          metadata?: Json | null
+          rated_at?: string | null
+          regeneration_reason?: string | null
+          share_count?: number | null
+          summary_id: string
+          summary_type: string
+          template_id?: string | null
+          time_to_first_edit_seconds?: number | null
+          total_edit_duration_seconds?: number | null
+          user_rating?: number | null
+          view_count?: number | null
+          was_regenerated?: boolean | null
+        }
+        Update: {
+          character_changes?: number | null
+          copy_count?: number | null
+          created_at?: string | null
+          edit_count?: number | null
+          feedback_text?: string | null
+          first_edited_at?: string | null
+          generation_method?: string
+          id?: string
+          last_edited_at?: string | null
+          meeting_id?: string
+          metadata?: Json | null
+          rated_at?: string | null
+          regeneration_reason?: string | null
+          share_count?: number | null
+          summary_id?: string
+          summary_type?: string
+          template_id?: string | null
+          time_to_first_edit_seconds?: number | null
+          total_edit_duration_seconds?: number | null
+          user_rating?: number | null
+          view_count?: number | null
+          was_regenerated?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_quality_metrics_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_quality_metrics_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_quality_metrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -5892,7 +5989,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      summary_quality_analytics: {
+        Row: {
+          avg_character_changes: number | null
+          avg_edits: number | null
+          avg_rating: number | null
+          avg_time_to_first_edit: number | null
+          avg_views: number | null
+          generation_method: string | null
+          negative_ratings: number | null
+          positive_ratings: number | null
+          rated_count: number | null
+          regeneration_count: number | null
+          summary_type: string | null
+          template_id: string | null
+          total_summaries: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_quality_metrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_guba_learning_metrics: { Args: never; Returns: undefined }
