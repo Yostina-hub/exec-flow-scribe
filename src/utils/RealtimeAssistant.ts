@@ -198,6 +198,11 @@ export class RealtimeAssistant {
   private onStatusChange: (status: 'connecting' | 'connected' | 'disconnected' | 'error') => void;
   private onAISpeaking: (speaking: boolean) => void;
   private currentTranscript = '';
+  private briefingContext: any = null;
+  private reconnectAttempts = 0;
+  private maxReconnectAttempts = 5;
+  private reconnectTimeout: number | null = null;
+  private shouldReconnect = true;
 
   constructor(
     projectId: string,
@@ -213,15 +218,18 @@ export class RealtimeAssistant {
   }
 
   async connect(briefingContext: any) {
+    this.shouldReconnect = true;
+    this.briefingContext = briefingContext;
     this.onStatusChange('connecting');
     
     const wsUrl = `wss://${this.projectId}.supabase.co/functions/v1/ceo-assistant-realtime`;
-    console.log('Connecting to WebSocket:', wsUrl);
+    console.log('Connecting to WebSocket:', wsUrl, `(Attempt ${this.reconnectAttempts + 1})`);
     this.ws = new WebSocket(wsUrl);
 
 
     this.ws.onopen = async () => {
       console.log('Connected to assistant');
+      this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
       this.onStatusChange('connected');
       
       // Start recording
@@ -238,8 +246,8 @@ export class RealtimeAssistant {
       await this.recorder.start();
 
       // Send briefing context
-      if (briefingContext) {
-        this.sendContext(briefingContext);
+      if (this.briefingContext) {
+        this.sendContext(this.briefingContext);
       }
     };
 
@@ -314,8 +322,24 @@ export class RealtimeAssistant {
 
     this.ws.onclose = () => {
       console.log('WebSocket closed');
-      this.onStatusChange('disconnected');
       this.cleanup();
+      
+      // Attempt to reconnect if we should and haven't exceeded max attempts
+      if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
+        this.reconnectAttempts++;
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000); // Exponential backoff, max 10s
+        console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+        
+        this.onStatusChange('connecting');
+        this.reconnectTimeout = window.setTimeout(() => {
+          this.connect(this.briefingContext);
+        }, delay);
+      } else {
+        this.onStatusChange('disconnected');
+        if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+          console.log('Max reconnection attempts reached');
+        }
+      }
     };
   }
 
@@ -364,6 +388,11 @@ export class RealtimeAssistant {
   }
 
   disconnect() {
+    this.shouldReconnect = false; // Prevent reconnection when user explicitly disconnects
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     this.cleanup();
     if (this.ws) {
       this.ws.close();
