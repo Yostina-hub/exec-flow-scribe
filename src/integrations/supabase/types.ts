@@ -1682,60 +1682,6 @@ export type Database = {
           },
         ]
       }
-      document_submission_notifications: {
-        Row: {
-          created_at: string | null
-          id: string
-          notebook_id: string | null
-          priority_level: string | null
-          read: boolean | null
-          secretary_notes: string | null
-          source_id: string | null
-          submitted_by: string | null
-          submitted_for: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          id?: string
-          notebook_id?: string | null
-          priority_level?: string | null
-          read?: boolean | null
-          secretary_notes?: string | null
-          source_id?: string | null
-          submitted_by?: string | null
-          submitted_for?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          id?: string
-          notebook_id?: string | null
-          priority_level?: string | null
-          read?: boolean | null
-          secretary_notes?: string | null
-          source_id?: string | null
-          submitted_by?: string | null
-          submitted_for?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "document_submission_notifications_notebook_id_fkey"
-            columns: ["notebook_id"]
-            isOneToOne: false
-            referencedRelation: "notebooks"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "document_submission_notifications_source_id_fkey"
-            columns: ["source_id"]
-            isOneToOne: false
-            referencedRelation: "notebook_sources"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       document_versions: {
         Row: {
           change_summary: string | null
@@ -4292,12 +4238,7 @@ export type Database = {
           id: string
           metadata: Json | null
           notebook_id: string | null
-          priority_level: string | null
-          secretary_notes: string | null
           source_type: string
-          submission_date: string | null
-          submitted_by: string | null
-          submitted_for: string | null
           title: string
           updated_at: string
           user_id: string
@@ -4310,12 +4251,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           notebook_id?: string | null
-          priority_level?: string | null
-          secretary_notes?: string | null
           source_type: string
-          submission_date?: string | null
-          submitted_by?: string | null
-          submitted_for?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -4328,12 +4264,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           notebook_id?: string | null
-          priority_level?: string | null
-          secretary_notes?: string | null
           source_type?: string
-          submission_date?: string | null
-          submitted_by?: string | null
-          submitted_for?: string | null
           title?: string
           updated_at?: string
           user_id?: string
