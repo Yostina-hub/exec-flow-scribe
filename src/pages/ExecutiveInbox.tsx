@@ -18,6 +18,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { DocumentRelationshipMap } from "@/components/DocumentRelationshipMap";
 import { DocumentClusters } from "@/components/DocumentClusters";
+import { DocumentNetworkGraph3D } from "@/components/DocumentNetworkGraph3D";
 
 export default function ExecutiveInbox() {
   const navigate = useNavigate();
@@ -187,6 +188,9 @@ export default function ExecutiveInbox() {
 
         {/* Document Clusters */}
         <DocumentClusters />
+
+        {/* 3D Network Graph */}
+        <DocumentNetworkGraph3D />
 
         {/* Filters */}
         <Tabs defaultValue="all" onValueChange={(v) => setFilter(v as any)}>
