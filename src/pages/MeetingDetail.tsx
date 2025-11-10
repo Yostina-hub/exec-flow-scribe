@@ -110,6 +110,9 @@ const LiveQAGenerator = lazy(() => import("@/components/LiveQAGenerator").then(m
 const MeetingClosingSummary = lazy(() => import("@/components/MeetingClosingSummary").then(m => ({ default: m.MeetingClosingSummary })));
 const MeetingEffectivenessScoring = lazy(() => import("@/components/MeetingEffectivenessScoring").then(m => ({ default: m.MeetingEffectivenessScoring })));
 
+// Import CompleteMeetingDialog normally (not lazy loaded for immediate interactivity)
+import { CompleteMeetingDialog } from "@/components/CompleteMeetingDialog";
+
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
 
@@ -184,6 +187,7 @@ const MeetingDetail = () => {
   const [showVirtualRoom, setShowVirtualRoom] = useState(false);
   const [showHostPanel, setShowHostPanel] = useState(false);
   const [showExecutiveAdvisor, setShowExecutiveAdvisor] = useState(false);
+  const [showCompleteMeetingDialog, setShowCompleteMeetingDialog] = useState(false);
   const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
@@ -723,6 +727,36 @@ const MeetingDetail = () => {
     autoGenerateMinutes();
   }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting]);
 
+  const handleCompleteMeeting = async () => {
+    if (!id) return;
+    
+    try {
+      await supabase
+        .from('meetings')
+        .update({ 
+          status: 'completed',
+          actual_end_time: new Date().toISOString()
+        })
+        .eq('id', id);
+      
+      toast({
+        title: 'Meeting completed',
+        description: 'The meeting has been marked as completed. Minutes will be auto-generated if transcription is available.',
+      });
+      
+      // Refresh meeting data
+      refetch();
+      setShowCompleteMeetingDialog(false);
+    } catch (error) {
+      console.error('Error completing meeting:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to complete meeting. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const completedItems = agendaData.filter((item) => item.status === "completed").length;
   const progress = agendaData.length > 0 ? (completedItems / agendaData.length) * 100 : 0;
 
@@ -840,6 +874,17 @@ const MeetingDetail = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                {/* Host-only Mark as Complete button */}
+                {meeting?.created_by === userId && meeting?.status !== 'completed' && (
+                  <Button
+                    className="gap-2 bg-success hover:bg-success/90 text-white shadow-lg"
+                    onClick={() => setShowCompleteMeetingDialog(true)}
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Mark as Complete
+                  </Button>
+                )}
+                
                 {/* Participants - Direct Join Virtual Room Button */}
                 {meeting?.created_by !== userId && meeting?.status !== 'completed' && (
                   <Button
@@ -910,38 +955,6 @@ const MeetingDetail = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    {meeting?.created_by === userId && meeting?.status !== 'completed' && (
-                      <DropdownMenuItem onClick={async () => {
-                        if (!id) return;
-                        try {
-                          await supabase
-                            .from('meetings')
-                            .update({ 
-                              status: 'completed',
-                              actual_end_time: new Date().toISOString()
-                            })
-                            .eq('id', id);
-                          
-                          toast({
-                            title: 'Meeting completed',
-                            description: 'Minutes will be auto-generated if transcription is available',
-                          });
-                          
-                          // Refresh meeting data
-                          refetch();
-                        } catch (error) {
-                          console.error('Error completing meeting:', error);
-                          toast({
-                            title: 'Error',
-                            description: 'Failed to complete meeting',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        Complete Meeting
-                      </DropdownMenuItem>
-                    )}
                     <DropdownMenuItem onClick={() => setShowMinutesDialog(true)}>
                       <Sparkles className="h-4 w-4 mr-2" />
                       Generate Minutes
@@ -1508,6 +1521,13 @@ const MeetingDetail = () => {
           open={showManageAttendeesDialog}
           onOpenChange={setShowManageAttendeesDialog}
           onSuccess={refetch}
+        />
+
+        <CompleteMeetingDialog
+          open={showCompleteMeetingDialog}
+          onOpenChange={setShowCompleteMeetingDialog}
+          onConfirm={handleCompleteMeeting}
+          meetingTitle={meetingTitle}
         />
 
         <CreateSignatureRequestDialog
