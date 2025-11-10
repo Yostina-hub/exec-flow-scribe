@@ -30,6 +30,7 @@ import { DepartmentManager } from "@/components/guba/DepartmentManager";
 import { TaskNotificationPreferences } from "@/components/guba/TaskNotificationPreferences";
 import { LanguagePreference } from "@/components/settings/LanguagePreference";
 import { EncryptionManager } from "@/components/settings/EncryptionManager";
+import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -408,6 +409,7 @@ const Settings = () => {
             <TabsTrigger value="language">Language</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
+            <TabsTrigger value="templates">Templates</TabsTrigger>
             <TabsTrigger value="recording">Recording</TabsTrigger>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
@@ -784,6 +786,11 @@ const Settings = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Templates Tab */}
+          <TabsContent value="templates" className="space-y-6">
+            <MeetingTemplateManager />
           </TabsContent>
 
           {/* Recording Tab */}
