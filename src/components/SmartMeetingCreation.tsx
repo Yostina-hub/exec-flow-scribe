@@ -45,7 +45,7 @@ interface TemplateSection {
 interface Template {
   id: string;
   name: string;
-  meeting_type?: string;
+  template_type?: string;
   description?: string;
   sections: TemplateSection[];
   is_default: boolean;
@@ -75,7 +75,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
     try {
       const result: any = await (supabase as any)
         .from("meeting_templates")
-        .select("id, name, meeting_type, description, sections, is_default")
+        .select("id, name, template_type, description, sections, is_default")
         .order("name");
       
       if (result.error) {
