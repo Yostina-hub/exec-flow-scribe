@@ -294,3 +294,6 @@ verify_jwt = false
 [functions.generate-advisor-report]
 verify_jwt = true
 
+[functions.generate-summary-with-template]
+verify_jwt = true
+

@@ -74,62 +74,61 @@ export const AIMinutesGenerator = ({ meetingId }: AIMinutesGeneratorProps) => {
   });
 
   const generateSummary = async (type: 'brief' | 'detailed' | 'executive' | 'action_items') => {
+    // Validate template selection if using template method
+    if (generationMethod === 'template' && !selectedTemplateId) {
+      toast({
+        title: "Template required",
+        description: "Please select a template for template-based generation",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setGenerating(true);
     setGeneratingType(type);
+    
     try {
-      // Get meeting transcription and details
-      const { data: meeting, error: meetingError } = await supabase
-        .from('meetings')
-        .select('*, transcriptions(*)')
-        .eq('id', meetingId)
-        .single();
+      console.log('Starting summary generation:', { type, generationMethod, selectedTemplateId });
 
-      if (meetingError) throw meetingError;
+      const { data, error } = await supabase.functions.invoke('generate-summary-with-template', {
+        body: { 
+          meetingId,
+          summaryType: type,
+          templateId: generationMethod === 'template' ? selectedTemplateId : null,
+          generationMethod
+        }
+      });
 
-      const transcription = meeting.transcriptions?.[0];
-      if (!transcription) {
-        toast({
-          title: "No transcription available",
-          description: "Please transcribe the meeting first",
-          variant: "destructive"
-        });
-        return;
+      if (error) {
+        console.error('Function error:', error);
+        throw error;
       }
 
-      // Call AI to generate summary (placeholder - would call edge function)
-      const prompt = `Generate a ${type} summary for this meeting:\n${transcription.content}`;
-      
-      // Mock AI response for now
-      const mockContent = {
-        brief: "Quick overview of key discussion points and decisions made during the meeting.",
-        detailed: "Comprehensive summary including all topics discussed, decisions made, and action items identified. Includes context and rationale for major decisions.",
-        executive: "High-level executive summary focusing on strategic decisions, risks, and key outcomes that require leadership attention.",
-        action_items: "• Complete Q4 financial projections\n• Finalize hiring plan for 2025\n• Schedule follow-up meeting with stakeholders"
-      };
-
-      const { error: insertError } = await supabase
-        .from('meeting_summaries')
-        .insert({
-          meeting_id: meetingId,
-          summary_type: type,
-          content: mockContent[type],
-          model_used: 'google/gemini-2.5-flash',
-          confidence_score: 0.92
-        });
-
-      if (insertError) throw insertError;
+      if (data.error) {
+        throw new Error(data.error);
+      }
 
       toast({
         title: "Summary generated",
-        description: `${type.replace('_', ' ')} summary created successfully`
+        description: `${type.replace('_', ' ')} summary created successfully ${generationMethod === 'template' ? 'using template structure' : ''}`,
       });
 
       refetch();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating summary:', error);
+      
+      let errorMessage = "Could not generate summary";
+      if (error.message?.includes('Rate limit')) {
+        errorMessage = "Rate limit exceeded. Please try again in a moment.";
+      } else if (error.message?.includes('credits')) {
+        errorMessage = "AI credits exhausted. Please add credits to continue.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
         title: "Generation failed",
-        description: "Could not generate summary",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
