@@ -2,7 +2,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil, Video, Sparkles
+  Clock, MapPin, Users, Play, FileText, Calendar, ListPlus, Pencil, Video, Sparkles, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,8 @@ interface InlineMeetingCardProps {
   meetingType?: string;
   videoConferenceUrl?: string | null;
   createdBy?: string;
+  isEncrypted?: boolean;
+  sensitivityLevel?: string;
 }
 
 const statusConfig = {
@@ -61,6 +63,8 @@ export function InlineMeetingCard({
   meetingType,
   videoConferenceUrl,
   createdBy,
+  isEncrypted = false,
+  sensitivityLevel = 'standard',
 }: InlineMeetingCardProps) {
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -144,6 +148,15 @@ export function InlineMeetingCard({
             >
               {config.label}
             </Badge>
+            {isEncrypted && (
+              <Badge 
+                variant="default" 
+                className="text-xs font-semibold gap-1 bg-gradient-to-r from-amber-500 to-orange-500"
+              >
+                <ShieldCheck className="h-3 w-3" />
+                Encrypted
+              </Badge>
+            )}
           </div>
           
           {status === 'in-progress' && (

@@ -1,4 +1,4 @@
-import { Calendar, Clock, Users, MapPin, FileText, Video, Link2, Copy, Sparkles, Brain, ChevronDown, CheckCircle, AlertCircle, Target } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, FileText, Video, Link2, Copy, Sparkles, Brain, ChevronDown, CheckCircle, AlertCircle, Target, Lock, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,8 @@ interface MeetingCardProps {
   createdBy?: string;
   readiness?: number;
   missingItems?: string[];
+  isEncrypted?: boolean;
+  sensitivityLevel?: string;
 }
 
 const statusConfig = {
@@ -59,6 +61,8 @@ export const MeetingCard = ({
   createdBy,
   readiness = 100,
   missingItems = [],
+  isEncrypted = false,
+  sensitivityLevel = 'standard',
 }: MeetingCardProps) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -130,6 +134,12 @@ export const MeetingCard = ({
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={statusInfo.variant} className="text-xs">{statusInfo.label}</Badge>
+              {isEncrypted && (
+                <Badge variant="default" className="text-xs gap-1 bg-gradient-to-r from-amber-500 to-orange-500">
+                  <ShieldCheck className="h-3 w-3" />
+                  Encrypted
+                </Badge>
+              )}
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
                 {date} • {time}

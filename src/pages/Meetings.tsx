@@ -70,6 +70,8 @@ interface Meeting {
   video_provider?: string | null;
   attendee_count?: number;
   agenda_count?: number;
+  is_encrypted?: boolean;
+  sensitivity_level?: string;
   signature_requests?: Array<{
     id: string;
     status: string;
@@ -90,6 +92,8 @@ interface FormattedMeeting {
   videoConferenceUrl?: string | null;
   videoProvider?: string | null;
   createdBy?: string;
+  isEncrypted?: boolean;
+  sensitivityLevel?: string;
 }
 
 
@@ -126,7 +130,7 @@ export default function Meetings() {
       let query = supabase
         .from("meetings")
         .select(`
-          id, title, start_time, end_time, location, status, created_at, meeting_type, video_conference_url, created_by,
+          id, title, start_time, end_time, location, status, created_at, meeting_type, video_conference_url, created_by, is_encrypted, sensitivity_level,
           meeting_attendees(count),
           agenda_items(count),
           signature_requests(id, status)
@@ -277,7 +281,10 @@ export default function Meetings() {
       agendaItems: meeting.agenda_count || 0,
       meetingType: meeting.meeting_type || undefined,
       videoConferenceUrl: meeting.video_conference_url,
+      videoProvider: meeting.video_provider || undefined,
       createdBy: meeting.created_by,
+      isEncrypted: meeting.is_encrypted || false,
+      sensitivityLevel: meeting.sensitivity_level || 'standard',
     };
   }, []);
 
@@ -478,6 +485,8 @@ export default function Meetings() {
                         meetingType={meeting.meetingType}
                         videoConferenceUrl={meeting.videoConferenceUrl}
                         createdBy={meeting.createdBy}
+                        isEncrypted={meeting.isEncrypted}
+                        sensitivityLevel={meeting.sensitivityLevel}
                       />
                     </div>
                   ))}
@@ -523,6 +532,8 @@ export default function Meetings() {
                         meetingType={meeting.meetingType}
                         videoConferenceUrl={meeting.videoConferenceUrl}
                         createdBy={meeting.createdBy}
+                        isEncrypted={meeting.isEncrypted}
+                        sensitivityLevel={meeting.sensitivityLevel}
                       />
                     </div>
                   ))}
@@ -567,26 +578,28 @@ export default function Meetings() {
               </Card>
             ) : (
               <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
-              {formattedMeetings.map((meeting, index) => (
-                <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
-                  <InlineMeetingCard
-                    id={meeting.id}
-                    title={meeting.title}
-                    date={meeting.date}
-                    time={meeting.time}
-                    duration={meeting.duration}
-                    location={meeting.location}
-                    attendees={meeting.attendees}
-                    status={meeting.status}
-                    agendaItems={meeting.agendaItems}
-                    meetingType={meeting.meetingType}
-                    videoConferenceUrl={meeting.videoConferenceUrl}
-                    createdBy={meeting.createdBy}
-                  />
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 animate-fade-in">
+                  {formattedMeetings.map((meeting, index) => (
+                    <div key={meeting.id} style={{ animationDelay: `${index * 50}ms` }} className="animate-scale-in">
+                      <InlineMeetingCard
+                        id={meeting.id}
+                        title={meeting.title}
+                        date={meeting.date}
+                        time={meeting.time}
+                        duration={meeting.duration}
+                        location={meeting.location}
+                        attendees={meeting.attendees}
+                        status={meeting.status}
+                        agendaItems={meeting.agendaItems}
+                        meetingType={meeting.meetingType}
+                        videoConferenceUrl={meeting.videoConferenceUrl}
+                        createdBy={meeting.createdBy}
+                        isEncrypted={meeting.isEncrypted}
+                        sensitivityLevel={meeting.sensitivityLevel}
+                      />
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
             {renderPagination(currentPageAll, totalPagesAll, setCurrentPageAll)}
               </>
             )}
