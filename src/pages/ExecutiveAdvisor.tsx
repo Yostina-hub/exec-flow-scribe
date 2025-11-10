@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,7 @@ export default function ExecutiveAdvisor() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<MeetingCategory | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   const [lastViewedTimestamps, setLastViewedTimestamps] = useState<Record<MeetingCategory, Date>>(() => {
     const stored = localStorage.getItem('executive_advisor_last_viewed');
     if (stored) {
@@ -187,6 +188,13 @@ export default function ExecutiveAdvisor() {
       supabase.removeChannel(signatureRequestsChannel);
     };
   }, [user?.id]);
+
+  // Scroll into view when a category is selected
+  useEffect(() => {
+    if (selectedCategory && listRef.current) {
+      listRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [selectedCategory]);
 
   const handleCategoryClick = (category: MeetingCategory) => {
     const now = new Date();
@@ -370,6 +378,9 @@ export default function ExecutiveAdvisor() {
             <Card 
               className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-primary/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               onClick={() => handleCategoryClick('upcoming')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleCategoryClick('upcoming')}
             >
               {hasNewMeetings('upcoming') && (
                 <div className="absolute top-4 right-4 z-10">
@@ -405,6 +416,9 @@ export default function ExecutiveAdvisor() {
             <Card 
               className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               onClick={() => handleCategoryClick('completed')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleCategoryClick('completed')}
             >
               {hasNewMeetings('completed') && (
                 <div className="absolute top-4 right-4 z-10">
@@ -440,6 +454,9 @@ export default function ExecutiveAdvisor() {
             <Card 
               className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-warning/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               onClick={() => handleCategoryClick('signoff_pending')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleCategoryClick('signoff_pending')}
             >
               {hasNewMeetings('signoff_pending') && (
                 <div className="absolute top-4 right-4 z-10">
@@ -475,6 +492,9 @@ export default function ExecutiveAdvisor() {
             <Card 
               className="group relative overflow-hidden border-0 bg-gradient-to-br from-background to-success/5 shadow-lg hover:shadow-2xl transition-all duration-300 cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
               onClick={() => handleCategoryClick('signoff_approved')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleCategoryClick('signoff_approved')}
             >
               {hasNewMeetings('signoff_approved') && (
                 <div className="absolute top-4 right-4 z-10">
@@ -511,7 +531,7 @@ export default function ExecutiveAdvisor() {
 
       {/* Display selected category meetings */}
       {selectedCategory && (
-        <div className="space-y-4">
+        <div ref={listRef} className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-primary-dark">
