@@ -59,9 +59,7 @@ const MultilingualLiveTranscription = lazy(() => import("@/components/Multilingu
 const VoiceCommandController = lazy(() => import("@/components/VoiceCommandController").then(m => ({ default: m.VoiceCommandController })));
 const BrowserSpeechRecognition = lazy(() => import("@/components/BrowserSpeechRecognition").then(m => ({ default: m.BrowserSpeechRecognition })));
 const LiveAudioRecorder = lazy(() => import("@/components/LiveAudioRecorder").then(m => ({ default: m.LiveAudioRecorder })));
-const VirtualMeetingRoom = lazy(() => import("@/components/VirtualMeetingRoom").then(m => ({ default: m.VirtualMeetingRoom })));
 const AudioToMinutesWorkflow = lazy(() => import("@/components/AudioToMinutesWorkflow").then(m => ({ default: m.AudioToMinutesWorkflow })));
-const JitsiMeetEmbed = lazy(() => import("@/components/JitsiMeetEmbed").then(m => ({ default: m.JitsiMeetEmbed })));
 const GenerateMinutesDialog = lazy(() => import("@/components/GenerateMinutesDialog").then(m => ({ default: m.GenerateMinutesDialog })));
 const ViewMinutesDialog = lazy(() => import("@/components/ViewMinutesDialog").then(m => ({ default: m.ViewMinutesDialog })));
 const MeetingChatPanel = lazy(() => import("@/components/MeetingChatPanel"));
@@ -184,11 +182,9 @@ const MeetingDetail = () => {
   const [showManageAttendeesDialog, setShowManageAttendeesDialog] = useState(false);
   const [showCreateSignatureDialog, setShowCreateSignatureDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showVirtualRoom, setShowVirtualRoom] = useState(false);
   const [showHostPanel, setShowHostPanel] = useState(false);
   const [showExecutiveAdvisor, setShowExecutiveAdvisor] = useState(false);
   const [showCompleteMeetingDialog, setShowCompleteMeetingDialog] = useState(false);
-  const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const wasRecordingRef = useRef(false);
@@ -322,24 +318,6 @@ const MeetingDetail = () => {
       supabase.removeChannel(channel);
     };
   }, [id, refetch]);
-
-  // Set virtual room status
-  useEffect(() => {
-    if (meeting) {
-      setIsVirtualRoomMeeting(meeting.video_provider === 'jitsi_meet' || meeting.meeting_type === 'virtual_room');
-      
-      // Auto-open virtual room for virtual meetings
-      if (meeting.meeting_type === 'virtual_room') {
-        setShowVirtualRoom(true);
-      }
-      
-      // Set active tab based on meeting type
-      if ((meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && 
-          (meeting.video_conference_url || meeting.meeting_type === 'virtual_room')) {
-        setActiveTab('video');
-      }
-    }
-  }, [meeting]);
 
   // Update agenda and attendees when data changes
   useEffect(() => {
@@ -603,13 +581,7 @@ const MeetingDetail = () => {
     const autoGenerateMinutes = async () => {
       const wasRecording = wasRecordingRef.current;
       
-      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting });
-      
-      // Skip auto-generation for virtual room meetings - they handle it internally
-      if (isVirtualRoomMeeting) {
-        wasRecordingRef.current = isRecording;
-        return;
-      }
+      console.log('Auto-gen check:', { wasRecording, isRecording, isAutoGenerating, recordingSeconds });
       
       // Check if recording just stopped (was recording, now not recording)
       if (wasRecording && !isRecording && !isAutoGenerating) {
@@ -725,7 +697,7 @@ const MeetingDetail = () => {
     };
 
     autoGenerateMinutes();
-  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting]);
+  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds]);
 
   const handleCompleteMeeting = async () => {
     if (!id) return;
@@ -776,64 +748,17 @@ const MeetingDetail = () => {
     return <MeetingDetailSkeleton />;
   }
 
-  // For virtual room type meetings, ONLY show virtual room interface - no standard meeting UI
-  if (isVirtualRoomMeeting && meeting && userId) {
-    return (
-      <VirtualMeetingRoom
-        meetingId={meetingId}
-        isHost={meeting.created_by === userId}
-        currentUserId={userId}
-        onCloseRoom={() => navigate('/meetings')}
-      />
-    );
-  }
-
   // Check if meeting is completed - prevent rejoining
   const isMeetingCompleted = meeting?.status === 'completed';
   
-  // Show Virtual Meeting Room for standard meetings that opt to use virtual room
-  if (showVirtualRoom && meeting && userId) {
-    if (isMeetingCompleted) {
-      toast({
-        title: "Meeting Ended",
-        description: "This meeting has been completed and closed by the host",
-        variant: "destructive",
-      });
-      setShowVirtualRoom(false);
-      return null;
-    }
-    
-    // For virtual_room type meetings, don't allow closing back to standard view
-    const handleClose = isVirtualRoomMeeting 
-      ? () => navigate('/meetings') 
-      : () => setShowVirtualRoom(false);
-    
-    return (
-      <VirtualMeetingRoom
-        meetingId={meetingId}
-        isHost={meeting.created_by === userId}
-        currentUserId={userId}
-        onCloseRoom={handleClose}
-      />
-    );
-  }
-
-
   // Show Host Management Panel
   if (showHostPanel && meeting && userId && meeting.created_by === userId) {
     return (
       <HostManagementPanel
         meetingId={meetingId}
-        onLaunchRoom={() => setShowVirtualRoom(true)}
+        onLaunchRoom={() => {}} 
       />
     );
-  }
-
-  // For virtual_room meetings that haven't shown the room yet, show it immediately
-  // This prevents showing standard meeting interface for virtual_room types
-  if (isVirtualRoomMeeting && !showVirtualRoom && meeting && userId && !isMeetingCompleted) {
-    setShowVirtualRoom(true);
-    return null; // Will re-render with virtual room
   }
 
   const meetingTitle = meeting?.title || "Executive Strategy Review";
@@ -885,17 +810,6 @@ const MeetingDetail = () => {
                   </Button>
                 )}
                 
-                {/* Participants - Direct Join Virtual Room Button */}
-                {meeting?.created_by !== userId && meeting?.status !== 'completed' && (
-                  <Button
-                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg"
-                    onClick={() => setShowVirtualRoom(true)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Join Virtual Room
-                  </Button>
-                )}
-                
                 {meeting?.status === 'completed' && (
                   <Badge variant="secondary" className="text-muted-foreground">
                     Meeting Completed
@@ -909,15 +823,6 @@ const MeetingDetail = () => {
                   >
                     <Video className="h-4 w-4" />
                     Join Video Call
-                  </Button>
-                )}
-                {meeting.meeting_type === 'virtual_room' && (
-                  <Button
-                    className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
-                    onClick={() => setShowVirtualRoom(true)}
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    Join Virtual Room
                   </Button>
                 )}
                 
@@ -977,10 +882,6 @@ const MeetingDetail = () => {
                     </DropdownMenuItem>
                     {meeting?.created_by === userId && (
                       <>
-                        <DropdownMenuItem onClick={() => setShowVirtualRoom(true)}>
-                          <Sparkles className="h-4 w-4 mr-2" />
-                          🌐 Launch Virtual Room
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setShowHostPanel(true)}>
                           <Settings className="h-4 w-4 mr-2" />
                           🎛️ Host Management Panel
@@ -1081,18 +982,12 @@ const MeetingDetail = () => {
         {/* Main Content */}
         <div className="space-y-6">
           <Tabs
-              defaultValue={(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') ? "video" : "transcription"} 
+              defaultValue="transcription" 
               className="w-full"
               onValueChange={(value) => setActiveTab(value)}
             >
               <div className="w-full overflow-x-auto pb-2">
                 <TabsList className={`inline-flex w-auto min-w-full h-auto p-1 gap-1 ${isEthioTelecom ? 'bg-gradient-to-r from-primary/10 via-secondary/10 to-accent/10 backdrop-blur-sm' : ''}`}>
-                {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                  <TabsTrigger value="video" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
-                    <Video className="h-4 w-4" />
-                    {meeting.meeting_type === 'virtual_room' ? 'Virtual Room' : 'Video Call'}
-                  </TabsTrigger>
-                )}
                 <TabsTrigger value="participants" className={`gap-2 ${isEthioTelecom ? 'data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-secondary data-[state=active]:text-primary-foreground' : ''}`}>
                   <Users className="h-4 w-4" />
                   Participants
@@ -1127,47 +1022,6 @@ const MeetingDetail = () => {
                 </TabsTrigger>
               </TabsList>
               </div>
-
-              {(meeting.meeting_type === 'video_conference' || meeting.meeting_type === 'virtual_room') && (meeting.video_conference_url || meeting.meeting_type === 'virtual_room') && (
-                <TabsContent value="video" className="space-y-4">
-                  {meeting.meeting_type === 'video_conference' && meeting.video_conference_url && (
-                    <JitsiMeetEmbed
-                      roomName={meeting.video_conference_url.split('/').pop() || 'meeting-room'}
-                      displayName={userFullName}
-                      meetingId={id}
-                      autoStartRecording={isRecording}
-                      onRecordingStart={() => {
-                        console.log('Jitsi recording started');
-                        toast({
-                          title: 'Conference Recording Started',
-                          description: 'Full conference audio will be captured and transcribed',
-                        });
-                      }}
-                      onRecordingStop={() => {
-                        console.log('Jitsi recording stopped');
-                        toast({
-                          title: 'Conference Recording Stopped',
-                          description: 'Processing recording for transcription...',
-                        });
-                      }}
-                      onMeetingEnd={() => {
-                        console.log('Jitsi meeting ended');
-                        toast({
-                          title: 'Meeting Ended',
-                          description: 'Video conference has ended',
-                        });
-                      }}
-                    />
-                  )}
-                  {meeting.meeting_type === 'virtual_room' && (
-                    <VirtualMeetingRoom 
-                      meetingId={id!} 
-                      isHost={meeting.created_by === userId}
-                      currentUserId={userId || ''}
-                    />
-                  )}
-                </TabsContent>
-              )}
 
               <TabsContent value="participants" className="space-y-4">
                 <div className="space-y-4">

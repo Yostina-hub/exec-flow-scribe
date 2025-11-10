@@ -23,7 +23,7 @@ import { Zap, Video, Globe } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { generateGoogleMeetLink, generateTMeetLink } from '@/utils/videoConference';
+
 
 export function InstantMeetingDialog() {
   const [open, setOpen] = useState(false);
@@ -76,15 +76,12 @@ export function InstantMeetingDialog() {
           console.error('Google Meet error:', error);
           toast({
             title: 'Google Meet setup failed',
-            description: 'Using TMeet instead.',
+            description: 'Please provide a meeting URL.',
             variant: 'destructive',
           });
-          videoUrl = generateTMeetLink(title, crypto.randomUUID());
-          finalProvider = 'tmeet'; // Update to tmeet on fallback
+          setLoading(false);
+          return;
         }
-      } else {
-        // Use TMeet
-        videoUrl = generateTMeetLink(title, crypto.randomUUID());
       }
 
       const { data: meeting, error: meetingError } = await supabase

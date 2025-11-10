@@ -120,22 +120,17 @@ export function UnifiedMeetingHub() {
     return data?.map(d => d.meeting_id).join(',') || '';
   };
 
-  const generateQuickJoinLink = (meetingId: string) => {
-    const baseUrl = window.location.origin;
-    return `${baseUrl}/quick-join?m=${meetingId}`;
-  };
-
-  const copyJoinLink = (meetingId: string) => {
-    const link = generateQuickJoinLink(meetingId);
+  const copyMeetingLink = (meetingId: string) => {
+    const link = `${window.location.origin}/meetings/${meetingId}`;
     navigator.clipboard.writeText(link);
     toast({
       title: "Link Copied!",
-      description: "Quick join link copied to clipboard"
+      description: "Meeting link copied to clipboard"
     });
   };
 
   const shareViaWhatsApp = (meeting: Meeting) => {
-    const link = generateQuickJoinLink(meeting.id);
+    const link = `${window.location.origin}/meetings/${meeting.id}`;
     const message = encodeURIComponent(
       `Join "${meeting.title}" meeting\n${format(new Date(meeting.start_time), 'PPp')}\n${link}`
     );
@@ -256,7 +251,7 @@ export function UnifiedMeetingHub() {
               <Button 
                 variant="outline" 
                 size="sm"
-                onClick={() => copyJoinLink(meeting.id)}
+                onClick={() => copyMeetingLink(meeting.id)}
                 className="gap-1"
               >
                 <Copy className="h-3 w-3" />

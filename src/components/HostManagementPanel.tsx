@@ -135,11 +135,6 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
         title: "Meeting Started",
         description: "Recording and transcription are active",
       });
-
-      // Auto-launch virtual room
-      setTimeout(() => {
-        onLaunchRoom();
-      }, 1000);
     } catch (error) {
       console.error('Error starting meeting:', error);
       toast({
@@ -555,7 +550,7 @@ export function HostManagementPanel({ meetingId, onLaunchRoom }: HostManagementP
             <Card>
               <CardHeader>
                 <CardTitle>Event Settings</CardTitle>
-                <CardDescription>Configure the virtual room experience</CardDescription>
+                <CardDescription>Configure the meeting experience</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Event Mode */}

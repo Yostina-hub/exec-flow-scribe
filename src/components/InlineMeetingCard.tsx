@@ -219,21 +219,6 @@ export function InlineMeetingCard({
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          {/* Participants see Join Virtual Room for in-progress meetings */}
-          {!isHost && status === 'in-progress' && (
-            <Button
-              size="sm"
-              className="flex-1 gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90"
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/meetings/${id}`);
-              }}
-            >
-              <Sparkles className="h-4 w-4" />
-              Join Virtual Room
-            </Button>
-          )}
-          
           {isOnlineMeeting && hasVideoLink ? (
             <Button
               size="sm"

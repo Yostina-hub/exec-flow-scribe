@@ -19,8 +19,6 @@ import Reports from "./pages/Reports";
 import MeetingDetail from "./pages/MeetingDetail";
 import MinutesEditor from "./pages/MinutesEditor";
 import SignatureApproval from "./pages/SignatureApproval";
-import QuickParticipant from "./pages/QuickParticipant";
-import QuickJoinMeeting from "./pages/QuickJoinMeeting";
 import Settings from "./pages/Settings";
 import Administration from "./pages/Administration";
 import IntegrationTest from "./pages/IntegrationTest";
@@ -69,8 +67,6 @@ const App = () => (
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
             <Route path="/document" element={<DocumentViewer />} />
-            <Route path="/quick-join" element={<QuickJoinMeeting />} />
-            <Route path="/quick-join/:meetingId" element={<QuickParticipant />} />
             
             {/* Protected routes with persistent Layout */}
             <Route element={<ProtectedLayout />}>

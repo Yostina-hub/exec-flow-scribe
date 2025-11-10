@@ -101,19 +101,6 @@ export const MeetingCard = ({
     }
   };
 
-  const handleJoinVirtualRoom = () => {
-    navigate(`/meetings/${id}`);
-  };
-
-  const handleQuickJoin = () => {
-    // Zero-click: Direct navigation with sound effect
-    navigate(`/meetings/${id}?autoJoin=true`);
-    toast({
-      title: "Joining...",
-      description: "Loading virtual room",
-    });
-  };
-
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-scale-in border-2 hover:border-primary/50">
       <CardHeader className="pb-3">
@@ -147,11 +134,11 @@ export const MeetingCard = ({
           {status === "in-progress" && (
             <Button 
               size="sm"
-              onClick={handleQuickJoin}
+              onClick={() => navigate(`/meetings/${id}`)}
               className="gap-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 shadow-lg animate-pulse"
             >
               <Sparkles className="h-4 w-4" />
-              Join Now
+              Join Meeting
             </Button>
           )}
           
