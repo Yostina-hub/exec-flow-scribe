@@ -151,7 +151,9 @@ export function ExecutiveMeetingAdvisor({
   const [generatingSuggestion, setGeneratingSuggestion] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
-    connectAdvisor();
+    if (!isPaused) {
+      connectAdvisor();
+    }
     const cleanup = startRealtimeMonitoring();
     loadRecentTranscriptions();
     loadParticipantQuestions();
@@ -748,15 +750,27 @@ export function ExecutiveMeetingAdvisor({
     }
   };
 
-  const togglePause = () => {
+  const togglePause = async () => {
     if (isPaused) {
-      connectAdvisor();
+      // Resume: reconnect the assistant
       setIsPaused(false);
+      toast({
+        title: "AI Coach Resuming",
+        description: "Reconnecting to AI advisor...",
+      });
+      await connectAdvisor();
     } else {
+      // Pause: disconnect the assistant and prevent reconnection
+      setIsPaused(true);
       if (assistantRef.current) {
         assistantRef.current.disconnect();
+        assistantRef.current = null; // Clear the reference
       }
-      setIsPaused(true);
+      setStatus('disconnected');
+      toast({
+        title: "AI Coach Paused",
+        description: "Voice monitoring is paused. Click Resume to continue.",
+      });
     }
   };
 
@@ -995,7 +1009,7 @@ export function ExecutiveMeetingAdvisor({
                   </p>
                 </CardHeader>
                 <CardContent className="flex-1 p-4 flex flex-col gap-4 min-h-0">
-                  <ScrollArea className="flex-1 pr-4"  ref={scrollRef}>
+                  <ScrollArea className="flex-1 h-full pr-4" ref={scrollRef}>
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <Brain className="h-16 w-16 mb-4 text-primary/30 animate-pulse" />
@@ -1105,7 +1119,7 @@ export function ExecutiveMeetingAdvisor({
                   </p>
                 </CardHeader>
                 <CardContent className="flex-1 p-3 min-h-0">
-                  <ScrollArea className="h-full pr-3"  ref={transcriptScrollRef}>
+                  <ScrollArea className="h-full pr-3">
                     {participantQuestions.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <MessageCircleQuestion className="h-16 w-16 mb-4 text-blue-500/30" />
