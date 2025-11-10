@@ -4102,24 +4102,36 @@ export type Database = {
           full_analysis: string | null
           id: string
           insights: Json
+          priority_score: number | null
+          requires_action: boolean | null
+          response_deadline: string | null
           source_id: string
           updated_at: string
+          urgency_level: string | null
         }
         Insert: {
           created_at?: string
           full_analysis?: string | null
           id?: string
           insights?: Json
+          priority_score?: number | null
+          requires_action?: boolean | null
+          response_deadline?: string | null
           source_id: string
           updated_at?: string
+          urgency_level?: string | null
         }
         Update: {
           created_at?: string
           full_analysis?: string | null
           id?: string
           insights?: Json
+          priority_score?: number | null
+          requires_action?: boolean | null
+          response_deadline?: string | null
           source_id?: string
           updated_at?: string
+          urgency_level?: string | null
         }
         Relationships: [
           {

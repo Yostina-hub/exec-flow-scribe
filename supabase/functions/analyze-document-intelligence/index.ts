@@ -103,6 +103,11 @@ Provide comprehensive executive intelligence analysis.`;
     // Extract and parse structured insights
     const insights = parseAnalysisInsights(analysis);
 
+    // Calculate priority metrics
+    const priorityScore = calculatePriorityScore(analysis, title || "");
+    const urgencyLevel = determineUrgencyLevel(analysis, title || "");
+    const responseDeadline = calculateResponseDeadline(urgencyLevel);
+
     // Store structured insights for quick access
     const { error: insightError } = await supabase
       .from("notebook_intelligence_insights")
@@ -110,6 +115,10 @@ Provide comprehensive executive intelligence analysis.`;
         source_id: sourceId,
         insights: insights,
         full_analysis: analysis,
+        priority_score: priorityScore,
+        urgency_level: urgencyLevel,
+        response_deadline: responseDeadline,
+        requires_action: insights.recommendedActions.length > 0,
         created_at: new Date().toISOString()
       });
 
@@ -192,4 +201,62 @@ function parseAnalysisInsights(analysis: string) {
   }
 
   return insights;
+}
+
+function calculatePriorityScore(analysis: string, title: string): number {
+  const text = `${title} ${analysis}`.toLowerCase();
+  let score = 5; // Base score
+  
+  // High priority keywords
+  if (text.includes('urgent') || text.includes('critical') || text.includes('immediate')) score += 3;
+  if (text.includes('deadline') || text.includes('asap')) score += 2;
+  if (text.includes('ceo') || text.includes('executive') || text.includes('board')) score += 2;
+  if (text.includes('crisis') || text.includes('emergency')) score += 3;
+  if (text.includes('budget') || text.includes('financial') || text.includes('revenue')) score += 1;
+  
+  // Low priority keywords
+  if (text.includes('fyi') || text.includes('informational')) score -= 2;
+  if (text.includes('low priority')) score -= 3;
+  
+  return Math.max(1, Math.min(10, score)); // Clamp between 1-10
+}
+
+function determineUrgencyLevel(analysis: string, title: string): string {
+  const text = `${title} ${analysis}`.toLowerCase();
+  
+  if (text.includes('critical') || text.includes('emergency') || text.includes('crisis')) {
+    return 'critical';
+  }
+  if (text.includes('urgent') || text.includes('immediate') || text.includes('asap')) {
+    return 'high';
+  }
+  if (text.includes('routine') || text.includes('fyi') || text.includes('low priority')) {
+    return 'low';
+  }
+  return 'medium';
+}
+
+function calculateResponseDeadline(urgencyLevel: string): string {
+  const now = new Date();
+  
+  switch (urgencyLevel) {
+    case 'critical':
+      // 4 hours
+      now.setHours(now.getHours() + 4);
+      break;
+    case 'high':
+      // 24 hours
+      now.setDate(now.getDate() + 1);
+      break;
+    case 'medium':
+      // 3 days
+      now.setDate(now.getDate() + 3);
+      break;
+    case 'low':
+      // 7 days
+      now.setDate(now.getDate() + 7);
+      break;
+  }
+  
+  return now.toISOString();
 }

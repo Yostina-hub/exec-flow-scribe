@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Brain, Sparkles, TrendingUp, Calendar, ChevronRight, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck, BookOpen } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, Calendar, ChevronRight, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck, BookOpen, Inbox } from 'lucide-react';
 import { TempoBalanceEngine } from '@/components/TempoBalanceEngine';
 import { EngagementHeatmap } from '@/components/EngagementHeatmap';
 import { DecisionDensityTracker } from '@/components/DecisionDensityTracker';
@@ -531,6 +531,37 @@ export default function ExecutiveAdvisor() {
                       </Badge>
                       <Badge variant="secondary" className="text-xs">Document Analysis</Badge>
                       <Badge variant="secondary" className="text-xs">Meeting Insights</Badge>
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Executive Inbox Card */}
+          <Card 
+            className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border-2 hover:border-primary/50 bg-gradient-to-br from-orange-500/10 via-red-500/10 to-pink-500/10 mb-6"
+            onClick={() => navigate('/executive-inbox')}
+          >
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4 flex-1">
+                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Inbox className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h4 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">Executive Inbox</h4>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      AI-prioritized documents requiring your attention with smart urgency indicators and recommended response deadlines.
+                    </p>
+                    <div className="flex gap-2 flex-wrap">
+                      <Badge variant="secondary" className="text-xs">
+                        <AlertCircle className="h-3 w-3 mr-1" />
+                        Priority Scoring
+                      </Badge>
+                      <Badge variant="secondary" className="text-xs">Urgency Tracking</Badge>
+                      <Badge variant="secondary" className="text-xs">Smart Deadlines</Badge>
                     </div>
                   </div>
                 </div>

@@ -30,6 +30,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import GoogleOAuthCallback from "./pages/GoogleOAuthCallback";
 import ExecutiveAdvisor from "./pages/ExecutiveAdvisor";
+import ExecutiveInbox from "./pages/ExecutiveInbox";
 import DocumentViewer from "./components/DocumentViewer";
 import { Toaster } from "@/components/ui/toaster";
 
@@ -73,6 +74,8 @@ const App = () => (
             {/* Protected routes with persistent Layout */}
             <Route element={<ProtectedLayout />}>
               <Route path="/" element={<Index />} />
+              <Route path="/executive-advisor" element={<ExecutiveAdvisor />} />
+              <Route path="/executive-inbox" element={<ExecutiveInbox />} />
               <Route path="/advisor" element={<ExecutiveAdvisor />} />
               <Route path="/calendar" element={<CalendarView />} />
               <Route path="/meetings" element={<Meetings />} />
