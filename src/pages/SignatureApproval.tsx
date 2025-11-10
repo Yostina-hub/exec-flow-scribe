@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { localStorageCache } from '@/utils/localStorage';
-import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen } from 'lucide-react';
+import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen, Mail } from 'lucide-react';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { MeetingKeyPointsSummary } from '@/components/MeetingKeyPointsSummary';
@@ -414,14 +414,25 @@ export default function SignatureApproval() {
               <MeetingKeyPointsSummary meetingId={signatureRequest.meeting_id} />
             )}
             {isApproved && (
-              <Button 
-                onClick={handleDownloadPDF} 
-                size="lg" 
-                className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651] text-white shadow-lg"
-              >
-                <Download className="w-5 h-5 mr-2" />
-                Download Official PDF
-              </Button>
+              <>
+                <Button 
+                  onClick={handleDownloadPDF} 
+                  size="lg" 
+                  className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651] text-white shadow-lg"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Download Official PDF
+                </Button>
+                <Button 
+                  onClick={() => setShowDistribution(true)} 
+                  size="lg" 
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10"
+                >
+                  <Mail className="w-5 h-5 mr-2" />
+                  Distribute
+                </Button>
+              </>
             )}
             {canSign && (
               <Button onClick={() => setSignOffOpen(true)} size="lg">

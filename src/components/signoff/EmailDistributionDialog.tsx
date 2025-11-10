@@ -117,16 +117,30 @@ export function EmailDistributionDialog({
   const fetchRecipients = async () => {
     setIsLoadingRecipients(true);
     try {
-      // Fetch meeting attendees
-      const { data: attendees, error } = await supabase
+      // Fetch meeting attendees user IDs
+      const { data: attendees, error: attendeesError } = await supabase
         .from('meeting_attendees')
-        .select('user:profiles!meeting_attendees_user_id_fkey(email)')
+        .select('user_id')
         .eq('meeting_id', meetingId);
 
-      if (error) throw error;
+      if (attendeesError) throw attendeesError;
 
-      const emails = attendees
-        ?.map((a: any) => a.user?.email)
+      if (!attendees || attendees.length === 0) {
+        setRecipients([]);
+        return;
+      }
+
+      // Fetch profiles for those user IDs
+      const userIds = attendees.map(a => a.user_id);
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('email')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      const emails = profiles
+        ?.map((p: any) => p.email)
         .filter((email): email is string => !!email) || [];
 
       setRecipients(emails);
@@ -382,6 +396,19 @@ export function EmailDistributionDialog({
           {/* Actions */}
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  toast({
+                    title: 'Saved for Later',
+                    description: 'You can distribute this from the meeting signature page',
+                  });
+                  onOpenChange(false);
+                }}
+                disabled={isDistributing}
+              >
+                Do Later
+              </Button>
               <Button
                 variant="ghost"
                 onClick={() => setShowHistoryDialog(true)}
