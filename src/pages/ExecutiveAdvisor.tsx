@@ -378,7 +378,7 @@ export default function ExecutiveAdvisor() {
                   </Badge>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/10 to-primary/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               <CardContent className="relative p-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-primary to-primary-dark shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -413,7 +413,7 @@ export default function ExecutiveAdvisor() {
                   </Badge>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               <CardContent className="relative p-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-success to-success/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -448,7 +448,7 @@ export default function ExecutiveAdvisor() {
                   </Badge>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-warning/0 via-warning/10 to-warning/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-warning/0 via-warning/10 to-warning/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               <CardContent className="relative p-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-warning to-warning/80 shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -483,7 +483,7 @@ export default function ExecutiveAdvisor() {
                   </Badge>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-success/0 via-success/10 to-success/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"></div>
               <CardContent className="relative p-8">
                 <div className="flex items-center justify-between mb-6">
                   <div className="p-3 rounded-xl bg-gradient-to-br from-success to-emerald-600 shadow-lg group-hover:scale-110 transition-transform duration-300">
