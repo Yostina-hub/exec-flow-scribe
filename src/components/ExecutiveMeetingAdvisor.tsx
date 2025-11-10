@@ -107,6 +107,7 @@ export function ExecutiveMeetingAdvisor({
   const [activeTab, setActiveTab] = useState('advisor');
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [isAISpeaking, setIsAISpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [inputText, setInputText] = useState('');
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
@@ -747,6 +748,18 @@ export function ExecutiveMeetingAdvisor({
     }
   };
 
+  const togglePause = () => {
+    if (isPaused) {
+      connectAdvisor();
+      setIsPaused(false);
+    } else {
+      if (assistantRef.current) {
+        assistantRef.current.disconnect();
+      }
+      setIsPaused(true);
+    }
+  };
+
   // Filter transcriptions based on search and filters
   const getFilteredTranscriptions = () => {
     let filtered = [...liveTranscriptions];
@@ -834,15 +847,15 @@ export function ExecutiveMeetingAdvisor({
       exit={{ opacity: 0, y: 20 }}
       className="fixed inset-4 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md"
     >
-      <Card className="w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl border-2 border-primary/20">
-        <CardHeader className="border-b bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white">
+      <Card className="w-full max-w-7xl h-[90vh] flex flex-col shadow-2xl border-2 border-primary/20 overflow-hidden">
+        <CardHeader className="border-b bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="relative">
                 <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
                   <Brain className="h-6 w-6 animate-pulse" />
                 </div>
-                {status === 'connected' && (
+                {status === 'connected' && !isPaused && (
                   <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse" />
                 )}
               </div>
@@ -855,7 +868,11 @@ export function ExecutiveMeetingAdvisor({
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="text-xs px-3 py-1">
-                {status === 'connected' ? (
+                {isPaused ? (
+                  <span className="flex items-center gap-2">
+                    Paused
+                  </span>
+                ) : status === 'connected' ? (
                   <span className="flex items-center gap-2">
                     <Activity className="h-3 w-3 animate-pulse" />
                     Live Monitoring
@@ -884,8 +901,8 @@ export function ExecutiveMeetingAdvisor({
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 p-4 overflow-hidden">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col overflow-hidden">
+        <CardContent className="flex-1 p-4 flex flex-col min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full">
             <TabsList className="grid grid-cols-7 w-full shrink-0 h-auto py-1.5">
               <TabsTrigger value="advisor" className="flex items-center gap-1.5 text-xs py-2">
                 <Brain className="h-4 w-4" />
@@ -934,17 +951,35 @@ export function ExecutiveMeetingAdvisor({
             </TabsList>
 
             {/* AI Advisor Tab */}
-            <TabsContent value="advisor" className="flex-1 flex flex-col overflow-hidden">
-              <Card className="flex-1 flex flex-col overflow-hidden border-2 border-primary/20">
-                <CardHeader className="pb-3 bg-muted/30">
+            <TabsContent value="advisor" className="flex-1 flex flex-col min-h-0 mt-2">
+              <Card className="flex-1 flex flex-col min-h-0 border-2 border-primary/20">
+                <CardHeader className="pb-3 bg-muted/30 shrink-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Mic className={isAISpeaking ? 'animate-pulse text-green-500' : ''} />
                       Live Conversation
                     </CardTitle>
                     <div className="flex items-center gap-2">
-                      <Badge variant={status === 'connected' ? 'default' : 'secondary'} className="text-xs">
-                        {status === 'connected' ? (
+                      <Button
+                        onClick={togglePause}
+                        size="sm"
+                        variant={isPaused ? 'default' : 'secondary'}
+                        className="text-xs"
+                      >
+                        {isPaused ? (
+                          <>
+                            <Mic className="h-3 w-3 mr-1" />
+                            Resume
+                          </>
+                        ) : (
+                          <>
+                            <MicOff className="h-3 w-3 mr-1" />
+                            Pause
+                          </>
+                        )}
+                      </Button>
+                      <Badge variant={status === 'connected' && !isPaused ? 'default' : 'secondary'} className="text-xs">
+                        {isPaused ? 'Paused' : status === 'connected' ? (
                           <>
                             <Activity className="h-3 w-3 mr-1 animate-pulse" />
                             Voice Active
@@ -956,11 +991,11 @@ export function ExecutiveMeetingAdvisor({
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">
-                    Use voice or text to interact with your AI advisor
+                    {isPaused ? 'AI coach is paused. Click Resume to continue.' : 'Use voice or text to interact with your AI advisor'}
                   </p>
                 </CardHeader>
-                <CardContent className="flex-1 p-4 overflow-hidden flex flex-col gap-4">
-                  <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
+                <CardContent className="flex-1 p-4 flex flex-col gap-4 min-h-0">
+                  <ScrollArea className="flex-1 pr-4"  ref={scrollRef}>
                     {messages.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <Brain className="h-16 w-16 mb-4 text-primary/30 animate-pulse" />
@@ -1016,19 +1051,19 @@ export function ExecutiveMeetingAdvisor({
                   </ScrollArea>
 
                   {/* Text Input Area */}
-                  <div className="border-t pt-4">
+                  <div className="border-t pt-4 shrink-0">
                     <div className="flex gap-2">
                       <Input
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         onKeyDown={handleKeyPress}
-                        placeholder={status === 'connected' ? 'Type a message or speak...' : 'Connecting...'}
-                        disabled={status !== 'connected'}
+                        placeholder={isPaused ? 'Resume to continue...' : status === 'connected' ? 'Type a message or speak...' : 'Connecting...'}
+                        disabled={isPaused || status !== 'connected'}
                         className="flex-1"
                       />
                       <Button
                         onClick={handleSendMessage}
-                        disabled={!inputText.trim() || status !== 'connected'}
+                        disabled={isPaused || !inputText.trim() || status !== 'connected'}
                         size="icon"
                         className="shrink-0"
                       >
@@ -1036,7 +1071,9 @@ export function ExecutiveMeetingAdvisor({
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground mt-2 flex items-center gap-2">
-                      {status === 'connected' ? (
+                      {isPaused ? (
+                        'AI coach is paused'
+                      ) : status === 'connected' ? (
                         <>
                           <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                           Voice is active - speak naturally or type your questions
@@ -1051,8 +1088,8 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Participant Q&A Tab */}
-            <TabsContent value="questions" className="flex-1 flex flex-col overflow-hidden mt-2 space-y-0">
-              <Card className="flex-1 flex flex-col overflow-hidden border-2 border-blue-500/20">
+            <TabsContent value="questions" className="flex-1 flex flex-col min-h-0 mt-2">
+              <Card className="flex-1 flex flex-col min-h-0 border-2 border-blue-500/20">
                 <CardHeader className="py-3 px-4 bg-muted/30 shrink-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -1067,8 +1104,8 @@ export function ExecutiveMeetingAdvisor({
                     Questions automatically detected from participant conversations
                   </p>
                 </CardHeader>
-                <CardContent className="flex-1 p-3 overflow-hidden">
-                  <ScrollArea className="h-full pr-3">
+                <CardContent className="flex-1 p-3 min-h-0">
+                  <ScrollArea className="h-full pr-3"  ref={transcriptScrollRef}>
                     {participantQuestions.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-center">
                         <MessageCircleQuestion className="h-16 w-16 mb-4 text-blue-500/30" />
@@ -1205,8 +1242,8 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Live Transcriptions Tab */}
-            <TabsContent value="transcriptions" className="flex-1 flex flex-col overflow-hidden mt-2 space-y-0">
-              <Card className="flex-1 flex flex-col overflow-hidden border-2 border-green-500/20">
+            <TabsContent value="transcriptions" className="flex-1 flex flex-col min-h-0 mt-2">
+              <Card className="flex-1 flex flex-col min-h-0 border-2 border-green-500/20">
                 <CardHeader className="py-3 px-4 bg-muted/30 shrink-0">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base flex items-center gap-2">
@@ -1221,7 +1258,7 @@ export function ExecutiveMeetingAdvisor({
                      Real-time transcription of what participants are saying
                    </p>
                 </CardHeader>
-                <CardContent className="flex-1 p-3 overflow-hidden flex flex-col gap-2">
+                <CardContent className="flex-1 p-3 min-h-0 flex flex-col gap-2">
                   {/* Search and Filter Controls */}
                   <div className="space-y-2 shrink-0">
                     <div className="relative">
@@ -1341,8 +1378,8 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Meeting Tempo Tab */}
-            <TabsContent value="tempo" className="flex-1 overflow-hidden mt-2 space-y-0">
-              <ScrollArea className="h-full">
+            <TabsContent value="tempo" className="flex-1 flex flex-col min-h-0 mt-2">
+              <ScrollArea className="h-full pr-4">
                 <div className="grid grid-cols-2 gap-3 p-3">
                   <Card className="border-2 border-primary/20">
                     <CardHeader className="py-3 px-4">
@@ -1429,8 +1466,8 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Key Points Tab */}
-            <TabsContent value="keypoints" className="flex-1 overflow-hidden mt-2 space-y-0">
-              <ScrollArea className="h-full">
+            <TabsContent value="keypoints" className="flex-1 flex flex-col min-h-0 mt-2">
+              <ScrollArea className="h-full pr-4">
                 <div className="p-3 space-y-3">
                   {keyPoints.length === 0 ? (
                     <div className="text-center py-12">
@@ -1484,8 +1521,8 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* Success Metrics Tab */}
-            <TabsContent value="success" className="flex-1 overflow-hidden mt-2 space-y-0">
-              <ScrollArea className="h-full">
+            <TabsContent value="success" className="flex-1 flex flex-col min-h-0 mt-2">
+              <ScrollArea className="h-full pr-4">
                 <div className="p-3 space-y-3">
                   <Card className="border-2 border-primary/20">
                     <CardHeader className="py-3 px-4">
@@ -1544,8 +1581,8 @@ export function ExecutiveMeetingAdvisor({
             </TabsContent>
 
             {/* History Tab */}
-            <TabsContent value="history" className="flex-1 overflow-hidden mt-2 space-y-0">
-              <div className="h-full">
+            <TabsContent value="history" className="flex-1 flex flex-col min-h-0 mt-2">
+              <div className="h-full flex flex-col min-h-0">
               <AdvisorHistoryViewer meetingId={meetingId} currentConversationId={conversationId} />
               </div>
             </TabsContent>
