@@ -98,6 +98,7 @@ const MeetingKeywordSearch = lazy(() => import("@/components/MeetingKeywordSearc
 const EnhancedDocumentsTab = lazy(() => import("@/components/EnhancedDocumentsTab").then(m => ({ default: m.EnhancedDocumentsTab })));
 const EnhancedDecisionsList = lazy(() => import("@/components/EnhancedDecisionsList").then(m => ({ default: m.EnhancedDecisionsList })));
 const AIGenerationInsights = lazy(() => import("@/components/AIGenerationInsights").then(m => ({ default: m.AIGenerationInsights })));
+const ExecutiveMeetingAdvisor = lazy(() => import("@/components/ExecutiveMeetingAdvisor").then(m => ({ default: m.ExecutiveMeetingAdvisor })));
 const TimeBasedAccessGuard = lazy(() => import("@/components/TimeBasedAccessGuard").then(m => ({ default: m.TimeBasedAccessGuard })));
 const ProtectedElement = lazy(() => import("@/components/ProtectedElement").then(m => ({ default: m.ProtectedElement })));
 const HostManagementPanel = lazy(() => import("@/components/HostManagementPanel").then(m => ({ default: m.HostManagementPanel })));
@@ -185,6 +186,7 @@ const MeetingDetail = () => {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showVirtualRoom, setShowVirtualRoom] = useState(false);
   const [showHostPanel, setShowHostPanel] = useState(false);
+  const [showExecutiveAdvisor, setShowExecutiveAdvisor] = useState(false);
   const [showCompleteMeetingDialog, setShowCompleteMeetingDialog] = useState(false);
   const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
@@ -207,6 +209,16 @@ const MeetingDetail = () => {
   
   // Fast initial meeting fetch (realtime) to avoid long loading state
   const { meeting: meetingRealtime, loading: meetingRealtimeLoading } = useRealtimeMeetingData(meetingId);
+  
+  // Listen for sidebar advisor trigger
+  useEffect(() => {
+    const handleOpenAdvisor = () => {
+      setShowExecutiveAdvisor(true);
+    };
+    
+    window.addEventListener('openExecutiveAdvisor', handleOpenAdvisor);
+    return () => window.removeEventListener('openExecutiveAdvisor', handleOpenAdvisor);
+  }, []);
   
   // User info from cached auth
   const userId = user?.id || "";
@@ -905,11 +917,20 @@ const MeetingDetail = () => {
                     onClick={() => setShowVirtualRoom(true)}
                   >
                     <Sparkles className="h-4 w-4" />
-                  Join Virtual Room
+                    Join Virtual Room
+                  </Button>
+                )}
+                
+                {/* Executive Advisor - Premium Feature */}
+                <Button
+                  className="gap-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:opacity-90 text-white shadow-lg animate-pulse-slow"
+                  onClick={() => setShowExecutiveAdvisor(true)}
+                >
+                  <Brain className="h-5 w-5" />
+                  Executive Advisor
                 </Button>
-              )}
-              
-              <Button
+                
+                <Button
                   variant="outline"
                   className="gap-2"
                   onClick={() => setShowShareDialog(true)}
@@ -962,11 +983,15 @@ const MeetingDetail = () => {
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => setShowHostPanel(true)}>
                           <Settings className="h-4 w-4 mr-2" />
-                        🎛️ Host Management Panel
-                      </DropdownMenuItem>
-                    </>
-                  )}
-                </DropdownMenuContent>
+                          🎛️ Host Management Panel
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    <DropdownMenuItem onClick={() => setShowExecutiveAdvisor(true)}>
+                      <Brain className="h-4 w-4 mr-2" />
+                      🧠 Executive Advisor
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                 </DropdownMenu>
               </div>
             </div>
@@ -1527,6 +1552,18 @@ const MeetingDetail = () => {
             meetingTime={meeting.start_time ? format(new Date(meeting.start_time), 'p') : 'TBD'}
             videoConferenceUrl={meeting.video_conference_url}
           />
+        )}
+
+        {/* Executive Meeting Advisor */}
+        {showExecutiveAdvisor && meeting && (
+          <Suspense fallback={null}>
+            <ExecutiveMeetingAdvisor
+              meetingId={meetingId}
+              isHost={meeting.created_by === userId}
+              meetingData={meeting}
+              onClose={() => setShowExecutiveAdvisor(false)}
+            />
+          </Suspense>
         )}
       </div>
     </TimeBasedAccessGuard>

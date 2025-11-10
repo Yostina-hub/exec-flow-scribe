@@ -19,7 +19,6 @@ serve(async (req) => {
 
   const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
   if (!OPENAI_API_KEY) {
-    console.error("OpenAI API key not configured");
     return new Response("OpenAI API key not configured", { status: 500 });
   }
 
@@ -27,22 +26,38 @@ serve(async (req) => {
   let openAISocket: WebSocket | null = null;
   let sessionConfigured = false;
 
-  socket.onopen = async () => {
+  socket.onopen = () => {
     console.log("Client WebSocket connected");
     
-    try {
-      // First, get an ephemeral token from OpenAI
-      console.log("Requesting ephemeral token from OpenAI...");
-      const tokenResponse = await fetch("https://api.openai.com/v1/realtime/sessions", {
-        method: "POST",
+    // Connect to OpenAI Realtime API
+    openAISocket = new WebSocket(
+      "wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-10-01",
+      {
         headers: {
           "Authorization": `Bearer ${OPENAI_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-realtime-preview-2024-12-17",
-          voice: "alloy",
-          instructions: `You are an elite executive meeting advisor providing real-time strategic guidance to senior leaders during critical meetings.
+          "OpenAI-Beta": "realtime=v1"
+        }
+      }
+    );
+
+    openAISocket.onopen = () => {
+      console.log("Connected to OpenAI Realtime API");
+    };
+
+    openAISocket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("OpenAI event:", data.type);
+
+        // Configure session after connection
+        if (data.type === 'session.created' && !sessionConfigured) {
+          sessionConfigured = true;
+          
+              const sessionConfig = {
+            type: 'session.update',
+            session: {
+              modalities: ['text', 'audio'],
+              instructions: `You are an elite executive meeting advisor providing real-time strategic guidance to senior leaders during critical meetings.
 
 **Your Core Mission:**
 Help executives and meeting hosts achieve exceptional meeting outcomes through expert real-time coaching on tempo management, decision-making, and meeting success optimization.
@@ -90,90 +105,52 @@ Help executives and meeting hosts achieve exceptional meeting outcomes through e
 **Tone:**
 Professional, confident, insightful, and solutions-focused. Think senior consultant advising a C-suite executive.
 
-When answering questions, ground responses in the actual meeting data, participants, agenda, and real-time discussions. If you don't have specific information, acknowledge it clearly and provide your best strategic recommendation.`
-        }),
-      });
+When answering questions, ground responses in the actual meeting data, participants, agenda, and real-time discussions. If you don't have specific information, acknowledge it clearly and provide your best strategic recommendation.`,
+              voice: 'alloy',
+              input_audio_format: 'pcm16',
+              output_audio_format: 'pcm16',
+              input_audio_transcription: {
+                model: 'whisper-1'
+              },
+              turn_detection: {
+                type: 'server_vad',
+                threshold: 0.5,
+                prefix_padding_ms: 300,
+                silence_duration_ms: 1000
+              },
+              temperature: 0.8,
+              max_response_output_tokens: 'inf'
+            }
+          };
 
-      if (!tokenResponse.ok) {
-        const errorText = await tokenResponse.text();
-        console.error("Failed to get ephemeral token:", errorText);
-        socket.send(JSON.stringify({
-          type: 'error',
-          error: 'Failed to initialize AI advisor'
-        }));
-        socket.close();
-        return;
-      }
-
-      const tokenData = await tokenResponse.json();
-      const ephemeralKey = tokenData.client_secret?.value;
-      
-      if (!ephemeralKey) {
-        console.error("No ephemeral key in response");
-        socket.send(JSON.stringify({
-          type: 'error',
-          error: 'Failed to get session token'
-        }));
-        socket.close();
-        return;
-      }
-
-      console.log("Ephemeral token obtained, connecting to OpenAI...");
-      
-      // Connect to OpenAI using the ephemeral token
-      const baseUrl = "wss://api.openai.com/v1/realtime";
-      const model = "gpt-4o-realtime-preview-2024-12-17";
-      openAISocket = new WebSocket(`${baseUrl}?model=${model}`, [
-        "realtime",
-        `openai-insecure-api-key.${ephemeralKey}`,
-        "openai-beta.realtime-v1"
-      ]);
-
-      openAISocket.onopen = () => {
-        console.log("Connected to OpenAI Realtime API");
-        socket.send(JSON.stringify({
-          type: 'session.created'
-        }));
-      };
-
-      openAISocket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log("OpenAI event:", data.type);
-
-          // Forward all events to client
-          socket.send(event.data);
-        } catch (error) {
-          console.error("Error processing OpenAI message:", error);
+          openAISocket?.send(JSON.stringify(sessionConfig));
+          console.log("Session configured with instructions");
         }
-      };
 
-      openAISocket.onerror = (error) => {
-        console.error("OpenAI WebSocket error:", error);
-        socket.send(JSON.stringify({
-          type: 'error',
-          error: 'OpenAI connection error'
-        }));
-      };
+        // Forward all events to client
+        socket.send(event.data);
+      } catch (error) {
+        console.error("Error processing OpenAI message:", error);
+      }
+    };
 
-      openAISocket.onclose = () => {
-        console.log("OpenAI WebSocket closed");
-        socket.close();
-      };
-    } catch (error) {
-      console.error("Error setting up OpenAI connection:", error);
+    openAISocket.onerror = (error) => {
+      console.error("OpenAI WebSocket error:", error);
       socket.send(JSON.stringify({
         type: 'error',
-        error: error instanceof Error ? error.message : 'Setup failed'
+        error: 'OpenAI connection error'
       }));
+    };
+
+    openAISocket.onclose = () => {
+      console.log("OpenAI WebSocket closed");
       socket.close();
-    }
+    };
   };
 
   socket.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data);
-      console.log("Client message:", data.type);
       
       // Forward client messages to OpenAI
       if (openAISocket && openAISocket.readyState === WebSocket.OPEN) {

@@ -427,78 +427,61 @@ export function EmailDistributionDialog({
               </Button>
             </div>
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isDistributing}
+              >
+                {distributionResults.length > 0 ? 'Close' : 'Cancel'}
+              </Button>
               {distributionResults.length === 0 ? (
-                <>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      toast({
-                        title: 'Deferred',
-                        description: 'You can distribute minutes later from the meeting details',
-                      });
-                      onOpenChange(false);
-                    }}
-                    disabled={isDistributing}
-                  >
-                    Do Later
-                  </Button>
-                  {!isApproved && !isCheckingApproval && (
-                    <Button
-                      variant="outline"
-                      onClick={() => setShowApprovalDialog(true)}
-                      disabled={isDistributing}
-                    >
-                      <Shield className="w-4 h-4 mr-2" />
-                      Request Approval
-                    </Button>
-                  )}
+              <>
+                {!isApproved && !isCheckingApproval && (
                   <Button
                     variant="outline"
-                    onClick={() => setShowScheduleDialog(true)}
-                    disabled={isDistributing || recipients.length === 0 || isLoadingRecipients}
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    Schedule
-                  </Button>
-                  <Button
-                    onClick={handleDistribute}
-                    disabled={isDistributing || recipients.length === 0 || isLoadingRecipients || !isApproved}
-                    className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
-                  >
-                    {isDistributing ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Sending...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 mr-2" />
-                        {isApproved ? 'Send Now' : 'Approval Required'}
-                      </>
-                    )}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => onOpenChange(false)}
+                    onClick={() => setShowApprovalDialog(true)}
                     disabled={isDistributing}
                   >
-                    Close
+                    <Shield className="w-4 h-4 mr-2" />
+                    Request Approval
                   </Button>
-                  {failedCount > 0 && (
-                    <Button
-                      onClick={handleDistribute}
-                      disabled={isDistributing}
-                      variant="outline"
-                    >
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowScheduleDialog(true)}
+                  disabled={isDistributing || recipients.length === 0 || isLoadingRecipients}
+                >
+                  <Clock className="w-4 h-4 mr-2" />
+                  Schedule
+                </Button>
+                <Button
+                  onClick={handleDistribute}
+                  disabled={isDistributing || recipients.length === 0 || isLoadingRecipients || !isApproved}
+                  className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651]"
+                >
+                  {isDistributing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
                       <Send className="w-4 h-4 mr-2" />
-                      Retry Failed
-                    </Button>
+                      {isApproved ? 'Send Now' : 'Approval Required'}
+                    </>
                   )}
-                </>
-              )}
+                </Button>
+              </>
+            ) : failedCount > 0 ? (
+              <Button
+                onClick={handleDistribute}
+                disabled={isDistributing}
+                variant="outline"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Retry Failed
+              </Button>
+            ) : null}
             </div>
           </div>
         </div>
