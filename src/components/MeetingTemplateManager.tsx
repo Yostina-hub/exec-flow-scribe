@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, FileText, Star } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Star, Download, Upload } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -168,6 +168,92 @@ export const MeetingTemplateManager = () => {
     },
   });
 
+  const handleExportTemplate = (template: Template) => {
+    const exportData = {
+      name: template.name,
+      meeting_type: template.meeting_type,
+      description: template.description,
+      sections: template.sections,
+      exported_at: new Date().toISOString(),
+      version: '1.0'
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${template.name.toLowerCase().replace(/\s+/g, '-')}-template.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: 'Template exported',
+      description: 'Template has been downloaded successfully.',
+    });
+  };
+
+  const handleImportClick = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.onchange = handleFileSelect;
+    input.click();
+  };
+
+  const handleFileSelect = async (e: Event) => {
+    const target = e.target as HTMLInputElement;
+    const file = target.files?.[0];
+    
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      // Validate template structure
+      if (!data.name || !data.sections || !Array.isArray(data.sections)) {
+        throw new Error('Invalid template format. Missing required fields.');
+      }
+
+      // Validate sections structure
+      if (!data.sections.every((s: any) => s.id && s.name && typeof s.required === 'boolean')) {
+        throw new Error('Invalid sections format.');
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Import the template
+      const { error } = await supabase
+        .from('meeting_templates')
+        .insert({
+          name: data.name,
+          meeting_type: data.meeting_type || 'Board Meeting',
+          description: data.description || '',
+          sections: data.sections,
+          is_default: false,
+          created_by: user.id,
+        });
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['meeting-templates'] });
+      
+      toast({
+        title: 'Template imported',
+        description: `"${data.name}" has been imported successfully.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Import failed',
+        description: error.message || 'Failed to import template. Please check the file format.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -177,23 +263,29 @@ export const MeetingTemplateManager = () => {
             Manage templates for different meeting types with customized sections
           </p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              Create Template
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Create Meeting Template</DialogTitle>
-            </DialogHeader>
-            <TemplateForm
-              onSubmit={(data) => createTemplateMutation.mutate(data)}
-              isLoading={createTemplateMutation.isPending}
-            />
-          </DialogContent>
-        </Dialog>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleImportClick} className="gap-2">
+            <Upload className="w-4 h-4" />
+            Import
+          </Button>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <Plus className="w-4 h-4" />
+                Create Template
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Create Meeting Template</DialogTitle>
+              </DialogHeader>
+              <TemplateForm
+                onSubmit={(data) => createTemplateMutation.mutate(data)}
+                isLoading={createTemplateMutation.isPending}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {isLoading ? (
@@ -227,6 +319,14 @@ export const MeetingTemplateManager = () => {
                   </div>
                 </div>
                 <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleExportTemplate(template)}
+                    title="Export template"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
                   <Dialog
                     open={editingTemplate?.id === template.id}
                     onOpenChange={(open) => !open && setEditingTemplate(null)}
