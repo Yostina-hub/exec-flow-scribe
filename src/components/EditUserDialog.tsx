@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { logUserActivity } from "@/utils/userActivityLogger";
 
 interface User {
   id: string;
@@ -64,6 +65,23 @@ export function EditUserDialog({ open, onOpenChange, onSuccess, user }: EditUser
         .eq("id", user.id);
 
       if (profileError) throw profileError;
+
+      // Log the activity
+      const changes: Record<string, any> = {};
+      if (fullName !== user?.full_name) {
+        changes.full_name = { from: user?.full_name, to: fullName };
+      }
+      if (email !== user?.email) {
+        changes.email = { from: user?.email, to: email };
+      }
+
+      if (Object.keys(changes).length > 0) {
+        await logUserActivity({
+          userId: user!.id,
+          activityType: "profile_updated",
+          changes,
+        });
+      }
 
       toast({
         title: "Success",

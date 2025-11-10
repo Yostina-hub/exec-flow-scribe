@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { logUserActivity } from "@/utils/userActivityLogger";
 
 interface CreateUserDialogProps {
   open: boolean;
@@ -62,6 +63,16 @@ export function CreateUserDialog({ open, onOpenChange, onSuccess }: CreateUserDi
       if (error) throw error;
 
       if (data.user) {
+        // Log the activity
+        await logUserActivity({
+          userId: data.user.id,
+          activityType: "user_created",
+          changes: {
+            email: email,
+            full_name: fullName,
+          },
+        });
+
         toast({
           title: "Success",
           description: "User created successfully",

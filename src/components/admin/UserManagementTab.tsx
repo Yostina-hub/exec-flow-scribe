@@ -4,13 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserRoleDialog } from "@/components/UserRoleDialog";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
 import { EditUserDialog } from "@/components/EditUserDialog";
 import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
 import { DeleteUserDialog } from "@/components/DeleteUserDialog";
+import { UserActivityHistory } from "@/components/UserActivityHistory";
 import { toast } from "@/hooks/use-toast";
-import { Shield, UserPlus, Pencil, KeyRound, Trash2 } from "lucide-react";
+import { Shield, UserPlus, Pencil, KeyRound, Trash2, History } from "lucide-react";
 
 interface UserWithRoles {
   id: string;
@@ -99,7 +101,17 @@ export function UserManagementTab() {
 
   return (
     <>
-      <Card>
+      <Tabs defaultValue="users" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="users">Users</TabsTrigger>
+          <TabsTrigger value="history">
+            <History className="h-4 w-4 mr-2" />
+            Activity History
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users">
+          <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -188,6 +200,12 @@ export function UserManagementTab() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="history">
+          <UserActivityHistory />
+        </TabsContent>
+      </Tabs>
 
       {selectedUser && (
         <UserRoleDialog

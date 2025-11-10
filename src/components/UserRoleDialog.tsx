@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { ConfirmRoleChangeDialog } from "@/components/ConfirmRoleChangeDialog";
+import { logUserActivity } from "@/utils/userActivityLogger";
 
 interface Role {
   id: string;
@@ -147,6 +148,29 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
         const missing = Array.from(selectedRoleIds).filter((id) => !assigned.has(id));
         if (missing.length > 0) {
           throw new Error('Some roles were not assigned due to access rules.');
+        }
+      }
+
+      // Log role changes
+      for (const roleId of rolesToAdd) {
+        const role = roles.find(r => r.id === roleId);
+        if (role) {
+          await logUserActivity({
+            userId: user.id,
+            activityType: "role_added",
+            changes: { role_name: role.name, role_id: role.id },
+          });
+        }
+      }
+
+      for (const roleId of rolesToRemove) {
+        const role = roles.find(r => r.id === roleId);
+        if (role) {
+          await logUserActivity({
+            userId: user.id,
+            activityType: "role_removed",
+            changes: { role_name: role.name, role_id: role.id },
+          });
         }
       }
 

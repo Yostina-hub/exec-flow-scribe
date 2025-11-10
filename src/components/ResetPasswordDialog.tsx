@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { Copy, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { logUserActivity } from "@/utils/userActivityLogger";
 
 interface User {
   id: string;
@@ -84,6 +85,14 @@ export function ResetPasswordDialog({ open, onOpenChange, user }: ResetPasswordD
       if (error) throw error;
 
       setResetComplete(true);
+
+      // Log the activity
+      await logUserActivity({
+        userId: user.id,
+        activityType: "password_reset",
+        changes: {},
+      });
+
       toast({
         title: "Success",
         description: "Password reset successfully",

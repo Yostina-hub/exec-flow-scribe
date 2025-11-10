@@ -5364,6 +5364,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          activity_type: string
+          changed_by: string | null
+          changes: Json
+          created_at: string
+          id: string
+          ip_address: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          changed_by?: string | null
+          changes?: Json
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          changed_by?: string | null
+          changes?: Json
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_departments: {
         Row: {
           created_at: string | null

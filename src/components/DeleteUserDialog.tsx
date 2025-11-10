@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
 import { AlertTriangle } from "lucide-react";
+import { logUserActivity } from "@/utils/userActivityLogger";
 
 interface DeleteUserDialogProps {
   open: boolean;
@@ -54,6 +55,16 @@ export function DeleteUserDialog({
         .eq("id", user.id);
 
       if (profileError) throw profileError;
+
+      // Log the activity (before user is deleted)
+      await logUserActivity({
+        userId: user.id,
+        activityType: "user_deleted",
+        changes: {
+          email: user.email,
+          full_name: user.full_name,
+        },
+      });
 
       toast({
         title: "Success",
