@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Shield, Lock, Key, AlertTriangle, CheckCircle2, Loader2, Eye, EyeOff } from 'lucide-react';
+import { Shield, Lock, Key, AlertTriangle, CheckCircle2, Loader2, Eye, EyeOff, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { EncryptionAuditLog } from './EncryptionAuditLog';
 import {
   Dialog,
   DialogContent,
@@ -169,7 +171,20 @@ export function EncryptionManager() {
 
   return (
     <>
-      <Card>
+      <Tabs defaultValue="settings" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsTrigger value="settings" className="gap-2">
+            <Shield className="h-4 w-4" />
+            Settings
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="gap-2">
+            <History className="h-4 w-4" />
+            Audit Log
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="settings">
+          <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -325,6 +340,12 @@ export function EncryptionManager() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="audit">
+          <EncryptionAuditLog />
+        </TabsContent>
+      </Tabs>
 
       <Dialog open={showSetupDialog} onOpenChange={setShowSetupDialog}>
         <DialogContent className="max-w-md">
