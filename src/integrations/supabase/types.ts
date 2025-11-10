@@ -4096,6 +4096,57 @@ export type Database = {
           },
         ]
       }
+      notebook_document_relationships: {
+        Row: {
+          created_at: string | null
+          detected_at: string | null
+          id: string
+          related_document_id: string
+          relationship_strength: number
+          relationship_summary: string | null
+          relationship_type: string
+          source_document_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          related_document_id: string
+          relationship_strength: number
+          relationship_summary?: string | null
+          relationship_type: string
+          source_document_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          related_document_id?: string
+          relationship_strength?: number
+          relationship_summary?: string | null
+          relationship_type?: string
+          source_document_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_document_relationships_related_document_id_fkey"
+            columns: ["related_document_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebook_document_relationships_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebook_intelligence_insights: {
         Row: {
           created_at: string

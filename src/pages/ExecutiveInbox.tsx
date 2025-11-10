@@ -12,9 +12,11 @@ import {
   TrendingUp, 
   FileText,
   CheckCircle2,
-  ArrowLeft
+  ArrowLeft,
+  Network
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { DocumentRelationshipMap } from "@/components/DocumentRelationshipMap";
 
 export default function ExecutiveInbox() {
   const navigate = useNavigate();
@@ -178,6 +180,9 @@ export default function ExecutiveInbox() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Document Relationship Map */}
+        <DocumentRelationshipMap />
 
         {/* Filters */}
         <Tabs defaultValue="all" onValueChange={(v) => setFilter(v as any)}>
