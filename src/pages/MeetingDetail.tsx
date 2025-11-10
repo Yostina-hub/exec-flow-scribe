@@ -109,6 +109,7 @@ const UnifiedEmotionIntelligence = lazy(() => import("@/components/UnifiedEmotio
 const LiveQAGenerator = lazy(() => import("@/components/LiveQAGenerator").then(m => ({ default: m.LiveQAGenerator })));
 const MeetingClosingSummary = lazy(() => import("@/components/MeetingClosingSummary").then(m => ({ default: m.MeetingClosingSummary })));
 const MeetingEffectivenessScoring = lazy(() => import("@/components/MeetingEffectivenessScoring").then(m => ({ default: m.MeetingEffectivenessScoring })));
+const ChunkGenerationStatus = lazy(() => import("@/components/ChunkGenerationStatus").then(m => ({ default: m.ChunkGenerationStatus })));
 
 // Import non-lazy components
 import { CompleteMeetingDialog } from "@/components/CompleteMeetingDialog";
@@ -1301,6 +1302,14 @@ const MeetingDetail = () => {
                           <TranscriptionProviderToggle />
                         </>
                       )}
+                      
+                      {/* Chunk Generation Status */}
+                      <Suspense fallback={<div className="animate-pulse h-40 bg-muted rounded-lg" />}>
+                        <ChunkGenerationStatus 
+                          meetingId={meetingId} 
+                          recordingDuration={recordingSeconds}
+                        />
+                      </Suspense>
                       
                       {/* Quick Actions */}
                       <Card>
