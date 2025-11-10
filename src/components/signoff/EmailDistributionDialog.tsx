@@ -398,12 +398,32 @@ export function EmailDistributionDialog({
             <div className="flex gap-2">
               <Button
                 variant="outline"
-                onClick={() => {
-                  toast({
-                    title: 'Saved for Later',
-                    description: 'You can distribute this from the meeting signature page',
-                  });
-                  onOpenChange(false);
+                onClick={async () => {
+                  try {
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) throw new Error('Not authenticated');
+
+                    await supabase.from('pending_distributions').insert({
+                      meeting_id: meetingId,
+                      signature_request_id: signatureRequestId,
+                      created_by: user.id,
+                      recipient_count: recipients.length,
+                      status: 'pending',
+                    });
+
+                    toast({
+                      title: 'Saved for Later',
+                      description: 'You can distribute this from the Pending Distributions panel',
+                    });
+                    onOpenChange(false);
+                  } catch (error: any) {
+                    console.error('Error saving pending distribution:', error);
+                    toast({
+                      title: 'Error',
+                      description: 'Failed to save for later',
+                      variant: 'destructive',
+                    });
+                  }
                 }}
                 disabled={isDistributing}
               >

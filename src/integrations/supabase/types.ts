@@ -1682,6 +1682,60 @@ export type Database = {
           },
         ]
       }
+      document_submission_notifications: {
+        Row: {
+          created_at: string | null
+          id: string
+          notebook_id: string | null
+          priority_level: string | null
+          read: boolean | null
+          secretary_notes: string | null
+          source_id: string | null
+          submitted_by: string | null
+          submitted_for: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          notebook_id?: string | null
+          priority_level?: string | null
+          read?: boolean | null
+          secretary_notes?: string | null
+          source_id?: string | null
+          submitted_by?: string | null
+          submitted_for?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          notebook_id?: string | null
+          priority_level?: string | null
+          read?: boolean | null
+          secretary_notes?: string | null
+          source_id?: string | null
+          submitted_by?: string | null
+          submitted_for?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_submission_notifications_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_submission_notifications_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_versions: {
         Row: {
           change_summary: string | null
@@ -4096,6 +4150,139 @@ export type Database = {
           },
         ]
       }
+      notebook_comments: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          insight_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          insight_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          insight_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_comments_insight_id_fkey"
+            columns: ["insight_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_intelligence_insights"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebook_document_relationships: {
+        Row: {
+          created_at: string | null
+          detected_at: string | null
+          id: string
+          related_document_id: string
+          relationship_strength: number
+          relationship_summary: string | null
+          relationship_type: string
+          source_document_id: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          related_document_id: string
+          relationship_strength: number
+          relationship_summary?: string | null
+          relationship_type: string
+          source_document_id: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          detected_at?: string | null
+          id?: string
+          related_document_id?: string
+          relationship_strength?: number
+          relationship_summary?: string | null
+          relationship_type?: string
+          source_document_id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_document_relationships_related_document_id_fkey"
+            columns: ["related_document_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebook_document_relationships_source_document_id_fkey"
+            columns: ["source_document_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebook_intelligence_insights: {
+        Row: {
+          created_at: string
+          full_analysis: string | null
+          id: string
+          insights: Json
+          priority_score: number | null
+          requires_action: boolean | null
+          response_deadline: string | null
+          source_id: string
+          updated_at: string
+          urgency_level: string | null
+        }
+        Insert: {
+          created_at?: string
+          full_analysis?: string | null
+          id?: string
+          insights?: Json
+          priority_score?: number | null
+          requires_action?: boolean | null
+          response_deadline?: string | null
+          source_id: string
+          updated_at?: string
+          urgency_level?: string | null
+        }
+        Update: {
+          created_at?: string
+          full_analysis?: string | null
+          id?: string
+          insights?: Json
+          priority_score?: number | null
+          requires_action?: boolean | null
+          response_deadline?: string | null
+          source_id?: string
+          updated_at?: string
+          urgency_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_intelligence_insights_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebook_sources: {
         Row: {
           content: string | null
@@ -4105,7 +4292,12 @@ export type Database = {
           id: string
           metadata: Json | null
           notebook_id: string | null
+          priority_level: string | null
+          secretary_notes: string | null
           source_type: string
+          submission_date: string | null
+          submitted_by: string | null
+          submitted_for: string | null
           title: string
           updated_at: string
           user_id: string
@@ -4118,7 +4310,12 @@ export type Database = {
           id?: string
           metadata?: Json | null
           notebook_id?: string | null
+          priority_level?: string | null
+          secretary_notes?: string | null
           source_type: string
+          submission_date?: string | null
+          submitted_by?: string | null
+          submitted_for?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -4131,7 +4328,12 @@ export type Database = {
           id?: string
           metadata?: Json | null
           notebook_id?: string | null
+          priority_level?: string | null
+          secretary_notes?: string | null
           source_type?: string
+          submission_date?: string | null
+          submitted_by?: string | null
+          submitted_for?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -4433,6 +4635,60 @@ export type Database = {
             columns: ["minutes_version_id"]
             isOneToOne: false
             referencedRelation: "minutes_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pending_distributions: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          id: string
+          meeting_id: string
+          notes: string | null
+          recipient_count: number | null
+          scheduled_for: string | null
+          signature_request_id: string | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          id?: string
+          meeting_id: string
+          notes?: string | null
+          recipient_count?: number | null
+          scheduled_for?: string | null
+          signature_request_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          id?: string
+          meeting_id?: string
+          notes?: string | null
+          recipient_count?: number | null
+          scheduled_for?: string | null
+          signature_request_id?: string | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_distributions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_distributions_signature_request_id_fkey"
+            columns: ["signature_request_id"]
+            isOneToOne: false
+            referencedRelation: "signature_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -5533,6 +5789,10 @@ export type Database = {
         Returns: boolean
       }
       can_start_task: { Args: { p_task_id: string }; Returns: boolean }
+      can_view_meeting_sr: {
+        Args: { _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
       get_users_with_role_name: {
         Args: { _role_name: string }
         Returns: {
@@ -5565,6 +5825,10 @@ export type Database = {
         Returns: boolean
       }
       is_guest: { Args: { _user_id: string }; Returns: boolean }
+      is_meeting_participant: {
+        Args: { _meeting_id: string; _user_id: string }
+        Returns: boolean
+      }
       is_senior_role: { Args: { _user_id: string }; Returns: boolean }
       match_approval_rules: {
         Args: { p_meeting_id: string }

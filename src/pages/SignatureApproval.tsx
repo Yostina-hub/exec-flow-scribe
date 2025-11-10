@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useOptimizedQuery } from '@/hooks/useOptimizedQuery';
 import { localStorageCache } from '@/utils/localStorage';
-import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen, Mail } from 'lucide-react';
+import { ArrowLeft, FileSignature, Download, Loader2, Languages, BookOpen, Mail, Clock } from 'lucide-react';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
 import { MeetingKeyPointsSummary } from '@/components/MeetingKeyPointsSummary';
@@ -32,6 +32,11 @@ const EmailDistributionDialog = lazy(() =>
     default: module.EmailDistributionDialog
   }))
 );
+const PendingDistributionsPanel = lazy(() =>
+  import('@/components/signoff/PendingDistributionsPanel').then(module => ({
+    default: module.PendingDistributionsPanel
+  }))
+);
 
 export default function SignatureApproval() {
   const { requestId } = useParams();
@@ -41,6 +46,7 @@ export default function SignatureApproval() {
   const [signOffOpen, setSignOffOpen] = useState(false);
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [showDistribution, setShowDistribution] = useState(false);
+  const [showPendingPanel, setShowPendingPanel] = useState(false);
   const { preferredLanguage } = useLanguagePreference();
   const [currentLanguage, setCurrentLanguage] = useState<'am' | 'en' | 'or' | 'so' | 'ti'>(preferredLanguage);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -416,6 +422,14 @@ export default function SignatureApproval() {
             {isApproved && (
               <>
                 <Button 
+                  onClick={() => setShowPendingPanel(true)} 
+                  size="lg" 
+                  variant="outline"
+                >
+                  <Clock className="w-5 h-5 mr-2" />
+                  Pending
+                </Button>
+                <Button 
                   onClick={handleDownloadPDF} 
                   size="lg" 
                   className="bg-gradient-to-r from-[#FF6B00] to-[#00A651] hover:from-[#FF8C00] hover:to-[#00A651] text-white shadow-lg"
@@ -492,6 +506,15 @@ export default function SignatureApproval() {
             onOpenChange={setShowDistribution}
             meetingId={signatureRequest.meeting_id}
             signatureRequestId={requestId!}
+          />
+        </Suspense>
+      )}
+
+      {showPendingPanel && (
+        <Suspense fallback={null}>
+          <PendingDistributionsPanel
+            open={showPendingPanel}
+            onOpenChange={setShowPendingPanel}
           />
         </Suspense>
       )}
