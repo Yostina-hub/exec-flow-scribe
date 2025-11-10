@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { ConfirmRoleChangeDialog } from "@/components/ConfirmRoleChangeDialog";
 
 interface Role {
   id: string;
@@ -30,6 +31,7 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -68,7 +70,11 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
     });
   };
 
-  const handleSave = async () => {
+  const handleInitiateSave = () => {
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmedSave = async () => {
     try {
       setLoading(true);
 
@@ -158,11 +164,18 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
       });
     } finally {
       setLoading(false);
+      setConfirmDialogOpen(false);
     }
   };
 
+  // Calculate changes for confirmation dialog
+  const currentRoleIds = new Set(user.roles.map((r) => r.id));
+  const rolesToAdd = roles.filter((r) => selectedRoleIds.has(r.id) && !currentRoleIds.has(r.id));
+  const rolesToRemove = roles.filter((r) => !selectedRoleIds.has(r.id) && currentRoleIds.has(r.id));
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Manage Roles</DialogTitle>
@@ -193,11 +206,22 @@ export function UserRoleDialog({ open, onOpenChange, user, onSuccess }: UserRole
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? "Saving..." : "Save Changes"}
+          <Button onClick={handleInitiateSave} disabled={loading}>
+            Save Changes
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <ConfirmRoleChangeDialog
+      open={confirmDialogOpen}
+      onOpenChange={setConfirmDialogOpen}
+      userName={user.full_name || user.email}
+      rolesToAdd={rolesToAdd}
+      rolesToRemove={rolesToRemove}
+      onConfirm={handleConfirmedSave}
+      loading={loading}
+    />
+    </>
   );
 }

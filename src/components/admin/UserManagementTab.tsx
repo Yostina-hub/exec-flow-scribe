@@ -8,8 +8,9 @@ import { UserRoleDialog } from "@/components/UserRoleDialog";
 import { CreateUserDialog } from "@/components/CreateUserDialog";
 import { EditUserDialog } from "@/components/EditUserDialog";
 import { ResetPasswordDialog } from "@/components/ResetPasswordDialog";
+import { DeleteUserDialog } from "@/components/DeleteUserDialog";
 import { toast } from "@/hooks/use-toast";
-import { Shield, UserPlus, Pencil, KeyRound } from "lucide-react";
+import { Shield, UserPlus, Pencil, KeyRound, Trash2 } from "lucide-react";
 
 interface UserWithRoles {
   id: string;
@@ -26,6 +27,7 @@ export function UserManagementTab() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -88,6 +90,11 @@ export function UserManagementTab() {
   const handleResetPassword = (user: UserWithRoles) => {
     setSelectedUser(user);
     setResetPasswordDialogOpen(true);
+  };
+
+  const handleDeleteUser = (user: UserWithRoles) => {
+    setSelectedUser(user);
+    setDeleteDialogOpen(true);
   };
 
   return (
@@ -164,6 +171,14 @@ export function UserManagementTab() {
                           <Shield className="h-4 w-4 mr-2" />
                           Roles
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteUser(user)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                          Delete
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -200,6 +215,13 @@ export function UserManagementTab() {
         open={resetPasswordDialogOpen}
         onOpenChange={setResetPasswordDialogOpen}
         user={selectedUser}
+      />
+
+      <DeleteUserDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        user={selectedUser}
+        onSuccess={fetchUsers}
       />
     </>
   );
