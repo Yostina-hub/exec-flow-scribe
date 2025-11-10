@@ -19,6 +19,7 @@ import { DistributionManager } from "@/components/pdf/DistributionManager";
 import { SMTPSettings } from "@/components/settings/SMTPSettings";
 // import { CommunicationSettings } from "@/components/settings/CommunicationSettings";
 import { GoogleAPISettings } from "@/components/settings/GoogleAPISettings";
+import { JitsiSettings } from "@/components/settings/JitsiSettings";
 // import { WorkflowBuilder } from "@/components/settings/WorkflowBuilder";
 // import { CRMIntegration } from "@/components/settings/CRMIntegration";
 import { TwoWayCalendarSync } from "@/components/calendar/TwoWayCalendarSync";
@@ -1096,7 +1097,10 @@ const Settings = () => {
             <GoogleAPISettings />
           </TabsContent>
 
-          {/* TMeet Tab - Removed */}
+          {/* TMeet Tab */}
+          <TabsContent value="tmeet">
+            <JitsiSettings />
+          </TabsContent>
 
           {/* Integrations Tab */}
           <TabsContent value="integrations" className="space-y-6">

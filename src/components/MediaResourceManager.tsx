@@ -354,7 +354,7 @@ export function MediaResourceManager({ meetingId }: MediaResourceManagerProps) {
               ) : (
                 <>
                   <Send className="h-4 w-4" />
-                  Upload to Meeting
+                  Upload to Virtual Room
                 </>
               )}
             </Button>

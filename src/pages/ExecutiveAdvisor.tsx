@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Brain, Sparkles, TrendingUp, Calendar, ChevronRight, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck, BookOpen, Inbox } from 'lucide-react';
+import { Brain, Sparkles, TrendingUp, Calendar, ChevronRight, Clock, MapPin, ArrowLeft, FileText, BarChart3, Headphones, HelpCircle, CheckCircle2, AlertCircle, PenTool, CalendarCheck } from 'lucide-react';
 import { TempoBalanceEngine } from '@/components/TempoBalanceEngine';
 import { EngagementHeatmap } from '@/components/EngagementHeatmap';
 import { DecisionDensityTracker } from '@/components/DecisionDensityTracker';
@@ -82,8 +82,7 @@ export default function ExecutiveAdvisor() {
     
     setLoading(true);
     try {
-      // Base: recent meetings with nested signature requests
-      const { data: baseMeetings, error: baseError } = await supabase
+      const { data, error } = await supabase
         .from('meetings')
         .select(`
           *,
@@ -94,42 +93,14 @@ export default function ExecutiveAdvisor() {
         `)
         .order('start_time', { ascending: false })
         .limit(50);
-
-      if (baseError) throw baseError;
-
-      // Also include meetings tied to my pending-like signature requests
-      const { data: mySRs, error: srError } = await supabase
-        .from('signature_requests')
-        .select('meeting_id, status')
-        .in('status', ['pending', 'requested', 'delegated'])
-        .or(`assigned_to.eq.${user.id},requested_by.eq.${user.id}`);
-
-      if (srError) throw srError;
-
-      const base = baseMeetings || [];
-      const srMeetingIds = Array.from(new Set((mySRs || []).map((s: any) => s.meeting_id)));
-      const missingIds = srMeetingIds.filter((id) => !base.some((m: any) => m.id === id));
-
-      let extra: any[] = [];
-      if (missingIds.length > 0) {
-        const { data: extraMeetings, error: extraError } = await supabase
-          .from('meetings')
-          .select(`
-            *,
-            signature_requests (
-              id,
-              status
-            )
-          `)
-          .in('id', missingIds);
-        if (extraError) throw extraError;
-        extra = extraMeetings || [];
+      
+      if (error) {
+        console.error('Error fetching meetings:', error);
+        toast.error('Failed to load meetings: ' + error.message);
+        setMeetings([]);
+      } else {
+        setMeetings(data || []);
       }
-
-      const mergedMap = new Map<string, any>();
-      [...base, ...extra].forEach((m: any) => mergedMap.set(m.id, m));
-
-      setMeetings(Array.from(mergedMap.values()));
     } catch (err: any) {
       console.error('Unexpected error fetching meetings:', err);
       toast.error('Failed to load meetings');
@@ -150,9 +121,9 @@ export default function ExecutiveAdvisor() {
       const allSignaturesCompleted = meeting.signature_requests?.every(
         sr => sr.status === 'completed' || sr.status === 'approved'
       );
-        const hasPendingSignatures = meeting.signature_requests?.some(
-          sr => ['pending', 'requested', 'delegated'].includes(sr.status)
-        );
+      const hasPendingSignatures = meeting.signature_requests?.some(
+        sr => sr.status === 'pending' || sr.status === 'requested'
+      );
       
       if (allSignaturesCompleted) {
         return 'signoff_approved';
@@ -507,68 +478,6 @@ export default function ExecutiveAdvisor() {
               <p className="text-sm text-muted-foreground">Click a category to view meetings</p>
             </div>
           </div>
-
-          {/* AI Tools Section */}
-          <Card 
-            className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border-2 hover:border-primary/50 bg-gradient-to-br from-purple-500/10 via-pink-500/10 to-blue-500/10 mb-6"
-            onClick={() => navigate('/notebooks-library')}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <BookOpen className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">NotebookLM Library</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      AI-powered research and analysis workspace. Chat with your documents, meetings, and sources using advanced AI.
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        AI Chat
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">Document Analysis</Badge>
-                      <Badge variant="secondary" className="text-xs">Meeting Insights</Badge>
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Executive Inbox Card */}
-          <Card 
-            className="group cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden border-2 hover:border-primary/50 bg-gradient-to-br from-orange-500/10 via-red-500/10 to-pink-500/10 mb-6"
-            onClick={() => navigate('/executive-inbox')}
-          >
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-4 flex-1">
-                  <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Inbox className="h-7 w-7 text-white" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="text-lg font-semibold mb-2 group-hover:text-primary transition-colors">Executive Inbox</h4>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      AI-prioritized documents requiring your attention with smart urgency indicators and recommended response deadlines.
-                    </p>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge variant="secondary" className="text-xs">
-                        <AlertCircle className="h-3 w-3 mr-1" />
-                        Priority Scoring
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">Urgency Tracking</Badge>
-                      <Badge variant="secondary" className="text-xs">Smart Deadlines</Badge>
-                    </div>
-                  </div>
-                </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-            </CardContent>
-          </Card>
 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

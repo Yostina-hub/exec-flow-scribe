@@ -228,7 +228,19 @@ const NotebooksLibrary = () => {
                 </DropdownMenu>
               </div>
 
-{/* Tabs removed as they routed to same page */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="bg-background/60 backdrop-blur-sm border shadow-sm">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground">
+                    All
+                  </TabsTrigger>
+                  <TabsTrigger value="my" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground">
+                    My notebooks
+                  </TabsTrigger>
+                  <TabsTrigger value="featured" className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-primary data-[state=active]:to-primary/90 data-[state=active]:text-primary-foreground">
+                    Featured
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </div>
           </div>
         </div>

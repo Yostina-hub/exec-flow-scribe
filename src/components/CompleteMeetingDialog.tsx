@@ -52,6 +52,10 @@ export const CompleteMeetingDialog = ({
                   <CheckCircle2 className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
                   <span>Auto-generate minutes if transcription is available</span>
                 </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-success mt-0.5 flex-shrink-0" />
+                  <span>Prevent participants from rejoining the virtual room</span>
+                </li>
               </ul>
             </div>
             <p className="text-sm text-muted-foreground">

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-
+import { generateTMeetLink } from '@/utils/videoConference';
 
 export default function GoogleOAuthCallback() {
   const [searchParams] = useSearchParams();
@@ -180,6 +180,8 @@ export default function GoogleOAuthCallback() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      const videoUrl = generateTMeetLink(meetingData.title, crypto.randomUUID());
+
       const { data: meeting, error: meetingError } = await supabase
         .from('meetings')
         .insert({
@@ -190,7 +192,9 @@ export default function GoogleOAuthCallback() {
           description: 'Instant meeting',
           created_by: user.id,
           status: 'in_progress' as any,
-          meeting_type: 'standard' as any,
+          meeting_type: 'online' as any,
+          video_conference_url: videoUrl,
+          video_provider: 'tmeet' as any,
           timezone: 'Africa/Addis_Ababa',
           is_recurring: false,
         } as any)

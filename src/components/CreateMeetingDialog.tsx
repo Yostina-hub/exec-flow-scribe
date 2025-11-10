@@ -28,7 +28,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
-
+import { generateGoogleMeetLink, generateTMeetLink } from "@/utils/videoConference";
 import { MeetingTypeSelector } from "./MeetingTypeSelector";
 
 interface Category {
@@ -130,7 +130,15 @@ export const CreateMeetingDialog = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
-      // Video conference URL should be provided by user
+      // Generate video link if not provided
+      if (meetingType === 'video_conference' && !videoUrl) {
+        const tempId = crypto.randomUUID();
+        if (videoProvider === 'google_meet') {
+          videoUrl = generateGoogleMeetLink(tempId);
+        } else if (videoProvider === 'tmeet') {
+          videoUrl = generateTMeetLink(title, tempId);
+        }
+      }
 
       // Insert meeting
       const { data: meeting, error: meetingError } = await supabase
