@@ -23,7 +23,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
-import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
 
 interface AISmartSuggestion {
   date: Date;
@@ -34,23 +33,6 @@ interface AISmartSuggestion {
   attendeeAvailability?: number;
 }
 
-interface TemplateSection {
-  id: string;
-  title: string;
-  description?: string;
-  required: boolean;
-  order_index: number;
-}
-
-interface Template {
-  id: string;
-  name: string;
-  template_type?: string;
-  description?: string;
-  sections: TemplateSection[];
-  is_default: boolean;
-}
-
 export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) => {
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
@@ -59,35 +41,12 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
   const [showVideoFields, setShowVideoFields] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<AISmartSuggestion | null>(null);
   const [autoOptimize, setAutoOptimize] = useState(true);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedTemplateForPreview, setSelectedTemplateForPreview] = useState<Template | null>(null);
   
   useEffect(() => {
     if (open) {
       generateAISuggestions();
-      fetchTemplates();
     }
   }, [open]);
-
-  const fetchTemplates = async () => {
-    try {
-      const result: any = await (supabase as any)
-        .from("meeting_templates")
-        .select("id, name, template_type, description, sections, is_default")
-        .order("name");
-      
-      if (result.error) {
-        console.error("Failed to fetch templates:", result.error);
-      } else if (result.data) {
-        const templates: Template[] = result.data as Template[];
-        setTemplates(templates);
-      }
-    } catch (err) {
-      console.error("Error fetching templates:", err);
-    }
-  };
 
   const generateAISuggestions = async () => {
     setLoadingAI(true);
@@ -203,7 +162,6 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
           video_conference_url: videoUrl,
           video_provider: videoProvider as any,
           timezone: "Africa/Addis_Ababa",
-          template_id: (selectedTemplate && selectedTemplate !== 'no-template') ? selectedTemplate : null,
         }])
         .select()
         .single();
@@ -239,8 +197,7 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
   };
 
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -334,39 +291,6 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
 
           <TabsContent value="manual">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="template">Meeting Template (Optional)</Label>
-                <div className="flex gap-2">
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger id="template">
-                      <SelectValue placeholder="Select a template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="no-template">No template</SelectItem>
-                      {templates.map(template => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                          {template.is_default && " (Default)"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedTemplate && selectedTemplate !== 'no-template' && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => {
-                        const template = templates?.find(t => t.id === selectedTemplate);
-                        setSelectedTemplateForPreview(template || null);
-                        setPreviewOpen(true);
-                      }}
-                    >
-                      Preview
-                    </Button>
-                  )}
-                </div>
-              </div>
-
               <div className="space-y-2">
                 <Label htmlFor="title">Meeting Title</Label>
                 <Input
@@ -514,15 +438,5 @@ export const SmartMeetingCreation = ({ open, onOpenChange }: { open: boolean; on
         </Tabs>
       </DialogContent>
     </Dialog>
-
-    <TemplatePreviewDialog
-      open={previewOpen}
-      template={selectedTemplateForPreview}
-      onOpenChange={setPreviewOpen}
-      onApply={() => {
-        setPreviewOpen(false);
-      }}
-    />
-    </>
   );
 };

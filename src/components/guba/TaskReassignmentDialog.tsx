@@ -85,7 +85,7 @@ export const TaskReassignmentDialog = ({ open, onOpenChange, task, onReassigned 
         .from('action_items')
         .update({
           assigned_to: selectedUser,
-          department_id: (selectedDepartment && selectedDepartment !== 'no-department') ? selectedDepartment : null,
+          department_id: selectedDepartment || null,
           due_date: newDueDate,
           status_detail: reassignmentNotes || null
         })
@@ -169,7 +169,7 @@ export const TaskReassignmentDialog = ({ open, onOpenChange, task, onReassigned 
                 <SelectValue placeholder="Select department" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="no-department">No specific department</SelectItem>
+                <SelectItem value="">No specific department</SelectItem>
                 {departments.map(dept => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name} {dept.name_am && `(${dept.name_am})`}

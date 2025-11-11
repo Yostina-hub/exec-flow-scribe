@@ -109,11 +109,9 @@ const UnifiedEmotionIntelligence = lazy(() => import("@/components/UnifiedEmotio
 const LiveQAGenerator = lazy(() => import("@/components/LiveQAGenerator").then(m => ({ default: m.LiveQAGenerator })));
 const MeetingClosingSummary = lazy(() => import("@/components/MeetingClosingSummary").then(m => ({ default: m.MeetingClosingSummary })));
 const MeetingEffectivenessScoring = lazy(() => import("@/components/MeetingEffectivenessScoring").then(m => ({ default: m.MeetingEffectivenessScoring })));
-const ChunkGenerationStatus = lazy(() => import("@/components/ChunkGenerationStatus").then(m => ({ default: m.ChunkGenerationStatus })));
 
-// Import non-lazy components
+// Import CompleteMeetingDialog normally (not lazy loaded for immediate interactivity)
 import { CompleteMeetingDialog } from "@/components/CompleteMeetingDialog";
-import { MinuteGenerationProgress } from "@/components/MinuteGenerationProgress";
 
 // Import LazyTabContent normally - it can't be lazy-loaded since it provides Suspense boundaries
 import { LazyTabContent } from "@/components/LazyTabContent";
@@ -121,7 +119,6 @@ import { LazyTabContent } from "@/components/LazyTabContent";
 // Import hooks normally (cannot be lazy loaded)
 import { useRealtimeMeetingData } from "@/hooks/useRealtimeMeetingData";
 import { useRealtimeAgenda } from "@/hooks/useRealtimeAgenda";
-import { useMinuteGeneration } from "@/contexts/MinuteGenerationContext";
 
 interface AgendaItem {
   id: string;
@@ -192,7 +189,6 @@ const MeetingDetail = () => {
   const [showExecutiveAdvisor, setShowExecutiveAdvisor] = useState(false);
   const [showCompleteMeetingDialog, setShowCompleteMeetingDialog] = useState(false);
   const [isVirtualRoomMeeting, setIsVirtualRoomMeeting] = useState(false);
-  const [showGenerationProgress, setShowGenerationProgress] = useState(false);
   const [agendaData, setAgendaData] = useState<AgendaItem[]>(agendaItems);
   const [attendeesData, setAttendeesData] = useState(attendees);
   const wasRecordingRef = useRef(false);
@@ -213,7 +209,6 @@ const MeetingDetail = () => {
   
   // Fast initial meeting fetch (realtime) to avoid long loading state
   const { meeting: meetingRealtime, loading: meetingRealtimeLoading } = useRealtimeMeetingData(meetingId);
-  const { startGeneration } = useMinuteGeneration();
   
   // Listen for sidebar advisor trigger
   useEffect(() => {
@@ -616,19 +611,16 @@ const MeetingDetail = () => {
         return;
       }
       
-      // Only proceed if recording just stopped (was recording, now not) AND not already generating
-      // Also check if we've already processed this recording session
-      if (wasRecording && !isRecording && !isAutoGenerating && recordingSeconds > 0) {
+      // Check if recording just stopped (was recording, now not recording)
+      if (wasRecording && !isRecording && !isAutoGenerating) {
         setIsAutoGenerating(true);
         
         console.log('Starting auto-generation of minutes...');
         
-        // Register generation with global context for background tracking
-        const meetingTitle = meetingRealtime?.title || meeting?.title || 'Meeting';
-        startGeneration(meetingId, meetingTitle);
-        
-        // Show progress dialog instead of toast
-        setShowGenerationProgress(true);
+        toast({
+          title: '🚀 Generating Minutes',
+          description: 'Using fast AI model for quick results...',
+        });
 
         try {
           // Get auth session
@@ -677,14 +669,14 @@ const MeetingDetail = () => {
           }
 
           console.log('Minutes generated successfully!');
-          
-          // Close progress dialog after a brief moment to show completion
-          setTimeout(() => {
-            setShowGenerationProgress(false);
-          }, 2000);
-          
-          // Refetch meeting data to show updated minutes
-          refetch();
+
+          toast({
+            title: '✨ Minutes Ready',
+            description: 'Your meeting minutes have been generated',
+          });
+
+          // Auto-open the minutes viewer so users see the result immediately
+          setShowViewMinutesDialog(true);
         } catch (error: any) {
           console.error('Error auto-generating minutes:', error);
           
@@ -725,7 +717,6 @@ const MeetingDetail = () => {
           }
         } finally {
           setIsAutoGenerating(false);
-          setShowGenerationProgress(false);
         }
       }
       
@@ -734,7 +725,7 @@ const MeetingDetail = () => {
     };
 
     autoGenerateMinutes();
-  }, [isRecording, meetingId, id, toast, recordingSeconds, isVirtualRoomMeeting]);
+  }, [isRecording, meetingId, id, toast, isAutoGenerating, recordingSeconds, isVirtualRoomMeeting]);
 
   const handleCompleteMeeting = async () => {
     if (!id) return;
@@ -1311,14 +1302,6 @@ const MeetingDetail = () => {
                         </>
                       )}
                       
-                      {/* Chunk Generation Status */}
-                      <Suspense fallback={<div className="animate-pulse h-40 bg-muted rounded-lg" />}>
-                        <ChunkGenerationStatus 
-                          meetingId={meetingId} 
-                          recordingDuration={recordingSeconds}
-                        />
-                      </Suspense>
-                      
                       {/* Quick Actions */}
                       <Card>
                         <CardHeader>
@@ -1570,19 +1553,6 @@ const MeetingDetail = () => {
             videoConferenceUrl={meeting.video_conference_url}
           />
         )}
-
-        <MinuteGenerationProgress
-          meetingId={meetingId}
-          isOpen={showGenerationProgress}
-          onComplete={() => {
-            setShowGenerationProgress(false);
-            setShowViewMinutesDialog(true);
-            toast({
-              title: '✨ Minutes Ready',
-              description: 'Your meeting minutes have been generated',
-            });
-          }}
-        />
 
         {/* Executive Meeting Advisor */}
         {showExecutiveAdvisor && meeting && (

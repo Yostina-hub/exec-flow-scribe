@@ -203,7 +203,6 @@ export class RealtimeAssistant {
   private maxReconnectAttempts = 5;
   private reconnectTimeout: number | null = null;
   private shouldReconnect = true;
-  private sessionReady = false;
 
   constructor(
     projectId: string,
@@ -222,95 +221,47 @@ export class RealtimeAssistant {
     this.shouldReconnect = true;
     this.briefingContext = briefingContext;
     this.onStatusChange('connecting');
-    this.sessionReady = false;
     
     const wsUrl = `wss://${this.projectId}.supabase.co/functions/v1/ceo-assistant-realtime`;
-    console.log('→ Connecting to WebSocket:', wsUrl, `(Attempt ${this.reconnectAttempts + 1})`);
-    
-    // Set a connection timeout
-    const connectionTimeout = setTimeout(() => {
-      if (!this.sessionReady && this.ws) {
-        console.error('✗ Connection timeout - session not ready after 30s');
-        this.ws.close();
-        this.onStatusChange('error');
+    console.log('Connecting to WebSocket:', wsUrl, `(Attempt ${this.reconnectAttempts + 1})`);
+    this.ws = new WebSocket(wsUrl);
+
+
+    this.ws.onopen = async () => {
+      console.log('Connected to assistant');
+      this.reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+      this.onStatusChange('connected');
+      
+      // Start recording
+      this.recorder = new AudioRecorder((audioData) => {
+        if (this.ws?.readyState === WebSocket.OPEN) {
+          const base64Audio = encodeAudioForAPI(audioData);
+          this.ws.send(JSON.stringify({
+            type: 'input_audio_buffer.append',
+            audio: base64Audio
+          }));
+        }
+      });
+
+      await this.recorder.start();
+
+      // Send briefing context
+      if (this.briefingContext) {
+        this.sendContext(this.briefingContext);
       }
-    }, 30000); // 30 second timeout
+    };
 
-    try {
-      this.ws = new WebSocket(wsUrl);
-
-      this.ws.onopen = () => {
-        console.log('✓ WebSocket connection established, waiting for session...');
-      };
-
-      this.ws.onmessage = async (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log('← Received event:', data.type);
-          
-          switch (data.type) {
-            case 'error':
-              console.error('✗ Server error:', data.error);
-              clearTimeout(connectionTimeout);
-              this.onStatusChange('error');
-              this.ws?.close();
-              break;
+    this.ws.onmessage = async (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        
+        switch (data.type) {
           case 'session.created':
-            console.log('✓ Session created, configuring...');
-            // Send session configuration
-            this.ws!.send(JSON.stringify({
-              type: 'session.update',
-              session: {
-                modalities: ['text', 'audio'],
-                instructions: 'You are an elite executive meeting advisor providing real-time strategic guidance.',
-                voice: 'alloy',
-                input_audio_format: 'pcm16',
-                output_audio_format: 'pcm16',
-                input_audio_transcription: {
-                  model: 'whisper-1'
-                },
-                turn_detection: {
-                  type: 'server_vad',
-                  threshold: 0.5,
-                  prefix_padding_ms: 300,
-                  silence_duration_ms: 1000
-                },
-                temperature: 0.8,
-                max_response_output_tokens: 'inf'
-              }
-            }));
+            console.log('Session created');
             break;
 
           case 'session.updated':
-            console.log('✓ Session configured successfully');
-            clearTimeout(connectionTimeout);
-            this.sessionReady = true;
-            this.reconnectAttempts = 0;
-            this.onStatusChange('connected');
-            
-            // Now start recording
-            console.log('→ Starting audio recording...');
-            this.recorder = new AudioRecorder((audioData) => {
-              if (this.ws?.readyState === WebSocket.OPEN && this.sessionReady) {
-                const base64Audio = encodeAudioForAPI(audioData);
-                this.ws.send(JSON.stringify({
-                  type: 'input_audio_buffer.append',
-                  audio: base64Audio
-                }));
-              }
-            });
-
-            this.recorder.start().then(() => {
-              console.log('✓ Audio recording active');
-              
-              // Send briefing context after session is ready
-              if (this.briefingContext) {
-                setTimeout(() => this.sendContext(this.briefingContext), 1000);
-              }
-            }).catch(error => {
-              console.error('✗ Failed to start audio recording:', error);
-              this.onStatusChange('error');
-            });
+            console.log('Session updated');
             break;
 
           case 'conversation.item.input_audio_transcription.completed':
@@ -353,29 +304,31 @@ export class RealtimeAssistant {
           case 'response.done':
             this.onAISpeaking(false);
             break;
+
+          case 'error':
+            console.error('Assistant error:', data.error);
+            this.onStatusChange('error');
+            break;
         }
       } catch (error) {
-        console.error('✗ Error processing message:', error);
+        console.error('Error processing message:', error);
       }
     };
 
     this.ws.onerror = (error) => {
-      console.error('✗ WebSocket error:', error);
-      clearTimeout(connectionTimeout);
+      console.error('WebSocket error:', error);
       this.onStatusChange('error');
     };
 
     this.ws.onclose = () => {
-      console.log('✗ WebSocket closed');
-      clearTimeout(connectionTimeout);
-      this.sessionReady = false;
+      console.log('WebSocket closed');
       this.cleanup();
       
       // Attempt to reconnect if we should and haven't exceeded max attempts
       if (this.shouldReconnect && this.reconnectAttempts < this.maxReconnectAttempts) {
         this.reconnectAttempts++;
-        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000);
-        console.log(`→ Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+        const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts - 1), 10000); // Exponential backoff, max 10s
+        console.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
         
         this.onStatusChange('connecting');
         this.reconnectTimeout = window.setTimeout(() => {
@@ -384,15 +337,10 @@ export class RealtimeAssistant {
       } else {
         this.onStatusChange('disconnected');
         if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-          console.log('✗ Max reconnection attempts reached');
+          console.log('Max reconnection attempts reached');
         }
       }
     };
-    } catch (error) {
-      console.error('✗ Failed to create WebSocket:', error);
-      clearTimeout(connectionTimeout);
-      this.onStatusChange('error');
-    }
   }
 
   sendContext(briefingContext: any) {

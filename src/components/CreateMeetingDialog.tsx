@@ -20,7 +20,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Plus, Repeat, Globe } from "lucide-react";
@@ -31,29 +30,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Switch } from "@/components/ui/switch";
 import { generateGoogleMeetLink, generateTMeetLink } from "@/utils/videoConference";
 import { MeetingTypeSelector } from "./MeetingTypeSelector";
-import { TemplatePreviewDialog } from "./TemplatePreviewDialog";
 
 interface Category {
   id: string;
   name: string;
   color_hex: string;
-}
-
-interface TemplateSection {
-  id: string;
-  title: string;
-  description?: string;
-  required: boolean;
-  order_index: number;
-}
-
-interface Template {
-  id: string;
-  name: string;
-  template_type?: string;
-  description?: string;
-  sections: TemplateSection[];
-  is_default: boolean;
 }
 
 export const CreateMeetingDialog = () => {
@@ -62,17 +43,12 @@ export const CreateMeetingDialog = () => {
   const [date, setDate] = useState<Date>();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>("");
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [selectedTemplateForPreview, setSelectedTemplateForPreview] = useState<Template | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
   const [meetingType, setMeetingType] = useState<'video_conference' | 'standard'>('standard');
 
   useEffect(() => {
     if (open) {
       fetchCategories();
-      fetchTemplates();
     }
   }, [open]);
 
@@ -87,24 +63,6 @@ export const CreateMeetingDialog = () => {
       console.error("Failed to fetch categories:", error);
     } else {
       setCategories(data || []);
-    }
-  };
-
-  const fetchTemplates = async () => {
-    try {
-      const result: any = await (supabase as any)
-        .from("meeting_templates")
-        .select("id, name, template_type, description, sections, is_default")
-        .order("name");
-      
-      if (result.error) {
-        console.error("Failed to fetch templates:", result.error);
-      } else if (result.data) {
-        const templates: Template[] = result.data as Template[];
-        setTemplates(templates);
-      }
-    } catch (err) {
-      console.error("Error fetching templates:", err);
     }
   };
 
@@ -127,7 +85,6 @@ export const CreateMeetingDialog = () => {
       const videoProvider = formData.get("video_provider") as string;
       let videoUrl = formData.get("video_url") as string;
       const sensitivityLevel = formData.get("sensitivity_level") as string || 'standard';
-      const templateId = (selectedTemplate && selectedTemplate !== 'no-template') ? selectedTemplate : null;
 
       if (!date) {
         toast.error("Please select a date");
@@ -285,39 +242,6 @@ export const CreateMeetingDialog = () => {
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="template">Meeting Template (Optional)</Label>
-              <div className="flex gap-2">
-                <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                  <SelectTrigger id="template">
-                    <SelectValue placeholder="Select a template" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="no-template">No template</SelectItem>
-                    {templates.map(template => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name}
-                        {template.is_default && " (Default)"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedTemplate && selectedTemplate !== 'no-template' && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      const template = templates?.find(t => t.id === selectedTemplate);
-                      setSelectedTemplateForPreview(template || null);
-                      setPreviewOpen(true);
-                    }}
-                  >
-                    Preview
-                  </Button>
-                )}
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="title">Meeting Title</Label>
               <Input
@@ -556,21 +480,12 @@ export const CreateMeetingDialog = () => {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? "Scheduling..." : "Schedule Meeting"}
+              {loading ? "Creating..." : "Create Meeting"}
             </Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
-
-    <TemplatePreviewDialog
-      open={previewOpen}
-      template={selectedTemplateForPreview}
-      onOpenChange={setPreviewOpen}
-      onApply={() => {
-        setPreviewOpen(false);
-      }}
-    />
     </>
   );
 };

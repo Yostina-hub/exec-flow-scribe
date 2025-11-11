@@ -208,7 +208,7 @@ export const ViewMinutesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-full sm:max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -225,40 +225,21 @@ export const ViewMinutesDialog = ({
           </div>
         ) : (
           <>
-            <div className="flex flex-wrap gap-2 sm:gap-2 justify-end">
-              <Button 
-                variant="outline" 
-                size="default" 
-                onClick={handleCopy} 
-                className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial min-w-[100px]"
-              >
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
                 <Copy className="h-4 w-4" />
                 Copy
               </Button>
-              <Button 
-                variant="outline" 
-                size="default" 
-                onClick={handleDownload} 
-                className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial min-w-[100px]"
-              >
+              <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
                 <Download className="h-4 w-4" />
                 Download
               </Button>
               {tooLarge && !showFull && (
-                <Button 
-                  variant="secondary" 
-                  size="default" 
-                  onClick={() => setShowFull(true)} 
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
-                >
+                <Button variant="secondary" size="sm" onClick={() => setShowFull(true)} className="gap-2">
                   Render full document
                 </Button>
               )}
-              <Button 
-                size="default" 
-                onClick={handleEditInEditor} 
-                className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial min-w-[140px]"
-              >
+              <Button size="sm" onClick={handleEditInEditor} className="gap-2">
                 <ExternalLink className="h-4 w-4" />
                 Open in Editor
               </Button>

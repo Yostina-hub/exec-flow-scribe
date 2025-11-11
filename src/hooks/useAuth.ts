@@ -23,26 +23,20 @@ export function useAuth() {
     try {
       const { data: { user: fetchedUser }, error } = await supabase.auth.getUser();
       
-      if (error) {
-        console.error('Auth error:', error);
-        cachedUser = null;
-        setUser(null);
-        setLoading(false);
-        return null;
-      }
+      if (error) throw error;
       
       cachedUser = fetchedUser;
       cacheTime = now;
       setUser(fetchedUser);
-      setLoading(false);
       
       return fetchedUser;
     } catch (error) {
-      console.error('Auth fetch error:', error);
+      console.error('Auth error:', error);
       cachedUser = null;
       setUser(null);
-      setLoading(false);
       return null;
+    } finally {
+      setLoading(false);
     }
   }, []);
 

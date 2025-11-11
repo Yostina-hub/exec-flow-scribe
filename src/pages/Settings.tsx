@@ -11,7 +11,6 @@ import { Bell, Calendar, Mic, Shield, User, Brain, Palette, Send, Loader2, Setti
 import { useToast } from "@/hooks/use-toast";
 import { AIProviderSettings } from "@/components/AIProviderSettings";
 import { TranscriptionSettings } from "@/components/TranscriptionSettings";
-import { MinuteGenerationSettings } from "@/components/MinuteGenerationSettings";
 import { RoleAssignmentManager } from "@/components/settings/RoleAssignmentManager";
 // Temporarily disabled until database migration is approved:
 // import { AutomationSettings } from "@/components/settings/AutomationSettings";
@@ -31,9 +30,6 @@ import { DepartmentManager } from "@/components/guba/DepartmentManager";
 import { TaskNotificationPreferences } from "@/components/guba/TaskNotificationPreferences";
 import { LanguagePreference } from "@/components/settings/LanguagePreference";
 import { EncryptionManager } from "@/components/settings/EncryptionManager";
-import { MeetingTemplateManager } from "@/components/MeetingTemplateManager";
-import { TemplateMarketplace } from "@/components/TemplateMarketplace";
-import { SummaryQualityAnalytics } from "@/components/SummaryQualityAnalytics";
 import * as React from "react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -412,9 +408,6 @@ const Settings = () => {
             <TabsTrigger value="language">Language</TabsTrigger>
             <TabsTrigger value="notifications">Notifications</TabsTrigger>
             <TabsTrigger value="meetings">Meetings</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="marketplace">Marketplace</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="recording">Recording</TabsTrigger>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai-provider">AI Provider</TabsTrigger>
@@ -793,21 +786,6 @@ const Settings = () => {
             </Card>
           </TabsContent>
 
-          {/* Templates Tab */}
-          <TabsContent value="templates" className="space-y-6">
-            <MeetingTemplateManager />
-          </TabsContent>
-
-          {/* Marketplace Tab */}
-          <TabsContent value="marketplace" className="space-y-6">
-            <TemplateMarketplace />
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <SummaryQualityAnalytics />
-          </TabsContent>
-
           {/* Recording Tab */}
           <TabsContent value="recording" className="space-y-6">
             <Card>
@@ -948,7 +926,6 @@ const Settings = () => {
           {/* Transcription Tab */}
           <TabsContent value="transcription" className="space-y-6">
             <TranscriptionSettings />
-            <MinuteGenerationSettings />
           </TabsContent>
 
           {/* AI Provider Tab */}

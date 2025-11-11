@@ -20,7 +20,6 @@ import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 import { NonTechnicalSummaryDialog } from './NonTechnicalSummaryDialog';
 import { detectLanguage } from '@/utils/langDetect';
 import { useLanguagePreference } from '@/hooks/useLanguagePreference';
-import { useMinuteGeneration } from '@/contexts/MinuteGenerationContext';
 
 interface GenerateMinutesDialogProps {
   meetingId: string;
@@ -43,73 +42,15 @@ export const GenerateMinutesDialog = ({
   const [aiProvider, setAiProvider] = useState<'lovable_ai' | 'notebooklm'>('lovable_ai');
   const [showNonTechnical, setShowNonTechnical] = useState(false);
   const [meetingTitle, setMeetingTitle] = useState('');
-  const [availableTranslations, setAvailableTranslations] = useState<Set<string>>(new Set());
   const { toast } = useToast();
-  const { startGeneration } = useMinuteGeneration();
 
   useEffect(() => {
     if (open) {
       fetchAIProvider();
       fetchExistingMinutes();
       fetchMeetingTitle();
-      fetchAvailableTranslations();
-      subscribeToTranslations();
     }
   }, [open]);
-
-  const fetchAvailableTranslations = async () => {
-    try {
-      const { data } = await supabase
-        .from('minute_translations')
-        .select('language')
-        .eq('meeting_id', meetingId);
-      
-      if (data) {
-        setAvailableTranslations(new Set(data.map(t => t.language)));
-      }
-    } catch (error) {
-      console.error('Error fetching translations:', error);
-    }
-  };
-
-  const subscribeToTranslations = () => {
-    const channel = supabase
-      .channel('minute-translations')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'minute_translations',
-          filter: `meeting_id=eq.${meetingId}`
-        },
-        (payload) => {
-          console.log('New translation available:', payload.new);
-          setAvailableTranslations(prev => new Set([...prev, payload.new.language]));
-          
-          toast({
-            title: 'Translation Ready',
-            description: `${getLanguageName(payload.new.language)} translation is now available`,
-          });
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  };
-
-  const getLanguageName = (lang: string) => {
-    const names: { [key: string]: string } = {
-      'am': 'Amharic',
-      'en': 'English',
-      'or': 'Afaan Oromo',
-      'so': 'Somali',
-      'ti': 'Tigrinya'
-    };
-    return names[lang] || lang;
-  };
 
   const fetchMeetingTitle = async () => {
     try {
@@ -183,10 +124,6 @@ export const GenerateMinutesDialog = ({
 
   const handleGenerate = async () => {
     setIsGenerating(true);
-    
-    // Register with context for background tracking
-    startGeneration(meetingId, meetingTitle || 'Meeting');
-    
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -213,26 +150,20 @@ export const GenerateMinutesDialog = ({
       setMinutes(data.minutes);
       setOriginalMinutes(data.minutes);
       
-      // Detect language (default to Amharic for Ethiopian context)
+      // Detect language (default to Amharic)
       const detected = detectLanguage(data.minutes);
       if (detected === 'am' || detected === 'en' || detected === 'or' || detected === 'so' || detected === 'ti') {
         setDetectedLanguage(detected);
         setCurrentLanguage(detected);
       } else {
-        // Default to Amharic for Ethiopian organizational context
         setDetectedLanguage('am');
         setCurrentLanguage('am');
       }
       
       toast({
         title: 'Success!',
-        description: (
-          <div>
-            <p>Meeting minutes generated successfully in {detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : detected === 'so' ? 'Somali' : detected === 'ti' ? 'Tigrinya' : 'English'}</p>
-            <p className="text-xs mt-1 text-muted-foreground">🌍 Automatic translations to other Ethiopian languages are being prepared in the background...</p>
-          </div>
-        ),
-        duration: 6000,
+        description: 'Meeting minutes generated successfully in ' + 
+          (detected === 'am' ? 'Amharic' : detected === 'or' ? 'Afaan Oromo' : detected === 'so' ? 'Somali' : detected === 'ti' ? 'Tigrinya' : 'English'),
       });
     } catch (error: any) {
       console.error('Error generating minutes:', error);
@@ -283,28 +214,6 @@ export const GenerateMinutesDialog = ({
     
     setIsTranslating(true);
     try {
-      // First, try to fetch from stored translations
-      const { data: storedTranslation } = await supabase
-        .from('minute_translations')
-        .select('content')
-        .eq('meeting_id', meetingId)
-        .eq('language', targetLang)
-        .maybeSingle();
-
-      if (storedTranslation?.content) {
-        console.log(`Using stored translation for ${targetLang}`);
-        setMinutes(storedTranslation.content);
-        setCurrentLanguage(targetLang);
-        setIsTranslating(false);
-        toast({
-          title: 'Translation Loaded',
-          description: `Switched to ${getLanguageName(targetLang)}`,
-        });
-        return;
-      }
-
-      // If not available, translate on-demand and store
-      console.log(`Translating on-demand to ${targetLang}`);
       const { data, error } = await supabase.functions.invoke('translate-minutes', {
         body: {
           content: originalMinutes,
@@ -317,24 +226,9 @@ export const GenerateMinutesDialog = ({
       if (data?.translatedContent) {
         setMinutes(data.translatedContent);
         setCurrentLanguage(targetLang);
-        
-        // Store the translation for future use
-        await supabase
-          .from('minute_translations')
-          .upsert({
-            meeting_id: meetingId,
-            language: targetLang,
-            content: data.translatedContent,
-            source_language: detectedLanguage,
-          }, {
-            onConflict: 'meeting_id,language'
-          });
-        
-        setAvailableTranslations(prev => new Set([...prev, targetLang]));
-        
         toast({
           title: 'Translated',
-          description: `Minutes translated to ${getLanguageName(targetLang)}`,
+          description: `Minutes translated to ${targetLang === 'am' ? 'Amharic' : targetLang === 'or' ? 'Afaan Oromo' : targetLang === 'so' ? 'Somali' : targetLang === 'ti' ? 'Tigrinya' : 'English'}`,
         });
       }
     } catch (error: any) {
@@ -369,7 +263,7 @@ export const GenerateMinutesDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-full sm:max-w-6xl max-h-[90vh]">
+      <DialogContent className="max-w-4xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
@@ -419,14 +313,14 @@ export const GenerateMinutesDialog = ({
 
         {minutes && !isGenerating && (
           <>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-2 justify-between items-stretch sm:items-center mb-4">
-              <div className="flex flex-wrap gap-2 sm:gap-2">
+            <div className="flex gap-2 justify-between items-center mb-4">
+              <div className="flex gap-2">
                 <Button
                   variant={currentLanguage === 'am' ? 'default' : 'outline'}
-                  size="default"
+                  size="sm"
                   onClick={() => handleLanguageToggle('am')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0 relative"
+                  className="gap-2"
                 >
                   {isTranslating && currentLanguage !== 'am' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -434,16 +328,13 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   አማርኛ
-                  {availableTranslations.has('am') && currentLanguage !== 'am' && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
-                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'ti' ? 'default' : 'outline'}
-                  size="default"
+                  size="sm"
                   onClick={() => handleLanguageToggle('ti')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0 relative"
+                  className="gap-2"
                 >
                   {isTranslating && currentLanguage !== 'ti' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -451,16 +342,13 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   ትግርኛ
-                  {availableTranslations.has('ti') && currentLanguage !== 'ti' && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
-                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'en' ? 'default' : 'outline'}
-                  size="default"
+                  size="sm"
                   onClick={() => handleLanguageToggle('en')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[90px] sm:min-w-0 relative"
+                  className="gap-2"
                 >
                   {isTranslating && currentLanguage !== 'en' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -468,16 +356,13 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   English
-                  {availableTranslations.has('en') && currentLanguage !== 'en' && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
-                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'or' ? 'default' : 'outline'}
-                  size="default"
+                  size="sm"
                   onClick={() => handleLanguageToggle('or')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0 relative"
+                  className="gap-2"
                 >
                   {isTranslating && currentLanguage !== 'or' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -485,16 +370,13 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   Afaan Oromo
-                  {availableTranslations.has('or') && currentLanguage !== 'or' && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
-                  )}
                 </Button>
                 <Button
                   variant={currentLanguage === 'so' ? 'default' : 'outline'}
-                  size="default"
+                  size="sm"
                   onClick={() => handleLanguageToggle('so')}
                   disabled={isTranslating}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm min-w-[110px] sm:min-w-0 relative"
+                  className="gap-2"
                 >
                   {isTranslating && currentLanguage !== 'so' ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -502,45 +384,28 @@ export const GenerateMinutesDialog = ({
                     <Languages className="h-4 w-4" />
                   )}
                   Af-Soomaali
-                  {availableTranslations.has('so') && currentLanguage !== 'so' && (
-                    <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">✓</Badge>
-                  )}
                 </Button>
               </div>
               
-              <div className="flex flex-wrap gap-2 sm:gap-2">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  size="default"
+                  size="sm"
                   onClick={() => setShowNonTechnical(true)}
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
+                  className="gap-2"
                 >
                   <BookOpen className="h-4 w-4" />
                   Non-Technical
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="default" 
-                  onClick={handleCopy} 
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
-                >
+                <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
                   <Copy className="h-4 w-4" />
                   Copy
                 </Button>
-                <Button 
-                  variant="outline" 
-                  size="default" 
-                  onClick={handleDownload} 
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
-                >
+                <Button variant="outline" size="sm" onClick={handleDownload} className="gap-2">
                   <Download className="h-4 w-4" />
                   Download
                 </Button>
-                <Button 
-                  size="default" 
-                  onClick={handleGenerate} 
-                  className="gap-2 h-11 sm:h-9 px-4 sm:px-3 text-base sm:text-sm flex-1 sm:flex-initial"
-                >
+                <Button size="sm" onClick={handleGenerate} className="gap-2">
                   <FileText className="h-4 w-4" />
                   Regenerate
                 </Button>

@@ -109,8 +109,8 @@ export const DepartmentManager = () => {
             name: formData.name,
             name_am: formData.name_am || null,
             description: formData.description || null,
-            parent_department_id: (formData.parent_department_id && formData.parent_department_id !== 'no-parent') ? formData.parent_department_id : null,
-            head_user_id: (formData.head_user_id && formData.head_user_id !== 'no-head') ? formData.head_user_id : null,
+            parent_department_id: formData.parent_department_id || null,
+            head_user_id: formData.head_user_id || null,
             level: formData.level
           })
           .eq('id', editingDept.id);
@@ -128,8 +128,8 @@ export const DepartmentManager = () => {
             name: formData.name,
             name_am: formData.name_am || null,
             description: formData.description || null,
-            parent_department_id: (formData.parent_department_id && formData.parent_department_id !== 'no-parent') ? formData.parent_department_id : null,
-            head_user_id: (formData.head_user_id && formData.head_user_id !== 'no-head') ? formData.head_user_id : null,
+            parent_department_id: formData.parent_department_id || null,
+            head_user_id: formData.head_user_id || null,
             level: formData.level
           });
 
@@ -317,7 +317,7 @@ export const DepartmentManager = () => {
                         <SelectValue placeholder="None (Top Level)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="no-parent">None (Top Level)</SelectItem>
+                        <SelectItem value="">None (Top Level)</SelectItem>
                         {departments.filter(d => d.id !== editingDept?.id).map(dept => (
                           <SelectItem key={dept.id} value={dept.id}>
                             {dept.name}
@@ -335,7 +335,7 @@ export const DepartmentManager = () => {
                       <SelectValue placeholder="Select department head" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="no-head">None</SelectItem>
+                      <SelectItem value="">None</SelectItem>
                       {users.map(user => (
                         <SelectItem key={user.id} value={user.id}>
                           {user.full_name} ({user.email})

@@ -1,539 +1,278 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
-import { Plus, Edit, Trash2, FileText, Star, Download, Upload, Sparkles } from 'lucide-react';
-import { TemplateImprovementPanel } from './TemplateImprovementPanel';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { FileText, Plus, Trash2, Copy } from "lucide-react";
 
-interface TemplateSection {
+interface MeetingTemplate {
   id: string;
   name: string;
-  required: boolean;
-  order: number;
-}
-
-interface Template {
-  id: string;
-  name: string;
-  meeting_type: string;
   description: string | null;
-  sections: TemplateSection[];
-  is_default: boolean;
+  duration_minutes: number;
+  default_agenda: any;
+  meeting_settings: any;
+  is_public: boolean;
   created_at: string;
-  created_by?: string;
 }
 
-const MEETING_TYPES = [
-  'Board Meeting',
-  'Team Meeting',
-  'Executive Meeting',
-  'Strategic Planning',
-  'Operations Review',
-  'Project Review',
-  'One-on-One',
-];
+interface MeetingTemplateManagerProps {
+  onApplyTemplate?: (template: MeetingTemplate) => void;
+}
 
-const DEFAULT_SECTIONS = [
-  { id: 'meeting_info', name: 'Meeting Information', required: true, order: 1 },
-  { id: 'opening_remarks', name: 'Opening Remarks', required: true, order: 2 },
-  { id: 'executive_summary', name: 'Executive Summary', required: true, order: 3 },
-  { id: 'discussion_points', name: 'Discussion Points', required: true, order: 4 },
-  { id: 'decisions', name: 'Decisions Made', required: false, order: 5 },
-  { id: 'action_items', name: 'Action Items', required: false, order: 6 },
-  { id: 'next_steps', name: 'Next Steps', required: false, order: 7 },
-];
-
-export const MeetingTemplateManager = () => {
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
-  const [showImprovements, setShowImprovements] = useState<string | null>(null);
+export function MeetingTemplateManager({ onApplyTemplate }: MeetingTemplateManagerProps) {
+  const [templates, setTemplates] = useState<MeetingTemplate[]>([]);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [description, setDescription] = useState("");
+  const [duration, setDuration] = useState(60);
+  const [agenda, setAgenda] = useState("");
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: templates, isLoading } = useQuery({
-    queryKey: ['meeting-templates'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('meeting_templates')
-        .select('*')
-        .order('meeting_type', { ascending: true })
-        .order('name', { ascending: true });
+  useEffect(() => {
+    fetchTemplates();
+  }, []);
 
-      if (error) throw error;
-      return (data as any) as Template[];
-    },
-  });
+  const fetchTemplates = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-  const createTemplateMutation = useMutation({
-    mutationFn: async (template: Partial<Template>) => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+    const { data, error } = await supabase
+      .from("meeting_templates")
+      .select("*")
+      .eq("created_by", user.id)
+      .order("created_at", { ascending: false });
 
-      const { data, error } = await supabase
-        .from('meeting_templates')
-        .insert([{ ...template, created_by: user.id } as any])
-        .select()
-        .single();
+    if (error) {
+      console.error("Error fetching templates:", error);
+      return;
+    }
 
-      if (error) throw error;
-      return data as any as Template;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meeting-templates'] });
-      toast({
-        title: 'Template created',
-        description: 'Meeting template has been created successfully.',
+    setTemplates(data || []);
+  };
+
+  const createTemplate = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const agendaItems = agenda.split("\n").filter((line) => line.trim()).map((line, index) => ({
+      title: line.trim(),
+      order_index: index,
+      duration_minutes: 10,
+    }));
+
+    const { error } = await supabase
+      .from("meeting_templates")
+      .insert({
+        name: templateName,
+        description,
+        duration_minutes: duration,
+        default_agenda: agendaItems,
+        meeting_settings: {
+          auto_record: false,
+          require_consent: true,
+          enable_breakout_rooms: false,
+        },
+        created_by: user.id,
       });
-      setIsCreateDialogOpen(false);
-    },
-    onError: (error) => {
+
+    if (error) {
       toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
+        title: "Error",
+        description: "Failed to create template",
+        variant: "destructive",
       });
-    },
-  });
-
-  const updateTemplateMutation = useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Template> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('meeting_templates')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meeting-templates'] });
-      toast({
-        title: 'Template updated',
-        description: 'Meeting template has been updated successfully.',
-      });
-      setEditingTemplate(null);
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const deleteTemplateMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('meeting_templates')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meeting-templates'] });
-      toast({
-        title: 'Template deleted',
-        description: 'Meeting template has been deleted successfully.',
-      });
-    },
-    onError: (error) => {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  const handleExportTemplate = (template: Template) => {
-    const exportData = {
-      name: template.name,
-      meeting_type: template.meeting_type,
-      description: template.description,
-      sections: template.sections,
-      exported_at: new Date().toISOString(),
-      version: '1.0'
-    };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${template.name.toLowerCase().replace(/\s+/g, '-')}-template.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      return;
+    }
 
     toast({
-      title: 'Template exported',
-      description: 'Template has been downloaded successfully.',
+      title: "Success",
+      description: "Template created successfully",
+    });
+
+    setIsCreateOpen(false);
+    setTemplateName("");
+    setDescription("");
+    setDuration(60);
+    setAgenda("");
+    fetchTemplates();
+  };
+
+  const deleteTemplate = async (templateId: string) => {
+    const { error } = await supabase
+      .from("meeting_templates")
+      .delete()
+      .eq("id", templateId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete template",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: "Template deleted",
+    });
+
+    fetchTemplates();
+  };
+
+  const applyTemplate = (template: MeetingTemplate) => {
+    if (onApplyTemplate) {
+      onApplyTemplate(template);
+    }
+    toast({
+      title: "Template Applied",
+      description: `Using template: ${template.name}`,
     });
   };
 
-  const handleImportClick = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json,application/json';
-    input.onchange = handleFileSelect;
-    input.click();
-  };
-
-  const handleFileSelect = async (e: Event) => {
-    const target = e.target as HTMLInputElement;
-    const file = target.files?.[0];
-    
-    if (!file) return;
-
-    try {
-      const text = await file.text();
-      const data = JSON.parse(text);
-
-      // Validate template structure
-      if (!data.name || !data.sections || !Array.isArray(data.sections)) {
-        throw new Error('Invalid template format. Missing required fields.');
-      }
-
-      // Validate sections structure
-      if (!data.sections.every((s: any) => s.id && s.name && typeof s.required === 'boolean')) {
-        throw new Error('Invalid sections format.');
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
-
-      // Import the template
-      const { error } = await supabase
-        .from('meeting_templates')
-        .insert({
-          name: data.name,
-          meeting_type: data.meeting_type || 'Board Meeting',
-          description: data.description || '',
-          sections: data.sections,
-          is_default: false,
-          created_by: user.id,
-        });
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['meeting-templates'] });
-      
-      toast({
-        title: 'Template imported',
-        description: `"${data.name}" has been imported successfully.`,
-      });
-    } catch (error: any) {
-      toast({
-        title: 'Import failed',
-        description: error.message || 'Failed to import template. Please check the file format.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Meeting Templates</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage templates for different meeting types with customized sections
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleImportClick} className="gap-2">
-            <Upload className="w-4 h-4" />
-            Import
-          </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Meeting Templates
+            </CardTitle>
+            <CardDescription>
+              Save and reuse meeting configurations
+            </CardDescription>
+          </div>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Create Template
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                New Template
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>Create Meeting Template</DialogTitle>
+                <DialogDescription>
+                  Save a template for recurring meeting types
+                </DialogDescription>
               </DialogHeader>
-              <TemplateForm
-                onSubmit={(data) => createTemplateMutation.mutate(data)}
-                isLoading={createTemplateMutation.isPending}
-              />
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="templateName">Template Name</Label>
+                  <Input
+                    id="templateName"
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="Weekly Team Sync"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea
+                    id="description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    placeholder="Regular team meeting to discuss progress..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Default Duration (minutes)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={duration}
+                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="agenda">Agenda Items (one per line)</Label>
+                  <Textarea
+                    id="agenda"
+                    value={agenda}
+                    onChange={(e) => setAgenda(e.target.value)}
+                    placeholder="Welcome and introductions&#10;Progress updates&#10;Blockers discussion&#10;Action items review"
+                    rows={6}
+                  />
+                </div>
+                <Button onClick={createTemplate} className="w-full">
+                  Create Template
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </div>
-      </div>
-
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="p-6 animate-pulse">
-              <div className="h-6 bg-muted rounded mb-2" />
-              <div className="h-4 bg-muted rounded w-2/3" />
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {templates?.map((template) => (
-            <div key={template.id} className="space-y-4">
-              <Card className="p-6 hover:shadow-lg transition-shadow">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <FileText className="w-5 h-5 text-primary" />
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[300px] pr-4">
+          <div className="space-y-3">
+            {templates.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No templates yet. Create your first template to get started.
+              </p>
+            )}
+            {templates.map((template) => (
+              <Card key={template.id}>
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <CardTitle className="text-base">{template.name}</CardTitle>
+                      <CardDescription className="text-xs mt-1">
+                        {template.description}
+                      </CardDescription>
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-foreground">{template.name}</h3>
-                        {template.is_default && (
-                          <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
+                    <Badge variant="outline">{template.duration_minutes} min</Badge>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {template.default_agenda && Array.isArray(template.default_agenda) && template.default_agenda.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium mb-2">Agenda:</p>
+                      <div className="space-y-1">
+                        {template.default_agenda.slice(0, 3).map((item: any, idx: number) => (
+                          <p key={idx} className="text-xs text-muted-foreground">
+                            • {item.title}
+                          </p>
+                        ))}
+                        {template.default_agenda.length > 3 && (
+                          <p className="text-xs text-muted-foreground">
+                            + {template.default_agenda.length - 3} more
+                          </p>
                         )}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {template.description}
-                      </p>
                     </div>
-                  </div>
+                  )}
                   <div className="flex gap-2">
                     <Button
-                      variant="ghost"
                       size="sm"
-                      onClick={() => setShowImprovements(showImprovements === template.id ? null : template.id)}
-                      title="AI Improvements"
+                      variant="outline"
+                      onClick={() => applyTemplate(template)}
+                      className="flex-1"
                     >
-                      <Sparkles className="w-4 h-4" />
+                      <Copy className="h-3 w-3 mr-1" />
+                      Use Template
                     </Button>
                     <Button
-                      variant="ghost"
                       size="sm"
-                      onClick={() => handleExportTemplate(template)}
-                      title="Export template"
+                      variant="outline"
+                      onClick={() => deleteTemplate(template.id)}
                     >
-                      <Download className="w-4 h-4" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
-                    <Dialog
-                      open={editingTemplate?.id === template.id}
-                      onOpenChange={(open) => !open && setEditingTemplate(null)}
-                    >
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingTemplate(template)}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle>Edit Template</DialogTitle>
-                        </DialogHeader>
-                        <TemplateForm
-                          template={template}
-                          onSubmit={(data) =>
-                            updateTemplateMutation.mutate({ id: template.id, ...data })
-                          }
-                          isLoading={updateTemplateMutation.isPending}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    {!template.is_default && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (confirm('Are you sure you want to delete this template?')) {
-                            deleteTemplateMutation.mutate(template.id);
-                          }
-                        }}
-                      >
-                        <Trash2 className="w-4 h-4 text-destructive" />
-                      </Button>
-                    )}
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Badge variant="secondary">{template.meeting_type}</Badge>
-                  <div className="text-sm text-muted-foreground">
-                    {template.sections.length} sections
-                  </div>
-                </div>
+                </CardContent>
               </Card>
-              
-              {showImprovements === template.id && (
-                <TemplateImprovementPanel templateId={template.id} />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
-
-interface TemplateFormProps {
-  template?: Template;
-  onSubmit: (data: Partial<Template>) => void;
-  isLoading: boolean;
-}
-
-const TemplateForm = ({ template, onSubmit, isLoading }: TemplateFormProps) => {
-  const [name, setName] = useState(template?.name || '');
-  const [meetingType, setMeetingType] = useState(template?.meeting_type || '');
-  const [description, setDescription] = useState(template?.description || '');
-  const [sections, setSections] = useState<TemplateSection[]>(
-    template?.sections || DEFAULT_SECTIONS
-  );
-  const [newSectionName, setNewSectionName] = useState('');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      name,
-      meeting_type: meetingType,
-      description,
-      sections,
-    });
-  };
-
-  const addSection = () => {
-    if (!newSectionName.trim()) return;
-    const newSection: TemplateSection = {
-      id: newSectionName.toLowerCase().replace(/\s+/g, '_'),
-      name: newSectionName,
-      required: false,
-      order: sections.length + 1,
-    };
-    setSections([...sections, newSection]);
-    setNewSectionName('');
-  };
-
-  const removeSection = (id: string) => {
-    setSections(sections.filter((s) => s.id !== id));
-  };
-
-  const toggleRequired = (id: string) => {
-    setSections(
-      sections.map((s) => (s.id === id ? { ...s, required: !s.required } : s))
-    );
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="name">Template Name</Label>
-        <Input
-          id="name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g., Board Meeting Template"
-          required
-        />
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="type">Meeting Type</Label>
-        <Select value={meetingType} onValueChange={setMeetingType} required>
-          <SelectTrigger>
-            <SelectValue placeholder="Select meeting type" />
-          </SelectTrigger>
-          <SelectContent>
-            {MEETING_TYPES.map((type) => (
-              <SelectItem key={type} value={type}>
-                {type}
-              </SelectItem>
             ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Brief description of when to use this template"
-          rows={2}
-        />
-      </div>
-
-      <div className="space-y-3">
-        <Label>Template Sections</Label>
-        <div className="space-y-2">
-          {sections.map((section) => (
-            <div
-              key={section.id}
-              className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg"
-            >
-              <div className="flex-1">
-                <p className="font-medium text-sm">{section.name}</p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={section.required}
-                  onCheckedChange={() => toggleRequired(section.id)}
-                />
-                <Label className="text-xs">Required</Label>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => removeSection(section.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-2">
-          <Input
-            value={newSectionName}
-            onChange={(e) => setNewSectionName(e.target.value)}
-            placeholder="Add new section..."
-            onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addSection())}
-          />
-          <Button type="button" onClick={addSection} variant="outline">
-            <Plus className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex justify-end gap-2 pt-4">
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Saving...' : template ? 'Update Template' : 'Create Template'}
-        </Button>
-      </div>
-    </form>
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
-};
+}

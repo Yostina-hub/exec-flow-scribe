@@ -66,34 +66,8 @@ try {
     
     console.log("✅ User authenticated:", user.id);
 
-    // Helper function to update progress
-    const updateProgress = async (
-      status: string,
-      percentage: number,
-      step?: string,
-      estimatedSeconds?: number
-    ) => {
-      await supabase
-        .from('minute_generation_progress')
-        .upsert({
-          meeting_id: meetingId,
-          status,
-          progress_percentage: percentage,
-          current_step: step || null,
-          estimated_completion_seconds: estimatedSeconds || null,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'meeting_id'
-        });
-      console.log(`Progress: ${percentage}% - ${status} - ${step || ''}`);
-    };
-
-    // Initialize progress tracking
-    await updateProgress('initializing', 0, 'Starting minute generation...', 60);
-
     // Get user's AI provider preference & fetch meeting data in parallel
     console.log("📋 Fetching data in parallel...");
-    await updateProgress('fetching_data', 10, 'Fetching meeting data and transcriptions...', 50);
     const [
       { data: preference },
       { data: meeting, error: meetingError },
@@ -151,23 +125,6 @@ try {
 
     const noTranscript = transcriptions.length === 0;
 
-    // Check if we have pre-generated chunks to speed up the process
-    const { data: existingChunks } = await supabase
-      .from('minute_chunks')
-      .select('*')
-      .eq('meeting_id', meetingId)
-      .order('chunk_number', { ascending: true });
-
-    let useChunks = false;
-    if (existingChunks && existingChunks.length > 0) {
-      console.log(`✨ Found ${existingChunks.length} pre-generated chunks, will use them for faster generation`);
-      useChunks = true;
-      await updateProgress('analyzing', 30, `Using ${existingChunks.length} pre-analyzed segments...`, 20);
-    } else {
-      console.log('📝 No pre-generated chunks found, will process full transcription');
-      await updateProgress('analyzing', 30, 'Analyzing full transcription...', 40);
-    }
-
     // Combine and analyze transcript to detect dominant language (favor Amharic when mixed)
     const fullTranscript = transcriptions
       ?.map((t) => `${t.speaker_name || "Speaker"}: ${t.content}`)
@@ -183,24 +140,22 @@ try {
     const laCount = (flatText.match(LAT) || []).length;
     const total = etCount + arCount + laCount;
 
-    // Default to Amharic for Ethiopian context
-    let detectedLang: 'am' | 'ar' | 'en' = 'am';
+    let detectedLang: 'am' | 'ar' | 'en' = 'en';
     if (total > 0) {
       const etRatio = etCount / total;
       const arRatio = arCount / total;
       const laRatio = laCount / total;
-      // Prefer Amharic by default, only switch if clearly another language
-      if (arRatio > 0.6 && arRatio > etRatio) {
-        detectedLang = 'ar';
-      } else if (laRatio > 0.7 && laCount > arCount && laCount > etCount) {
-        detectedLang = 'en';
-      } else {
-        // Default to Amharic for Ethiopian organizational context
+      // Prefer Amharic if present significantly (>=30%) or clearly dominant
+      if ((etRatio >= 0.3 && etRatio >= arRatio) || (etCount >= arCount && etCount >= laCount && etCount >= 10)) {
         detectedLang = 'am';
+      } else if (arRatio > etRatio && arRatio >= 0.3) {
+        detectedLang = 'ar';
+      } else {
+        detectedLang = 'en';
       }
       console.log(`📊 Script counts -> Ge'ez:${etCount} Arabic:${arCount} Latin:${laCount} | ratios -> am:${etRatio.toFixed(2)} ar:${arRatio.toFixed(2)} en:${laRatio.toFixed(2)}`);
     }
-    console.log(`📍 Language set to: ${detectedLang} (Defaults to Amharic for Ethiopian context)`);
+    console.log(`📍 Detected meeting language: ${detectedLang}`);
 
     const agendaList = meeting.agenda_items
       ?.map((item: any, idx: number) => {
@@ -272,246 +227,125 @@ try {
 
     // Create language-specific instructions with STRICT fidelity requirements
     const languageInstruction = detectedLang === 'am'
-      ? `\n\n═══ CRITICAL AMHARIC PROFESSIONAL DOCUMENTATION STANDARDS ═══
-
-🎯 YOUR ROLE: You are a highly skilled Ethiopian executive secretary with mastery of formal Amharic (ኦፊሴላዊ አማርኛ) business writing, producing documentation at the highest professional standards.
+      ? `\n\n═══ CRITICAL AMHARIC WRITING REQUIREMENTS ═══
 
 🚫 ABSOLUTE FIDELITY RULE - READ CAREFULLY:
-• ONLY document information EXPLICITLY STATED in the transcript above
-• DO NOT add information, assumptions, or general knowledge not in the transcript
-• DO NOT fabricate decisions, action items, or discussions not present
-• If the transcript is empty or unclear, state that clearly in professional language
+• ONLY summarize information EXPLICITLY STATED in the transcript above
+• DO NOT add information, assumptions, or general knowledge
+• DO NOT make up decisions, action items, or discussions not in the transcript
+• If the transcript is empty or unclear, state that clearly
 • EVERY point in your summary MUST trace back to specific words in the transcript
-• When in doubt, omit rather than fabricate - accuracy over completeness
+• When in doubt, omit rather than fabricate
 
-📜 LANGUAGE & SCRIPT EXCELLENCE:
-• Write ENTIRELY in PROFESSIONAL AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
-• NEVER use Latin letters (a-z) or romanization except for unavoidable technical terms
-• ALL headings, titles, body content MUST be in Ge'ez script with flawless spelling
-• For essential technical terms: translate or explain in Amharic first, may include original in parentheses
-  Example: "የአስተዳደር ስርዓት (management system)" or "የመረጃ ቴክኖሎጂ መሠረተ ልማት (IT infrastructure)"
-• For proper names and titles: keep original but provide Amharic context where needed
+LANGUAGE & SCRIPT:
+• Write ENTIRELY in AMHARIC using Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ)
+• NEVER use Latin letters (a-z) or romanization
+• ALL headings, titles, content MUST be Ge'ez script
+• WHEN ENGLISH TECHNICAL TERMS appear: provide Amharic translation/explanation in parentheses. Example: "ማናጀመንት (አስተዳደር)" or explain the concept in Amharic
+• For names, titles, or specific terms, you may keep the original in Latin script only if transliteration would lose meaning, but ALWAYS provide Amharic context
 
-📍 ETHIOPIAN PUNCTUATION MASTERY (NON-NEGOTIABLE):
-• ። = Full stop - MUST end EVERY sentence without exception
-• ፣ = Comma - separate items in lists and clauses within sentences
-• ፤ = Semicolon - separate closely related clauses
-• ፦ = Colon - introduce lists, elaborations, or formal announcements
-• ፥ = Section marker - separate major sections or emphatic breaks
-• Apply these consistently with the same precision as English punctuation
+ETHIOPIAN PUNCTUATION (MANDATORY):
+• ። = Full stop (end of sentence) - USE CONSISTENTLY
+• ፣ = Comma (separating items in lists)
+• ፤ = Semicolon (separating related clauses)
+• ፦ = Colon (before lists or explanations)
+• ፥ = Section separator
 
-✍️ PROFESSIONAL SENTENCE STRUCTURE:
-• Use formal Subject-Object-Verb (SOV) word order consistently
-• Begin each sentence with proper contextual framing
-• Construct complete, well-formed sentences that flow naturally
-• Vary sentence length and structure for professional readability
-• End EVERY sentence with ። without fail
-• Use ፣ to separate list items and clarify complex clauses
-• Use ፦ before formally introducing lists, quotations, or key points
-• Employ ፤ to connect related ideas within sophisticated sentences
+SENTENCE STRUCTURE:
+• Use Subject-Object-Verb (SOV) word order
+• Start each sentence with proper context
+• End EVERY sentence with ። 
+• Separate items in lists with ፣
+• Use ፦ before introducing lists or points
 
-💼 PROFESSIONAL ETHIOPIAN BUSINESS VOCABULARY:
-• Use formal, executive-level Amharic (ኦፊሴላዊ አማርኛ)
-• Proper honorifics: አቶ (Mr.), ወ/ሮ (Mrs./Ms.), አቤቱ (His Excellency), ዶ/ር (Dr.), ፕሮፌሰር (Prof.), ኢንጅነር (Eng.)
-• Professional terms: ስብሰባ (meeting), ውይይት (discussion), ውሳኔ (decision), ተግባር (action), ድርጅት (organization), 
-  አስተዳደር (management), ፖሊሲ (policy), መመሪያ (directive), የስራ መርሃግብር (work plan)
-• Use sophisticated, executive-level vocabulary appropriate for board and senior management
+PROFESSIONAL VOCABULARY:
+• Use formal business Amharic (ኦፊሴላዊ አማርኛ)
+• Use proper honorifics: አቶ (Mr.), ወ/ሮ (Mrs.), ዶ/ር (Dr.), ኢንጅነር (Eng.)
+• Use professional terms: ስብሰባ (meeting), ውሳኔ (decision), ተግባር (action), ድርጅት (organization)
 
-📊 DOCUMENT FORMATTING EXCELLENCE:
-• Use clear paragraph breaks (double line breaks) between distinct topics
-• Format section headings properly: ## የስብሰባ ማጠቃለያ (Meeting Summary)
-• Use bullet points (•) or numbered lists (፩. ፪. ፫.) for clarity
-• Maintain consistent verb tenses and professional tone throughout
-• Create visual hierarchy with proper spacing and organization
-• Structure content logically from general to specific
+FORMATTING:
+• Use clear paragraph breaks (double line breaks)
+• Format headings: ## የስብሰባ ማጠቃለያ
+• Use bullet points: • or - for lists
+• Maintain consistent verb tenses
 
-📋 STANDARD SECTION HEADERS (USE THESE):
-## የስብሰባ መረጃ (Meeting Information)
-## አስፈላጊ ማጠቃለያ (Executive Summary)
-## የስብሰባ ክፍት ንግግር (Opening Remarks)
-## ዋና ዋና የውይይት ነጥቦች (Key Discussion Points)
-## የተወሰኑ ውሳኔዎች (Decisions Made)
-## የተግባር እቅዶች (Action Plans)
-## የመዝጊያ ንግግር (Closing Remarks)
-
-🏆 PROFESSIONAL EXCELLENCE STANDARDS:
-• Write with the sophistication expected in Ethiopian government and corporate executive documentation
-• Demonstrate mastery of formal Amharic through varied, elegant sentence construction
-• Maintain appropriate gravitas and authority befitting official institutional records
-• Use complete, descriptive language rather than abbreviated bullet points
-• Show logical flow and coherent narrative structure throughout
-• Balance comprehensiveness with clarity and readability
-• Ensure every sentence is perfectly punctuated and grammatically sound
-• Make it read as if written by Ethiopia's most skilled executive secretary`
+Example heading structure:
+## የስብሰባ ማጠቃለያ
+## ዋና ዋና የውይይት ነጥቦች
+## የተወሰኑ ውሳኔዎች
+## የተግባር እቅዶች`
       : detectedLang === 'ar'
       ? `\n\n🚫 ABSOLUTE FIDELITY RULE:
-ONLY document information EXPLICITLY stated in the transcript. DO NOT add assumptions or external information.
+ONLY summarize information EXPLICITLY in the transcript. DO NOT add assumptions or external information.
 
-🎯 PROFESSIONAL ARABIC DOCUMENTATION STANDARDS:
-• Generate minutes in PROFESSIONAL ARABIC using Arabic script with flawless grammar
-• Use formal business Arabic (الفصحى) appropriate for executive documentation
-• Apply proper Arabic punctuation consistently throughout
-• Structure with right-to-left (RTL) formatting in mind
-• Use sophisticated vocabulary befitting official organizational records
-• Never use Latin letters or romanization
-• Maintain executive-level tone and professionalism
-• Ensure every sentence is complete and properly punctuated`
+CRITICAL LANGUAGE REQUIREMENT - ARABIC:
+Generate the minutes in ARABIC using Arabic script.
+Never use Latin letters or romanization.`
       : `\n\n🚫 ABSOLUTE FIDELITY RULE:
-ONLY document information EXPLICITLY stated in the transcript above.
+ONLY summarize information EXPLICITLY stated in the transcript above.
 DO NOT add information, assumptions, or content not in the transcript.
 
-🎯 PROFESSIONAL DOCUMENTATION STANDARDS:
-• Generate minutes in the SAME LANGUAGE as the transcript with flawless grammar
-• Use formal, executive-level business language appropriate for official records
-• Apply proper punctuation consistently throughout all sections
-• Structure content with clear hierarchy and logical flow
-• Employ sophisticated vocabulary while maintaining clarity
-• For Amharic (Ge'ez script): the minutes MUST be in Amharic with proper Ethiopian punctuation
-• Never romanize or transliterate non-Latin scripts
-• Maintain professional tone befitting organizational importance
-• Ensure comprehensive yet readable documentation`;
+Generate the minutes in the SAME LANGUAGE as the transcript.
+If the transcript is in Amharic (Ge'ez script), the minutes MUST be in Amharic.
+Never romanize or transliterate non-Latin scripts.`;
 
 // Generate minutes using selected AI provider with enhanced natural language instructions
-    let prompt: string;
-    
-    if (useChunks && existingChunks && existingChunks.length > 0) {
-      // Build prompt from pre-analyzed chunks (faster)
-      const chunkSummaries = existingChunks.map(chunk => {
-        const startMin = Math.floor(chunk.start_time / 60);
-        const endMin = Math.floor(chunk.end_time / 60);
-        return `
-## Segment ${chunk.chunk_number + 1} (Minutes ${startMin}-${endMin})
-${chunk.summary}
+    const prompt = `🎯 YOUR MISSION: Create comprehensive, natural-sounding meeting minutes that capture EVERY detail and nuance from the discussion.
 
-**Key Points:**
-${chunk.key_points?.map((p: string) => `• ${p}`).join('\n') || 'None'}
+⚠️ CRITICAL PRIORITY ORDER - CAPTURE IN THIS SEQUENCE:
+1. **MEETING OPENER'S INTRODUCTION** - The very first statements by who opened/introduced the meeting, their welcome remarks, and the purpose they stated
+2. **MAIN AGENDA TOPICS** - Each major topic discussed in the order it was presented
+3. **DISCUSSION DETAILS** - ALL points raised, questions asked, answers given, viewpoints expressed
+4. **DECISIONS & OUTCOMES** - Every decision made and conclusion reached
+5. **ACTION ITEMS** - All tasks assigned with complete context
+6. **CLOSING REMARKS** - Final statements and next steps
 
-**Decisions:**
-${chunk.decisions?.map((d: string) => `• ${d}`).join('\n') || 'None'}
+⚠️ COMPLETENESS & ACCURACY RULES:
+1. **START with meeting opener** - Capture who opened the meeting and their initial remarks word-for-word importance
+2. Capture ALL information from the transcript - don't skip any details, however minor
+3. Include ALL speaker contributions, questions, answers, and clarifications
+4. Preserve the natural flow and sequence of the conversation
+5. Include context, reasoning, and background mentioned by speakers
+6. Capture emotional tone, emphasis, and speaker intentions when relevant
+7. Record ALL numbers, dates, names, and specific details mentioned
+8. Include tangential discussions if they add context
+9. Write in a natural, conversational but professional tone
+10. NEVER add information not in the transcript - only expand on what's there
+11. **Give special attention to opening and main discussion points** - these should be most comprehensive
 
-**Action Items:**
-${chunk.action_items?.map((a: string) => `• ${a}`).join('\n') || 'None'}`;
-      }).join('\n\n');
+✍️ WRITING STYLE REQUIREMENTS:
+• Write as a skilled human note-taker would - natural, fluid, complete
+• Use varied sentence structures to avoid robotic repetition
+• Connect ideas smoothly with transitions
+• Include speaker perspectives and reasoning processes
+• Capture the "story" of the meeting, not just bullet points
+• Make it engaging and readable while maintaining professionalism
+• Vary paragraph lengths for natural rhythm
+• Use specific quotes when they capture important points
+• **Dedicate substantial detail to opening statements and core discussion topics**
 
-      prompt = `🎯 YOUR MISSION: Synthesize pre-analyzed meeting segments into comprehensive, cohesive meeting minutes.
+📝 DESCRIPTIVE WRITING STANDARDS:
+• Use rich, descriptive language that paints a clear picture
+• Explain WHY decisions were made, not just WHAT was decided
+• Include the reasoning, rationale, and thought process behind discussions
+• Describe the tone and nature of conversations (constructive, intense, collaborative, etc.)
+• Add context about HOW ideas were developed during the meeting
+• Use transitional phrases to show relationships between topics
+• Provide background information when speakers reference it
+• Make each section tell a complete story with beginning, middle, and conclusion
 
-You are provided with ${existingChunks.length} pre-analyzed segments from a meeting. Each segment has already been summarized with key points, decisions, and action items extracted. Your job is to combine these into a single, flowing, professional meeting minutes document.
-
-📋 MEETING CONTEXT:
-Meeting Title: ${meeting.title}
-Date: ${new Date(meeting.start_time).toLocaleDateString()}
-Time: ${new Date(meeting.start_time).toLocaleTimeString()} - ${new Date(meeting.end_time).toLocaleTimeString()}
-Duration: ${Math.round((new Date(meeting.end_time).getTime() - new Date(meeting.start_time).getTime()) / 60000)} minutes
-${recordingSeconds !== null ? `Actual Recording: ${Math.floor(recordingSeconds / 60)}m ${recordingSeconds % 60}s` : ''}
-
-📝 PLANNED AGENDA:
-${agendaList || 'No agenda items'}
-
-👥 PARTICIPANTS:
-${attendeesList || 'No participants recorded'}
-
-📊 PRE-ANALYZED SEGMENTS:
-${chunkSummaries}
-
-✅ RECORDED DECISIONS:
-${decisionsList || 'No additional decisions recorded'}
-
-✅ ACTION ITEMS:
-${actionItemsList || 'No additional action items'}
-
-📝 COLLABORATIVE NOTES:
-${collaborativeNotesList || 'No collaborative notes'}
-
-🗳️ POLLS:
-${pollsList || 'No polls conducted'}
-
-⚠️ YOUR TASK - SYNTHESIS INSTRUCTIONS:
-1. **Create a unified narrative** - Combine the segment summaries into a flowing, chronological story
-2. **Remove redundancy** - If points appear in multiple segments, consolidate them
-3. **Maintain completeness** - Don't lose any important information from the segments
-4. **Add context** - Show how segments connect and flow into each other
-5. **Organize logically** - Group related points even if they're from different segments
-6. **Professional tone** - Write as a polished, professional document
-
-🚨 CRITICAL FORMATTING RULES - NO MASSIVE TABLES:
-• Use a COMPACT markdown table ONLY for Meeting Information (metadata: title, date, time, location, participants)
-• DO NOT put narrative content, discussions, or summaries inside tables
-• ALL content sections must be standard markdown with ## headers, paragraphs, and bullet lists
-• After the compact Meeting Information table, write all other sections with headers and paragraphs
-
-📊 REQUIRED SECTIONS:
-1. **Meeting Information Table** - COMPACT table with ONLY: title, date, time, location, participants (max 5-6 rows)
-2. **Executive Summary** - Write as paragraphs with ## header (4-6 sentences synthesizing all segments)
-3. **Discussion Details** - Write with ## header and bullet points (organized by theme, drawing from all segments)
-4. **Decisions Made** - Write with ## header and bullet points (consolidated from all segments + recorded decisions)
-5. **Action Items** - Write with ## header and bullet points (consolidated from all segments + recorded items)
-6. **Next Steps** - Write with ## header and paragraphs (if discussed)
-
-${languageInstruction}
-
-Format as professional markdown with clear headers, proper punctuation, and natural prose.`;
-
-      await updateProgress('generating', 60, 'Synthesizing pre-analyzed segments...', 15);
-    } else {
-      // Original full prompt for complete transcription processing
-      prompt = `🎯 YOUR MISSION: Create highly professional, comprehensive executive-level meeting minutes that exemplify organizational excellence and document every critical detail with precision and clarity.
-
-⚠️ CRITICAL PRIORITY ORDER - DOCUMENT WITH EXECUTIVE PRECISION:
-1. **EXECUTIVE SUMMARY** - A powerful, concise overview capturing the meeting's strategic importance and key outcomes
-2. **MEETING OPENER'S INTRODUCTION** - The official opening statements, introductions, and meeting objectives as stated by the chairperson
-3. **STRATEGIC AGENDA TOPICS** - Each agenda item presented with its business context and organizational impact
-4. **COMPREHENSIVE DISCUSSION** - All substantive points, strategic questions, expert responses, and stakeholder perspectives
-5. **EXECUTIVE DECISIONS & RESOLUTIONS** - Every decision with full rationale, impact assessment, and implementation implications
-6. **ACTION ITEMS WITH ACCOUNTABILITY** - All assignments with clear ownership, deadlines, and expected deliverables
-7. **OFFICIAL CLOSING** - Final directives, next meeting schedule, and concluding remarks
-
-⚠️ EXECUTIVE DOCUMENTATION STANDARDS - COMPLETENESS & PRECISION:
-1. **EXECUTIVE OPENING** - Document the meeting chairperson's opening with verbatim accuracy and appropriate gravitas
-2. **COMPLETE CAPTURE** - Record every substantive point, ensuring nothing of organizational importance is omitted
-3. **STAKEHOLDER CONTRIBUTIONS** - Document all participant inputs, questions, expert opinions, and decision-making dialogue
-4. **LOGICAL FLOW** - Maintain chronological and thematic coherence, showing how discussions progressed toward conclusions
-5. **CONTEXTUAL DEPTH** - Include strategic context, business rationale, and organizational implications throughout
-6. **PROFESSIONAL TONE** - Capture the appropriate level of formality and authority expected in executive documentation
-7. **FACTUAL PRECISION** - Record all figures, dates, names, titles, and specific commitments with absolute accuracy
-8. **COMPREHENSIVE SCOPE** - Include supporting discussions that provide context for major decisions
-9. **EXECUTIVE POLISH** - Write with the sophistication and clarity expected in board-level documentation
-10. **FIDELITY RULE** - Document only what was explicitly stated - no assumptions, inferences, or external information
-11. **PRIORITIZE SUBSTANCE** - Give proportionate detail to opening remarks, strategic discussions, and executive decisions
-
-✍️ PROFESSIONAL WRITING STANDARDS FOR EXECUTIVE DOCUMENTATION:
-• Employ executive-level business writing: authoritative, polished, sophisticated yet accessible
-• Use varied, professional sentence structures that demonstrate linguistic competence
-• Connect concepts with strategic transitions showing cause-effect and decision-flow relationships
-• Articulate stakeholder perspectives with appropriate attribution and context
-• Document the strategic narrative - the "why" and "how" behind decisions, not merely the "what"
-• Maintain consistent professional tone befitting organizational importance
-• Balance comprehensive detail with readability through effective paragraph structuring
-• Use direct quotations strategically to capture critical statements or commitments
-• **Demonstrate organizational sophistication** - this document represents institutional memory and professional standards
-
-📝 EXECUTIVE-LEVEL DESCRIPTIVE STANDARDS:
-• Employ sophisticated, professional language appropriate for executive and board-level documentation
-• Articulate decision rationale with full strategic context - the WHY and WHAT combined
-• Document complete reasoning chains: what led to discussions, how options were evaluated, why conclusions were reached
-• Characterize discussion dynamics professionally (collaborative consensus-building, robust debate, unanimous support, etc.)
-• Trace idea development showing how concepts evolved through structured dialogue
-• Use executive-appropriate transitional language demonstrating logical progression and strategic thinking
-• Contextualize references with sufficient background for future institutional reference
-• Structure each section as a complete strategic narrative with clear beginning (context), middle (discussion), and conclusion (resolution/outcome)
-• Maintain the gravitas and formality appropriate for official organizational records
-
-✅ PUNCTUATION & PROFESSIONAL FORMATTING STANDARDS:
-• Employ flawless punctuation with executive-level precision throughout all documentation
-• Conclude every statement with proper terminal punctuation (. ! ?) - no exceptions
-• Use commas strategically to enhance clarity and guide professional reading comprehension
-• Deploy colons (:) to formally introduce enumerations or elaborate on strategic points
-• Apply semicolons (;) to connect substantively related clauses with sophistication
-• Frame direct quotations appropriately with quotation marks to preserve verbatim accuracy
-• Utilize em dashes (—) judiciously for emphasis, clarification, or parenthetical remarks
-• Structure lists with consistent, professional formatting using proper enumeration
-• Insert clear paragraph breaks to delineate distinct topics and maintain visual organization
-• Apply markdown headers (##) systematically to create professional document hierarchy
-• **For Amharic/Ethiopian Documentation: Apply Ethiopian punctuation consistently - ። (period) ፣ (comma) ፤ (semicolon) ፦ (colon) ፥ (section marker) - with the same precision expected in international business standards**
+✅ PUNCTUATION & FORMATTING EXCELLENCE:
+• Use proper punctuation consistently throughout
+• End every complete sentence with appropriate punctuation (. ! ?)
+• Use commas to separate clauses and improve readability
+• Use colons (:) to introduce lists or elaborate on points
+• Use semicolons (;) to connect related independent clauses
+• Use quotation marks for direct quotes from speakers
+• Use em dashes (—) for emphasis or clarification
+• Format lists with proper bullet points or numbering
+• Create clear paragraph breaks for different topics
+• Use headers (##) to organize major sections
+• **For Amharic: Use Ethiopian punctuation marks ። ፣ ፤ ፦ ፥ consistently**
 
 📋 MEETING CONTEXT:
 Meeting Title: ${meeting.title}
@@ -549,18 +383,19 @@ ${actionItemsList || 'No action items assigned'}
 ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based ONLY on agenda and recorded decisions. Add a clear disclaimer that this is a draft pending transcript.` : ``}
 
 ⚠️ CRITICAL FORMATTING RULES - TABLES:
-• Use PROPER MARKDOWN TABLE SYNTAX ONLY for structured/tabular data
-• ONLY use tables for:
-  - Meeting Information section (metadata ONLY - keep compact)
-  - Attendees list with roles (if showing roles)
-  - Action items with assignments/due dates (if listing many)
-• DO NOT put long narrative content in tables
-• DO NOT create tables with massive content in cells
+• Use PROPER MARKDOWN TABLE SYNTAX for all structured/tabular data
 • Format tables correctly with pipes and alignment:
-  | Column 1 | Column 2 |
-  |----------|----------|
-  | Data 1   | Data 2   |
-• **MOST IMPORTANT: ALL narrative content (discussions, decisions, summaries) must be in standard markdown sections with headers, paragraphs, and lists - NOT in tables**
+  | Column 1 | Column 2 | Column 3 |
+  |----------|----------|----------|
+  | Data 1   | Data 2   | Data 3   |
+• NEVER use plain text with dashes (---) and spaces for tables
+• Use tables for:
+  - Meeting Information section (first section)
+  - Attendees/Participants lists with roles
+  - Agenda items with status/duration/presenter
+  - Decision tracking with details
+  - Action items with assignments/due dates
+• Ensure proper alignment and spacing in tables
 
 📊 REQUIRED SECTIONS (be thorough and complete):
 
@@ -571,24 +406,15 @@ ${noTranscript ? `⚠️ NOTE: Transcript not available. Generate a draft based 
 • SKIP the section entirely if there's nothing to document
 • DO NOT add standalone punctuation marks (፦ or :) without content following them
 
-🚨 ULTRA-CRITICAL FORMATTING RULE:
-• The Meeting Information table below is ONLY for meeting metadata (title, date, time, location, participants)
-• It should be COMPACT - just one row per metadata field
-• ALL other content (summary, discussions, decisions, etc.) MUST be written as standard markdown sections with ## headers and paragraphs
-• DO NOT put discussion content, decisions, or any narrative text inside tables
-• After the Meeting Information table, use ## headers for each section and write content as flowing paragraphs and bullet lists
-
-0. **የስብሰባ መረጃ** (Meeting Information) - MUST be formatted as a COMPACT markdown table with ONLY meeting metadata:
-   **CORRECT FORMAT:**
-   | መስክ (Field) | ዝርዝር (Details) |
-   |-------------|-----------------|
-   | የስብሰባ ርዕስ (Title) | [Title here] |
+0. **የስብሰባ መረጃ** (Meeting Information) - MUST be formatted as a markdown table at the very top:
+   Example:
+   | Field | Details |
+   |-------|---------|
+   | የስብሰባ ርዕስ (Title) | [Title] |
    | ቀን (Date) | [Date] |
    | ሰዓት (Time) | [Start] - [End] |
    | ቦታ (Location) | [Location] |
-   | ተሳታፊዎች (Participants) | [Names, comma-separated] |
-   
-   **STOP THE TABLE HERE** - Do NOT add more rows. All other content goes in sections below.
+   | ተሳታፊዎች (Participants) | [List] |
 1. **የስብሰባ መግቢያ** (Meeting Opening) - WHO opened the meeting, their introduction, welcome remarks, and stated purpose (MUST be comprehensive - this sets the stage)
 2. የስብሰባ ማጠቃለያ (Executive Summary) - Comprehensive overview capturing all major points, context, and outcomes (4-6 detailed sentences minimum)
 3. **የአጀንዳ ግምገማ** (Agenda Review) - Detailed summary of each agenda item:
@@ -652,17 +478,16 @@ ${detectedLang === 'am' ? `✍️ CRITICAL AMHARIC REQUIREMENTS:
 • Use professional vocabulary while remaining accessible
 • Make it read like a skilled professional documented the meeting`}
 
-📝 EXECUTIVE DOCUMENTATION EXCELLENCE - NON-NEGOTIABLE STANDARDS:
-• **Comprehensive yet Organized** - Capture complete substantive content while maintaining executive-level structural clarity
-• **Professionally Engaging** - Employ sophisticated narrative prose rather than simplistic bullet points; demonstrate linguistic competence
-• **Strategic Coherence** - Articulate logical connections between topics showing strategic thinking and organizational flow
-• **Impeccable Presentation** - Maintain flawless punctuation, grammar, and formatting as befits official institutional records
-• **Analytical Depth** - Document the complete strategic picture: rationale, context, decision process, implications, and actionable outcomes
-• **Contextual Sophistication** - Explain underlying reasoning, strategic considerations, and organizational impact
-• **Professional Authority** - Write with the gravitas and polish expected of executive-level business documentation
-• **Linguistic Excellence** - Demonstrate mastery of professional business language with varied, sophisticated sentence structures
-• **Visual Organization** - Structure content professionally using appropriate headers, logical paragraphs, and strategic white space
-• **Institutional Quality** - This document represents organizational standards and will serve as official institutional memory
+📝 FINAL REMINDERS - CRITICAL FOR QUALITY:
+• **Be thorough AND well-organized** - include detail while maintaining clear structure
+• **Make it readable and engaging** - avoid dry bullet points, use narrative prose
+• **Connect ideas naturally** - show how topics relate with proper transitions
+• **Use proper punctuation** - this is non-negotiable for professional documentation
+• **Be descriptive** - explain the 'why' and 'how', not just the 'what'
+• **Capture complete picture** - context, decisions, reasoning, outcomes, implications
+• **Write as if you attended** - bring the meeting to life through your documentation
+• **Polish your language** - proofread mentally for grammar and flow
+• **Structure clearly** - use headers, paragraphs, and spacing effectively
 
 Format as a professional markdown document with:
 - Clear section headers (##)
@@ -670,13 +495,10 @@ Format as a professional markdown document with:
 - Proper punctuation throughout
 - Natural prose that flows smoothly
 - Descriptive language that provides rich detail${languageInstruction}`;
-    }
 
     let minutes = "";
     let providerError = "";
     let providerStatus: number | null = null;
-
-    await updateProgress('generating', 50, 'Generating minutes with AI...', 30);
 
     // Try Gemini API first (primary as requested)
     const geminiKey = Deno.env.get("GEMINI_API_KEY");
@@ -719,7 +541,6 @@ ${prompt}`
           const geminiData = await geminiResponse.json();
           minutes = geminiData.candidates?.[0]?.content?.parts?.[0]?.text || "";
           console.log("✅ Minutes generated with Gemini API (Primary)");
-          await updateProgress('generating', 80, 'AI generation complete, preparing document...', 10);
         } else {
           const statusCode = geminiResponse.status;
           const errorText = await geminiResponse.text();
@@ -800,7 +621,6 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
           const lovableData = await lovableResponse.json();
           minutes = lovableData.choices?.[0]?.message?.content || "";
           console.log("✅ Minutes generated with Lovable AI (Fallback)");
-          await updateProgress('generating', 80, 'AI generation complete, preparing document...', 10);
         } else {
           const statusCode = lovableResponse.status;
           const errorText = await lovableResponse.text();
@@ -884,7 +704,6 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
           const openaiData = await openaiResponse.json();
           minutes = openaiData.choices?.[0]?.message?.content || "";
           console.log("✅ Minutes generated with OpenAI GPT-5");
-          await updateProgress('generating', 80, 'AI generation complete, preparing document...', 10);
         } else {
           const statusCode = openaiResponse.status;
           const errorText = await openaiResponse.text();
@@ -955,7 +774,6 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
     let nextVersion = (lastVersionRow?.version_number || 0) + 1;
 
     // Insert minutes record with simple retry to avoid race on unique (meeting_id, version_number)
-    await updateProgress('finalizing', 90, 'Saving meeting minutes...', 5);
     let inserted = false;
     let attempts = 0;
     // Try with current user first; on RLS failure, fall back to meeting owner
@@ -1061,9 +879,6 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
       // Do not throw; minutes saved successfully
     }
 
-    // Mark as completed
-    await updateProgress('completed', 100, 'Minutes generated successfully!', 0);
-
     return new Response(
       JSON.stringify({
         success: true,
@@ -1076,33 +891,6 @@ You are a master of formal Ethiopian Amharic (ኦፊሴላዊ አማርኛ) busi
 
   } catch (error) {
     console.error("Error in generate-minutes:", error);
-    
-    // Update progress with error
-    try {
-      const body = await req.json();
-      const meetingId = body.meetingId || body.meeting_id;
-      if (meetingId) {
-        const supabaseUrl = Deno.env.get("SUPABASE_URL");
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-        if (supabaseUrl && supabaseKey) {
-          const supabase = createClient(supabaseUrl, supabaseKey);
-          await supabase
-            .from('minute_generation_progress')
-            .upsert({
-              meeting_id: meetingId,
-              status: 'failed',
-              progress_percentage: 0,
-              error_message: error instanceof Error ? error.message : "Unknown error",
-              completed_at: new Date().toISOString()
-            }, {
-              onConflict: 'meeting_id'
-            });
-        }
-      }
-    } catch (e) {
-      console.error("Failed to update error progress:", e);
-    }
-    
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "Unknown error",
