@@ -921,15 +921,6 @@ const MeetingDetail = () => {
                   </Button>
                 )}
                 
-                {/* Executive Advisor - Premium Feature */}
-                <Button
-                  className="gap-2 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:opacity-90 text-white shadow-lg animate-pulse-slow"
-                  onClick={() => setShowExecutiveAdvisor(true)}
-                >
-                  <Brain className="h-5 w-5" />
-                  Executive Advisor
-                </Button>
-                
                 <Button
                   variant="outline"
                   className="gap-2"
@@ -987,10 +978,6 @@ const MeetingDetail = () => {
                         </DropdownMenuItem>
                       </>
                     )}
-                    <DropdownMenuItem onClick={() => setShowExecutiveAdvisor(true)}>
-                      <Brain className="h-4 w-4 mr-2" />
-                      🧠 Executive Advisor
-                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
