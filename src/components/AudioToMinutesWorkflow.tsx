@@ -266,8 +266,8 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
   const handleAudioUpload = async () => {
     if (!latestAudioUrl) {
       toast({
-        title: 'No Audio',
-        description: 'Please upload an audio recording first',
+        title: 'No Media',
+        description: 'Please upload an audio or video file first',
         variant: 'destructive',
       });
       return;
@@ -278,9 +278,19 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       setCurrentStep('transcribing');
       setProgress(20);
 
-      // Fetch the audio file
+      // Fetch the media file
       const response = await fetch(latestAudioUrl);
-      const audioBlob = await response.blob();
+      const mediaBlob = await response.blob();
+      
+      // Check if it's a video file
+      const isVideo = mediaBlob.type.startsWith('video/');
+      
+      if (isVideo) {
+        toast({
+          title: 'Video Processing',
+          description: 'Extracting audio from video file...',
+        });
+      }
       
       // Convert to base64
       const base64Audio = await new Promise<string>((resolve) => {
@@ -289,18 +299,19 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
           const base64 = reader.result as string;
           resolve(base64.split(',')[1]);
         };
-        reader.readAsDataURL(audioBlob);
+        reader.readAsDataURL(mediaBlob);
       });
 
       setProgress(40);
 
-      // Transcribe audio
+      // Transcribe audio (edge function will handle audio extraction from video)
       const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke('transcribe-audio', {
         body: {
           audioBase64: base64Audio,
           meetingId,
           language: 'auto',
-          contentType: audioBlob.type,
+          contentType: mediaBlob.type,
+          isVideo: isVideo,
         },
       });
 
@@ -311,7 +322,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       
       toast({
         title: 'Transcription Complete',
-        description: 'Audio has been transcribed successfully',
+        description: isVideo ? 'Video audio has been transcribed successfully' : 'Audio has been transcribed successfully',
       });
 
       // Generate minutes
@@ -336,9 +347,21 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       setProgress(100);
     } catch (error: any) {
       console.error('Workflow error:', error);
+      
+      // Provide more helpful error messages
+      let errorMessage = error.message || 'Failed to process media file';
+      
+      if (error.message?.includes('quota') || error.message?.includes('402')) {
+        errorMessage = 'AI quota exceeded. Please check your API settings or try again later.';
+      } else if (error.message?.includes('rate limit') || error.message?.includes('429')) {
+        errorMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+      } else if (error.message?.includes('file size')) {
+        errorMessage = 'File is too large. Please use a smaller file (max 100MB for video, 25MB for audio).';
+      }
+      
       toast({
         title: 'Processing Failed',
-        description: error.message || 'Failed to process audio',
+        description: errorMessage,
         variant: 'destructive',
       });
       setCurrentStep('upload');
@@ -417,7 +440,8 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
             <CardHeader>
               <CardTitle>Upload Audio/Video File</CardTitle>
               <CardDescription>
-                Upload a pre-recorded media file (MP4, MOV, AVI, WEBM, MP3, WAV, M4A - max 100MB)
+                Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB). 
+                For video files, audio will be automatically extracted for transcription.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -471,14 +495,14 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
                   <div className="flex items-center gap-3">
                     <FileAudio className="h-5 w-5 text-primary" />
                     <div>
-                      <p className="font-medium">Audio Ready</p>
+                      <p className="font-medium">Media Ready</p>
                       <p className="text-sm text-muted-foreground">
                         Click to process and generate minutes
                       </p>
                     </div>
                   </div>
                   <Button onClick={handleAudioUpload}>
-                    Process Audio
+                    Process Media
                   </Button>
                 </div>
               </CardContent>

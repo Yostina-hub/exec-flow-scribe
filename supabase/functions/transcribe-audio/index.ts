@@ -14,18 +14,23 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, meetingId, language, contentType } = await req.json();
+    const { audioBase64, meetingId, language, contentType, isVideo } = await req.json();
     
     console.log('Transcription request received:', {
       hasAudio: !!audioBase64,
       meetingId,
       language: language || 'auto',
-      contentType: contentType || 'audio/webm'
+      contentType: contentType || 'audio/webm',
+      isVideo: isVideo || false
     });
     
     if (!audioBase64 || !meetingId) {
       throw new Error("Audio data and meeting ID are required");
     }
+    
+    // Note: For video files, Whisper API can handle video containers and extract audio automatically
+    // Both OpenAI Whisper and Google Cloud support common video formats (MP4, MOV, etc.)
+    console.log(isVideo ? '📹 Processing video file (audio will be extracted)' : '🎵 Processing audio file');
 
     const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
     function stringToUUID(input: string) {
@@ -298,7 +303,15 @@ serve(async (req) => {
           
           const formData = new FormData();
           const type = contentType && typeof contentType === 'string' ? contentType : "audio/webm";
-          const filename = type === 'audio/wav' ? 'audio.wav' : 'audio.webm';
+          // For video files, use appropriate extension; Whisper handles video containers
+          let filename = 'audio.webm';
+          if (type.includes('mp4')) filename = 'video.mp4';
+          else if (type.includes('mov') || type.includes('quicktime')) filename = 'video.mov';
+          else if (type.includes('avi')) filename = 'video.avi';
+          else if (type.includes('mkv') || type.includes('matroska')) filename = 'video.mkv';
+          else if (type.includes('wav')) filename = 'audio.wav';
+          else if (type.includes('m4a')) filename = 'audio.m4a';
+          
           const audioBlob = new Blob([binaryAudio], { type });
           formData.append("file", audioBlob, filename);
           formData.append("model", "whisper-1");
