@@ -404,9 +404,9 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Upload Video File</CardTitle>
+              <CardTitle>Upload Audio/Video File</CardTitle>
               <CardDescription>
-                Upload a pre-recorded video file (MP4, MOV, AVI, MKV, WEBM - max 100MB)
+                Upload a pre-recorded media file (MP4, MOV, AVI, WEBM, MP3, WAV, M4A - max 100MB)
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -414,7 +414,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
                 <Input
                   ref={fileInputRef}
                   type="file"
-                  accept="video/*,.mp4,.mov,.avi,.mkv,.webm"
+                  accept="video/*,audio/*,.mp4,.mov,.avi,.mkv,.webm,.mp3,.wav,.m4a,.ogg"
                   onChange={handleFileUpload}
                   disabled={isUploading}
                   className="flex-1"
