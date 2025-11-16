@@ -118,22 +118,30 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a'];
-    if (!validTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|webm|ogg|m4a)$/i)) {
+    // Validate file type - accept both audio and video
+    const validAudioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/x-m4a'];
+    const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
+    const validExtensions = /\.(mp3|wav|webm|ogg|m4a|mp4|mov|avi|mkv)$/i;
+    
+    const isValidType = validAudioTypes.includes(file.type) || validVideoTypes.includes(file.type) || file.name.match(validExtensions);
+    
+    if (!isValidType) {
       toast({
         title: 'Invalid File',
-        description: 'Please upload an audio file (MP3, WAV, WEBM, OGG, M4A)',
+        description: 'Please upload an audio or video file (MP3, WAV, M4A, WEBM, MP4, MOV, AVI, MKV)',
         variant: 'destructive',
       });
       return;
     }
 
-    // Validate file size (max 25MB)
-    if (file.size > 25 * 1024 * 1024) {
+    // Validate file size (max 100MB for video, 25MB for audio)
+    const maxSize = file.type.startsWith('video/') ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (file.size > maxSize) {
       toast({
         title: 'File Too Large',
-        description: 'Audio file must be less than 25MB',
+        description: file.type.startsWith('video/') 
+          ? 'Video file must be less than 100MB' 
+          : 'Audio file must be less than 25MB',
         variant: 'destructive',
       });
       return;
@@ -167,6 +175,9 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 
+      // Determine media type based on file type
+      const mediaType = file.type.startsWith('video/') ? 'video' : 'audio';
+      
       // Save to database
       const { error: insertError } = await supabase
         .from('meeting_media')
@@ -174,7 +185,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
           meeting_id: meetingId,
           uploaded_by: user.id,
           file_url: publicUrl,
-          media_type: 'audio',
+          media_type: mediaType,
           format: file.name.split('.').pop() || 'unknown',
           file_size: file.size,
           checksum,
@@ -186,7 +197,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       
       toast({
         title: 'Upload Complete',
-        description: 'Audio file uploaded successfully. Click "Process Audio" to transcribe.',
+        description: `${mediaType === 'video' ? 'Video' : 'Audio'} file uploaded successfully. Click "Process Audio" to transcribe.`,
       });
 
       checkExistingData();
