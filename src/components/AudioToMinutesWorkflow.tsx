@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { LiveAudioRecorder } from './LiveAudioRecorder';
 import { PDFGenerationPanel } from './PDFGenerationPanel';
-import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download, Upload } from 'lucide-react';
+import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download, Upload, Edit, Save, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import ReactMarkdown from 'react-markdown';
@@ -15,6 +15,8 @@ import remarkBreaks from 'remark-breaks';
 import rehypeRaw from 'rehype-raw';
 import { normalizeAIMarkdown } from '@/utils/markdownNormalizer';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { useNavigate } from 'react-router-dom';
 
 interface AudioToMinutesWorkflowProps {
   meetingId: string;
@@ -24,10 +26,14 @@ type WorkflowStep = 'upload' | 'transcribing' | 'generating' | 'pdf' | 'complete
 
 export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProps) {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<WorkflowStep>('upload');
   const [isProcessing, setIsProcessing] = useState(false);
   const [minutes, setMinutes] = useState<string>('');
   const [transcription, setTranscription] = useState<string>('');
+  const [editableTranscription, setEditableTranscription] = useState<string>('');
+  const [isEditingTranscription, setIsEditingTranscription] = useState(false);
+  const [isSavingTranscription, setIsSavingTranscription] = useState(false);
   const [hasPDF, setHasPDF] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string>();
   const [hasTranscriptPDF, setHasTranscriptPDF] = useState(false);
@@ -54,6 +60,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
 
       if (transcripts && transcripts.length > 0) {
         setTranscription(transcripts[0].content);
+        setEditableTranscription(transcripts[0].content);
         setCurrentStep('generating');
       }
 
@@ -263,6 +270,51 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
     }
   };
 
+  const saveTranscription = async () => {
+    try {
+      setIsSavingTranscription(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
+      // Update the transcription in the database
+      const { error } = await supabase
+        .from('transcriptions')
+        .update({
+          content: editableTranscription,
+          timestamp: new Date().toISOString(),
+        })
+        .eq('meeting_id', meetingId)
+        .order('timestamp', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      setTranscription(editableTranscription);
+      setIsEditingTranscription(false);
+
+      toast({
+        title: 'Transcription Updated',
+        description: 'Your changes have been saved successfully',
+      });
+
+      checkExistingData();
+    } catch (error: any) {
+      console.error('Error saving transcription:', error);
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Could not save transcription changes',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingTranscription(false);
+    }
+  };
+
+  const handleOpenMinutesEditor = () => {
+    navigate(`/minutes/${meetingId}`);
+  };
+
   const handleAudioUpload = async () => {
     if (!latestAudioUrl) {
       toast({
@@ -318,6 +370,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       if (transcriptError) throw transcriptError;
 
       setTranscription(transcriptData.transcription);
+      setEditableTranscription(transcriptData.transcription);
       setProgress(60);
       
       toast({
@@ -519,13 +572,64 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
                 <FileText className="h-5 w-5" />
                 Transcription
               </CardTitle>
-              <Badge variant="success">Complete</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="success">Complete</Badge>
+                {!isEditingTranscription ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditingTranscription(true)}
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setEditableTranscription(transcription);
+                        setIsEditingTranscription(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={saveTranscription}
+                      disabled={isSavingTranscription}
+                    >
+                      {isSavingTranscription ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" />
+                          Save
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-              <p className="text-sm whitespace-pre-wrap">{transcription}</p>
-            </ScrollArea>
+            {isEditingTranscription ? (
+              <Textarea
+                value={editableTranscription}
+                onChange={(e) => setEditableTranscription(e.target.value)}
+                className="min-h-[300px] font-mono text-sm"
+                placeholder="Edit transcription..."
+              />
+            ) : (
+              <ScrollArea className="h-[200px] w-full rounded-md border p-4">
+                <p className="text-sm whitespace-pre-wrap">{transcription}</p>
+              </ScrollArea>
+            )}
             
             {hasTranscriptPDF ? (
               <div className="flex items-center justify-between p-4 rounded-lg bg-success/10 border border-success/20">
@@ -574,8 +678,21 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
                 <FileText className="h-5 w-5" />
                 Meeting Minutes
               </CardTitle>
-              <Badge variant="success">Generated</Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="success">Generated</Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleOpenMinutesEditor}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Edit & Sign Off
+                </Button>
+              </div>
             </div>
+            <CardDescription>
+              Open the full editor to edit, submit for approval, and sign off
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[400px] w-full rounded-md border p-4">
