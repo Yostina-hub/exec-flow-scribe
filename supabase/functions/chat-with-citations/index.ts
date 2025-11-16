@@ -18,9 +18,9 @@ serve(async (req) => {
       throw new Error('No query provided');
     }
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -40,42 +40,56 @@ serve(async (req) => {
       `[SOURCE_${idx}] Title: ${s.title}\nType: ${s.source_type}\n\nContent:\n${s.content || s.summary || ''}`
     ).join('\n\n---\n\n');
 
-    const prompt = `You are a helpful AI assistant that answers questions based on provided sources.
+    const systemPrompt = `You are a helpful AI assistant that answers questions based on provided sources.
 
 CRITICAL INSTRUCTIONS:
 1. Detect the language of the user's question and respond in THE SAME LANGUAGE
 2. Support all languages including Amharic (አማርኛ), Arabic, Hebrew, Chinese, Japanese, and any other language
 3. When referencing information, cite sources using [SOURCE_X] notation where X is the source number
 4. Maintain natural, fluent communication in the user's language
+5. Provide comprehensive yet concise answers
+6. Use markdown formatting for clarity (bold, lists, etc.)
 
-User question: ${query}
+Provide a clear answer with inline citations in the same language as the user's question.`;
 
-Sources:
-${contextWithIds.substring(0, 20000)}
-
-Provide a clear, comprehensive answer with inline citations in the same language as the user's question.`;
-
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2048,
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          {
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: `Sources:\n${contextWithIds.substring(0, 30000)}\n\nUser question: ${query}`
           }
-        })
-      }
-    );
+        ],
+        temperature: 0.3,
+        max_tokens: 2048,
+      })
+    });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Lovable AI Error:", response.status, errorText);
+      
+      if (response.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      } else if (response.status === 402) {
+        throw new Error('AI usage limit reached. Please add credits to your workspace.');
+      }
+      
       throw new Error('Failed to generate answer');
     }
 
     const data = await response.json();
-    const answer = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const answer = data.choices[0].message.content;
 
     // Extract cited source indices
     const citationMatches = answer.matchAll(/\[SOURCE_(\d+)\]/g);
