@@ -3885,6 +3885,7 @@ export type Database = {
           generated_by: string
           id: string
           meeting_id: string
+          metadata: Json | null
           model_used: string | null
           summary_type: string
         }
@@ -3896,6 +3897,7 @@ export type Database = {
           generated_by?: string
           id?: string
           meeting_id: string
+          metadata?: Json | null
           model_used?: string | null
           summary_type: string
         }
@@ -3907,6 +3909,7 @@ export type Database = {
           generated_by?: string
           id?: string
           meeting_id?: string
+          metadata?: Json | null
           model_used?: string | null
           summary_type?: string
         }
@@ -3922,46 +3925,58 @@ export type Database = {
       }
       meeting_templates: {
         Row: {
+          category: string | null
           created_at: string
           created_by: string
           default_agenda: Json | null
           default_attendee_roles: Json | null
           description: string | null
+          download_count: number | null
           duration_minutes: number | null
           id: string
           is_public: boolean | null
           meeting_settings: Json | null
           name: string
+          shared_at: string | null
+          shared_by: string | null
           template_type: string | null
           updated_at: string
           use_count: number | null
         }
         Insert: {
+          category?: string | null
           created_at?: string
           created_by: string
           default_agenda?: Json | null
           default_attendee_roles?: Json | null
           description?: string | null
+          download_count?: number | null
           duration_minutes?: number | null
           id?: string
           is_public?: boolean | null
           meeting_settings?: Json | null
           name: string
+          shared_at?: string | null
+          shared_by?: string | null
           template_type?: string | null
           updated_at?: string
           use_count?: number | null
         }
         Update: {
+          category?: string | null
           created_at?: string
           created_by?: string
           default_agenda?: Json | null
           default_attendee_roles?: Json | null
           description?: string | null
+          download_count?: number | null
           duration_minutes?: number | null
           id?: string
           is_public?: boolean | null
           meeting_settings?: Json | null
           name?: string
+          shared_at?: string | null
+          shared_by?: string | null
           template_type?: string | null
           updated_at?: string
           use_count?: number | null
@@ -4127,6 +4142,171 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "message_logs_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minute_chunks: {
+        Row: {
+          action_items: string[] | null
+          chunk_number: number
+          decisions: string[] | null
+          end_time: number
+          generated_at: string | null
+          id: string
+          key_points: string[] | null
+          meeting_id: string
+          start_time: number
+          summary: string | null
+          transcription_text: string | null
+        }
+        Insert: {
+          action_items?: string[] | null
+          chunk_number: number
+          decisions?: string[] | null
+          end_time: number
+          generated_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          meeting_id: string
+          start_time: number
+          summary?: string | null
+          transcription_text?: string | null
+        }
+        Update: {
+          action_items?: string[] | null
+          chunk_number?: number
+          decisions?: string[] | null
+          end_time?: number
+          generated_at?: string | null
+          id?: string
+          key_points?: string[] | null
+          meeting_id?: string
+          start_time?: number
+          summary?: string | null
+          transcription_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minute_chunks_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minute_generation_progress: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: string | null
+          error_message: string | null
+          estimated_completion_seconds: number | null
+          id: string
+          meeting_id: string
+          progress_percentage: number
+          started_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string
+          meeting_id: string
+          progress_percentage?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: string | null
+          error_message?: string | null
+          estimated_completion_seconds?: number | null
+          id?: string
+          meeting_id?: string
+          progress_percentage?: number
+          started_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minute_generation_progress_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      minute_generation_settings: {
+        Row: {
+          auto_generate_enabled: boolean
+          chunk_duration_minutes: number
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          auto_generate_enabled?: boolean
+          chunk_duration_minutes?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          auto_generate_enabled?: boolean
+          chunk_duration_minutes?: number
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      minute_translations: {
+        Row: {
+          content: string
+          created_at: string | null
+          id: string
+          language: string
+          meeting_id: string
+          source_language: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          id?: string
+          language: string
+          meeting_id: string
+          source_language: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          id?: string
+          language?: string
+          meeting_id?: string
+          source_language?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "minute_translations_meeting_id_fkey"
             columns: ["meeting_id"]
             isOneToOne: false
             referencedRelation: "meetings"
@@ -4540,6 +4720,48 @@ export type Database = {
           sms_enabled?: boolean | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      notification_queue: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          message: string
+          metadata: Json | null
+          notification_type: string
+          priority: string | null
+          recipient_id: string
+          sent_at: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message: string
+          metadata?: Json | null
+          notification_type: string
+          priority?: string | null
+          recipient_id: string
+          sent_at?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message?: string
+          metadata?: Json | null
+          notification_type?: string
+          priority?: string | null
+          recipient_id?: string
+          sent_at?: string | null
+          status?: string
+          title?: string
         }
         Relationships: []
       }
@@ -5460,6 +5682,103 @@ export type Database = {
           },
         ]
       }
+      summary_quality_metrics: {
+        Row: {
+          character_changes: number | null
+          copy_count: number | null
+          created_at: string | null
+          edit_count: number | null
+          feedback_text: string | null
+          first_edited_at: string | null
+          generation_method: string
+          id: string
+          last_edited_at: string | null
+          meeting_id: string
+          metadata: Json | null
+          rated_at: string | null
+          regeneration_reason: string | null
+          share_count: number | null
+          summary_id: string
+          summary_type: string
+          template_id: string | null
+          time_to_first_edit_seconds: number | null
+          total_edit_duration_seconds: number | null
+          user_rating: number | null
+          view_count: number | null
+          was_regenerated: boolean | null
+        }
+        Insert: {
+          character_changes?: number | null
+          copy_count?: number | null
+          created_at?: string | null
+          edit_count?: number | null
+          feedback_text?: string | null
+          first_edited_at?: string | null
+          generation_method: string
+          id?: string
+          last_edited_at?: string | null
+          meeting_id: string
+          metadata?: Json | null
+          rated_at?: string | null
+          regeneration_reason?: string | null
+          share_count?: number | null
+          summary_id: string
+          summary_type: string
+          template_id?: string | null
+          time_to_first_edit_seconds?: number | null
+          total_edit_duration_seconds?: number | null
+          user_rating?: number | null
+          view_count?: number | null
+          was_regenerated?: boolean | null
+        }
+        Update: {
+          character_changes?: number | null
+          copy_count?: number | null
+          created_at?: string | null
+          edit_count?: number | null
+          feedback_text?: string | null
+          first_edited_at?: string | null
+          generation_method?: string
+          id?: string
+          last_edited_at?: string | null
+          meeting_id?: string
+          metadata?: Json | null
+          rated_at?: string | null
+          regeneration_reason?: string | null
+          share_count?: number | null
+          summary_id?: string
+          summary_type?: string
+          template_id?: string | null
+          time_to_first_edit_seconds?: number | null
+          total_edit_duration_seconds?: number | null
+          user_rating?: number | null
+          view_count?: number | null
+          was_regenerated?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_quality_metrics_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_quality_metrics_summary_id_fkey"
+            columns: ["summary_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "summary_quality_metrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           created_at: string
@@ -5877,7 +6196,32 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      summary_quality_analytics: {
+        Row: {
+          avg_character_changes: number | null
+          avg_edits: number | null
+          avg_rating: number | null
+          avg_time_to_first_edit: number | null
+          avg_views: number | null
+          generation_method: string | null
+          negative_ratings: number | null
+          positive_ratings: number | null
+          rated_count: number | null
+          regeneration_count: number | null
+          summary_type: string | null
+          template_id: string | null
+          total_summaries: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "summary_quality_metrics_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       calculate_guba_learning_metrics: { Args: never; Returns: undefined }
