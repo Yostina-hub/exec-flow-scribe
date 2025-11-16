@@ -82,19 +82,26 @@ export const SourceSummaryPanel = ({ sourceIds, targetLanguage }: SourceSummaryP
   };
 
   return (
-    <Card className="p-0 border-0 bg-muted/30 flex flex-col h-full">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
-        <h3 className="font-semibold text-lg">Summary</h3>
+    <Card className="p-0 border-0 bg-gradient-to-br from-background via-muted/10 to-background flex flex-col h-full">
+      <div className="flex items-center justify-between px-6 py-5 border-b border-border/50 bg-card/60 backdrop-blur-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-md">
+            <FileText className="h-4 w-4 text-white" />
+          </div>
+          <h3 className="font-bold text-lg bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            AI Summary
+          </h3>
+        </div>
         <div className="flex gap-2">
           {summary && (
             <Button 
               variant="ghost" 
               size="sm"
               onClick={copyToClipboard}
-              className="gap-2 hover:bg-muted/60"
+              className="gap-2 hover:bg-primary/10 hover-scale transition-all rounded-full"
             >
               <Copy className="h-4 w-4" />
-              Copy
+              <span className="hidden sm:inline">Copy</span>
             </Button>
           )}
           <Button 
@@ -102,24 +109,48 @@ export const SourceSummaryPanel = ({ sourceIds, targetLanguage }: SourceSummaryP
             size="sm"
             onClick={generateSummary}
             disabled={isLoading || sourceIds.length === 0}
-            className="gap-2 hover:bg-muted/60"
+            className="gap-2 hover:bg-primary/10 hover-scale transition-all rounded-full"
           >
             <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </div>
 
-      <ScrollArea className="flex-1 px-6">
-        <div className="py-6 space-y-6">
+      <ScrollArea className="flex-1">
+        <div className="px-6 py-6 space-y-6">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-sm text-muted-foreground">Generating summary...</p>
+            <div className="flex flex-col items-center justify-center py-24 gap-6 animate-fade-in">
+              <div className="relative">
+                <div className="h-16 w-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center animate-pulse">
+                  <Loader2 className="h-8 w-8 text-white animate-spin" />
+                </div>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-purple-500/20 to-pink-500/20 animate-ping" />
+              </div>
+              <div className="text-center space-y-2">
+                <p className="text-base font-semibold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                  Analyzing your sources...
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Creating a comprehensive summary
+                </p>
+              </div>
+            </div>
+          ) : sourceIds.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 gap-6 animate-scale-in">
+              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 flex items-center justify-center">
+                <FileText className="h-10 w-10 text-purple-500/50" />
+              </div>
+              <div className="text-center space-y-2 max-w-xs">
+                <p className="text-base font-semibold">No sources selected</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Select sources from the left panel to generate an intelligent AI summary
+                </p>
+              </div>
             </div>
           ) : summary ? (
-            <>
-              <div className="prose prose-sm dark:prose-invert max-w-none text-sm leading-relaxed">
+            <div className="space-y-6 animate-fade-in">
+              <div className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-bold prose-headings:bg-gradient-to-r prose-headings:from-foreground prose-headings:to-muted-foreground prose-headings:bg-clip-text prose-headings:text-transparent prose-p:leading-relaxed prose-li:leading-relaxed prose-strong:text-primary prose-strong:font-bold">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkBreaks]}
                   rehypePlugins={[rehypeRaw]}
@@ -129,24 +160,32 @@ export const SourceSummaryPanel = ({ sourceIds, targetLanguage }: SourceSummaryP
               </div>
               
               {sources.length > 0 && (
-                <div className="pt-4 border-t border-border/50">
-                  <p className="text-xs text-muted-foreground mb-3">Sources:</p>
+                <div className="border-t border-border/50 pt-6 mt-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="h-6 w-6 rounded-md bg-gradient-to-br from-purple-500/20 to-pink-500/20 flex items-center justify-center">
+                      <FileText className="h-3 w-3 text-purple-500" />
+                    </div>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                      {sources.length} Source{sources.length !== 1 ? 's' : ''} Analyzed
+                    </p>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {sources.map((source, idx) => (
-                      <Badge key={idx} variant="outline" className="text-xs">
-                        {source.title}
+                      <Badge 
+                        key={source.id} 
+                        variant="secondary"
+                        className="flex items-center gap-2 px-3 py-1.5 hover:bg-primary/10 transition-colors cursor-default animate-fade-in rounded-lg"
+                        style={{ animationDelay: `${idx * 0.05}s` }}
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span className="font-medium">{source.title}</span>
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
-            </>
-          ) : (
-            <div className="text-center text-muted-foreground py-20">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="text-base">Select sources to generate a summary</p>
             </div>
-          )}
+          ) : null}
         </div>
       </ScrollArea>
     </Card>

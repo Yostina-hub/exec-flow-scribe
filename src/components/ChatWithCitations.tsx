@@ -77,36 +77,42 @@ export const ChatWithCitations = ({ sourceIds, onLanguageDetected }: ChatWithCit
   };
 
   return (
-    <Card className="p-0 h-full flex flex-col border-0 bg-muted/30">
+    <Card className="p-0 h-full flex flex-col border-0 bg-gradient-to-br from-background via-muted/10 to-background">
       {/* Chat Input Section - Now at Top */}
-      <div className="shrink-0 border-b border-border/50 bg-card/50">
+      <div className="shrink-0 border-b border-border/50 bg-card/60 backdrop-blur-sm">
         <div className="px-6 py-5 space-y-4">
           <div className="flex gap-3">
-            <Input
-              placeholder="Ask in any language (English, አማርኛ, العربية, 中文...)"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
-              disabled={isLoading || sourceIds.length === 0}
-              className="flex-1 bg-background border-border/50 rounded-full px-5 h-12 text-base"
-            />
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                {sourceIds.length} source{sourceIds.length !== 1 ? 's' : ''}
-              </span>
-              <Button 
-                onClick={sendMessage} 
-                disabled={isLoading || !input.trim() || sourceIds.length === 0}
-                size="icon"
-                className="shrink-0 rounded-full h-12 w-12"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+            <div className="relative flex-1">
+              <Input
+                placeholder="Ask in any language (English, አማርኛ, العربية, 中文...)"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && !isLoading && sendMessage()}
+                disabled={isLoading || sourceIds.length === 0}
+                className="w-full bg-background border-border/50 rounded-full px-5 h-12 text-base pr-24 focus:ring-2 focus:ring-primary/20 transition-all"
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                <span className="text-xs text-muted-foreground font-medium px-2 py-1 rounded-full bg-muted/50">
+                  {sourceIds.length} {sourceIds.length === 1 ? 'source' : 'sources'}
+                </span>
+              </div>
             </div>
+            <Button 
+              onClick={sendMessage} 
+              disabled={isLoading || !input.trim() || sourceIds.length === 0}
+              size="icon"
+              className="shrink-0 rounded-full h-12 w-12 shadow-lg hover-scale transition-all"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
           </div>
 
           {messages.length === 0 && sourceIds.length > 0 && (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() => setInput("What are the key insights from these sources?")}
                 className="w-full px-5 py-4 rounded-2xl bg-muted/60 hover:bg-muted/80 transition-colors text-sm text-left border border-border/50"

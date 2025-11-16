@@ -49,10 +49,10 @@ serve(async (req) => {
       }
     });
 
-    // Generate summary using Gemini API
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY not configured");
+    // Generate summary using Lovable AI
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY not configured");
     }
 
     const languageInstruction = targetLanguage 
@@ -65,45 +65,56 @@ CRITICAL INSTRUCTIONS:
 1. ${languageInstruction}
 2. If sources are in multiple languages and no target language is specified, use the dominant language
 3. Use **bold markdown** for key terms, names, amounts, dates, and important concepts
-4. Identify main topics and themes with clear emphasis
+4. Create a structured summary with clear sections
 5. Highlight critical information like agreements, decisions, monetary values, and dates
 6. Note significant people, organizations, or entities
-7. Provide clear context about what these sources contain
+7. Extract key insights and takeaways
+8. Provide clear context about what these sources contain
 
-Format the summary as a well-structured paragraph with key information emphasized in bold.`;
+Format the summary with:
+- A brief overview paragraph (2-3 sentences) at the start
+- Key Topics section with bullet points
+- Main Insights section with emphasized points
+- Use markdown formatting for clarity`;
 
-    const aiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        contents: [
+        model: "google/gemini-2.5-flash",
+        messages: [
           {
-            parts: [
-              {
-                text: `${systemPrompt}\n\nPlease analyze and summarize the following ${sources.length} source(s):\n${combinedContent}`
-              }
-            ]
+            role: "system",
+            content: systemPrompt
+          },
+          {
+            role: "user",
+            content: `Please analyze and summarize the following ${sources.length} source(s):\n\n${combinedContent.substring(0, 50000)}`
           }
         ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        }
+        temperature: 0.7,
+        max_tokens: 2048,
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("Gemini API Error:", aiResponse.status, errorText);
-      throw new Error(`Gemini API error: ${aiResponse.status}`);
+      console.error("Lovable AI Error:", aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again in a moment.");
+      } else if (aiResponse.status === 402) {
+        throw new Error("AI usage limit reached. Please add credits to your workspace.");
+      }
+      
+      throw new Error(`AI generation error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    const summary = aiData.candidates[0].content.parts[0].text;
+    const summary = aiData.choices[0].message.content;
 
     return new Response(
       JSON.stringify({ 
