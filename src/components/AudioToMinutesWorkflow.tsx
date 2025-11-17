@@ -367,7 +367,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         body: {
           audioBase64: base64Audio,
           meetingId,
-          language: 'auto',
+          language: 'am', // Default to Amharic
           contentType: mediaBlob.type,
           isVideo: isVideo,
         },
