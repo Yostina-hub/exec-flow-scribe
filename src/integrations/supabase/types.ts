@@ -3820,6 +3820,50 @@ export type Database = {
           },
         ]
       }
+      meeting_speakers: {
+        Row: {
+          confidence_score: number | null
+          detected_name: string | null
+          first_detected_at: string | null
+          id: string
+          last_updated_at: string | null
+          meeting_id: string
+          metadata: Json | null
+          speaker_label: string
+          user_id: string | null
+        }
+        Insert: {
+          confidence_score?: number | null
+          detected_name?: string | null
+          first_detected_at?: string | null
+          id?: string
+          last_updated_at?: string | null
+          meeting_id: string
+          metadata?: Json | null
+          speaker_label: string
+          user_id?: string | null
+        }
+        Update: {
+          confidence_score?: number | null
+          detected_name?: string | null
+          first_detected_at?: string | null
+          id?: string
+          last_updated_at?: string | null
+          meeting_id?: string
+          metadata?: Json | null
+          speaker_label?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_speakers_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_suggestions: {
         Row: {
           created_at: string | null
