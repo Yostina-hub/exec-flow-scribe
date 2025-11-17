@@ -125,31 +125,18 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file type - accept both audio and video
-    // Check file extension first since MIME types can vary by browser
-    const validExtensions = /\.(mp3|wav|webm|ogg|m4a|aac|mp4|mov|avi|mkv|flac)$/i;
-    const hasValidExtension = file.name.match(validExtensions);
+    // Very permissive validation - accept any audio/video type or common extensions
+    const isAudioOrVideo = file.type.startsWith('audio/') || file.type.startsWith('video/');
+    const commonExtensions = /\.(mp3|wav|webm|ogg|m4a|aac|mp4|mov|avi|mkv|flac|wma|amr|3gp)$/i;
+    const hasKnownExtension = file.name.match(commonExtensions);
     
-    // Accept common MIME types (browsers report M4A differently: audio/mp4, audio/m4a, audio/x-m4a, audio/aac)
-    const validAudioTypes = [
-      'audio/mpeg', 'audio/mp3', 'audio/mpeg3',  // MP3
-      'audio/wav', 'audio/wave', 'audio/x-wav',  // WAV
-      'audio/webm',  // WEBM
-      'audio/ogg',  // OGG
-      'audio/m4a', 'audio/x-m4a', 'audio/mp4', 'audio/aac', 'audio/mpeg4-generic',  // M4A/AAC
-      'audio/flac'  // FLAC
-    ];
-    const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-    
-    const hasValidMimeType = validAudioTypes.includes(file.type) || validVideoTypes.includes(file.type);
-    
-    // Accept if either extension or MIME type is valid (or if no MIME type is provided)
-    const isValidType = hasValidExtension || hasValidMimeType || !file.type;
+    // Accept if it's audio/video MIME type OR has known extension OR no MIME type provided
+    const isValidType = isAudioOrVideo || hasKnownExtension || !file.type;
     
     if (!isValidType) {
       toast({
         title: 'Invalid File',
-        description: 'Please upload an audio or video file (MP3, WAV, M4A, WEBM, MP4, MOV, AVI, MKV)',
+        description: 'Please upload an audio or video file',
         variant: 'destructive',
       });
       return;
@@ -516,7 +503,7 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
                 <Input
                   ref={fileInputRef}
                   type="file"
-                  accept="video/*,audio/*,.mp4,.mov,.avi,.mkv,.webm,.mp3,.wav,.m4a,.ogg"
+                  accept="audio/*,video/*"
                   onChange={handleFileUpload}
                   disabled={isUploading}
                   className="flex-1"
