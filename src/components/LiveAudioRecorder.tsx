@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,88 +103,90 @@ export function LiveAudioRecorder({ meetingId, onUploadComplete, disabled = fals
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-            isRecording && !isPaused ? 'bg-destructive animate-pulse' : 'bg-primary/10'
-          }`}>
-            <Mic className={`h-5 w-5 ${isRecording && !isPaused ? 'text-white' : 'text-primary'}`} />
-          </div>
-          <div>
-            {isRecording && (
-              <>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
+                isRecording && !isPaused ? 'bg-destructive animate-pulse' : 'bg-primary/10'
+              }`}>
+                <Mic className={`h-5 w-5 ${isRecording && !isPaused ? 'text-white' : 'text-primary'}`} />
+              </div>
+              <div>
                 <p className="font-medium">
-                  {isPaused ? 'Paused' : 'Recording...'}
+                  {isRecording ? (isPaused ? 'Paused' : 'Recording...') : 'Ready to record'}
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Duration: {formatDuration(audioDuration)}
-                </p>
-              </>
-            )}
-          </div>
-        </div>
+                {isRecording && (
+                  <p className="text-sm text-muted-foreground">
+                    Duration: {formatDuration(audioDuration)}
+                  </p>
+                )}
+              </div>
+            </div>
 
-        <div className="flex gap-2">
-          {!isRecording && !audioBlob && (
-            <Button onClick={startRecording} disabled={disabled}>
-              <Mic className="h-4 w-4 mr-2" />
-              Start Recording
-            </Button>
-          )}
-
-          {isRecording && (
-            <>
-              {!isPaused ? (
-                <Button variant="outline" onClick={pauseRecording}>
-                  <Pause className="h-4 w-4 mr-2" />
-                  Pause
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={resumeRecording}>
-                  <Play className="h-4 w-4 mr-2" />
-                  Resume
+            <div className="flex gap-2">
+              {!isRecording && !audioBlob && (
+                <Button onClick={startRecording} disabled={disabled}>
+                  <Mic className="h-4 w-4 mr-2" />
+                  Start Recording
                 </Button>
               )}
-              <Button variant="destructive" onClick={stopRecording}>
-                <Square className="h-4 w-4 mr-2" />
-                Stop
-              </Button>
-            </>
+
+              {isRecording && (
+                <>
+                  {!isPaused ? (
+                    <Button variant="outline" onClick={pauseRecording}>
+                      <Pause className="h-4 w-4 mr-2" />
+                      Pause
+                    </Button>
+                  ) : (
+                    <Button variant="outline" onClick={resumeRecording}>
+                      <Play className="h-4 w-4 mr-2" />
+                      Resume
+                    </Button>
+                  )}
+                  <Button variant="destructive" onClick={stopRecording}>
+                    <Square className="h-4 w-4 mr-2" />
+                    Stop
+                  </Button>
+                </>
+              )}
+
+              {audioBlob && !isRecording && (
+                <>
+                  <Button variant="outline" onClick={clearRecording}>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Clear
+                  </Button>
+                  <Button onClick={handleUpload} disabled={uploading}>
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading ? 'Uploading...' : 'Upload'}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
+
+          {disabled && !isRecording && !audioBlob && (
+            <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
+              Recording is disabled - meeting has been signed off or completed
+            </div>
           )}
 
-          {audioBlob && !isRecording && (
-            <>
-              <Button variant="outline" onClick={clearRecording}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Clear
-              </Button>
-              <Button onClick={handleUpload} disabled={uploading}>
-                <Upload className="h-4 w-4 mr-2" />
-                {uploading ? 'Uploading...' : 'Upload'}
-              </Button>
-            </>
+          {error && (
+            <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
+              {error}
+            </div>
+          )}
+
+          {audioBlob && (
+            <div className="pt-4 border-t">
+              <audio src={URL.createObjectURL(audioBlob)} controls className="w-full" />
+            </div>
           )}
         </div>
-      </div>
-
-      {disabled && !isRecording && !audioBlob && (
-        <div className="p-3 bg-muted rounded-md text-sm text-muted-foreground">
-          Recording is disabled - meeting has been signed off or completed
-        </div>
-      )}
-
-      {error && (
-        <div className="p-3 bg-destructive/10 text-destructive rounded-md text-sm">
-          {error}
-        </div>
-      )}
-
-      {audioBlob && (
-        <div className="pt-4 border-t">
-          <audio src={URL.createObjectURL(audioBlob)} controls className="w-full" />
-        </div>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }
