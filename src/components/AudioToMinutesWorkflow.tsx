@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LiveAudioRecorder } from './LiveAudioRecorder';
 import { PDFGenerationPanel } from './PDFGenerationPanel';
 import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download, Upload, Edit, Save, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -493,53 +492,32 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         </CardContent>
       </Card>
 
-      {/* Audio Upload and Recording */}
+      {/* Audio Upload */}
       <Card>
         <CardHeader>
-          <CardTitle>Upload or Record Audio</CardTitle>
+          <CardTitle>Upload Audio/Video File</CardTitle>
           <CardDescription>
-            Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB) or record new audio
+            Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Upload Section */}
-            <div className="space-y-3">
-              <h3 className="font-medium text-sm">Upload File</h3>
-              <div className="flex gap-2">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="audio/*,video/*"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isUploading ? 'Uploading...' : 'Choose File'}
-                </Button>
-              </div>
-            </div>
-
-            {/* Recording Section */}
-            <div className="space-y-3">
-              <h3 className="font-medium text-sm">Record Audio</h3>
-              <LiveAudioRecorder
-                meetingId={meetingId}
-                onUploadComplete={() => {
-                  checkExistingData();
-                  toast({
-                    title: 'Audio Uploaded',
-                    description: 'Ready to transcribe and generate minutes',
-                  });
-                }}
-              />
-            </div>
+          <div className="flex gap-2">
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept="audio/*,video/*"
+              onChange={handleFileUpload}
+              disabled={isUploading}
+              className="flex-1"
+            />
+            <Button
+              variant="outline"
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {isUploading ? 'Uploading...' : 'Choose File'}
+            </Button>
           </div>
         </CardContent>
       </Card>
