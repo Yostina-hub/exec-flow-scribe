@@ -14,16 +14,12 @@ serve(async (req) => {
   }
 
   try {
-    const { audioBase64, meetingId, language: requestLanguage, contentType, isVideo } = await req.json();
-    
-    // CRITICAL: Default to Amharic ('am') to prevent Arabic detection
-    const language = requestLanguage || 'am';
+    const { audioBase64, meetingId, language, contentType, isVideo } = await req.json();
     
     console.log('Transcription request received:', {
       hasAudio: !!audioBase64,
       meetingId,
-      requestedLanguage: requestLanguage,
-      language,
+      language: language || 'auto',
       contentType: contentType || 'audio/webm',
       isVideo: isVideo || false
     });
@@ -323,13 +319,12 @@ serve(async (req) => {
           
           // Special handling for language parameter
           // Convert BCP-47 (e.g., am-ET) to ISO-639-1 (e.g., am) for OpenAI when applicable
-          const toIso639 = (lang: string): string => (lang || 'am').split('-')[0].toLowerCase();
-          const iso639Lang = toIso639(language);
+          const toIso639 = (lang: string): string => (lang || '').split('-')[0].toLowerCase();
+          const iso639Lang = toIso639(language || '');
 
           // Enhanced Amharic transcription with explicit language parameter and strong prompt
-          // Since we default to 'am', this will always be Amharic unless explicitly overridden
           if (iso639Lang === 'am') {
-            console.log("✅ Setting OpenAI for Amharic with enhanced prompt and language parameter");
+            console.log("Setting OpenAI for Amharic with enhanced prompt and language parameter");
             formData.append("language", "am");
             formData.append("temperature", "0.0"); // More deterministic output
             formData.append(
@@ -337,7 +332,7 @@ serve(async (req) => {
               "CRITICAL: This audio is in Amharic (አማርኛ). You MUST transcribe using ONLY Ge'ez/Ethiopic script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ). NEVER use Arabic script (ا ب ت ث), Latin letters, or any other script. Examples of correct Amharic: ሰላም፣ እንዴት ነህ፣ እሺ፣ እባክህ፣ ስለዚህ፣ ዛሬ፣ መልካም። Use Ethiopic punctuation: ፣ (comma), ። (period), ፤ (semicolon), ፥ (colon), ፦ (preface colon). Identify speakers as: ተናጋሪ 1, ተናጋሪ 2, etc."
             );
           } else if (iso639Lang && iso639Lang !== 'auto') {
-            console.log(`✅ Setting OpenAI language to ISO-639-1: ${iso639Lang} (from ${language})`);
+            console.log(`Setting OpenAI language to ISO-639-1: ${iso639Lang} (from ${language})`);
             formData.append("language", iso639Lang);
             formData.append("temperature", "0.0");
             formData.append(
@@ -345,13 +340,10 @@ serve(async (req) => {
               "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
             );
           } else {
-            // Fallback to Amharic as default
-            console.log("⚠️ Fallback: Defaulting to Amharic");
-            formData.append("language", "am");
             formData.append("temperature", "0.0");
             formData.append(
               "prompt",
-              "CRITICAL: This audio is in Amharic (አማርኛ). You MUST transcribe using ONLY Ge'ez/Ethiopic script (ሀ-ፐ range). NEVER use Arabic script (ا ب ت) or Latin letters for Amharic words."
+              "Transcribe in the original script of the spoken language. For Amharic (አማርኛ), you MUST use ONLY Ge'ez/Ethiopic script (ሀ-ፐ range). NEVER use Arabic script (ا ب ت) or Latin letters for Amharic words."
             );
           }
           
