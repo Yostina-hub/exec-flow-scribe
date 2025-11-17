@@ -492,59 +492,47 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         </CardContent>
       </Card>
 
-      {/* Audio Upload */}
+      {/* Upload and Process Media */}
       <Card>
         <CardHeader>
-          <CardTitle>Upload Audio/Video File</CardTitle>
+          <CardTitle>Upload & Process Media</CardTitle>
           <CardDescription>
-            Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB)
+            Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB) and process to generate minutes
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-2">
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept="audio/*,video/*"
-              onChange={handleFileUpload}
-              disabled={isUploading}
-              className="flex-1"
-            />
-            <Button
-              variant="outline"
-              disabled={isUploading}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              {isUploading ? 'Uploading...' : 'Choose File'}
-            </Button>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 flex gap-2">
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*,video/*"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+                className="flex-1"
+              />
+              <Button
+                variant="outline"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {isUploading ? 'Uploading...' : 'Choose File'}
+              </Button>
+            </div>
+            
+            {latestAudioUrl && !isProcessing && (
+              <>
+                <div className="h-8 w-px bg-border" />
+                <Button onClick={handleAudioUpload} className="whitespace-nowrap">
+                  <FileAudio className="h-4 w-4 mr-2" />
+                  Process Media
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
-      
-      <div className="space-y-4">
-          
-          {latestAudioUrl && !isProcessing && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileAudio className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Media Ready</p>
-                      <p className="text-sm text-muted-foreground">
-                        Click to process and generate minutes
-                      </p>
-                    </div>
-                  </div>
-                  <Button onClick={handleAudioUpload}>
-                    Process Media
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
 
 
       {/* Minutes Display */}
