@@ -493,17 +493,19 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         </CardContent>
       </Card>
 
-      {/* Audio Upload Options */}
-      <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Audio/Video File</CardTitle>
-              <CardDescription>
-                Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB). 
-                For video files, audio will be automatically extracted for transcription.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
+      {/* Audio Upload and Recording */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload or Record Audio</CardTitle>
+          <CardDescription>
+            Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB) or record new audio
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Upload Section */}
+            <div className="space-y-3">
+              <h3 className="font-medium text-sm">Upload File</h3>
               <div className="flex gap-2">
                 <Input
                   ref={fileInputRef}
@@ -522,30 +524,27 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
                   {isUploading ? 'Uploading...' : 'Choose File'}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
             </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or record new audio
-              </span>
+
+            {/* Recording Section */}
+            <div className="space-y-3">
+              <h3 className="font-medium text-sm">Record Audio</h3>
+              <LiveAudioRecorder
+                meetingId={meetingId}
+                onUploadComplete={() => {
+                  checkExistingData();
+                  toast({
+                    title: 'Audio Uploaded',
+                    description: 'Ready to transcribe and generate minutes',
+                  });
+                }}
+              />
             </div>
           </div>
-
-          <LiveAudioRecorder
-            meetingId={meetingId}
-            onUploadComplete={() => {
-              checkExistingData();
-              toast({
-                title: 'Audio Uploaded',
-                description: 'Ready to transcribe and generate minutes',
-              });
-            }}
-          />
+        </CardContent>
+      </Card>
+      
+      <div className="space-y-4">
           
           {latestAudioUrl && !isProcessing && (
             <Card>
