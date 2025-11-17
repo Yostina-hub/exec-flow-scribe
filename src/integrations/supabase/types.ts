@@ -3411,10 +3411,10 @@ export type Database = {
       }
       meeting_media: {
         Row: {
-          checksum: string
+          checksum: string | null
           duration_seconds: number | null
           file_size: number | null
-          file_url: string
+          file_url: string | null
           format: string | null
           id: string
           media_type: string
@@ -3424,10 +3424,10 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
-          checksum: string
+          checksum?: string | null
           duration_seconds?: number | null
           file_size?: number | null
-          file_url: string
+          file_url?: string | null
           format?: string | null
           id?: string
           media_type: string
@@ -3437,10 +3437,10 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
-          checksum?: string
+          checksum?: string | null
           duration_seconds?: number | null
           file_size?: number | null
-          file_url?: string
+          file_url?: string | null
           format?: string | null
           id?: string
           media_type?: string
