@@ -322,24 +322,28 @@ serve(async (req) => {
           const toIso639 = (lang: string): string => (lang || '').split('-')[0].toLowerCase();
           const iso639Lang = toIso639(language || '');
 
-          // For Amharic, do NOT send the language param (OpenAI may reject 'am'); rely on auto-detect
+          // Enhanced Amharic transcription with explicit language parameter and strong prompt
           if (iso639Lang === 'am') {
-            console.log("Skipping OpenAI 'language' param for Amharic; relying on auto-detect");
+            console.log("Setting OpenAI for Amharic with enhanced prompt and language parameter");
+            formData.append("language", "am");
+            formData.append("temperature", "0.0"); // More deterministic output
             formData.append(
               "prompt",
-              "Transcribe strictly in Amharic using Ge'ez (Ethiopic) script only: አ ለ ሐ መ ሠ ረ ሰ ቀ በ ተ ቸ ነ ኘ እ ከ ወ ዐ ዘ የ ደ ገ ጠ ጰ ጸ ፀ ፈ ፐ. Never use Latin or Arabic characters for Amharic words."
+              "CRITICAL: This audio is in Amharic (አማርኛ). You MUST transcribe using ONLY Ge'ez/Ethiopic script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ). NEVER use Arabic script (ا ب ت ث), Latin letters, or any other script. Examples of correct Amharic: ሰላም፣ እንዴት ነህ፣ እሺ፣ እባክህ፣ ስለዚህ፣ ዛሬ፣ መልካም። Use Ethiopic punctuation: ፣ (comma), ። (period), ፤ (semicolon), ፥ (colon), ፦ (preface colon). Identify speakers as: ተናጋሪ 1, ተናጋሪ 2, etc."
             );
           } else if (iso639Lang && iso639Lang !== 'auto') {
             console.log(`Setting OpenAI language to ISO-639-1: ${iso639Lang} (from ${language})`);
             formData.append("language", iso639Lang);
+            formData.append("temperature", "0.0");
             formData.append(
               "prompt",
               "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters only."
             );
           } else {
+            formData.append("temperature", "0.0");
             formData.append(
               "prompt",
-              "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only. Never romanize or use Arabic script for Amharic."
+              "Transcribe in the original script of the spoken language. For Amharic (አማርኛ), you MUST use ONLY Ge'ez/Ethiopic script (ሀ-ፐ range). NEVER use Arabic script (ا ب ت) or Latin letters for Amharic words."
             );
           }
           
@@ -365,7 +369,8 @@ serve(async (req) => {
                 retryForm.append("file", audioBlobRetry, filenameRetry);
                 retryForm.append("model", "whisper-1");
                 retryForm.append("response_format", "verbose_json");
-                retryForm.append("prompt", "Transcribe in the original script of the spoken language. For Amharic, use Ge'ez (Ethiopic) characters (አማርኛ) only.");
+                retryForm.append("temperature", "0.0");
+                retryForm.append("prompt", "CRITICAL: For Amharic (አማርኛ), transcribe using ONLY Ge'ez/Ethiopic script (ሀ-ፐ). NEVER use Arabic (ا ب ت) or Latin. Examples: ሰላም፣ እንዴት ነህ፣ እሺ። Use Ethiopic punctuation ፣ ። Speakers: ተናጋሪ 1, ተናጋሪ 2.");
 
                 const retryResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
                   method: "POST",
