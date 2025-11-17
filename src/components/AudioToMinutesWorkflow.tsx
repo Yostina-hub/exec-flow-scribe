@@ -126,11 +126,25 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
     if (!file) return;
 
     // Validate file type - accept both audio and video
-    const validAudioTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/x-m4a'];
-    const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
-    const validExtensions = /\.(mp3|wav|webm|ogg|m4a|mp4|mov|avi|mkv)$/i;
+    // Check file extension first since MIME types can vary by browser
+    const validExtensions = /\.(mp3|wav|webm|ogg|m4a|aac|mp4|mov|avi|mkv|flac)$/i;
+    const hasValidExtension = file.name.match(validExtensions);
     
-    const isValidType = validAudioTypes.includes(file.type) || validVideoTypes.includes(file.type) || file.name.match(validExtensions);
+    // Accept common MIME types (browsers report M4A differently: audio/mp4, audio/m4a, audio/x-m4a, audio/aac)
+    const validAudioTypes = [
+      'audio/mpeg', 'audio/mp3', 'audio/mpeg3',  // MP3
+      'audio/wav', 'audio/wave', 'audio/x-wav',  // WAV
+      'audio/webm',  // WEBM
+      'audio/ogg',  // OGG
+      'audio/m4a', 'audio/x-m4a', 'audio/mp4', 'audio/aac', 'audio/mpeg4-generic',  // M4A/AAC
+      'audio/flac'  // FLAC
+    ];
+    const validVideoTypes = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/x-matroska', 'video/webm'];
+    
+    const hasValidMimeType = validAudioTypes.includes(file.type) || validVideoTypes.includes(file.type);
+    
+    // Accept if either extension or MIME type is valid (or if no MIME type is provided)
+    const isValidType = hasValidExtension || hasValidMimeType || !file.type;
     
     if (!isValidType) {
       toast({
