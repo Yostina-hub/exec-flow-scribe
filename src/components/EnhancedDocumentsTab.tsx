@@ -5,7 +5,7 @@ import { MeetingAudioPlayback } from "@/components/MeetingAudioPlayback";
 import { MeetingSummaryCard } from "@/components/MeetingSummaryCard";
 import { MeetingKeyPointsSummary } from "@/components/MeetingKeyPointsSummary";
 import { MeetingKeywordSearch } from "@/components/MeetingKeywordSearch";
-import { TranscriptionDocumentExport } from "@/components/TranscriptionDocumentExport";
+
 import { EnhancedTranscriptionDisplay } from "@/components/EnhancedTranscriptionDisplay";
 import { DocumentVersionControl } from "@/components/DocumentVersionControl";
 import { Button } from "@/components/ui/button";
@@ -107,21 +107,13 @@ export const EnhancedDocumentsTab = ({ meetingId, meetingTitle = "Meeting" }: En
           <div className="grid gap-4">
             <Card className={isEthioTelecom ? 'border-primary/20 bg-gradient-to-br from-background via-primary/5 to-background' : ''}>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <FileText className="h-5 w-5 text-primary" />
-                      Complete Transcription
-                    </CardTitle>
-                    <CardDescription>
-                      Full meeting transcription with speaker identification
-                    </CardDescription>
-                  </div>
-                  <TranscriptionDocumentExport 
-                    meetingId={meetingId} 
-                    meetingTitle={meetingTitle}
-                  />
-                </div>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Complete Transcription
+                </CardTitle>
+                <CardDescription>
+                  Full meeting transcription with speaker identification
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {loading ? (
