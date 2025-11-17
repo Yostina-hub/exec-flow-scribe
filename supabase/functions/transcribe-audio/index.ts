@@ -491,13 +491,111 @@ serve(async (req) => {
     const duration = binaryAudio.length / (24000 * 2); // 24kHz, 16-bit
     const confidenceScore = duration > 1 ? 0.95 : duration > 0.5 ? 0.85 : 0.75;
 
-    // Save transcription to database with enhanced metadata
+    // ============================================
+    // EXTRACT SPEAKER NAMES FROM AUDIO INTRODUCTIONS
+    // Look for patterns where speakers introduce themselves
+    // ============================================
+    const speakerNamePatterns = [
+      // English patterns
+      /Speaker\s+(\d+):\s*(?:My name is|I am|I'm|This is)\s+([A-Za-z\s]+?)(?:\.|,|$|\s+and)/gi,
+      /Speaker\s+(\d+):\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\s+(?:here|speaking|present)/gi,
+      // Amharic patterns (ስሜ = my name, ነኝ = I am, ይባላል = is called)
+      /ተናጋሪ\s+(\d+):\s*ስሜ\s+([\u1200-\u137F\s]+?)(?:\s+ነው|\s+ይባላል|።)/giu,
+      /ተናጋሪ\s+(\d+):\s*([\u1200-\u137F]+(?:\s+[\u1200-\u137F]+)?)\s+ነኝ/giu,
+      // Arabic patterns
+      /المتحدث\s+(\d+):\s*اسمي\s+([\u0600-\u06FF\s]+?)(?:\.|$)/gi,
+      /المتحدث\s+(\d+):\s*أنا\s+([\u0600-\u06FF\s]+)/gi,
+    ];
+
+    const detectedSpeakers: Map<string, string> = new Map();
+    
+    for (const pattern of speakerNamePatterns) {
+      let match;
+      while ((match = pattern.exec(transcriptText)) !== null) {
+        const speakerNum = match[1];
+        const speakerName = match[2]?.trim();
+        
+        // Validate speaker name
+        if (speakerName && speakerName.length > 1 && speakerName.length < 50) {
+          // Skip common false positives
+          const skipWords = ['here', 'speaking', 'present', 'now', 'today', 'ነው', 'ነኝ'];
+          if (!skipWords.some(word => speakerName.toLowerCase().includes(word))) {
+            const speakerLabel = `Speaker ${speakerNum}`;
+            detectedSpeakers.set(speakerLabel, speakerName);
+            console.log(`🎤 Detected speaker introduction: ${speakerLabel} = "${speakerName}"`);
+          }
+        }
+      }
+    }
+
+    // Save detected speakers to meeting_speakers table
+    if (detectedSpeakers.size > 0) {
+      console.log(`💾 Saving ${detectedSpeakers.size} detected speaker name(s) to database`);
+      
+      for (const [speakerLabel, detectedName] of detectedSpeakers.entries()) {
+        const { error: speakerErr } = await supabase
+          .from('meeting_speakers')
+          .upsert({
+            meeting_id: normalizedMeetingId,
+            speaker_label: speakerLabel,
+            detected_name: detectedName,
+            confidence_score: 0.85,
+            last_updated_at: new Date().toISOString(),
+            metadata: { source: 'audio_introduction', provider: usedProvider }
+          }, {
+            onConflict: 'meeting_id,speaker_label',
+          });
+
+        if (speakerErr) {
+          console.error(`⚠️ Failed to save speaker ${speakerLabel}:`, speakerErr.message);
+        } else {
+          console.log(`✅ Saved speaker identity: ${speakerLabel} → "${detectedName}"`);
+        }
+      }
+    }
+
+    // Replace generic speaker labels with detected names throughout transcript
+    let enhancedTranscript = transcriptText;
+    let replacementCount = 0;
+    
+    for (const [speakerLabel, detectedName] of detectedSpeakers.entries()) {
+      // Replace "Speaker N" with actual name
+      const labelPattern = new RegExp(`\\b${speakerLabel}(?=:|\\s)`, 'g');
+      const beforeCount = (enhancedTranscript.match(labelPattern) || []).length;
+      enhancedTranscript = enhancedTranscript.replace(labelPattern, detectedName);
+      replacementCount += beforeCount;
+      
+      // Also replace Amharic speaker labels (ተናጋሪ N)
+      const speakerNum = speakerLabel.match(/\d+/)?.[0];
+      if (speakerNum) {
+        const amharicLabel = `ተናጋሪ ${speakerNum}`;
+        const amharicPattern = new RegExp(`\\b${amharicLabel}(?=:|\\s)`, 'g');
+        const amCount = (enhancedTranscript.match(amharicPattern) || []).length;
+        enhancedTranscript = enhancedTranscript.replace(amharicPattern, detectedName);
+        replacementCount += amCount;
+        
+        // Arabic labels (المتحدث N)
+        const arabicLabel = `المتحدث ${speakerNum}`;
+        const arabicPattern = new RegExp(`${arabicLabel}(?=:|\\s)`, 'g');
+        const arCount = (enhancedTranscript.match(arabicPattern) || []).length;
+        enhancedTranscript = enhancedTranscript.replace(arabicPattern, detectedName);
+        replacementCount += arCount;
+      }
+    }
+
+    if (replacementCount > 0) {
+      console.log(`✏️ Replaced ${replacementCount} speaker labels with detected names`);
+    }
+
+    console.log('📝 Final enhanced transcript preview:', enhancedTranscript.substring(0, 200));
+
+    // Save transcription to database with enhanced transcript (real names, not generic labels)
     const { error: dbError } = await supabase.from("transcriptions").insert({
       meeting_id: normalizedMeetingId,
-      content: transcriptText.trim(),
+      content: enhancedTranscript.trim(),
       timestamp: new Date().toISOString(),
       confidence_score: confidenceScore,
-      speaker_name: 'User',
+      speaker_name: detectedSpeakers.size > 0 ? Array.from(detectedSpeakers.values()).join(', ') : 'Auto-detected',
       detected_language: detectedLanguage || 'auto'
     });
 
@@ -518,7 +616,10 @@ serve(async (req) => {
     }
 
     console.log(`✅ Transcription saved successfully using ${usedProvider} (${detectedLanguage})`);
-    console.log('Final transcription preview:', transcriptText.substring(0, 100));
+    if (detectedSpeakers.size > 0) {
+      console.log(`🎭 Detected ${detectedSpeakers.size} speaker(s) from audio:`, Array.from(detectedSpeakers.entries()));
+    }
+    console.log('Final transcription preview:', enhancedTranscript.substring(0, 150));
     
     // Update meeting workflow status
     await supabase.from("meetings").update({ 
@@ -529,10 +630,12 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        transcription: transcriptText.trim(),
+        transcription: enhancedTranscript.trim(),
         detectedLanguage: detectedLanguage,
         confidenceScore: confidenceScore,
-        provider: usedProvider
+        provider: usedProvider,
+        speakersDetected: detectedSpeakers.size,
+        speakers: Array.from(detectedSpeakers.entries()).map(([label, name]) => ({ label, name }))
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
