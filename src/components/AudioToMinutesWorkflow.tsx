@@ -177,11 +177,16 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         .from('meeting-audio')
         .getPublicUrl(filePath);
 
-      // Generate checksum
-      const arrayBuffer = await file.arrayBuffer();
-      const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      const checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      // Generate checksum (optional)
+      let checksum = null;
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        checksum = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (error) {
+        console.log('Could not generate checksum, continuing without it');
+      }
 
       // Determine media type based on file type
       const mediaType = file.type.startsWith('video/') ? 'video' : 'audio';
@@ -243,9 +248,9 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         .insert({
           meeting_id: meetingId,
           media_type: 'transcript_pdf',
-          file_url: data.pdfUrl,
+          file_url: data?.pdfUrl || null,
           uploaded_by: user.id,
-          checksum: '',
+          checksum: null,
         });
 
       if (insertError) throw insertError;
