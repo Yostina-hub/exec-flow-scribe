@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { LiveAudioRecorder } from './LiveAudioRecorder';
 import { PDFGenerationPanel } from './PDFGenerationPanel';
 import { Loader2, FileAudio, FileText, CheckCircle, AlertCircle, Download, Upload, Edit, Save, ExternalLink } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -493,187 +492,48 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
         </CardContent>
       </Card>
 
-      {/* Audio Upload Options */}
-      <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Upload Audio/Video File</CardTitle>
-              <CardDescription>
-                Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB). 
-                For video files, audio will be automatically extracted for transcription.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="audio/*,video/*"
-                  onChange={handleFileUpload}
-                  disabled={isUploading}
-                  className="flex-1"
-                />
-                <Button
-                  variant="outline"
-                  disabled={isUploading}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Upload className="h-4 w-4 mr-2" />
-                  {isUploading ? 'Uploading...' : 'Choose File'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
-                Or record new audio
-              </span>
-            </div>
-          </div>
-
-          <LiveAudioRecorder
-            meetingId={meetingId}
-            onUploadComplete={() => {
-              checkExistingData();
-              toast({
-                title: 'Audio Uploaded',
-                description: 'Ready to transcribe and generate minutes',
-              });
-            }}
-          />
-          
-          {latestAudioUrl && !isProcessing && (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <FileAudio className="h-5 w-5 text-primary" />
-                    <div>
-                      <p className="font-medium">Media Ready</p>
-                      <p className="text-sm text-muted-foreground">
-                        Click to process and generate minutes
-                      </p>
-                    </div>
-                  </div>
-                  <Button onClick={handleAudioUpload}>
-                    Process Media
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-      {/* Transcription Display */}
-      {transcription && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Transcription
-              </CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant="success">Complete</Badge>
-                {!isEditingTranscription ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditingTranscription(true)}
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        setEditableTranscription(transcription);
-                        setIsEditingTranscription(false);
-                      }}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={saveTranscription}
-                      disabled={isSavingTranscription}
-                    >
-                      {isSavingTranscription ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Save
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {isEditingTranscription ? (
-              <Textarea
-                value={editableTranscription}
-                onChange={(e) => setEditableTranscription(e.target.value)}
-                className="min-h-[300px] font-mono text-sm"
-                placeholder="Edit transcription..."
+      {/* Upload and Process Media */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Upload & Process Media</CardTitle>
+          <CardDescription>
+            Upload media files (MP4, MOV, WEBM, MP3, WAV, M4A - max 100MB) and process to generate minutes
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 flex gap-2">
+              <Input
+                ref={fileInputRef}
+                type="file"
+                accept="audio/*,video/*"
+                onChange={handleFileUpload}
+                disabled={isUploading}
+                className="flex-1"
               />
-            ) : (
-              <ScrollArea className="h-[200px] w-full rounded-md border p-4">
-                <p className="text-sm whitespace-pre-wrap">{transcription}</p>
-              </ScrollArea>
-            )}
-            
-            {hasTranscriptPDF ? (
-              <div className="flex items-center justify-between p-4 rounded-lg bg-success/10 border border-success/20">
-                <div className="flex items-center gap-3">
-                  <CheckCircle className="h-5 w-5 text-success" />
-                  <span className="font-medium">Transcript PDF Ready</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.open(transcriptPdfUrl, '_blank')}
-                >
-                  Download PDF
-                </Button>
-              </div>
-            ) : (
               <Button
-                onClick={generateTranscriptPDF}
-                disabled={isGeneratingTranscriptPDF}
-                variant="secondary"
-                className="w-full"
+                variant="outline"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
               >
-                {isGeneratingTranscriptPDF ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Generating PDF...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generate Transcript PDF
-                  </>
-                )}
+                <Upload className="h-4 w-4 mr-2" />
+                {isUploading ? 'Uploading...' : 'Choose File'}
               </Button>
+            </div>
+            
+            {latestAudioUrl && !isProcessing && (
+              <>
+                <div className="h-8 w-px bg-border" />
+                <Button onClick={handleAudioUpload} className="whitespace-nowrap">
+                  <FileAudio className="h-4 w-4 mr-2" />
+                  Process Media
+                </Button>
+              </>
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardContent>
+      </Card>
+
 
       {/* Minutes Display */}
       {minutes && (
