@@ -442,6 +442,67 @@ serve(async (req) => {
             textLength: transcriptText.length,
             firstChars: transcriptText.substring(0, 50)
           });
+
+          // CRITICAL: Validate and correct Amharic transcription script
+          if (iso639Lang === 'am' && transcriptText) {
+            const hasGeEz = /[\u1200-\u137F]/.test(transcriptText);
+            const hasArabic = /[\u0600-\u06FF]/.test(transcriptText);
+            
+            console.log('OpenAI Amharic script validation:', { hasGeEz, hasArabic, preview: transcriptText.substring(0, 100) });
+            
+            // If we got Arabic script instead of Ge'ez, translate to Amharic
+            if (hasArabic && !hasGeEz) {
+              console.warn('⚠️ OpenAI returned Arabic script for Amharic audio - translating to Amharic...');
+              
+              try {
+                const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+                if (!lovableApiKey) {
+                  throw new Error("LOVABLE_API_KEY not configured");
+                }
+
+                const translateResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+                  method: "POST",
+                  headers: {
+                    "Authorization": `Bearer ${lovableApiKey}`,
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    model: "google/gemini-2.5-flash",
+                    messages: [
+                      {
+                        role: "system",
+                        content: "You are an expert translator. Translate Arabic text to Amharic using ONLY Ge'ez/Ethiopic script."
+                      },
+                      {
+                        role: "user",
+                        content: `CRITICAL: Translate this Arabic transcription to Amharic using ONLY Ge'ez script (ሀ ለ ሐ መ ሠ ረ ሰ ሸ ቀ በ ተ ቸ ኀ ነ ኘ አ ከ ኸ ወ ዐ ዘ ዠ የ ደ ጀ ገ ጠ ጨ ጰ ጸ ፀ ፈ ፐ). Use Ethiopic punctuation: ። (period) ፣ (comma) ፤ (semicolon). Keep speaker labels and timing intact.\n\nArabic text:\n${transcriptText}`
+                      }
+                    ],
+                    temperature: 0.3,
+                    max_tokens: 8000
+                  }),
+                });
+
+                if (translateResponse.ok) {
+                  const translateData = await translateResponse.json();
+                  const correctedText = translateData.choices?.[0]?.message?.content;
+                  
+                  if (correctedText && /[\u1200-\u137F]/.test(correctedText)) {
+                    transcriptText = correctedText;
+                    detectedLanguage = 'am';
+                    console.log('✅ Successfully corrected to Amharic:', transcriptText.substring(0, 100));
+                  } else {
+                    console.error('Translation failed to produce Ge\'ez script');
+                  }
+                } else {
+                  console.error('Translation API failed:', await translateResponse.text());
+                }
+              } catch (translateError) {
+                console.error('Translation error:', translateError);
+                // Continue with Arabic transcription if translation fails
+              }
+            }
+          }
         } catch (openaiError) {
           console.error("❌ OpenAI transcription failed:", openaiError);
           // Continue to next provider
