@@ -234,6 +234,9 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       
       const { data, error } = await supabase.functions.invoke('generate-transcript-pdf', {
         body: { meetingId },
+        headers: {
+          Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token || ''}`,
+        },
       });
 
       if (error) throw error;
@@ -362,6 +365,10 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
       setProgress(40);
 
       // Transcribe audio (edge function will handle audio extraction from video)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('You must be signed in to transcribe.');
+      }
       const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke('transcribe-audio', {
         body: {
           audioBase64: base64Audio,
@@ -369,6 +376,9 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
           language: 'am', // Default to Amharic
           contentType: mediaBlob.type,
           isVideo: isVideo,
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
         },
       });
 
@@ -389,6 +399,9 @@ export function AudioToMinutesWorkflow({ meetingId }: AudioToMinutesWorkflowProp
 
       const { data: minutesData, error: minutesError } = await supabase.functions.invoke('generate-minutes', {
         body: { meetingId },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
       });
 
       if (minutesError) throw minutesError;
